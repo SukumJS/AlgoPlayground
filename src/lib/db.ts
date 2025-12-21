@@ -140,7 +140,7 @@ export async function deletePlaygroundSession(userId: string, algorithmSlug: str
 
 export async function getQuestionsByAlgorithm(
   algorithmSlug: string,
-  testType: TestType
+  testType?: TestType
 ) {
   const algorithm = await getAlgorithmBySlug(algorithmSlug);
   if (!algorithm) return [];
@@ -148,7 +148,7 @@ export async function getQuestionsByAlgorithm(
   return prisma.question.findMany({
     where: {
       algorithmId: algorithm.id,
-      testType,
+      ...(testType && { testType }),
     },
     orderBy: { order: 'asc' },
   });
@@ -161,38 +161,35 @@ export async function getQuestionsByAlgorithm(
 export async function saveTestResult(
   userId: string,
   algorithmSlug: string,
-  testType: TestType,
   data: {
+    testType: TestType;
     score: number;
-    totalQuestions: number;
+    totalPoints: number;
+    percentage: number;
     timeTaken?: number;
-    answers: {
+    answers?: {
       questionId: string;
-      userAnswer: unknown;
+      answer: unknown;
       isCorrect: boolean;
-      timeTaken?: number;
     }[];
   }
 ) {
-  const percentage = (data.score / data.totalQuestions) * 100;
-
   return prisma.testResult.create({
     data: {
       userId,
       algorithmSlug,
-      testType,
+      testType: data.testType,
       score: data.score,
-      totalQuestions: data.totalQuestions,
-      percentage,
-      timeTaken: data.timeTaken,
-      answers: {
+      totalQuestions: data.totalPoints, // Using totalPoints as totalQuestions
+      percentage: data.percentage,
+      timeTaken: data.timeTaken ?? 0,
+      answers: data.answers ? {
         create: data.answers.map((answer) => ({
           questionId: answer.questionId,
-          userAnswer: answer.userAnswer,
+          userAnswer: answer.answer,
           isCorrect: answer.isCorrect,
-          timeTaken: answer.timeTaken,
         })),
-      },
+      } : undefined,
     },
     include: {
       answers: true,
@@ -200,11 +197,19 @@ export async function saveTestResult(
   });
 }
 
-export async function getTestResults(userId: string, algorithmSlug?: string) {
+export async function getTestResults(
+  userId: string, 
+  options?: {
+    algorithmSlug?: string;
+    testType?: TestType;
+    limit?: number;
+  }
+) {
   return prisma.testResult.findMany({
     where: {
       userId,
-      ...(algorithmSlug && { algorithmSlug }),
+      ...(options?.algorithmSlug && { algorithmSlug: options.algorithmSlug }),
+      ...(options?.testType && { testType: options.testType }),
     },
     include: {
       answers: {
@@ -214,6 +219,7 @@ export async function getTestResults(userId: string, algorithmSlug?: string) {
       },
     },
     orderBy: { completedAt: 'desc' },
+    take: options?.limit,
   });
 }
 

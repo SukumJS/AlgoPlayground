@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { requireAuth } from '@/lib/auth';
 import { getUserStats, getUserProgress } from '@/lib/db';
 import { getAlgorithmsByCategory, categoryOrder, getCategoryDisplayName } from '@/data/algorithms';
-import { UserMenu } from '@/components/auth';
+import { Navbar, Footer } from '@/components/layout';
 import {
   BarChart3,
   Clock,
@@ -225,28 +225,17 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">A</span>
-              </div>
-              <span className="font-semibold text-gray-900">AlgoPlayground</span>
-            </Link>
-            <UserMenu />
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Navbar />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <Suspense fallback={<DashboardSkeleton />}>
           <DashboardContent />
         </Suspense>
       </main>
+
+      <Footer />
     </div>
   );
 }
