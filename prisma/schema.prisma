@@ -1,0 +1,209 @@
+// ===========================================
+// AlgoPlayground Database Schema
+// ===========================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ===========================================
+// Enums
+// ===========================================
+
+enum AlgorithmCategory {
+  SORTING
+  SEARCHING
+  GRAPH
+  TREE
+  LINEAR_STRUCTURE
+}
+
+enum TestType {
+  PRE_TEST
+  POST_TEST
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  DRAG_DROP_ORDER
+  DRAG_DROP_MATCH
+  FILL_BLANK
+  TRUE_FALSE
+}
+
+// ===========================================
+// User Model
+// ===========================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  playgroundSessions PlaygroundSession[]
+  testResults        TestResult[]
+  userProgress       UserProgress[]
+
+  @@map("users")
+}
+
+// ===========================================
+// Algorithm Model
+// ===========================================
+
+model Algorithm {
+  id              String            @id @default(uuid())
+  slug            String            @unique
+  name            String
+  category        AlgorithmCategory
+  description     String
+  timeComplexity  Json              @map("time_complexity")
+  spaceComplexity String            @map("space_complexity")
+  stable          Boolean?          // For sorting algorithms
+  useCases        String[]          @map("use_cases")
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  questions          Question[]
+  playgroundSessions PlaygroundSession[]
+
+  @@map("algorithms")
+}
+
+// ===========================================
+// Playground Session Model
+// Stores user's progress in algorithm visualization
+// ===========================================
+
+model PlaygroundSession {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  algorithmId String   @map("algorithm_id")
+  currentStep Int      @default(0) @map("current_step")
+  totalSteps  Int      @default(0) @map("total_steps")
+  inputData   Json?    @map("input_data")
+  visualState Json?    @map("visual_state")
+  isCompleted Boolean  @default(false) @map("is_completed")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  algorithm Algorithm @relation(fields: [algorithmId], references: [id], onDelete: Cascade)
+
+  // Unique constraint: one session per user per algorithm
+  @@unique([userId, algorithmId])
+  @@index([userId])
+  @@index([algorithmId])
+  @@map("playground_sessions")
+}
+
+// ===========================================
+// Question Model
+// Stores pre-test and post-test questions
+// ===========================================
+
+model Question {
+  id            String       @id @default(uuid())
+  algorithmId   String       @map("algorithm_id")
+  testType      TestType     @map("test_type")
+  questionType  QuestionType @map("question_type")
+  questionText  String       @map("question_text")
+  options       Json?        // Array of options for multiple choice
+  correctAnswer Json         @map("correct_answer")
+  explanation   String
+  order         Int          @default(0)
+  points        Int          @default(1)
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  algorithm   Algorithm    @relation(fields: [algorithmId], references: [id], onDelete: Cascade)
+  testAnswers TestAnswer[]
+
+  @@index([algorithmId, testType])
+  @@map("questions")
+}
+
+// ===========================================
+// Test Result Model
+// Stores completed test results
+// ===========================================
+
+model TestResult {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  algorithmSlug  String   @map("algorithm_slug")
+  testType       TestType @map("test_type")
+  score          Int
+  totalQuestions Int      @map("total_questions")
+  percentage     Float
+  timeTaken      Int?     @map("time_taken") // in seconds
+  completedAt    DateTime @default(now()) @map("completed_at")
+
+  // Relations
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers TestAnswer[]
+
+  @@index([userId, algorithmSlug])
+  @@index([userId, testType])
+  @@map("test_results")
+}
+
+// ===========================================
+// Test Answer Model
+// Stores individual answers for each test
+// ===========================================
+
+model TestAnswer {
+  id           String  @id @default(uuid())
+  testResultId String  @map("test_result_id")
+  questionId   String  @map("question_id")
+  userAnswer   Json    @map("user_answer")
+  isCorrect    Boolean @map("is_correct")
+  timeTaken    Int?    @map("time_taken") // in seconds
+
+  // Relations
+  testResult TestResult @relation(fields: [testResultId], references: [id], onDelete: Cascade)
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([testResultId])
+  @@map("test_answers")
+}
+
+// ===========================================
+// User Progress Model
+// Tracks overall progress per algorithm
+// ===========================================
+
+model UserProgress {
+  id                  String   @id @default(uuid())
+  userId              String   @map("user_id")
+  algorithmSlug       String   @map("algorithm_slug")
+  preTestCompleted    Boolean  @default(false) @map("pre_test_completed")
+  preTestScore        Float?   @map("pre_test_score")
+  playgroundCompleted Boolean  @default(false) @map("playground_completed")
+  playgroundTime      Int?     @map("playground_time") // total seconds spent
+  postTestCompleted   Boolean  @default(false) @map("post_test_completed")
+  postTestScore       Float?   @map("post_test_score")
+  lastAccessedAt      DateTime @default(now()) @map("last_accessed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Unique constraint: one progress record per user per algorithm
+  @@unique([userId, algorithmSlug])
+  @@index([userId])
+  @@map("user_progress")
+}

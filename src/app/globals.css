@@ -1,0 +1,255 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 199 89% 48%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-gray-50 text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
+  }
+}
+
+/* Custom component styles */
+@layer components {
+  /* Algorithm visualization container */
+  .viz-container {
+    @apply relative bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden;
+  }
+
+  /* Array bar visualization */
+  .array-bar {
+    @apply relative flex items-end justify-center transition-all duration-300 ease-in-out;
+  }
+
+  .array-bar-value {
+    @apply absolute -top-6 text-xs font-medium text-gray-600;
+  }
+
+  /* Node styles for graphs/trees */
+  .viz-node {
+    @apply w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold
+           border-2 transition-all duration-200 ease-in-out;
+  }
+
+  .viz-node-default {
+    @apply bg-white border-gray-300 text-gray-700;
+  }
+
+  .viz-node-current {
+    @apply bg-blue-500 border-blue-600 text-white shadow-lg shadow-blue-200;
+  }
+
+  .viz-node-visited {
+    @apply bg-purple-500 border-purple-600 text-white;
+  }
+
+  .viz-node-path {
+    @apply bg-teal-500 border-teal-600 text-white;
+  }
+
+  /* Edge styles */
+  .viz-edge {
+    @apply stroke-gray-300 stroke-2 transition-all duration-200;
+  }
+
+  .viz-edge-active {
+    @apply stroke-blue-500 stroke-[3px];
+  }
+
+  .viz-edge-path {
+    @apply stroke-teal-500 stroke-[3px];
+  }
+
+  /* Control buttons */
+  .control-btn {
+    @apply p-2 rounded-lg transition-all duration-200 
+           hover:bg-gray-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .control-btn-primary {
+    @apply bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700;
+  }
+
+  /* Code block styling */
+  .code-block {
+    @apply font-mono text-sm bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto;
+  }
+
+  .code-line {
+    @apply block leading-relaxed;
+  }
+
+  .code-line-highlight {
+    @apply bg-yellow-500/20 -mx-4 px-4 border-l-2 border-yellow-400;
+  }
+
+  /* Test question card */
+  .question-card {
+    @apply bg-white rounded-xl border border-gray-200 p-6 shadow-sm;
+  }
+
+  /* Drag and drop styles */
+  .draggable-item {
+    @apply px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm cursor-grab
+           hover:shadow-md hover:border-gray-300 transition-all duration-200;
+  }
+
+  .draggable-item-dragging {
+    @apply shadow-lg border-primary-400 ring-2 ring-primary-200 cursor-grabbing;
+  }
+
+  .drop-zone {
+    @apply min-h-[60px] rounded-lg border-2 border-dashed border-gray-300 
+           flex items-center justify-center transition-all duration-200;
+  }
+
+  .drop-zone-active {
+    @apply border-primary-400 bg-primary-50;
+  }
+
+  /* Progress indicator */
+  .progress-step {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+           transition-all duration-200;
+  }
+
+  .progress-step-complete {
+    @apply bg-green-500 text-white;
+  }
+
+  .progress-step-current {
+    @apply bg-primary-500 text-white ring-4 ring-primary-100;
+  }
+
+  .progress-step-pending {
+    @apply bg-gray-200 text-gray-500;
+  }
+}
+
+/* Custom utilities */
+@layer utilities {
+  /* Animation delays */
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-md;
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-purple-500;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* React Flow custom styles */
+.react-flow__node {
+  @apply !bg-transparent;
+}
+
+.react-flow__edge-path {
+  @apply stroke-gray-300 stroke-2;
+}
+
+.react-flow__controls {
+  @apply !shadow-md !border-gray-200 !rounded-lg overflow-hidden;
+}
+
+.react-flow__controls-button {
+  @apply !border-gray-200 hover:!bg-gray-100;
+}
+
+/* Animation for algorithm steps */
+@keyframes compareHighlight {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes swapAnimation {
+  0% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-30px);
+  }
+  75% {
+    transform: translateY(-30px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-compare {
+  animation: compareHighlight 0.3s ease-in-out;
+}
+
+.animate-swap {
+  animation: swapAnimation 0.5s ease-in-out;
+}
