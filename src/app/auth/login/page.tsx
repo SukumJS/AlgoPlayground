@@ -1,15 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '@/lib/firebase/client';
 import { Chrome, Loader2, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const redirectTo = searchParams.get('redirectTo') || '/';
 
   const handleGoogleLogin = async () => {
@@ -17,25 +19,48 @@ export default function LoginPage() {
       setIsLoading(true);
       setError(null);
 
-      const supabase = getSupabaseBrowserClient();
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
+      // Sign in with Google popup
+      const result = await signInWithPopup(auth, googleProvider);
+      
+      // Get the ID token
+      const idToken = await result.user.getIdToken();
+      
+      // Create session cookie via API
+      const response = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
       });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        throw new Error('Failed to create session');
       }
-    } catch (err) {
+
+      // Redirect to the intended destination
+      router.push(redirectTo);
+      router.refresh();
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to sign in');
+      
+      // Handle Firebase auth errors
+      if (err && typeof err === 'object' && 'code' in err) {
+        const firebaseError = err as { code: string; message: string };
+        switch (firebaseError.code) {
+          case 'auth/popup-closed-by-user':
+            setError('Sign in was cancelled');
+            break;
+          case 'auth/popup-blocked':
+            setError('Popup was blocked. Please allow popups for this site.');
+            break;
+          case 'auth/cancelled-popup-request':
+            // Ignore this error - it happens when opening multiple popups
+            break;
+          default:
+            setError(firebaseError.message || 'Failed to sign in');
+        }
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to sign in');
+      }
       setIsLoading(false);
     }
   };

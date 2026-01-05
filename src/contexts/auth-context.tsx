@@ -8,9 +8,9 @@ import {
   useCallback,
   ReactNode,
 } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { auth } from '@/lib/firebase/client';
 
 // ===========================================
 // Types
@@ -25,11 +25,11 @@ interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
-  session: Session | null;
+  firebaseUser: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   signOut: () => Promise<void>;
-  refreshSession: () => Promise<void>;
+  getIdToken: () => Promise<string | null>;
 }
 
 // ===========================================
@@ -44,115 +44,99 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
-  initialSession?: Session | null;
 }
 
-export function AuthProvider({ children, initialSession = null }: AuthProviderProps) {
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(initialSession);
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Transform Supabase user to our AuthUser type
-  const transformUser = useCallback((supabaseUser: User | null): AuthUser | null => {
-    if (!supabaseUser) return null;
+  // Transform Firebase user to our AuthUser type
+  const transformUser = useCallback((fbUser: User | null): AuthUser | null => {
+    if (!fbUser) return null;
 
     return {
-      id: supabaseUser.id,
-      email: supabaseUser.email!,
-      name:
-        supabaseUser.user_metadata?.full_name ||
-        supabaseUser.user_metadata?.name ||
-        supabaseUser.email?.split('@')[0] ||
-        'User',
-      avatarUrl:
-        supabaseUser.user_metadata?.avatar_url ||
-        supabaseUser.user_metadata?.picture,
+      id: fbUser.uid,
+      email: fbUser.email || '',
+      name: fbUser.displayName || fbUser.email?.split('@')[0] || 'User',
+      avatarUrl: fbUser.photoURL || undefined,
     };
   }, []);
 
   // Initialize auth state
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      console.log('Firebase auth state changed:', fbUser?.uid);
 
-    // Get initial session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        if (currentSession) {
-          setSession(currentSession);
-          setUser(transformUser(currentSession.user));
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('Auth state changed:', event);
-
-      setSession(newSession);
-      setUser(transformUser(newSession?.user ?? null));
+      setFirebaseUser(fbUser);
+      setUser(transformUser(fbUser));
       setIsLoading(false);
 
-      // Handle specific events
-      if (event === 'SIGNED_OUT') {
-        router.push('/');
-        router.refresh();
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        router.refresh();
+      // If user just signed in, create session cookie
+      if (fbUser) {
+        try {
+          const idToken = await fbUser.getIdToken();
+          // Create session cookie via API
+          await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+          });
+          router.refresh();
+        } catch (error) {
+          console.error('Error creating session:', error);
+        }
       }
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => unsubscribe();
   }, [router, transformUser]);
 
   // Sign out function
   const signOut = useCallback(async () => {
     try {
       setIsLoading(true);
-      const supabase = getSupabaseBrowserClient();
-      await supabase.auth.signOut();
+      
+      // Sign out from Firebase
+      await firebaseSignOut(auth);
+      
+      // Clear session cookie via API
+      await fetch('/api/auth/signout', { method: 'POST' });
+      
+      // Clear state
+      setUser(null);
+      setFirebaseUser(null);
+      
+      router.push('/');
+      router.refresh();
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
-  // Refresh session function
-  const refreshSession = useCallback(async () => {
+  // Get ID token for API calls
+  const getIdToken = useCallback(async (): Promise<string | null> => {
+    if (!firebaseUser) return null;
+    
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { data: { session: newSession } } = await supabase.auth.refreshSession();
-      
-      if (newSession) {
-        setSession(newSession);
-        setUser(transformUser(newSession.user));
-      }
+      return await firebaseUser.getIdToken();
     } catch (error) {
-      console.error('Error refreshing session:', error);
+      console.error('Error getting ID token:', error);
+      return null;
     }
-  }, [transformUser]);
+  }, [firebaseUser]);
 
   const value: AuthContextType = {
     user,
-    session,
+    firebaseUser,
     isLoading,
-    isAuthenticated: !!session && !!user,
+    isAuthenticated: !!firebaseUser && !!user,
     signOut,
-    refreshSession,
+    getIdToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

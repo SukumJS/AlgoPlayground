@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { adminDb } from '@/lib/firebase/admin';
 
 // ===========================================
 // GET /api/health
@@ -8,18 +8,19 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // Check database connection
+    // Check Firestore connection
     let dbStatus = 'unknown';
     let dbLatency = 0;
     
     try {
       const start = Date.now();
-      await prisma.$queryRaw`SELECT 1`;
+      // Simple Firestore health check - try to access a collection
+      await adminDb.collection('_health').limit(1).get();
       dbLatency = Date.now() - start;
       dbStatus = 'connected';
     } catch (dbError) {
       dbStatus = 'disconnected';
-      console.error('Database health check failed:', dbError);
+      console.error('Firestore health check failed:', dbError);
     }
 
     const health = {
@@ -29,7 +30,7 @@ export async function GET() {
       version: process.env.npm_package_version || '1.0.0',
       environment: process.env.NODE_ENV || 'development',
       services: {
-        database: {
+        firestore: {
           status: dbStatus,
           latency: `${dbLatency}ms`,
         },

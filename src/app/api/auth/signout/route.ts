@@ -1,10 +1,20 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
+import { revokeSession, SESSION_COOKIE_NAME } from '@/lib/auth';
+
+// ===========================================
+// POST /api/auth/signout
+// Sign out and clear session cookie
+// ===========================================
 
 export async function POST() {
   try {
-    const supabase = await createServerClient();
-    await supabase.auth.signOut();
+    // Revoke the session
+    await revokeSession();
+
+    // Clear the session cookie
+    const cookieStore = await cookies();
+    cookieStore.delete(SESSION_COOKIE_NAME);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { getUserStats } from '@/lib/db';
-import { prisma } from '@/lib/prisma';
+import { getUserStats, getUserProgress } from '@/lib/db';
+import { adminDb } from '@/lib/firebase/admin';
+import { Timestamp } from 'firebase-admin/firestore';
 
 // ===========================================
 // GET /api/user
@@ -41,19 +42,18 @@ export async function GET(request: NextRequest) {
     // Include detailed progress if requested
     let progress = null;
     if (includeProgress) {
-      const progressRecords = await prisma.userProgress.findMany({
-        where: { userId: user.id },
-        orderBy: { lastAccessedAt: 'desc' },
-      });
+      const progressRecords = await getUserProgress(user.id);
 
-      progress = progressRecords.map((p) => ({
-        algorithmSlug: p.algorithmSlug,
-        completed: p.completed,
-        preTestScore: p.preTestScore,
-        postTestScore: p.postTestScore,
-        practiceTime: p.practiceTime,
-        lastAccessedAt: p.lastAccessedAt?.toISOString(),
-      }));
+      if (Array.isArray(progressRecords)) {
+        progress = progressRecords.map((p) => ({
+          algorithmSlug: p.algorithmSlug,
+          completed: p.preTestCompleted && p.playgroundCompleted && p.postTestCompleted,
+          preTestScore: p.preTestScore,
+          postTestScore: p.postTestScore,
+          practiceTime: p.playgroundTime,
+          lastAccessedAt: p.lastAccessedAt?.toISOString(),
+        }));
+      }
     }
 
     return NextResponse.json({
@@ -89,21 +89,23 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { name } = body;
 
-    // Only allow updating name for now
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        name: name !== undefined ? name : user.name,
-      },
+    // Update user in Firestore
+    const userRef = adminDb.collection('users').doc(user.id);
+    await userRef.update({
+      name: name !== undefined ? name : user.name,
+      updatedAt: Timestamp.fromDate(new Date()),
     });
+
+    const updatedDoc = await userRef.get();
+    const updatedData = updatedDoc.data()!;
 
     return NextResponse.json({
       success: true,
       user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        avatarUrl: updatedUser.avatarUrl,
+        id: user.id,
+        email: updatedData.email,
+        name: updatedData.name,
+        avatarUrl: updatedData.avatarUrl,
       },
     });
   } catch (error) {
@@ -131,10 +133,21 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete all user data (cascade should handle related records)
-    await prisma.user.delete({
-      where: { id: user.id },
-    });
+    const userRef = adminDb.collection('users').doc(user.id);
+
+    // Delete subcollections first
+    const subcollections = ['progress', 'sessions', 'testResults'];
+    for (const subcollection of subcollections) {
+      const snapshot = await userRef.collection(subcollection).get();
+      const batch = adminDb.batch();
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+    }
+
+    // Delete the user document
+    await userRef.delete();
 
     return NextResponse.json({
       success: true,
