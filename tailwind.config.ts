@@ -9,66 +9,57 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Brand colors
+        // Primary brand colors
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
-          950: '#082f49',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+          950: '#172554',
         },
         // Algorithm category colors
         sorting: {
-          light: '#fef3c7',
-          DEFAULT: '#f59e0b',
-          dark: '#b45309',
-        },
-        searching: {
           light: '#dbeafe',
           DEFAULT: '#3b82f6',
-          dark: '#1d4ed8',
+          dark: '#1e40af',
+        },
+        searching: {
+          light: '#dcfce7',
+          DEFAULT: '#22c55e',
+          dark: '#166534',
         },
         graph: {
           light: '#f3e8ff',
           DEFAULT: '#a855f7',
-          dark: '#7c3aed',
+          dark: '#6b21a8',
         },
         tree: {
-          light: '#dcfce7',
-          DEFAULT: '#22c55e',
-          dark: '#15803d',
+          light: '#fef3c7',
+          DEFAULT: '#f59e0b',
+          dark: '#92400e',
         },
         linear: {
-          light: '#fce7f3',
-          DEFAULT: '#ec4899',
-          dark: '#be185d',
-        },
-        // Visualization colors
-        viz: {
-          default: '#64748b',
-          comparing: '#f59e0b',
-          swapping: '#ef4444',
-          sorted: '#22c55e',
-          current: '#3b82f6',
-          visited: '#a855f7',
-          path: '#14b8a6',
-          highlight: '#eab308',
+          light: '#ffe4e6',
+          DEFAULT: '#f43f5e',
+          dark: '#9f1239',
         },
       },
+      fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'Consolas', 'monospace'],
+      },
       animation: {
-        'fade-in': 'fadeIn 0.3s ease-in-out',
+        'fade-in': 'fadeIn 0.3s ease-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
-        'bounce-subtle': 'bounceSubtle 0.5s ease-in-out',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'swap': 'swap 0.3s ease-in-out',
+        'bounce-in': 'bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
       },
       keyframes: {
         fadeIn: {
@@ -87,22 +78,15 @@ const config: Config = {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
         },
-        bounceSubtle: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-5px)' },
+        bounceIn: {
+          '0%': { transform: 'scale(0.3)', opacity: '0' },
+          '50%': { transform: 'scale(1.05)' },
+          '70%': { transform: 'scale(0.9)' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
         },
-        swap: {
-          '0%': { transform: 'translateX(0)' },
-          '50%': { transform: 'translateY(-20px)' },
-          '100%': { transform: 'translateX(var(--swap-distance))' },
-        },
-      },
-      fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-jetbrains)', 'Consolas', 'monospace'],
       },
       boxShadow: {
-        'inner-lg': 'inset 0 2px 10px 0 rgb(0 0 0 / 0.1)',
+        'inner-lg': 'inset 0 2px 4px 0 rgb(0 0 0 / 0.1)',
       },
     },
   },

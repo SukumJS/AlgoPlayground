@@ -1,382 +1,359 @@
-import { Question, QuestionType, TestType, AlgorithmSlug } from '@/types';
+import { Question, TestType } from '@/types';
 
 // ===========================================
-// Sample Questions for Development/Testing
-// These mirror the database seed data
+// Questions Database
 // ===========================================
 
-export const sampleQuestions: Question[] = [
-  // Bubble Sort - Pre Test
+export const questions: Question[] = [
+  // Bubble Sort Questions
   {
-    id: 'bs-pre-1',
+    id: 'bubble-sort-1',
     algorithmSlug: 'bubble-sort',
     testType: 'PRE_TEST',
     type: 'MULTIPLE_CHOICE',
-    questionText: 'What is the main operation in Bubble Sort?',
-    options: [
-      { id: 'a', text: 'Finding the minimum element' },
-      { id: 'b', text: 'Comparing and swapping adjacent elements' },
-      { id: 'c', text: 'Dividing the array into halves' },
-      { id: 'd', text: 'Inserting elements at correct position' },
-    ],
-    correctAnswer: 'b',
-    explanation: 'Bubble Sort works by repeatedly comparing adjacent elements and swapping them if they are in the wrong order.',
+    question: 'What is the time complexity of Bubble Sort in the worst case?',
+    options: ['O(n)', 'O(n log n)', 'O(n²)', 'O(log n)'],
+    correctAnswer: 'O(n²)',
+    explanation: 'Bubble Sort has O(n²) worst-case complexity because it uses nested loops to compare and swap adjacent elements.',
     points: 1,
     order: 1,
   },
   {
-    id: 'bs-pre-2',
+    id: 'bubble-sort-2',
     algorithmSlug: 'bubble-sort',
     testType: 'PRE_TEST',
-    type: 'TRUE_FALSE',
-    questionText: 'Bubble Sort is a stable sorting algorithm.',
+    type: 'MULTIPLE_CHOICE',
+    question: 'Which of the following best describes how Bubble Sort works?',
     options: [
-      { id: 'true', text: 'True' },
-      { id: 'false', text: 'False' },
+      'Divides the array and conquers',
+      'Repeatedly swaps adjacent elements if they are in wrong order',
+      'Selects the minimum element and places it at the beginning',
+      'Inserts each element into its correct position',
     ],
-    correctAnswer: true,
-    explanation: 'Bubble Sort is stable because it only swaps adjacent elements when the left element is greater.',
+    correctAnswer: 'Repeatedly swaps adjacent elements if they are in wrong order',
+    explanation: 'Bubble Sort works by repeatedly stepping through the list, comparing adjacent elements, and swapping them if they are in the wrong order.',
     points: 1,
     order: 2,
   },
   {
-    id: 'bs-pre-3',
+    id: 'bubble-sort-3',
     algorithmSlug: 'bubble-sort',
     testType: 'PRE_TEST',
-    type: 'MULTIPLE_CHOICE',
-    questionText: 'What is the worst-case time complexity of Bubble Sort?',
-    options: [
-      { id: 'a', text: 'O(n)' },
-      { id: 'b', text: 'O(n log n)' },
-      { id: 'c', text: 'O(n²)' },
-      { id: 'd', text: 'O(log n)' },
-    ],
-    correctAnswer: 'c',
-    explanation: 'Bubble Sort has O(n²) worst-case time complexity because it uses nested loops.',
-    points: 1,
-    order: 3,
-  },
-
-  // Bubble Sort - Post Test
-  {
-    id: 'bs-post-1',
-    algorithmSlug: 'bubble-sort',
-    testType: 'POST_TEST',
-    type: 'DRAG_DROP_ORDER',
-    questionText: 'Arrange these steps of Bubble Sort in the correct order:',
-    options: [
-      { id: 'step1', text: 'Compare adjacent elements' },
-      { id: 'step2', text: 'Swap if left > right' },
-      { id: 'step3', text: 'Move to next pair' },
-      { id: 'step4', text: 'Repeat until no swaps needed' },
-    ],
-    correctAnswer: ['step1', 'step2', 'step3', 'step4'],
-    explanation: 'Bubble Sort compares adjacent elements, swaps if needed, moves to the next pair, and repeats until sorted.',
-    points: 2,
-    order: 1,
-  },
-  {
-    id: 'bs-post-2',
-    algorithmSlug: 'bubble-sort',
-    testType: 'POST_TEST',
-    type: 'MULTIPLE_CHOICE',
-    questionText: 'After the first complete pass of Bubble Sort on [5, 3, 8, 1, 9], which element is in its final position?',
-    options: [
-      { id: 'a', text: '1' },
-      { id: 'b', text: '5' },
-      { id: 'c', text: '9' },
-      { id: 'd', text: '3' },
-    ],
-    correctAnswer: 'c',
-    explanation: 'After the first pass, the largest element (9) "bubbles up" to its final position at the end.',
-    points: 1,
-    order: 2,
-  },
-  {
-    id: 'bs-post-3',
-    algorithmSlug: 'bubble-sort',
-    testType: 'POST_TEST',
     type: 'FILL_BLANK',
-    questionText: 'The space complexity of Bubble Sort is O(_____) because it sorts in-place.',
-    options: null,
-    correctAnswer: '1',
-    explanation: 'Bubble Sort only uses a constant amount of extra space for the swap operation.',
+    question: 'Bubble Sort is called a _____ sort because smaller elements "bubble" to the top.',
+    correctAnswer: 'stable',
+    explanation: 'Bubble Sort is a stable sorting algorithm, meaning equal elements maintain their relative order.',
     points: 1,
     order: 3,
   },
-
-  // Binary Search - Pre Test
   {
-    id: 'bsearch-pre-1',
-    algorithmSlug: 'binary-search',
-    testType: 'PRE_TEST',
+    id: 'bubble-sort-4',
+    algorithmSlug: 'bubble-sort',
+    testType: 'POST_TEST',
     type: 'MULTIPLE_CHOICE',
-    questionText: 'What is a prerequisite for Binary Search to work correctly?',
-    options: [
-      { id: 'a', text: 'Array must be unsorted' },
-      { id: 'b', text: 'Array must be sorted' },
-      { id: 'c', text: 'Array must have unique elements' },
-      { id: 'd', text: 'Array must be of odd length' },
-    ],
-    correctAnswer: 'b',
-    explanation: 'Binary Search requires the array to be sorted to work correctly.',
+    question: 'What is the space complexity of Bubble Sort?',
+    options: ['O(n)', 'O(n²)', 'O(1)', 'O(log n)'],
+    correctAnswer: 'O(1)',
+    explanation: 'Bubble Sort is an in-place algorithm that only needs a constant amount of extra space for the swap operation.',
     points: 1,
     order: 1,
   },
   {
-    id: 'bsearch-pre-2',
-    algorithmSlug: 'binary-search',
-    testType: 'PRE_TEST',
-    type: 'MULTIPLE_CHOICE',
-    questionText: 'What is the time complexity of Binary Search?',
-    options: [
-      { id: 'a', text: 'O(n)' },
-      { id: 'b', text: 'O(n²)' },
-      { id: 'c', text: 'O(log n)' },
-      { id: 'd', text: 'O(1)' },
-    ],
-    correctAnswer: 'c',
-    explanation: 'Binary Search has O(log n) time complexity because it halves the search space each iteration.',
-    points: 1,
-    order: 2,
-  },
-  {
-    id: 'bsearch-pre-3',
-    algorithmSlug: 'binary-search',
-    testType: 'PRE_TEST',
-    type: 'TRUE_FALSE',
-    questionText: 'Binary Search can be used on unsorted arrays.',
-    options: [
-      { id: 'true', text: 'True' },
-      { id: 'false', text: 'False' },
-    ],
-    correctAnswer: false,
-    explanation: 'Binary Search only works on sorted arrays because it relies on the ordering to eliminate half the elements.',
-    points: 1,
-    order: 3,
-  },
-
-  // Binary Search - Post Test
-  {
-    id: 'bsearch-post-1',
-    algorithmSlug: 'binary-search',
+    id: 'bubble-sort-5',
+    algorithmSlug: 'bubble-sort',
     testType: 'POST_TEST',
     type: 'DRAG_DROP_ORDER',
-    questionText: 'Arrange the Binary Search steps in correct order:',
-    options: [
-      { id: 'step1', text: 'Calculate middle index' },
-      { id: 'step2', text: 'Compare target with middle element' },
-      { id: 'step3', text: 'Narrow search to left or right half' },
-      { id: 'step4', text: 'Return index if found or -1 if not' },
+    question: 'Arrange the steps of Bubble Sort in the correct order:',
+    items: [
+      'Compare adjacent elements',
+      'Swap if left element is greater than right',
+      'Move to the next pair',
+      'Repeat until no swaps needed',
     ],
-    correctAnswer: ['step1', 'step2', 'step3', 'step4'],
-    explanation: 'Binary Search calculates middle, compares, narrows range, and continues until found or exhausted.',
+    correctOrder: [0, 1, 2, 3],
+    explanation: 'Bubble Sort compares adjacent pairs, swaps if needed, moves to the next pair, and repeats until the array is sorted.',
     points: 2,
+    order: 2,
+  },
+
+  // Selection Sort Questions
+  {
+    id: 'selection-sort-1',
+    algorithmSlug: 'selection-sort',
+    testType: 'PRE_TEST',
+    type: 'MULTIPLE_CHOICE',
+    question: 'What is the main idea behind Selection Sort?',
+    options: [
+      'Divide the array into two halves',
+      'Find the minimum element and place it at the beginning',
+      'Compare and swap adjacent elements',
+      'Build the sorted array one element at a time by insertion',
+    ],
+    correctAnswer: 'Find the minimum element and place it at the beginning',
+    explanation: 'Selection Sort works by repeatedly finding the minimum element from the unsorted portion and placing it at the beginning.',
+    points: 1,
     order: 1,
   },
   {
-    id: 'bsearch-post-2',
-    algorithmSlug: 'binary-search',
-    testType: 'POST_TEST',
+    id: 'selection-sort-2',
+    algorithmSlug: 'selection-sort',
+    testType: 'PRE_TEST',
     type: 'MULTIPLE_CHOICE',
-    questionText: 'If target < middle element, which half do we search next?',
-    options: [
-      { id: 'a', text: 'Right half' },
-      { id: 'b', text: 'Left half' },
-      { id: 'c', text: 'Both halves' },
-      { id: 'd', text: 'Neither' },
-    ],
-    correctAnswer: 'b',
-    explanation: 'When target is less than middle, we search the left half where smaller elements are.',
+    question: 'How many swaps does Selection Sort perform in the worst case for an array of n elements?',
+    options: ['O(n²)', 'O(n)', 'O(n log n)', 'O(1)'],
+    correctAnswer: 'O(n)',
+    explanation: 'Selection Sort performs at most n-1 swaps, one for each position in the array (except the last).',
     points: 1,
     order: 2,
   },
   {
-    id: 'bsearch-post-3',
+    id: 'selection-sort-3',
+    algorithmSlug: 'selection-sort',
+    testType: 'POST_TEST',
+    type: 'MULTIPLE_CHOICE',
+    question: 'Is Selection Sort a stable sorting algorithm?',
+    options: ['Yes', 'No'],
+    correctAnswer: 'No',
+    explanation: 'Selection Sort is not stable because it may change the relative order of equal elements during swapping.',
+    points: 1,
+    order: 1,
+  },
+
+  // Binary Search Questions
+  {
+    id: 'binary-search-1',
+    algorithmSlug: 'binary-search',
+    testType: 'PRE_TEST',
+    type: 'MULTIPLE_CHOICE',
+    question: 'What is a prerequisite for Binary Search to work correctly?',
+    options: [
+      'The array must be unsorted',
+      'The array must be sorted',
+      'The array must have unique elements',
+      'The array must have an even number of elements',
+    ],
+    correctAnswer: 'The array must be sorted',
+    explanation: 'Binary Search requires a sorted array because it relies on comparing the target with the middle element to eliminate half of the remaining elements.',
+    points: 1,
+    order: 1,
+  },
+  {
+    id: 'binary-search-2',
+    algorithmSlug: 'binary-search',
+    testType: 'PRE_TEST',
+    type: 'MULTIPLE_CHOICE',
+    question: 'What is the time complexity of Binary Search?',
+    options: ['O(n)', 'O(n²)', 'O(log n)', 'O(1)'],
+    correctAnswer: 'O(log n)',
+    explanation: 'Binary Search has O(log n) complexity because it halves the search space with each comparison.',
+    points: 1,
+    order: 2,
+  },
+  {
+    id: 'binary-search-3',
     algorithmSlug: 'binary-search',
     testType: 'POST_TEST',
     type: 'FILL_BLANK',
-    questionText: 'In the worst case, Binary Search makes _____ comparisons for an array of 1024 elements.',
-    options: null,
-    correctAnswer: '10',
-    explanation: 'log₂(1024) = 10, so Binary Search makes at most 10 comparisons.',
+    question: 'In Binary Search, we compare the target with the _____ element of the current range.',
+    correctAnswer: 'middle',
+    explanation: 'Binary Search always compares the target with the middle element to decide which half to search next.',
     points: 1,
-    order: 3,
+    order: 1,
   },
 
-  // BFS - Pre Test
+  // Linear Search Questions
   {
-    id: 'bfs-pre-1',
-    algorithmSlug: 'bfs',
+    id: 'linear-search-1',
+    algorithmSlug: 'linear-search',
     testType: 'PRE_TEST',
     type: 'MULTIPLE_CHOICE',
-    questionText: 'What data structure does BFS use?',
-    options: [
-      { id: 'a', text: 'Stack' },
-      { id: 'b', text: 'Queue' },
-      { id: 'c', text: 'Heap' },
-      { id: 'd', text: 'Tree' },
-    ],
-    correctAnswer: 'b',
-    explanation: 'BFS uses a Queue to process nodes level by level (FIFO order).',
+    question: 'What is the time complexity of Linear Search in the worst case?',
+    options: ['O(1)', 'O(log n)', 'O(n)', 'O(n²)'],
+    correctAnswer: 'O(n)',
+    explanation: 'In the worst case, Linear Search must check every element in the array, resulting in O(n) complexity.',
     points: 1,
     order: 1,
   },
   {
-    id: 'bfs-pre-2',
-    algorithmSlug: 'bfs',
-    testType: 'PRE_TEST',
-    type: 'TRUE_FALSE',
-    questionText: 'BFS explores nodes closest to the source before moving to farther nodes.',
-    options: [
-      { id: 'true', text: 'True' },
-      { id: 'false', text: 'False' },
-    ],
-    correctAnswer: true,
-    explanation: 'BFS explores nodes level by level, starting from the closest.',
-    points: 1,
-    order: 2,
-  },
-
-  // BFS - Post Test
-  {
-    id: 'bfs-post-1',
-    algorithmSlug: 'bfs',
+    id: 'linear-search-2',
+    algorithmSlug: 'linear-search',
     testType: 'POST_TEST',
-    type: 'DRAG_DROP_ORDER',
-    questionText: 'Arrange the BFS algorithm steps in order:',
+    type: 'MULTIPLE_CHOICE',
+    question: 'When is Linear Search preferred over Binary Search?',
     options: [
-      { id: 'step1', text: 'Start at source node, add to queue' },
-      { id: 'step2', text: 'Dequeue front node' },
-      { id: 'step3', text: 'Visit unvisited neighbors, add to queue' },
-      { id: 'step4', text: 'Repeat until queue is empty' },
+      'When the array is sorted',
+      'When the array is unsorted',
+      'When the array is very large',
+      'Never',
     ],
-    correctAnswer: ['step1', 'step2', 'step3', 'step4'],
-    explanation: 'BFS starts at source, processes queue front, adds neighbors, and repeats.',
-    points: 2,
+    correctAnswer: 'When the array is unsorted',
+    explanation: 'Linear Search can work on unsorted arrays, while Binary Search requires a sorted array.',
+    points: 1,
     order: 1,
   },
-  {
-    id: 'bfs-post-2',
-    algorithmSlug: 'bfs',
-    testType: 'POST_TEST',
-    type: 'MULTIPLE_CHOICE',
-    questionText: 'BFS is guaranteed to find the shortest path in:',
-    options: [
-      { id: 'a', text: 'Weighted graphs' },
-      { id: 'b', text: 'Unweighted graphs' },
-      { id: 'c', text: 'All graphs' },
-      { id: 'd', text: 'No graphs' },
-    ],
-    correctAnswer: 'b',
-    explanation: 'BFS finds shortest path in unweighted graphs where all edges have equal cost.',
-    points: 1,
-    order: 2,
-  },
 
-  // DFS - Pre Test
+  // BFS Questions
   {
-    id: 'dfs-pre-1',
-    algorithmSlug: 'dfs',
+    id: 'bfs-1',
+    algorithmSlug: 'bfs',
     testType: 'PRE_TEST',
     type: 'MULTIPLE_CHOICE',
-    questionText: 'What data structure does DFS use (iterative version)?',
-    options: [
-      { id: 'a', text: 'Queue' },
-      { id: 'b', text: 'Stack' },
-      { id: 'c', text: 'Heap' },
-      { id: 'd', text: 'Array' },
-    ],
-    correctAnswer: 'b',
-    explanation: 'DFS uses a Stack to explore as deep as possible before backtracking.',
+    question: 'What data structure does BFS use?',
+    options: ['Stack', 'Queue', 'Heap', 'Tree'],
+    correctAnswer: 'Queue',
+    explanation: 'BFS uses a queue to maintain the order of vertices to visit, ensuring level-by-level traversal.',
     points: 1,
     order: 1,
   },
   {
-    id: 'dfs-pre-2',
-    algorithmSlug: 'dfs',
+    id: 'bfs-2',
+    algorithmSlug: 'bfs',
     testType: 'PRE_TEST',
-    type: 'TRUE_FALSE',
-    questionText: 'DFS explores as deep as possible before backtracking.',
-    options: [
-      { id: 'true', text: 'True' },
-      { id: 'false', text: 'False' },
-    ],
-    correctAnswer: true,
-    explanation: 'DFS goes deep into one path before exploring other branches.',
+    type: 'MULTIPLE_CHOICE',
+    question: 'What type of traversal does BFS perform?',
+    options: ['Depth-first', 'Level-order', 'Random', 'Reverse'],
+    correctAnswer: 'Level-order',
+    explanation: 'BFS explores all vertices at the current depth before moving to vertices at the next depth level.',
     points: 1,
     order: 2,
   },
-
-  // DFS - Post Test
   {
-    id: 'dfs-post-1',
-    algorithmSlug: 'dfs',
+    id: 'bfs-3',
+    algorithmSlug: 'bfs',
     testType: 'POST_TEST',
     type: 'MULTIPLE_CHOICE',
-    questionText: 'Which traversal order visits nodes in DFS?',
-    options: [
-      { id: 'a', text: 'Level by level' },
-      { id: 'b', text: 'Depth-first, then backtrack' },
-      { id: 'c', text: 'Random order' },
-      { id: 'd', text: 'Alphabetical order' },
-    ],
-    correctAnswer: 'b',
-    explanation: 'DFS explores deep into a branch before backtracking to explore other branches.',
+    question: 'BFS can find the shortest path in which type of graph?',
+    options: ['Weighted graph', 'Unweighted graph', 'Both', 'Neither'],
+    correctAnswer: 'Unweighted graph',
+    explanation: 'BFS finds the shortest path in unweighted graphs because it explores vertices level by level.',
+    points: 1,
+    order: 1,
+  },
+
+  // DFS Questions
+  {
+    id: 'dfs-1',
+    algorithmSlug: 'dfs',
+    testType: 'PRE_TEST',
+    type: 'MULTIPLE_CHOICE',
+    question: 'What data structure does DFS typically use (iterative implementation)?',
+    options: ['Queue', 'Stack', 'Heap', 'Array'],
+    correctAnswer: 'Stack',
+    explanation: 'DFS uses a stack (or recursion, which uses the call stack) to keep track of vertices to visit.',
     points: 1,
     order: 1,
   },
   {
-    id: 'dfs-post-2',
+    id: 'dfs-2',
     algorithmSlug: 'dfs',
     testType: 'POST_TEST',
-    type: 'TRUE_FALSE',
-    questionText: 'DFS always finds the shortest path.',
+    type: 'MULTIPLE_CHOICE',
+    question: 'Which of the following is a common application of DFS?',
     options: [
-      { id: 'true', text: 'True' },
-      { id: 'false', text: 'False' },
+      'Finding shortest path in unweighted graph',
+      'Detecting cycles in a graph',
+      'Level-order traversal',
+      'Finding minimum spanning tree',
     ],
-    correctAnswer: false,
-    explanation: 'DFS does not guarantee shortest path; it finds A path, not necessarily the shortest.',
+    correctAnswer: 'Detecting cycles in a graph',
+    explanation: 'DFS is commonly used for cycle detection, topological sorting, and finding connected components.',
+    points: 1,
+    order: 1,
+  },
+
+  // Merge Sort Questions
+  {
+    id: 'merge-sort-1',
+    algorithmSlug: 'merge-sort',
+    testType: 'PRE_TEST',
+    type: 'MULTIPLE_CHOICE',
+    question: 'What algorithmic paradigm does Merge Sort use?',
+    options: ['Greedy', 'Dynamic Programming', 'Divide and Conquer', 'Backtracking'],
+    correctAnswer: 'Divide and Conquer',
+    explanation: 'Merge Sort divides the array into halves, sorts them recursively, and then merges the sorted halves.',
+    points: 1,
+    order: 1,
+  },
+  {
+    id: 'merge-sort-2',
+    algorithmSlug: 'merge-sort',
+    testType: 'PRE_TEST',
+    type: 'MULTIPLE_CHOICE',
+    question: 'What is the time complexity of Merge Sort?',
+    options: ['O(n)', 'O(n log n)', 'O(n²)', 'O(log n)'],
+    correctAnswer: 'O(n log n)',
+    explanation: 'Merge Sort always has O(n log n) complexity, regardless of the input order.',
     points: 1,
     order: 2,
+  },
+  {
+    id: 'merge-sort-3',
+    algorithmSlug: 'merge-sort',
+    testType: 'POST_TEST',
+    type: 'MULTIPLE_CHOICE',
+    question: 'What is the space complexity of Merge Sort?',
+    options: ['O(1)', 'O(log n)', 'O(n)', 'O(n²)'],
+    correctAnswer: 'O(n)',
+    explanation: 'Merge Sort requires O(n) additional space for the temporary arrays during merging.',
+    points: 1,
+    order: 1,
+  },
+
+  // Insertion Sort Questions
+  {
+    id: 'insertion-sort-1',
+    algorithmSlug: 'insertion-sort',
+    testType: 'PRE_TEST',
+    type: 'MULTIPLE_CHOICE',
+    question: 'What is the best-case time complexity of Insertion Sort?',
+    options: ['O(1)', 'O(n)', 'O(n log n)', 'O(n²)'],
+    correctAnswer: 'O(n)',
+    explanation: 'When the array is already sorted, Insertion Sort only makes n-1 comparisons with no shifts.',
+    points: 1,
+    order: 1,
+  },
+  {
+    id: 'insertion-sort-2',
+    algorithmSlug: 'insertion-sort',
+    testType: 'POST_TEST',
+    type: 'MULTIPLE_CHOICE',
+    question: 'Insertion Sort is most efficient for:',
+    options: [
+      'Large random arrays',
+      'Small or nearly sorted arrays',
+      'Reverse sorted arrays',
+      'Arrays with unique elements',
+    ],
+    correctAnswer: 'Small or nearly sorted arrays',
+    explanation: 'Insertion Sort performs well on small datasets and nearly sorted arrays due to minimal shifts needed.',
+    points: 1,
+    order: 1,
   },
 ];
 
 // ===========================================
-// Helper Functions
+// Query Functions
 // ===========================================
 
-/**
- * Get all questions for an algorithm
- */
-export function getQuestionsByAlgorithm(algorithmSlug: AlgorithmSlug): Question[] {
-  return sampleQuestions.filter((q) => q.algorithmSlug === algorithmSlug);
+export function getQuestionsByAlgorithm(algorithmSlug: string): Question[] {
+  return questions.filter((q) => q.algorithmSlug === algorithmSlug);
 }
 
-/**
- * Get questions by algorithm and test type
- */
 export function getQuestionsByAlgorithmAndType(
-  algorithmSlug: AlgorithmSlug,
+  algorithmSlug: string,
   testType: TestType
 ): Question[] {
-  return sampleQuestions.filter(
+  return questions.filter(
     (q) => q.algorithmSlug === algorithmSlug && q.testType === testType
   );
 }
 
-/**
- * Get pre-test questions for an algorithm
- */
-export function getPreTestQuestions(algorithmSlug: AlgorithmSlug): Question[] {
-  return getQuestionsByAlgorithmAndType(algorithmSlug, 'PRE_TEST');
+export function getQuestionById(id: string): Question | undefined {
+  return questions.find((q) => q.id === id);
 }
 
-/**
- * Get post-test questions for an algorithm
- */
-export function getPostTestQuestions(algorithmSlug: AlgorithmSlug): Question[] {
-  return getQuestionsByAlgorithmAndType(algorithmSlug, 'POST_TEST');
-}
+// ===========================================
+// Default Export
+// ===========================================
 
+export default questions;
