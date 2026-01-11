@@ -25,7 +25,7 @@ export default function ExerciseCard({ exercise }: { exercise: Exercise }) {
 
   return (
     <>
-      <div className="rounded-xl border bg-white px-4 py-3 shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-inner">
         <div
           className="flex cursor-pointer items-center justify-between"
           onClick={() => setOpen(!open)}

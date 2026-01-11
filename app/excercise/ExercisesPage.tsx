@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ExerciseCard from "@/app/excercise/components/ExerciseCard";
 import type { Exercise, Difficulty } from "@/types/exercise";
+import { Filter } from "lucide-react";
 
 /* ---------------- Mock Data ---------------- */
 const exercises: Exercise[] = [
@@ -85,7 +86,8 @@ export default function ExercisesPage() {
       </h1>
 
       <div className="mb-4 flex items-center gap-2 text-xs">
-        <span className="text-gray-500">
+        <span className="flex items-center gap-1">
+          <Filter className="h-4 w-4" />
           Filter by difficulty:
         </span>
 
@@ -95,11 +97,11 @@ export default function ExercisesPage() {
               key={level}
               onClick={() => setFilter(level)}
               className={`
-                cursor-pointer rounded-full border px-3 py-1 font-medium transition
+                cursor-pointer rounded-md border px-3 py-1 font-medium transition
                 ${
                   filter === level
-                    ? "border-blue-300 bg-blue-100 text-blue-700"
-                    : "border-gray-300 bg-white text-gray-600 hover:bg-gray-100"
+                    ? "border-blue-300 bg-[#0066CC] text-white shadow-sm"
+                    : "border-gray-300 bg-white text-gray-600 hover:bg-gray-100 shadow-sm"
                 }
               `}
             >
