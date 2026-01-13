@@ -1,6 +1,6 @@
 import ModalOverlay from "./ModalOverlay";
 import { AlertTriangle } from "lucide-react";
-import type { TipSection } from "@/types/exercise";
+import type { TipSection } from "@/src/types/exercise";
 
 type TipsModalProps = {
   isOpen: boolean;

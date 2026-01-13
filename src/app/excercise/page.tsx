@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import ExerciseCard from "@/app/excercise/components/ExerciseCard";
-import type { Exercise, Difficulty } from "@/types/exercise";
+import ExerciseCard from "@/src/components/ExerciseCard";
+import type { Exercise, Difficulty } from "@/src/types/exercise";
 import { Filter } from "lucide-react";
 
 /* ---------------- Mock Data ---------------- */
@@ -80,11 +80,7 @@ export default function ExercisesPage() {
         );
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6">
-      <h1 className="mb-4 text-lg font-semibold text-gray-900">
-        Algorithm Playground
-      </h1>
-
+    <main className="mx-auto max-w-12xl px-16 py-6">
       <div className="mb-4 flex items-center gap-2 text-xs">
         <span className="flex items-center gap-1">
           <Filter className="h-4 w-4" />
