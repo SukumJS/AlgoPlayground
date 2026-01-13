@@ -47,7 +47,7 @@ export default function StructureDetailPage() {
   const data = MOCK_STRUCTURE;
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-6">
+    <main className="mx-auto max-w-12xl px-12 py-6">
       {/* ---------- Title Pill ---------- */}
       <div className="mb-6 flex justify-center">
         <div className="rounded-full bg-[#62A2F7] px-5 py-1 text-lg font-bold tracking-wide text-black shadow border border-black">
