@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 import TipsModal from "@/src/components/modal/TipsModal";
-import type { Exercise, Difficulty } from "@/src/types/exercise";
+import type { Exercise, Difficulty } from "@/src/app/types/exercise";
 
 function DifficultyBadge({ level }: { level: Difficulty }) {
   const styles: Record<Difficulty, string> = {

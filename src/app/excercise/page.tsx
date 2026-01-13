@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import ExerciseCard from "@/src/components/ExerciseCard";
-import type { Exercise, Difficulty } from "@/src/types/exercise";
+import type { Exercise, Difficulty } from "@/src/app/types/exercise";
 import { Filter } from "lucide-react";
 
 /* ---------------- Mock Data ---------------- */
