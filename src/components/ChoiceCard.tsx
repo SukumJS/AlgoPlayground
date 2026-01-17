@@ -41,7 +41,7 @@ function ChoiceCard({
       `}
     >
       {/* Choice text */}
-      <p className="text-base md:text-lg text-left text-[#222121]">{text}</p>
+      <p className="text-base sm:text-base text-left text-[#222121]">{text}</p>
     </button>
   );
 }
