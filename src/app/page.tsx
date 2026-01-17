@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import Navbar from "@/components/Navbar"
-import AlgorithmSection from "@/components/AlgorithmSection"
-import { algorithmCatalog } from "@/data/algorithmCatalog"
+import Navbar from "../components/Navbar"
+import AlgorithmSection from "../components/AlgorithmSection"
+import { algorithmCatalog } from "../data/algorithmCatalog"
 
 export default function Page() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
