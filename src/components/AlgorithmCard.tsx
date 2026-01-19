@@ -1,6 +1,10 @@
+"use client"
+import { useRouter } from "next/navigation"
 import { ProgressRow } from "./ProgressRow"
+import { Info } from "lucide-react"
 
 interface Props {
+  slug: string
   title: string
   progress: {
     pretest: {
@@ -14,43 +18,79 @@ interface Props {
   }
 }
 
-export default function AlgorithmCard({ title, progress }: Props) {
+export default function AlgorithmCard({ slug, title, progress }: Props) {
+  const router = useRouter()
+
+  //กดการ์ด = ไปหน้า pretest เสมอ
+  const handleCardClick = () => {
+    router.push(`/pretest/${slug}`)
+  }
+
+  // กด Info = ดูข้อมูล (ไม่เปลี่ยนหน้า)
+  const handleInfoClick = (e: React.MouseEvent) => {
+    e.stopPropagation() // ป้องกันไม่ให้เกิดการเรียก handleCardClick
+    console.log("Algorithm slug:", slug)
+  }
   return (
     <div
+      onClick={handleCardClick}
       className="
-        relative w-[242px] h-[352px]
-        rounded-[25px]
-        shadow-[0px_8px_20px_rgba(0,0,0,0.18)]
+        relative
+        w-60 h-[22rem]
+        rounded-3xl
+        shadow-lg
         bg-transparent
+        cursor-pointer
+        transition
+        hover:scale-[1.02]
       "
     >
       {/* Header */}
       <div
         className="
-          absolute top-0 left-0 w-full h-[170px]
-          bg-gradient-to-b from-[#00478F] via-[#005CB8] to-[#4D94DB]
-          rounded-t-[25px]
+          absolute inset-x-0 top-0
+          h-40
+          bg-gradient-to-b
+          from-[#00478F] via-[#005CB8] to-[#4D94DB]
+          rounded-t-3xl
         "
       />
 
+      {/* Top right icon */}
+      <Info
+        onClick={(e) => {
+          e.stopPropagation()      
+          console.log("Algorithm slug:", slug)
+          router.push(`/document/${slug}`)
+        }}
+        className="
+    absolute top-4 right-4
+    w-6 h-6
+    text-white
+    cursor-pointer
+    hover:opacity-80
+  "
+      />
+
       {/* Icons */}
-      <div className="absolute top-[85px] left-[53px] w-[31px] h-[27px] bg-white" />
-      <div className="absolute top-[85px] left-[106px] w-[31px] h-[28px] bg-white" />
-      <div className="absolute top-[85px] left-[159px] w-[31px] h-[28px] bg-white" />
+      <div className="absolute top-20 left-14 w-8 h-7 bg-white rounded-sm" />
+      <div className="absolute top-20 left-28 w-8 h-7 bg-white rounded-sm" />
+      <div className="absolute top-20 left-44 w-8 h-7 bg-white rounded-sm" />
 
       {/* Body */}
       <div
         className="
-          absolute top-[170px] left-0 w-full h-[182px]
+          absolute inset-x-0 bottom-0
+          h-44
           bg-white
-          rounded-b-[25px]
-          flex flex-col items-center justify-center
-          p-[15px] gap-[10px]
+          rounded-b-3xl
+          flex flex-col items-center justify-start
+          p-6 gap-4
         "
       >
-        <h3 className="text-[20px] font-semibold text-[#222121] text-center leading-none">
+        <h2 className="text-lg font-semibold text-gray-900 text-center leading-tight">
           {title}
-        </h3>
+        </h2>
 
         <ProgressRow
           label="Pretest"
@@ -64,13 +104,6 @@ export default function AlgorithmCard({ title, progress }: Props) {
           status={progress.posttest.status}
         />
       </div>
-
-      {/* Top right icon */}
-      <img
-        src="https://placehold.co/24x24"
-        className="absolute top-[15px] right-[15px] w-[24px] h-[24px]"
-        alt=""
-      />
     </div>
   )
 }

@@ -31,6 +31,7 @@ export default function AlgorithmSection({ title, items }: Props) {
         {items.map((item) => (
           <AlgorithmCard
             key={item.slug}
+            slug={item.slug}         
             title={item.title}
             progress={item.progress}
           />
