@@ -108,7 +108,7 @@ function PretestPage({
           />
 
           {/* Answer instruction */}
-          <p className="font-bold text-base text-[#222121] mb-9">
+          <p className="font-bold text-lg text-[#222121] mb-9">
             Answer the question:
           </p>
 

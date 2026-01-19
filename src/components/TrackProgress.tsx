@@ -26,14 +26,14 @@ function TrackProgress({
 
       {/* Title */}
       <div className="absolute left-6 top-1/2 -translate-y-1/2">
-        <p className="font-bold text-[#222121] text-xl md:text-2xl whitespace-nowrap">
+        <p className="font-bold text-[#222121] text-xl sm:text-xl whitespace-nowrap">
           {title}
         </p>
       </div>
 
       {/* Progress counter */}
       <div className="absolute right-6 top-1/2 -translate-y-1/2">
-        <p className="font-bold text-[#222121] text-xl md:text-2xl uppercase">
+        <p className="font-bold text-[#222121] text-xl sm:text-xl uppercase">
           {current}/{total}
         </p>
       </div>
