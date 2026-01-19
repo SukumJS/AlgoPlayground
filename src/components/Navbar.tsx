@@ -1,14 +1,18 @@
 "use client"
+
 import Link from "next/link"
 import { useState } from "react"
+import { ChevronUp } from "lucide-react"
 
 interface NavbarProps {
   onSelectCategory: (category: string) => void
+  isLoggedIn: boolean
 }
 
-export default function Navbar({ onSelectCategory }: NavbarProps) {
+export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
   const [open, setOpen] = useState(false)
-  const [selected, setSelected] = useState<string>("all")
+  const [selected, setSelected] = useState("all")
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const items = [
     { label: "All algorithms", value: "all" },
@@ -20,78 +24,54 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
   ]
 
   return (
-    <div className="sticky top-[30px] flex justify-center z-50">
+    <div className="sticky top-[30px] z-50 flex justify-center">
       <div
         className="
-          relative
-          w-[1380px] h-[80px]
+          w-full max-w-[1380px]
+          h-[80px]
+          px-8
+          flex items-center
           rounded-[50px]
           bg-[#B4D4F1]
           border border-black
           shadow-[0px_6px_18px_rgba(0,0,0,0.25)]
         "
       >
-        {/* Title */}
-        <div
-          className="absolute left-[30px] inset-y-0 flex items-center text-[24px] font-bold uppercase leading-none text-[#222121]"
-        >
+        {/* Logo */}
+        <div className="text-2xl font-bold uppercase text-[#222121]">
           Algo playground
         </div>
 
 
-        {/* Menu */}
-        <div className="absolute left-[718px] top-[18px] flex gap-[16px] items-start">
-
-          <button className="leading-none px-[10px] py-[10px] text-[20px] font-bold text-[#222121]">
+        <div className="flex-1" />
+        <div className="flex items-center gap-4">
+          <button className="px-2 py-2 text-lg font-bold text-[#222121] capitalize">
+            <a href="/">
             Home
+            </a>
           </button>
 
           {/* Dropdown */}
-          <div className="relative w-[197px]">
+          <div className="relative min-w-[8rem]">
             <button
               onClick={() => setOpen(!open)}
-              className="
-                leading-none w-full flex items-center justify-center gap-[10px]
-                px-[10px] py-[10px] 
-              "
+              className="flex items-center gap-2 px-2 py-2 text-lg font-bold capitalize"
             >
               <span
-                className={`text-[20px] font-bold transition-colors
-                  ${selected === "all" ? "text-[#5D5D5D]" : "text-[#222121]"}
-                `}
+                className="text-[#222121] hover:text-[#5D5D5D] transition-colors "
               >
                 algorithms
               </span>
 
-              <div
-                className={`w-[24px] h-[24px] relative
-                  transition-transform duration-200
-                  ${open ? "rotate-0" : "rotate-180"}
-                `}
-              >
-                <div
-                  className="
-                    absolute left-[6px] top-[9px]
-                    w-[12px] h-[6px]
-                    outline outline-[4px]
-                    outline-[#5D5D5D]
-                    outline-offset-[-2px]
-                  "
-                />
-              </div>
+              <ChevronUp
+                size={20}
+                className={`transition-transform ${open ? "rotate-0" : "rotate-180"
+                  } text-[#222121]`}
+              />
             </button>
 
             {open && (
-              <div
-                className="
-                  absolute top-full mt-[6px] w-full
-                  bg-white
-                  rounded-[12px]
-                  shadow-[0px_8px_20px_rgba(0,0,0,0.2)]
-                  z-50
-                  overflow-hidden
-                "
-              >
+              <div className="absolute top-full mt-1.5 w-full bg-white rounded-xl shadow-lg">
                 {items.map((item) => (
                   <div
                     key={item.value}
@@ -100,15 +80,9 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
                       onSelectCategory(item.value)
                       setOpen(false)
                     }}
-                    className={`
-                      px-[10px] py-[10px]
-                      text-center text-[20px]
-                      cursor-pointer
-                      hover:bg-[#E6EEF7]
-                      ${
-                      // hilight select item
-                      selected === item.value
-                        ? "text-[#1A75D1] font-bold"
+                    className={`px-3 py-2 text-center cursor-pointer hover:bg-[#E6EEF7]
+                      ${selected === item.value
+                        ? "font-bold text-[#1A75D1]"
                         : "text-[#222121]"
                       }
                     `}
@@ -120,24 +94,52 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
             )}
           </div>
 
-          <button className="leading-none px-[10px] py-[10px] text-[20px] font-bold text-[#222121]">
+          <button className="py-2 text-lg font-bold text-[#222121] capitalize">
+            <a href="/examplesquestions">
             examples questions
+            </a>
           </button>
         </div>
 
-        {/* Sign in */}
-        <Link href="/auth/login">
-          <div className="absolute right-[15px] top-[15px] w-[100px] h-[50px] cursor-pointer">
-            <div className="w-full h-full bg-[#1A75D1] rounded-[35px] shadow-[0px_4px_10px_rgba(0,0,0,0.25)]" />
-            <div
-              className="absolute inset-0 flex items-center justify-center
-      text-[16px] font-bold leading-none text-[#F1F1F1]"
-            >
-              Sign in
-            </div>
-          </div>
-        </Link>
+        {/*Sign in*/}
+        <div className="ml-4">
+          {!isLoggedIn ? (
+            <Link href="/auth/login">
+              <button className="px-6 py-2 rounded-full bg-[#1A75D1] text-[#F1F1F1] font-bold shadow-md">
+                Sign in
+              </button>
+            </Link>
+          ) : (
+            <div className="relative ">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="w-12 h-12 rounded-full overflow-hidden border border-[#5D5D5D]"
+              >
+                <img
+                  src="https://scrolldroll.com/wp-content/uploads/2022/04/sukurajima-mai-most-popular-anime-characters.jpg"
+                  alt="profile"
+                  className="w-full h-full object-cover"
+                />
+              </button>
 
+              {profileOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg">
+                  <button
+                    className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
+                  >
+                    Profile
+                  </button>
+
+                  <button
+                    className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
+                  >
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
