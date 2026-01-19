@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import ExerciseCard from "@/src/components/ExerciseCard";
+import ExerciseCard from "@/src/components/excercise/ExerciseCard";
 import type { Exercise, Difficulty } from "@/src/app/types/exercise";
 import { Filter } from "lucide-react";
 
