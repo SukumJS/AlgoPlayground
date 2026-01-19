@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import TrackProgress from "@/src/components/TrackProgress";
-import QuestionCard from "@/src/components/QuestionCard";
-import ChoiceCard from "@/src/components/ChoiceCard";
-import NavigationButtons from "@/src/components/NavigationButtons";
+import TrackProgress from "@/src/components/pretest/TrackProgress";
+import QuestionCard from "@/src/components/pretest/QuestionCard";
+import ChoiceCard from "@/src/components/pretest/ChoiceCard";
+import NavigationButtons from "@/src/components/pretest/NavigationButtons";
 import ResultPage from "@/src/app/result/page";
 import { QuizData, UserAnswer } from "../types/quiz";
 import { sampleQuizData } from "../data/quizData";
@@ -23,7 +23,7 @@ function PretestPage({
     quizData.questions.map((q) => ({
       questionId: q.id,
       selectedChoiceId: null,
-    }))
+    })),
   );
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -33,7 +33,7 @@ function PretestPage({
   const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
 
   const currentAnswer = userAnswers.find(
-    (a) => a.questionId === currentQuestion.id
+    (a) => a.questionId === currentQuestion.id,
   );
   const hasSelectedAnswer = currentAnswer?.selectedChoiceId !== null;
 
@@ -45,11 +45,11 @@ function PretestPage({
         prev.map((answer) =>
           answer.questionId === currentQuestion.id
             ? { ...answer, selectedChoiceId: choiceId }
-            : answer
-        )
+            : answer,
+        ),
       );
     },
-    [currentQuestion.id, isSubmitted]
+    [currentQuestion.id, isSubmitted],
   );
 
   const handleBack = useCallback(() => {
@@ -102,10 +102,7 @@ function PretestPage({
         />
         <div className="sm:px-8">
           {/* Question Card */}
-          <QuestionCard
-            question={currentQuestion.question}
-            className="mb-9"
-          />
+          <QuestionCard question={currentQuestion.question} className="mb-9" />
 
           {/* Answer instruction */}
           <p className="font-bold text-lg text-[#222121] mb-9">
@@ -122,7 +119,7 @@ function PretestPage({
                 isSelected={currentAnswer?.selectedChoiceId === choice.id}
                 onSelect={handleSelectChoice}
               />
-            ))} 
+            ))}
           </div>
 
           {/* Navigation Buttons */}

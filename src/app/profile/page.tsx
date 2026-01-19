@@ -1,9 +1,9 @@
 "use client";
 
 import Navbar from "../../components/Navbar";
-import StatCard from "../../components/StatCard";
-import ProgressRow from "../../components/ProgressRow";
-import EditProfile from "../../components/EditProfile";
+import StatCard from "../../components/profile/StatCard";
+import ProgressRow from "../../components/profile/ProgressRow";
+import EditProfile from "../../components/profile/EditProfile";
 import { useState } from "react";
 
 type ProgressItem = {
