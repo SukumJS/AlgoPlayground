@@ -37,8 +37,8 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
         slug: "doubly-linked-list",
         title: "Doubly Linked List",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: { percent: 100, status: "completed" },
+          posttest: { percent: 100, status: "completed" },
         },
       },
       {
