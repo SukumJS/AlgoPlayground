@@ -5,9 +5,11 @@ import SideTab from '../components/shared/sideTab'
 import ExplainAlgo from '../components/visualizer/explainAlgo'
 import CodeAlgo from '../components/visualizer/codeAlgo'
 import Data_sort from '../components/visualizer/data_sort'
+import { DnDProvider } from '../components/visualizer/useDnD'
 import Tutorial_modal from '../components/shared/tutorial_modal'
 import {
     ReactFlow,
+    ReactFlowProvider,
     Background,
     addEdge,
     applyNodeChanges,
@@ -42,7 +44,7 @@ const onNodeDrag: OnNodeDrag = (_, node) => {
     console.log('drag event', node.data);
 };
 
-export default function Page() {
+function Playground() {
     const [nodes, setNodes] = useState<Node[]>(initialNodes);
     const [edges, setEdges] = useState<Edge[]>(initialEdges);
     
@@ -73,14 +75,15 @@ export default function Page() {
                 defaultEdgeOptions={defaultEdgeOptions}
                 onNodeDrag={onNodeDrag}
             >
-                <div className='flex justify-center items-center mx-auto h-full'>
-                    <Tutorial_modal/>
-
-                </div>
                 <Background />
             </ReactFlow>
             <div className="absolute top-4 w-full z-10">
                 <ControlPanel />
+            </div>
+            {/* This container overlays the canvas to center the modal */}
+            <div className='absolute inset-0 flex justify-center items-center z-20 pointer-events-none'>
+                {/* This wrapper re-enables pointer events for the modal itself */}
+                <div className="pointer-events-auto"><Tutorial_modal /></div>
             </div>
 
 
@@ -92,4 +95,14 @@ export default function Page() {
             </SideTab> 
         </div>
     )
+}
+
+export default function Page() {
+    return (
+        <ReactFlowProvider>
+            <DnDProvider>
+                <Playground />
+            </DnDProvider>
+        </ReactFlowProvider>
+    );
 }
