@@ -46,9 +46,9 @@ function Data_sort() {
         <>
             {/* The ghost node will be rendered at pointer position when dragging. */}
             {isDragging && <DragGhost type={type} />}
-            <div className='border-b border-black'>
-                <div className={`flex text-lg p-2 justify-between transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? 'bg-gray-200 mb-4' : 'bg-white'}`} onClick={() => setIsDataSortOpen(!isDataSortOpen)}>
-                    <div className={`bg-blue-600 w-2 ${isDataSortOpen ? '' : 'hidden'}`}></div>
+            <div className='border-b border-black flex'>
+                <div className={`bg-blue-600 w-2 h-12 ${isDataSortOpen ? '' : 'hidden'}`}></div>
+                <div className={`flex text-lg p-2 justify-between transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? 'bg-gray-200 h-12' : 'bg-white'}`} onClick={() => setIsDataSortOpen(!isDataSortOpen)}>
                     Data Sort
                     {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
                 </div>
