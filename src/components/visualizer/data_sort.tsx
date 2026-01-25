@@ -19,8 +19,7 @@ function Data_sort() {
     const createAddNewNode = useCallback(
         (nodeType: string): OnDropAction => {
             return ({ position }: { position: XYPosition }) => {
-            // Here, we create a new node and add it to the flow.
-            // You can customize the behavior of what happens when a node is dropped on the flow here.
+            // customize the behavior of what happens when a node is dropped on the flow here.
             const newNode = {
                 id: getId(),
                 type: nodeType,
@@ -77,31 +76,6 @@ function Data_sort() {
                 </div>
             </div>
         </>
-        // <div className='border-b border-black'>
-        //     <div className={`flex text-lg p-2 justify-between transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? 'bg-gray-200 mb-4' : ''}`} onClick={() => setIsDataSortOpen(!isDataSortOpen)}>
-        //         Data Sort
-        //         {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
-        //     </div>
-
-        //     <div 
-        //     className={`transition-all duration-300 ease-in-out ${
-        //     isDataSortOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-        //     } overflow-hidden px-2`}>
-        //         <div className="pb-4">
-        //             <div className='flex gap-2 overflow-auto'>
-        //                 {sample.map((item, index) => (
-        //                     <div key={index} className='
-        //                     flex border border-black 
-        //                     w-14 h-14 rounded-lg 
-        //                     justify-center items-center bg-[#D9E363] font-semibold'
-        //                     >
-        //                         {item.number}
-        //                     </div>
-        //                 ))}
-        //             </div>
-        //         </div>
-        //     </div>
-        // </div>
     )
 }
 
