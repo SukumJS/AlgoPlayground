@@ -1,12 +1,12 @@
 'use client'
 import React, { useState, useCallback } from 'react'
-import ControlPanel from '../components/shared/controlPanel'
-import SideTab from '../components/shared/sideTab'
-import ExplainAlgo from '../components/visualizer/explainAlgo'
-import CodeAlgo from '../components/visualizer/codeAlgo'
-import Data_sort from '../components/visualizer/data_sort'
-import { DnDProvider } from '../components/visualizer/useDnD'
-import Tutorial_modal from '../components/shared/tutorial_modal'
+import ControlPanel from '../../components/shared/controlPanel'
+import SideTab from '../../components/shared/sideTab'
+import ExplainAlgo from '../../components/visualizer/explainAlgo'
+import CodeAlgo from '../../components/visualizer/codeAlgo'
+import Data_sort from '../../components/visualizer/data_sort'
+import { DnDProvider } from '../../components/visualizer/useDnD'
+import Tutorial_modal from '../../components/shared/tutorial_modal'
 import {
     ReactFlow,
     ReactFlowProvider,
