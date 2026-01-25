@@ -4,13 +4,13 @@ import { ChevronDown,ChevronUp } from 'lucide-react';
 import React, { useState, useCallback, useRef }from 'react'
 import { useReactFlow, XYPosition } from '@xyflow/react';
 import { OnDropAction, useDnD, useDnDPosition } from './useDnD';
+import RandomSize from '../shared/randomSize';
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
 function Data_sort() {
     const [isDataSortOpen, setIsDataSortOpen] = useState(false);
-    const [parent, setParent] = useState(null);
     const { onDragStart, isDragging } = useDnD();
     // The type of the node that is being dragged.
     const [type, setType] = useState<string | null>(null);
@@ -46,42 +46,35 @@ function Data_sort() {
         <>
             {/* The ghost node will be rendered at pointer position when dragging. */}
             {isDragging && <DragGhost type={type} />}
-            <div className='border-b border-black flex'>
-                <div className={`bg-blue-600 w-2 h-12 ${isDataSortOpen ? '' : 'hidden'}`}></div>
-                <div className={`flex text-lg p-2 justify-between transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? 'bg-gray-200 h-12' : 'bg-white'}`} onClick={() => setIsDataSortOpen(!isDataSortOpen)}>
+            <button className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${isDataSortOpen ? 'bg-gray-200 h-12' : 'bg-white'}`} onClick={() => setIsDataSortOpen(!isDataSortOpen)}>
+                <div className="flex items-center">
+                <div className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? '' : 'hidden opacity-100'}`}></div>
+                <div className={`flex text-lg p-2`}>
                     Data Sort
+                </div>
+                </div>
+                <div className='mr-4 flex justify-end'>
                     {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
                 </div>
-            </div>
-            <div className="description">
-                You can drag these nodes to the pane to create new nodes.
-            </div>
-            <div
-                className="dndnode input"
-                onPointerDown={(event) => {
-                    setType('input');
-                    onDragStart(event, createAddNewNode('input'));
-                }}
-                >
-                Input Node
-            </div>
-            <div
-                className="dndnode"
-                onPointerDown={(event) => {
-                    setType('default');
-                    onDragStart(event, createAddNewNode('default'));
-                }}
-                >
-                Default Node
-            </div>
-            <div
-                className="dndnode output"
-                onPointerDown={(event) => {
-                    setType('output');
-                    onDragStart(event, createAddNewNode('output'));
-                }}
-                >
-                Output Node
+            </button>
+            <div className='flex-col'>
+                <div className={`transition-all duration-300 ease-in-out overflow-hidden flex flex-wrap justify-between ${isDataSortOpen ? 'opacity-100' : 'opacity-0'}`}>
+                    {sample.map((item, index) => (
+                        <div
+                            key={index}
+                            className="flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg"
+                            onPointerDown={(event) => {
+                                setType('input');
+                                onDragStart(event, createAddNewNode('input'));
+                            }}
+                        >
+                            {item.number}
+                        </div>
+                    ))}
+                        <div className='flex justify-center items-center text-center'>
+                            <RandomSize />
+                        </div>
+                </div>
             </div>
         </>
         // <div className='border-b border-black'>
