@@ -15,27 +15,29 @@ function Data_sort() {
     // The type of the node that is being dragged.
     const [type, setType] = useState<string | null>(null);
     const { setNodes } = useReactFlow();
+    const [nodeInput, setNodeInput] = useState<string>("");
+
 
     const createAddNewNode = useCallback(
-        (nodeType: string): OnDropAction => {
-        return ({ position }: { position: XYPosition }) => {
-            // Here, we create a new node and add it to the flow.
-            // You can customize the behavior of what happens when a node is dropped on the flow here.
-            const newNode = {
-            id: getId(),
-            type: nodeType,
-            position,
-            data: { label: `${nodeType} node` },
+            (Sample: number): OnDropAction => {
+            return ({ position }: { position: XYPosition }) => {
+                // Here, we create a new node and add it to the flow.
+                // You can customize the behavior of what happens when a node is dropped on the flow here.
+                const newNode = {
+                id: getId(),
+                type: "default",
+                position,
+                data: { label: `${Sample}` },
+                };
+    
+                setNodes((nds) => nds.concat(newNode));
+                setType(null);
             };
-
-            setNodes((nds) => nds.concat(newNode));
-            setType(null);
-        };
-        },
-        [setNodes, setType],
+            },
+            [setNodes, setType],
     );
 
-    const sample = [
+    const Sample = [
         { number: "1" },
         { number: "2" },
         { number: "3" },
@@ -60,27 +62,46 @@ function Data_sort() {
             {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
             </div>
         </button>
-        <div className="flex-col">
+        {/* map drag and drop data */}
+        <div
+            className={`flex-col ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}
+        >
             <div
-            className={`transition-all duration-300 ease-in-out overflow-hidden flex flex-wrap justify-between ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}
+            className={`transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2`}
             >
-            {sample.map((item, index) => (
+            <div
+                className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg cursor-grab"
+                onPointerDown={(event) => {
+                setType("input");
+                onDragStart(event, createAddNewNode(parseInt(nodeInput) || 0));
+                }}
+            >
+                <input
+                type="number"
+                placeholder="0"
+                className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={nodeInput}
+                onChange={(e) => setNodeInput(e.target.value)}
+                onPointerDown={(e) => e.stopPropagation()}
+                />
+            </div>
+            {Sample.map((item, index) => (
                 <div
                 key={index}
-                className="flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg"
+                className="shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363]"
                 onPointerDown={(event) => {
                     setType("input");
-                    onDragStart(event, createAddNewNode("input"));
+                    onDragStart(event, createAddNewNode(parseInt(item.number)));
                 }}
                 >
                 {item.number}
                 </div>
             ))}
+            </div>
             <div className="flex justify-center items-center text-center">
                 <RandomSize />
             </div>
             </div>
-        </div>
         </>
     );
 }
