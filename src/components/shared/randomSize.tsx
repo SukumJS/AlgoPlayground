@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { Plus } from 'lucide-react';
 
-
+// for reuse to children component
 interface RandomSizeProps {
     onReset?: () => void;
 }
