@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import TrackProgress from "@/src/components/TrackProgress";
-import QuestionCard from "@/src/components/QuestionCard";
-import ChoiceCard from "@/src/components/ChoiceCard";
-import NavigationButtons from "@/src/components/NavigationButtons";
+import TrackProgress from "@/src/components/pretest/TrackProgress";
+import QuestionCard from "@/src/components/pretest/QuestionCard";
+import ChoiceCard from "@/src/components/pretest/ChoiceCard";
+import NavigationButtons from "@/src/components/pretest/NavigationButtons";
 import ResultPage from "@/src/app/result/page";
 import { QuizData, UserAnswer } from "../types/quiz";
 import { sampleQuizData } from "../data/quizData";
@@ -105,7 +105,7 @@ function PretestPage({
           <QuestionCard question={currentQuestion.question} className="mb-9" />
 
           {/* Answer instruction */}
-          <p className="font-bold text-base text-[#222121] mb-9">
+          <p className="font-bold text-lg text-[#222121] mb-9">
             Answer the question:
           </p>
 
