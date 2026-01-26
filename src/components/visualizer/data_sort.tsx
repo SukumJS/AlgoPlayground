@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronDown,ChevronUp } from 'lucide-react';
-import React, { useState, useCallback, useRef }from 'react'
-import { useReactFlow, XYPosition } from '@xyflow/react';
-import { OnDropAction, useDnD, useDnDPosition } from './useDnD';
-import RandomSize from '../shared/randomSize';
+import { ChevronDown, ChevronUp } from "lucide-react";
+import React, { useState, useCallback, useRef } from "react";
+import { useReactFlow, XYPosition } from "@xyflow/react";
+import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
+import RandomSize from "../shared/randomSize";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -18,94 +18,74 @@ function Data_sort() {
 
     const createAddNewNode = useCallback(
         (nodeType: string): OnDropAction => {
-            return ({ position }: { position: XYPosition }) => {
+        return ({ position }: { position: XYPosition }) => {
             // Here, we create a new node and add it to the flow.
             // You can customize the behavior of what happens when a node is dropped on the flow here.
             const newNode = {
-                id: getId(),
-                type: nodeType,
-                position,
-                data: { label: `${nodeType} node` },
+            id: getId(),
+            type: nodeType,
+            position,
+            data: { label: `${nodeType} node` },
             };
 
             setNodes((nds) => nds.concat(newNode));
             setType(null);
-            };
+        };
         },
         [setNodes, setType],
     );
 
     const sample = [
-        { number: '1' },
-        { number: '2' },
-        { number: '3' },
-        { number: '4' },
-        { number: '5' },
-    ]
+        { number: "1" },
+        { number: "2" },
+        { number: "3" },
+        { number: "4" },
+        { number: "5" },
+    ];
     return (
         <>
-            {/* The ghost node will be rendered at pointer position when dragging. */}
-            {isDragging && <DragGhost type={type} />}
-            <button className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${isDataSortOpen ? 'bg-gray-200 h-12' : 'bg-white'}`} onClick={() => setIsDataSortOpen(!isDataSortOpen)}>
-                <div className="flex items-center">
-                <div className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? '' : 'hidden opacity-100'}`}></div>
-                <div className={`flex text-lg p-2`}>
-                    Data Sort
-                </div>
-                </div>
-                <div className='mr-4 flex justify-end'>
-                    {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
-                </div>
-            </button>
-            <div className='flex-col'>
-                <div className={`transition-all duration-300 ease-in-out overflow-hidden flex flex-wrap justify-between ${isDataSortOpen ? 'opacity-100' : 'opacity-0'}`}>
-                    {sample.map((item, index) => (
-                        <div
-                            key={index}
-                            className="flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg"
-                            onPointerDown={(event) => {
-                                setType('input');
-                                onDragStart(event, createAddNewNode('input'));
-                            }}
-                        >
-                            {item.number}
-                        </div>
-                    ))}
-                        <div className='flex justify-center items-center text-center'>
-                            <RandomSize />
-                        </div>
-                </div>
+        {/* The ghost node will be rendered at pointer position when dragging. */}
+        {isDragging && <DragGhost type={type} />}
+        <button
+            className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"}`}
+            onClick={() => setIsDataSortOpen(!isDataSortOpen)}
+        >
+            <div className="flex items-center">
+            <div
+                className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? "" : "hidden opacity-100"}`}
+            ></div>
+            <div className={`flex text-lg p-2`}>Data Sort</div>
             </div>
+            <div className="mr-4 flex justify-end">
+            {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
+            </div>
+        </button>
+        <div className="flex-col">
+            <div
+            className={`transition-all duration-300 ease-in-out overflow-hidden flex flex-wrap justify-between ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}
+            >
+            {sample.map((item, index) => (
+                <div
+                key={index}
+                className="flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg"
+                onPointerDown={(event) => {
+                    setType("input");
+                    onDragStart(event, createAddNewNode("input"));
+                }}
+                >
+                {item.number}
+                </div>
+            ))}
+            <div className="flex justify-center items-center text-center">
+                <RandomSize />
+            </div>
+            </div>
+        </div>
         </>
-        // <div className='border-b border-black'>
-        //     <div className={`flex text-lg p-2 justify-between transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? 'bg-gray-200 mb-4' : ''}`} onClick={() => setIsDataSortOpen(!isDataSortOpen)}>
-        //         Data Sort
-        //         {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
-        //     </div>
-
-        //     <div 
-        //     className={`transition-all duration-300 ease-in-out ${
-        //     isDataSortOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-        //     } overflow-hidden px-2`}>
-        //         <div className="pb-4">
-        //             <div className='flex gap-2 overflow-auto'>
-        //                 {sample.map((item, index) => (
-        //                     <div key={index} className='
-        //                     flex border border-black 
-        //                     w-14 h-14 rounded-lg 
-        //                     justify-center items-center bg-[#D9E363] font-semibold'
-        //                     >
-        //                         {item.number}
-        //                     </div>
-        //                 ))}
-        //             </div>
-        //         </div>
-        //     </div>
-        // </div>
-    )
+    );
 }
 
-export default Data_sort
+export default Data_sort;
 
 interface DragGhostProps {
     type: string | null;
@@ -114,9 +94,9 @@ interface DragGhostProps {
 // The DragGhost component is used to display a ghost node when dragging a node into the flow.
 export function DragGhost({ type }: DragGhostProps) {
     const { position } = useDnDPosition();
-    
+
     if (!position) return null;
-    
+
     return (
         <div
         className={`dndnode ghostnode ${type}`}
