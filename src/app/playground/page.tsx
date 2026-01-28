@@ -26,6 +26,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import Data_tree from "@/src/components/visualizer/data_tree";
+import Data_graph from "@/src/components/visualizer/data_graph";
 
 const initialNodes: Node[] = [
     { id: "1", data: { label: "Node 1" }, position: { x: 5, y: 5 } },
@@ -69,8 +70,8 @@ function Playground() {
         switch (type) {
         case "tree":
             return <Data_tree />;
-        // case 'graph':
-        //     return <Data_graph />;
+        case 'graph':
+            return <Data_graph />;
         default:
             return <Data_sort />;
         }
@@ -80,8 +81,8 @@ function Playground() {
         switch (type) {
         case "tree":
             return "Tree Algorithms";
-        // case 'graph':
-        //     return 'Graph Algorithms';
+        case 'graph':
+            return 'Graph Algorithms';
         default:
             return "Sorting Algorithms";
         }
