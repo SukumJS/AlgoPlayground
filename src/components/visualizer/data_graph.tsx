@@ -5,37 +5,22 @@ import React, { useState, useCallback, useRef } from "react";
 import { useReactFlow, XYPosition } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
+import { Plus, Search, Trash } from "lucide-react";
+import Data_sort from "./data_sort";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-function Data_sort() {
+function Data_graph() {
     const [isDataSortOpen, setIsDataSortOpen] = useState(false);
     const { onDragStart, isDragging } = useDnD();
     // The type of the node that is being dragged.
     const [type, setType] = useState<string | null>(null);
     const { setNodes } = useReactFlow();
+    const [inputValue, setInputValue] = useState<string>("");
+    const [searchValue, setSearchValue] = useState<string>("");
+    const [removeValue, setRemoveValue] = useState<string>("");
     const [nodeInput, setNodeInput] = useState<string>("");
-
-
-    const createAddNewNode = useCallback(
-            (Sample: number): OnDropAction => {
-            return ({ position }: { position: XYPosition }) => {
-                // Here, we create a new node and add it to the flow.
-                // You can customize the behavior of what happens when a node is dropped on the flow here.
-                const newNode = {
-                id: getId(),
-                type: "default",
-                position,
-                data: { label: `${Sample}` },
-                };
-    
-                setNodes((nds) => nds.concat(newNode));
-                setType(null);
-            };
-            },
-            [setNodes, setType],
-    );
 
     const Sample = [
         { number: "1" },
@@ -44,6 +29,39 @@ function Data_sort() {
         { number: "4" },
         { number: "5" },
     ];
+
+    const createAddNewNode = useCallback(
+        (Sample: number): OnDropAction => {
+        return ({ position }: { position: XYPosition }) => {
+            // Here, we create a new node and add it to the flow.
+            // You can customize the behavior of what happens when a node is dropped on the flow here.
+            const newNode = {
+            id: getId(),
+            type: "default",
+            position,
+            data: { label: `${Sample}` },
+            };
+
+            setNodes((nds) => nds.concat(newNode));
+            setType(null);
+        };
+        },
+        [setNodes, setType],
+    );
+
+    //random number in insert tree data
+    const handleInsert = () => {
+        const randomNum = Math.floor(Math.random() * 100) + 1;
+        setInputValue(randomNum.toString());
+    };
+
+    //reset all of value in input data
+    const handleReset = () => {
+        setInputValue("");
+        setSearchValue("");
+        setRemoveValue("");
+    };
+
     return (
         <>
         {/* The ghost node will be rendered at pointer position when dragging. */}
@@ -62,6 +80,7 @@ function Data_sort() {
             {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
             </div>
         </button>
+
         {/* map drag and drop data */}
         <div
             className={`flex-col ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}
@@ -70,7 +89,7 @@ function Data_sort() {
             className={`transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2`}
             >
             <div
-                className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg cursor-grab"
+                className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-16 h-16 rounded-full cursor-grab"
                 onPointerDown={(event) => {
                 setType("input");
                 onDragStart(event, createAddNewNode(parseInt(nodeInput) || 0));
@@ -88,7 +107,7 @@ function Data_sort() {
             {Sample.map((item, index) => (
                 <div
                 key={index}
-                className="shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363]"
+                className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363]"
                 onPointerDown={(event) => {
                     setType("input");
                     onDragStart(event, createAddNewNode(parseInt(item.number)));
@@ -98,15 +117,42 @@ function Data_sort() {
                 </div>
             ))}
             </div>
-            <div className="flex justify-center items-center text-center">
-                <RandomSize />
+            <div className="flex-col justify-center items-center text-center">
+            <div className="grid-cols-1 grid gap-2 text-start m-1">
+                <p className="font-bold text-md">Start Vertex</p>
+                <div className="flex gap-2">
+                <input
+                    type="number"
+                    className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                />
+                </div>
             </div>
+            <div className="grid-cols-1 grid gap-2 text-start m-1">
+                <p className="font-bold text-md">End Vertex</p>
+                <div className="flex gap-2">
+                <input
+                    type="number"
+                    className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                />
+                </div>
             </div>
+            <div className="grid-cols-1 grid gap-2 text-start m-1">
+                <button className="bg-[#222121] rounded-lg p-2 mt-2 text-white">
+                    Search
+                </button>
+            </div>
+            <RandomSize onReset={handleReset} />
+            </div>
+        </div>
         </>
     );
 }
 
-export default Data_sort;
+export default Data_graph;
 
 interface DragGhostProps {
     type: string | null;
@@ -120,12 +166,13 @@ export function DragGhost({ type }: DragGhostProps) {
 
     return (
         <div
-        className={`dndnode ghostnode ${type}`}
+        className="flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg opacity-80"
         style={{
             transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
+            position: "fixed",
+            pointerEvents: "none",
+            zIndex: 1000,
         }}
-        >
-        {type && `${type.charAt(0).toUpperCase() + type.slice(1)} Node`}
-        </div>
+        ></div>
     );
 }
