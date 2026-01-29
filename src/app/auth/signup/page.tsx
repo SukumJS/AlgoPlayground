@@ -122,7 +122,7 @@ export default function RegisterPage() {
             {/* Divider */}
             <div className="w-[465px] flex items-center gap-3">
                 <div className="flex-1 h-px bg-[#5D5D5D]" />
-                <span className="text-sm font-medium text-[#222121]">or</span>
+                <span className="text-lg font-medium text-[#222121]">or</span>
                 <div className="flex-1 h-px bg-[#5D5D5D]" />
             </div>
 
@@ -149,7 +149,7 @@ export default function RegisterPage() {
             {/* Footer */}
             <div className="text-base font-bold capitalize">
                 <span className="text-[#222121]">already have an account?</span>
-                <a href="/auth/signup" className="ml-1 text-[#0066CC]">
+                <a href="/auth/signin" className="ml-1 text-[#0066CC]">
                     Login
                 </a>
             </div>

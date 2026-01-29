@@ -106,7 +106,7 @@ export default function LoginPage() {
       {/* Divider */}
       <div className="w-[465px] flex items-center gap-3">
         <div className="flex-1 h-px bg-[#5D5D5D]" />
-        <span className="text-sm font-medium text-[#222121]">or</span>
+        <span className="text-lg font-medium text-[#222121]">or</span>
         <div className="flex-1 h-px bg-[#5D5D5D]" />
       </div>
 
