@@ -38,7 +38,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
         "
       >
         {/* Logo */}
-        <div className="text-2xl font-bold uppercase text-[#222121]">
+        <div className="text-xl font-bold uppercase text-[#222121]">
           Algo playground
         </div>
 
