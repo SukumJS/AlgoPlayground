@@ -11,25 +11,8 @@ function ControlPanel() {
     return (
     <div className='flex justify-center'>
         <div className='w-[610px] h-[110px] rounded-lg shadow-lg border border-gray-300 bg-white flex flex-col px-4 items-center justify-center'>
-            <div className='flex flex-row gap-2'>
-                <button type="button" className='w-[120px] h-[40px] p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
-                    <ChevronFirst />
-                    Prev Step
-                </button>
-                <button type="button" className='w-[120px] h-[40px] p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
-                    Next Step
-                    <ChevronLast />
-                </button>
-                <button type="button" className='w-[120px] h-[40px] p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
-                    <ChevronsLeft />
-                    Skip Back
-                </button>
-                <button type="button" className='w-[142px] h-[40px] p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
-                    Skip Forward
-                    <ChevronsRight />
-                </button>
-            </div>
-            <div className='flex flex-row gap-2 items-center mt-2'>
+            
+            <div className='flex flex-row gap-2 items-center mb-2'>
                 <div className='flex gap-2 items-center'>
                     <p className='font-semibold text-sm'>Auto Execution</p>
                     <button type="button" className={`w-[113px] h-[40px] p-2 gap-2 border border-gray-300 rounded-lg flex items-center justify-center ${activeExecution === 'run' ? 'bg-[#0066CC] text-white' : 'hover:bg-gray-200'}`}
@@ -61,6 +44,25 @@ function ControlPanel() {
                         5x
                     </button>
                 </div>
+                
+            </div>
+            <div className='flex flex-row gap-2'>
+                <button type="button" className='w-[120px] h-[40px] p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
+                    <ChevronFirst />
+                    Prev Step
+                </button>
+                <button type="button" className='w-[120px] h-[40px] p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
+                    Next Step
+                    <ChevronLast />
+                </button>
+                <button type="button" className='w-[120px] h-[40px] p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
+                    <ChevronsLeft />
+                    Skip Back
+                </button>
+                <button type="button" className='w-[142px] h-[40px] p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
+                    Skip Forward
+                    <ChevronsRight />
+                </button>
             </div>
         </div>
     </div>

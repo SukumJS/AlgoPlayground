@@ -1,9 +1,9 @@
 "use client";
 
 import Navbar from "../../components/Navbar";
-import StatCard from "../../components/StatCard";
-import ProgressRow from "../../components/ProgressRow";
-import EditProfile from "../../components/EditProfile";
+import StatCard from "../../components/profile/StatCard";
+import ProgressRow from "../../components/profile/ProgressRow";
+import EditProfile from "../../components/profile/EditProfile";
 import ChangePassword from "../../components/ChangePassword"; 
 import { useState } from "react";
 
@@ -34,6 +34,8 @@ export default function Profile() {
   // MODAL STATES
   const [openEdit, setOpenEdit] = useState(false);
   const [openPassword, setOpenPassword] = useState(false); // 2. เพิ่ม State สำหรับเปิด Modal Password
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // mock login state
 
   const handleProfileUpdate = (updatedData: {
     username?: string;
@@ -47,9 +49,9 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-white p-6 text-black">
-      <Navbar />
+      <Navbar onSelectCategory={setSelectedCategory} isLoggedIn={isLoggedIn} />
 
-      <div className="mt-6 grid grid-cols-12 gap-6">
+      <div className="mt-6 grid grid-cols-12 mt-18 px-20">
         {/* LEFT: PROFILE */}
         <div className="col-span-3 rounded-xl p-6 text-center">
           <img
@@ -80,7 +82,7 @@ export default function Profile() {
         </div>
 
         {/* RIGHT: STATS & PROGRESS */}
-        <div className="col-span-9 space-y-6">
+        <div className="col-span-9 space-y-6 mr-4">
           <div className="grid grid-cols-3 gap-4">
             <StatCard title="Total Progress" value={`${totalProgress}%`} desc="Overall completion rate" />
             <StatCard title="Pretest Score" value={`${pretestScore}%`} desc="Average across all tests" />
