@@ -149,7 +149,7 @@ export default function RegisterPage() {
             {/* Footer */}
             <div className="text-base font-bold capitalize">
                 <span className="text-[#222121]">already have an account?</span>
-                <a href="/auth/login" className="ml-1 text-[#0066CC]">
+                <a href="/auth/signup" className="ml-1 text-[#0066CC]">
                     Login
                 </a>
             </div>

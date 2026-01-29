@@ -2,6 +2,8 @@
 import { useRouter } from "next/navigation"
 import { ProgressRow } from "./ProgressRow"
 import { Info } from "lucide-react"
+import { AlgorithmIcon } from "./AlgorithmIcon"
+
 
 interface Props {
   slug: string
@@ -27,14 +29,15 @@ export default function AlgorithmCard({ slug, title, progress }: Props) {
   }
 
   // กด Info = ดูข้อมูล (ไม่เปลี่ยนหน้า)
-  const handleInfoClick = (e: React.MouseEvent) => {
-    e.stopPropagation() // ป้องกันไม่ให้เกิดการเรียก handleCardClick
-    console.log("Algorithm slug:", slug)
-  }
+  // const handleInfoClick = (e: React.MouseEvent) => {
+  //   e.stopPropagation() // ป้องกันไม่ให้เกิดการเรียก handleCardClick
+  //   console.log("Algorithm slug:", slug)
+  // }
   return (
     <div
       onClick={handleCardClick}
       className="
+        group
         relative
         w-60 h-[22rem]
         rounded-3xl
@@ -43,6 +46,7 @@ export default function AlgorithmCard({ slug, title, progress }: Props) {
         cursor-pointer
         transition
         hover:scale-[1.02]
+        group-hover:bg-red-500
       "
     >
       {/* Header */}
@@ -59,11 +63,12 @@ export default function AlgorithmCard({ slug, title, progress }: Props) {
       {/* Top right icon */}
       <Info
         onClick={(e) => {
-          e.stopPropagation()      
+          e.stopPropagation()
           console.log("Algorithm slug:", slug)
           router.push(`/document/${slug}`)
         }}
         className="
+        
     absolute top-4 right-4
     w-6 h-6
     text-white
@@ -73,9 +78,12 @@ export default function AlgorithmCard({ slug, title, progress }: Props) {
       />
 
       {/* Icons */}
-      <div className="absolute top-20 left-14 w-8 h-7 bg-white rounded-sm" />
-      <div className="absolute top-20 left-28 w-8 h-7 bg-white rounded-sm" />
-      <div className="absolute top-20 left-44 w-8 h-7 bg-white rounded-sm" />
+      <AlgorithmIcon
+        slug={slug}
+        status={progress.pretest.status}
+        className="
+        absolute pb-4 top-[4.5rem] left-1/2 -translate-x-1/2 w-16 h-16 flex items-center justify-center text-white"
+      />
 
       {/* Body */}
       <div
@@ -88,7 +96,7 @@ export default function AlgorithmCard({ slug, title, progress }: Props) {
           p-6 gap-4
         "
       >
-        <h2 className="text-lg font-semibold text-gray-900 text-center leading-tight">
+        <h2 className="text-lg font-semibold text-gray-900 text-center leading-tight relative -top-3">
           {title}
         </h2>
 

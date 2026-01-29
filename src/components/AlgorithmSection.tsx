@@ -22,12 +22,12 @@ interface Props {
 
 export default function AlgorithmSection({ title, items }: Props) {
   return (
-    <section className="mb-[60px]">
-      <h2 className="mb-[32px] text-[32px] font-bold text-black">
+    <section className="mb-14">
+      <h2 className="mb-6 text-3xl font-bold text-black">
         {title}
       </h2>
 
-      <div className="grid grid-cols-5 gap-[30px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {items.map((item) => (
           <AlgorithmCard
             key={item.slug}

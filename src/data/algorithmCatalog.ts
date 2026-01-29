@@ -137,7 +137,7 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
     items: [
       {
         slug: "breadth-first-search",
-        title: "Breadth-First Search (BFS)",
+        title: "Breadth-First Search",
         progress: {
           pretest: { percent: 0, status: "locked" },
           posttest: { percent: 0, status: "locked" },
@@ -145,7 +145,7 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
       },
       {
         slug: "depth-first-search",
-        title: "Depth-First Search (DFS)",
+        title: "Depth-First Search",
         progress: {
           pretest: { percent: 0, status: "locked" },
           posttest: { percent: 0, status: "locked" },
@@ -153,7 +153,7 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
       },
       {
         slug: "dijkstra",
-        title: "Dijkstra’s Algorithm",
+        title: "Dijkstra’s ",
         progress: {
           pretest: { percent: 0, status: "locked" },
           posttest: { percent: 0, status: "locked" },
@@ -161,7 +161,7 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
       },
       {
         slug: "bellman-ford",
-        title: "Bellman-Ford Algorithm",
+        title: "Bellman-Ford ",
         progress: {
           pretest: { percent: 0, status: "locked" },
           posttest: { percent: 0, status: "locked" },
@@ -169,7 +169,7 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
       },
       {
         slug: "prims",
-        title: "Prim’s Algorithm",
+        title: "Prim’s ",
         progress: {
           pretest: { percent: 0, status: "locked" },
           posttest: { percent: 0, status: "locked" },
@@ -177,7 +177,7 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
       },
       {
         slug: "kruskals",
-        title: "Kruskal’s Algorithm",
+        title: "Kruskal’s ",
         progress: {
           pretest: { percent: 0, status: "locked" },
           posttest: { percent: 0, status: "locked" },
@@ -217,6 +217,14 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
       {
         slug: "merge-sort",
         title: "Merge Sort",
+        progress: {
+          pretest: { percent: 0, status: "locked" },
+          posttest: { percent: 0, status: "locked" },
+        },
+      },
+      {
+        slug: "queue-sort",
+        title: "Queue Sort",
         progress: {
           pretest: { percent: 0, status: "locked" },
           posttest: { percent: 0, status: "locked" },

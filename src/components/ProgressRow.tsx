@@ -14,12 +14,12 @@ export function ProgressRow({ label, percent, status }: ProgressRowProps) {
   }
 
   const typeStyles = {
-    pretest: {
+    posttest: {
       bg: "bg-[#EAF7EA]",
       text: "text-[#2E7D32]",
       badge: "bg-[#2E7D32]",
     },
-    posttest: {
+    pretest: {
       bg: "bg-[#EAF2FF]",
       text: "text-[#1E5EFF]",
       badge: "bg-[#1E5EFF]",

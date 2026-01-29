@@ -133,7 +133,7 @@ export default function LoginPage() {
       {/* Footer */}
       <div className="text-base font-bold capitalize">
         <span className="text-[#222121]">don’t have an account?</span>
-        <a href="/auth/register" className="ml-1 text-[#0066CC]">
+        <a href="/auth/signup" className="ml-1 text-[#0066CC]">
           Sign up
         </a>
       </div>
