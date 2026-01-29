@@ -29,7 +29,7 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
         slug: "array",
         title: "Array",
         progress: {
-          pretest: { percent: 20, status: "active" },
+          pretest: { percent: 100, status: "active" },
           posttest: { percent: 60, status: "active" },
         },
       },
@@ -45,7 +45,7 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
         slug: "singly-linked-list",
         title: "Singly Linked List",
         progress: {
-          pretest: { percent: 0, status: "locked" },
+          pretest: { percent: 30, status: "active" },
           posttest: { percent: 0, status: "locked" },
         },
       },
