@@ -56,7 +56,7 @@ function Data_sort() {
             <div
                 className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? "" : "hidden opacity-100"}`}
             ></div>
-            <div className={`flex text-lg p-2`}>Data Sort</div>
+            <div className={`flex text-lg p-2`}>Data</div>
             </div>
             <div className="mr-2 flex justify-end">
             {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
