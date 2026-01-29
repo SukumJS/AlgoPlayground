@@ -15,7 +15,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
   const [profileOpen, setProfileOpen] = useState(false)
 
   const items = [
-    { label: "All algorithms", value: "all" },
+    { label: "All", value: "all" },
     { label: "Linear DS", value: "linear-ds" },
     { label: "Tree", value: "tree" },
     { label: "Graph", value: "graph" },
@@ -60,7 +60,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
               <span
                 className="text-[#222121] hover:text-[#5D5D5D] transition-colors "
               >
-                algorithms
+                Explore
               </span>
 
               <ChevronUp
