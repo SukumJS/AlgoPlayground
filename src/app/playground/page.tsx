@@ -52,6 +52,7 @@ function Playground() {
     const type = searchParams.get("type");
     const [nodes, setNodes] = useState<Node[]>(initialNodes);
     const [edges, setEdges] = useState<Edge[]>(initialEdges);
+    const [showTutorial, setShowTutorial] = useState(true);
 
     const onNodesChange: OnNodesChange = useCallback(
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -107,21 +108,22 @@ function Playground() {
         <div className="absolute bottom-4 w-full z-10">
             <ControlPanel />
         </div>
-        {/* This container overlays the canvas to center the modal */}
-        <div className="absolute inset-0 flex justify-center items-center z-20 pointer-events-none">
-            {/* This wrapper re-enables pointer events for the modal itself */}
-            <div className="pointer-events-auto">
-            <Tutorial_modal />
-            </div>
-        </div>
-
         {/* Add SideTab Component Here */}
         <SideTab title={getTitle()}>
             <CodeAlgo />
             <ExplainAlgo />
             {renderDataVisualizer()}
         </SideTab>
+        <Tutorial_modal
+            showModal={showTutorial}
+            onClose={() => setShowTutorial(false)}
+            tutorialContent={[{
+                title: "Tutorial Complete!",
+                description: "You are ready to play."
+            }]} 
+        />
         </div>
+
     );
 }
 
