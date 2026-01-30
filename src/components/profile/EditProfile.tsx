@@ -38,7 +38,7 @@ export default function EditProfile({ onClose, username, email, avatar, onUpdate
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-gray-300">
       {/* BACKDROP */}
       <div
         className="absolute inset-0 bg-black/40"

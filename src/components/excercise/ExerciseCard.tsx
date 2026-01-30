@@ -12,7 +12,7 @@ function DifficultyBadge({ level }: { level: Difficulty }) {
 
   return (
     <span
-      className={`rounded-full px-3 py-0.5 text-xs font-medium ${styles[level]}`}
+      className={`rounded-full px-3 py-0.5 text-base font-medium ${styles[level]}`}
     >
       {level}
     </span>
@@ -30,7 +30,7 @@ export default function ExerciseCard({ exercise }: { exercise: Exercise }) {
           className="flex cursor-pointer items-center justify-between"
           onClick={() => setOpen(!open)}
         >
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-base font-semibold text-gray-900">
             {exercise.title}
           </h3>
 
@@ -56,7 +56,7 @@ export default function ExerciseCard({ exercise }: { exercise: Exercise }) {
         </div>
 
         {open && (
-          <div className="mt-3 space-y-3 text-sm text-gray-700">
+          <div className="mt-3 space-y-3 text-base text-gray-700">
             <p className="leading-relaxed">
               {exercise.description}
             </p>
@@ -86,12 +86,12 @@ export default function ExerciseCard({ exercise }: { exercise: Exercise }) {
                     setShowTips(true);
                   }}
                   className="cursor-pointer absolute bottom-0 right-0 translate-x-1 -translate-y-1
-                            flex h-6 w-6 items-center justify-center rounded-full
+                            flex h-7 w-7 items-center justify-center rounded-full
                             border border-black-300 bg-white text-gray-600 shadow
                             hover:bg-gray-100 transition"
                   aria-label="Show tips"
                 >
-                  <Lightbulb className="h-4 w-4" />
+                  <Lightbulb className="h-5 w-5 text-yellow-500" />
                 </button>
               </div>
             </div>

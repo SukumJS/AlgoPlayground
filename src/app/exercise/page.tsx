@@ -4,6 +4,7 @@ import { useState } from "react";
 import ExerciseCard from "@/src/components/excercise/ExerciseCard";
 import type { Exercise, Difficulty } from "@/src/app/types/exercise";
 import { Filter } from "lucide-react";
+import Navbar from "@/src/components/Navbar";
 
 /* ---------------- Mock Data ---------------- */
 const exercises: Exercise[] = [
@@ -81,7 +82,9 @@ export default function ExercisesPage() {
 
   return (
     <main className="mx-auto max-w-12xl px-16 py-6">
-      <div className="mb-4 flex items-center gap-2 text-xs">
+      <Navbar onSelectCategory={() => {}} isLoggedIn={true} />
+      <div className="mx-4">
+      <div className="mb-4 mt-15 flex items-center gap-2 text-base">
         <span className="flex items-center gap-1">
           <Filter className="h-4 w-4" />
           Filter by difficulty:
@@ -96,7 +99,7 @@ export default function ExercisesPage() {
                 cursor-pointer rounded-md border px-3 py-1 font-medium transition
                 ${
                   filter === level
-                    ? "border-blue-300 bg-[#0066CC] text-white shadow-sm"
+                    ? "border-blue-300 bg-[#0066CC] text-white shadow-base"
                     : "border-gray-300 bg-white text-gray-600 hover:bg-gray-100 shadow-sm"
                 }
               `}
@@ -116,10 +119,11 @@ export default function ExercisesPage() {
         ))}
 
         {filteredExercises.length === 0 && (
-          <p className="text-sm text-gray-500">
+          <p className="text-base text-gray-500">
             No exercises found.
           </p>
         )}
+      </div>
       </div>
     </main>
   );
