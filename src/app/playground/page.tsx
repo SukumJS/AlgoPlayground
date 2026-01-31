@@ -27,10 +27,16 @@ import {
 import "@xyflow/react/dist/style.css";
 import Data_tree from "@/src/components/visualizer/data_tree";
 import Data_graph from "@/src/components/visualizer/data_graph";
+import CustomNode from "@/src/components/shared/customNode";
+import '@xyflow/react/dist/base.css';
+
+const nodeTypes = {
+    custom: CustomNode,
+};
 
 const initialNodes: Node[] = [
-    { id: "1", data: { label: "Node 1" }, position: { x: 5, y: 5 } },
-    { id: "2", data: { label: "Node 2" }, position: { x: 5, y: 100 } },
+    { id: "1", type: "custom", data: { label : '1' }, position: { x: 5, y: 5 }},
+    { id: "2", type: "custom", data: { label: "2" }, position: { x: 5, y: 100 }},
 ];
 
 const initialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
@@ -98,6 +104,7 @@ function Playground() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            nodeTypes={nodeTypes}
             fitView
             fitViewOptions={fitViewOptions}
             defaultEdgeOptions={defaultEdgeOptions}
@@ -105,23 +112,26 @@ function Playground() {
         >
             <Background />
         </ReactFlow>
+
         <div className="absolute bottom-4 w-full z-10">
             <ControlPanel />
         </div>
+        
         {/* Add SideTab Component Here */}
         <SideTab title={getTitle()}>
             <CodeAlgo />
             <ExplainAlgo />
             {renderDataVisualizer()}
         </SideTab>
-        <Tutorial_modal
+
+        {/* <Tutorial_modal
             showModal={showTutorial}
             onClose={() => setShowTutorial(false)}
             tutorialContent={[{
                 title: "Tutorial Complete!",
                 description: "You are ready to play."
             }]} 
-        />
+        /> */}
         </div>
 
     );
