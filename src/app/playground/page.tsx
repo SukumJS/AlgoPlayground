@@ -99,6 +99,7 @@ function Playground() {
         <div className="w-screen h-screen">
         {/* Implement Change page to canvas */}
         <ReactFlow
+            className={`w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl`}
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
