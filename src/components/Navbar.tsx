@@ -38,7 +38,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
         "
       >
         {/* Logo */}
-        <div className="text-2xl font-bold uppercase text-[#222121]">
+        <div className="text-xl font-bold uppercase text-[#222121]">
           Algo playground
         </div>
 
@@ -116,7 +116,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
                 className="w-12 h-12 rounded-full overflow-hidden border border-[#5D5D5D]"
               >
                 <img
-                  src="https://scrolldroll.com/wp-content/uploads/2022/04/sukurajima-mai-most-popular-anime-characters.jpg"
+                  src="https://i.pravatar.cc/150"
                   alt="profile"
                   className="w-full h-full object-cover"
                 />

@@ -56,7 +56,7 @@ export default function StructureDetailPage() {
       </div>
 
       {/* ---------- Content Card ---------- */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-md space-y-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-md space-y-6 mx-40">
         {data.sections.map((section, index) => (
           <section key={index}>
             {/* Section Heading */}

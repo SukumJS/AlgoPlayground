@@ -23,8 +23,8 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="flex flex-col items-center gap-3">
 
+        <div className="flex flex-col items-center gap-4">
             {/* Email */}
             <div className="w-[454px] flex flex-col gap-2">
                 <label className="text-lg font-semibold text-[#222121]">
@@ -150,7 +150,7 @@ export default function RegisterPage() {
             <div className="text-base font-bold capitalize">
                 <span className="text-[#222121]">already have an account?</span>
                 <a href="/auth/signin" className="ml-1 text-[#0066CC]">
-                    Login
+                    Sign in
                 </a>
             </div>
         </div>
