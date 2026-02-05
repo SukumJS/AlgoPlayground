@@ -23,7 +23,7 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-3">
 
             {/* Email */}
             <div className="w-[454px] flex flex-col gap-2">

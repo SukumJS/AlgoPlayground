@@ -12,7 +12,7 @@ export default function AuthLayout({
           px-[50px] py-[50px]
           shadow-[0px_0px_10px_2px_rgba(0,0,0,0.25)]
           outline outline-1 outline-[#D9D9D9] outline-offset-[-1px]
-          flex flex-col items-center gap-[70px]
+          flex flex-col items-center gap-[30px]
         "
       >
         {/* Title */}

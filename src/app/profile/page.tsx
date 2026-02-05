@@ -13,6 +13,8 @@ type ProgressItem = {
 };
 
 export default function Profile() {
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [isLoggedIn, setIsLoggedIn] = useState(true)
   // Profile data
   const [profileAvatar, setProfileAvatar] = useState("https://i.pravatar.cc/150");
   const [profileName, setProfileName] = useState("Thunwa");
@@ -48,7 +50,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-white p-6">
-      <Navbar />
+      <Navbar onSelectCategory={setSelectedCategory} isLoggedIn={isLoggedIn} />
 
       <div className="mt-6 grid grid-cols-12 gap-6">
         {/* PROFILE */}

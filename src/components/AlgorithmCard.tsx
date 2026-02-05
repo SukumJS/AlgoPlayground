@@ -65,7 +65,8 @@ export default function AlgorithmCard({ slug, title, progress }: Props) {
         onClick={(e) => {
           e.stopPropagation()
           console.log("Algorithm slug:", slug)
-          router.push(`/document/${slug}`)
+          // router.push(`/reading/${slug}`)
+          router.push(`/reading`)
         }}
         className="
         
