@@ -46,9 +46,9 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
         <div className="flex-1" />
         <div className="flex items-center gap-4">
           <button className="px-2 py-2 text-lg font-bold text-[#222121] capitalize">
-            <a href="/">
+            <Link href="/">
             Home
-            </a>
+            </Link>
           </button>
 
           {/* Dropdown */}
