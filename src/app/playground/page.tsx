@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, Suspense, DragEvent } from "react";
+import React, { useState, useCallback, Suspense, DragEvent, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import ControlPanel from "../../components/shared/controlPanel";
 import SideTab from "../../components/shared/sideTab";
@@ -8,6 +8,7 @@ import CodeAlgo from "../../components/visualizer/codeAlgo";
 import Data_sort from "../../components/visualizer/data_sort";
 import { DnDProvider, useDnD } from "@/src/components/visualizer/useDnD";
 import Tutorial_modal from "../../components/shared/tutorial_modal";
+import Tutorial from "../../components/visualizer/tutorial";
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -35,43 +36,78 @@ const nodeTypes = {
     custom: CustomNode,
 };
 
-/* This block of code is setting up initial data for a visualizer component using ReactFlow library in
-a TypeScript React application. Here's a breakdown of what each constant is doing: */
-const initialNodes: Node[] = [
-    { id: "1", type: "custom", data: { label : "1" }, position: { x: -50, y: 5 }},
-    { id: "2", type: "custom", data: { label: "2" }, position: { x: 15, y: 5}},
-    { id: "3", type: "custom", data: { label: "3" }, position: { x: 80, y: 5}},
-    { id: "4", type: "custom", data: { label: "4" }, position: { x: 145, y: 5}},
-    { id: "5", type: "custom", data: { label: "5" }, position: { x: 210, y: 5}},
+// Initial nodes for sorting (horizontal layout)
+const sortingInitialNodes: Node[] = [
+    { id: "1", type: "custom", data: { label: "1" }, position: { x: -50, y: 5 } },
+    { id: "2", type: "custom", data: { label: "2" }, position: { x: 15, y: 5 } },
+    { id: "3", type: "custom", data: { label: "3" }, position: { x: 80, y: 5 } },
+    { id: "4", type: "custom", data: { label: "4" }, position: { x: 145, y: 5 } },
+    { id: "5", type: "custom", data: { label: "5" }, position: { x: 210, y: 5 } },
 ];
 
-const initialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
+// Initial nodes for tree (BST layout with circle variant)
+const treeInitialNodes: Node[] = [
+    { id: "t1", type: "custom", data: { label: "64", variant: "circle" }, position: { x: 200, y: 50 } },
+    { id: "t2", type: "custom", data: { label: "30", variant: "circle" }, position: { x: 100, y: 150 } },
+    { id: "t3", type: "custom", data: { label: "70", variant: "circle" }, position: { x: 300, y: 150 } },
+    { id: "t4", type: "custom", data: { label: "80", variant: "circle" }, position: { x: 350, y: 250 } },
+    { id: "t5", type: "custom", data: { label: "90", variant: "circle" }, position: { x: 400, y: 350 } },
+];
+
+// Initial edges for tree (BST structure) - straight lines with side handles
+const treeInitialEdges: Edge[] = [
+    { id: "e-t1-t2", source: "t1", sourceHandle: "source-bottom-left", target: "t2", type: "straight" },
+    { id: "e-t1-t3", source: "t1", sourceHandle: "source-bottom-right", target: "t3", type: "straight" },
+    { id: "e-t3-t4", source: "t3", sourceHandle: "source-bottom-right", target: "t4", type: "straight" },
+    { id: "e-t4-t5", source: "t4", sourceHandle: "source-bottom-right", target: "t5", type: "straight" },
+];
+
+const sortingInitialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
 
 const fitViewOptions: FitViewOptions = {
     padding: 0.2,
 };
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
-    animated: true,
+    animated: false,
 };
 
 const onNodeDrag: OnNodeDrag = (_, node) => {
     console.log("drag event", node.data);
 };
 
-/*  defining a function `getId` that returns a string value with a dynamic ID. */
 let id = 0;
 const getId = (): string => `dndnode_${id++}`;
 
 function Playground() {
     const searchParams = useSearchParams();
     const algoType = searchParams.get("type");
-    const [nodes, setNodes] = useState<Node[]>(initialNodes);
-    const [edges, setEdges] = useState<Edge[]>(initialEdges);
-    const [showTutorial, setShowTutorial] = useState(true);
 
-    /* These three constants are defining functions that handle changes to nodes, edges, and
-    connections in the ReactFlow component. */
+    // Set initial nodes and edges based on algorithm type
+    const isTree = algoType === "tree";
+    const [nodes, setNodes] = useState<Node[]>(isTree ? treeInitialNodes : sortingInitialNodes);
+    const [edges, setEdges] = useState<Edge[]>(isTree ? treeInitialEdges : sortingInitialEdges);
+
+    // Tutorial state
+    const [showTutorial, setShowTutorial] = useState(false);
+    const [tutorialStep, setTutorialStep] = useState(0);
+    const [showCompletionModal, setShowCompletionModal] = useState(false);
+
+    // Check if user needs to see tutorial (default: show if tree type)
+    useEffect(() => {
+        if (isTree) {
+            // TODO: Check Firebase here
+            // Default: show tutorial since backend not ready
+            setShowTutorial(true);
+        }
+    }, [isTree]);
+
+    const handleTutorialComplete = useCallback(() => {
+        setShowTutorial(false);
+        setShowCompletionModal(true);
+        // TODO: POST to Firebase to mark tutorial as completed
+    }, []);
+
     const onNodesChange: OnNodesChange = useCallback(
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
         [setNodes],
@@ -81,8 +117,14 @@ function Playground() {
         [setEdges],
     );
     const onConnect: OnConnect = useCallback(
-        (connection) => setEdges((eds) => addEdge(connection, eds)),
-        [setEdges],
+        (connection) => {
+            setEdges((eds) => addEdge(connection, eds));
+            // If in tutorial step 3 (connect), advance to next step
+            if (showTutorial && tutorialStep === 2) {
+                setTutorialStep(3);
+            }
+        },
+        [setEdges, showTutorial, tutorialStep],
     );
 
     const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
@@ -90,82 +132,119 @@ function Playground() {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
+    // Handle node click for tutorial
+    const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+        if (showTutorial) {
+            if (tutorialStep === 1) {
+                // Step 2: Tap a node to start
+                setTutorialStep(2);
+            }
+        }
+    }, [showTutorial, tutorialStep]);
+
+    const handleTutorialDropSuccess = useCallback(() => {
+        if (showTutorial && tutorialStep === 0) {
+            setTutorialStep(1);
+        }
+    }, [showTutorial, tutorialStep]);
+
     const renderDataVisualizer = () => {
         switch (algoType) {
-        case "tree":
-            return <Data_tree />;
-        case 'graph':
-            return <Data_graph />;
-        default:
-            return <Data_sort nodeInput={0} setNodeInput={function (value: React.SetStateAction<number>): void {
-                throw new Error("Function not implemented.");
-            } } />;
+            case "tree":
+                return (
+                    <Data_tree
+                        tutorialMode={showTutorial}
+                        tutorialStep={tutorialStep}
+                        onTutorialDropSuccess={handleTutorialDropSuccess}
+                    />
+                );
+            case 'graph':
+                return <Data_graph />;
+            default:
+                return <Data_sort nodeInput={0} setNodeInput={function (value: React.SetStateAction<number>): void {
+                    throw new Error("Function not implemented.");
+                }} />;
         }
     };
 
     const getTitle = () => {
         switch (algoType) {
-        case "tree":
-            return "Tree Algorithms";
-        case 'graph':
-            return 'Graph Algorithms';
-        default:
-            return "Sorting Algorithms";
+            case "tree":
+                return "Binary Search Tree";
+            case 'graph':
+                return 'Graph Algorithms';
+            default:
+                return "Sorting Algorithms";
         }
     };
 
     return (
         <div className="w-screen h-screen">
-            {/* Implement Change page to canvas */}
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
+                onNodesChange={showTutorial ? undefined : onNodesChange}
+                onEdgesChange={showTutorial ? undefined : onEdgesChange}
                 onConnect={onConnect}
                 nodeTypes={nodeTypes}
                 onDragOver={onDragOver}
+                onNodeClick={handleNodeClick}
+                panOnDrag={!showTutorial}
+                zoomOnScroll={!showTutorial}
+                zoomOnPinch={!showTutorial}
+                zoomOnDoubleClick={!showTutorial}
+                nodesDraggable={!showTutorial}
                 fitView
                 fitViewOptions={fitViewOptions}
                 defaultEdgeOptions={defaultEdgeOptions}
                 onNodeDrag={onNodeDrag}
             >
                 <Background />
-                <Controls />
+                {!showTutorial && <Controls />}
             </ReactFlow>
 
-        <div className="absolute bottom-4 w-full z-10">
-            <ControlPanel />
-        </div>
-        
-        {/* Add SideTab Component Here */}
-        <SideTab title={getTitle()}>
-            <CodeAlgo />
-            <ExplainAlgo />
-            {renderDataVisualizer()}
-        </SideTab>
+            <div className="absolute bottom-4 w-full z-10">
+                <ControlPanel />
+            </div>
 
-        {/* <Tutorial_modal
-            showModal={showTutorial}
-            onClose={() => setShowTutorial(false)}
-            tutorialContent={[{
-                title: "Tutorial Complete!",
-                description: "You are ready to play."
-            }]} 
-        /> */}
-        </div>
+            <SideTab title={getTitle()}>
+                <CodeAlgo tutorialMode={showTutorial} />
+                <ExplainAlgo tutorialMode={showTutorial} />
+                {renderDataVisualizer()}
+            </SideTab>
 
+            {/* Tutorial overlay for tree */}
+            {showTutorial && isTree && (
+                <Tutorial
+                    onComplete={handleTutorialComplete}
+                    currentStep={tutorialStep}
+                    setCurrentStep={setTutorialStep}
+                />
+            )}
+
+            {/* Completion modal */}
+            {showCompletionModal && (
+                <Tutorial_modal
+                    showModal={showCompletionModal}
+                    onClose={() => setShowCompletionModal(false)}
+                    tutorialContent={[{
+                        title: "Tutorial Complete!",
+                        description: "You are now ready to explore Binary Search Tree."
+                    }]}
+                />
+            )}
+        </div>
     );
 }
 
 export default function Page() {
     return (
         <ReactFlowProvider>
-        <DnDProvider>
-            <Suspense fallback={<div>Loading...</div>}>
-            <Playground />
-            </Suspense>
-        </DnDProvider>
+            <DnDProvider>
+                <Suspense fallback={<div>Loading...</div>}>
+                    <Playground />
+                </Suspense>
+            </DnDProvider>
         </ReactFlowProvider>
     );
 }
