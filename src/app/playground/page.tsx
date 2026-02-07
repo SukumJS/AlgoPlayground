@@ -8,6 +8,7 @@ import CodeAlgo from "../../components/visualizer/codeAlgo";
 import Data_sort from "../../components/visualizer/data_sort";
 import { DnDProvider, useDnD } from "@/src/components/visualizer/useDnD";
 import Tutorial_modal from "../../components/shared/tutorial_modal";
+import PostTest_portal from "@/src/components/shared/postTest_portal";
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -30,6 +31,8 @@ import Data_tree from "@/src/components/visualizer/data_tree";
 import Data_graph from "@/src/components/visualizer/data_graph";
 import CustomNode from "@/src/components/shared/customNode";
 import '@xyflow/react/dist/base.css';
+import Reading_modal from "@/src/components/shared/reading_modal";
+import { Info } from "lucide-react";
 
 const nodeTypes = {
     custom: CustomNode,
@@ -69,6 +72,7 @@ function Playground() {
     const [nodes, setNodes] = useState<Node[]>(initialNodes);
     const [edges, setEdges] = useState<Edge[]>(initialEdges);
     const [showTutorial, setShowTutorial] = useState(true);
+    const [showInfo, setShowInfo] = useState(false);
 
     /* These three constants are defining functions that handle changes to nodes, edges, and
     connections in the ReactFlow component. */
@@ -143,7 +147,22 @@ function Playground() {
             <CodeAlgo />
             <ExplainAlgo />
             {renderDataVisualizer()}
+            <PostTest_portal />
         </SideTab>
+
+        <div className="absolute top-4 left-8 z-10">
+            <button
+            onClick={(e) => {
+                e.stopPropagation();
+                setShowInfo(true)}}
+            className="rounded-full bg-white p-2 border border-gray-200 shadow hover:shadow-md transition">
+                <Info color='#000000' />
+            </button>    
+        </div>
+
+        <Reading_modal 
+        isOpen={showInfo} 
+        onClose={() => setShowInfo(false)} />
 
         {/* <Tutorial_modal
             showModal={showTutorial}
@@ -153,6 +172,7 @@ function Playground() {
                 description: "You are ready to play."
             }]} 
         /> */}
+            
         </div>
 
     );
