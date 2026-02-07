@@ -6,6 +6,12 @@ import { useReactFlow, XYPosition, Node } from "@xyflow/react";
 // Ensure these custom hooks/components are correctly exported from your files
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
+import { positionFromIndex } from "./useSortingDrag";
+
+const NODE_WIDTH = 63;
+const NODE_MARGIN = 2;
+const NODE_GAP = NODE_WIDTH + NODE_MARGIN;
+const SORT_Y = 6;
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -20,28 +26,46 @@ type nodeProps = {
 
 function Data_sort({nodeInput, setNodeInput}: nodeProps) {
     const [isDataSortOpen, setIsDataSortOpen] = useState(false);
-    const { setNodes } = useReactFlow();
+    const { setNodes, getNodes } = useReactFlow();
     const { onDragStart, isDragging } = useDnD();
     const [type, setType] = useState<string | null>(null);
     const [draggedValue, setDraggedValue] = useState<number | null>(null);
 
     const createAddNewNode = useCallback(
-        (sampleValue: number): OnDropAction =>
-        {
-        return ({ position }: { position: XYPosition }) => {
-            const newNode: Node = { // Changed node type to "custom"
-            id: getId(),
-            type: "custom",
-            position,
-            data: { label: sampleValue.toString() },
+        (sampleValue: number): OnDropAction => {
+            return ({ position }) => {
+            const nodes = getNodes();
+
+            let insertIndex = Math.round(position.x / NODE_GAP);
+
+            insertIndex = Math.max(
+                0,
+                Math.min(nodes.length, insertIndex)
+            );
+
+            const newNode: Node = {
+                id: getId(),
+                type: "custom",
+                data: { label: sampleValue.toString() },
+                position: { x: 0, y: SORT_Y }, 
+                className: "sortable-node",
             };
 
-            setNodes((nds) => nds.concat(newNode));
-            setType(null); // Reset drag state
+            const updated = [...nodes];
+            updated.splice(insertIndex, 0, newNode);
+
+            setNodes(
+                updated.map((n, i) => ({
+                ...n,
+                position: positionFromIndex(i),
+                }))
+            );
+
+            setType(null);
             setDraggedValue(null);
-        };
+            };
         },
-        [setNodes],
+        [getNodes, setNodes]
     );
 
     const Sample = [

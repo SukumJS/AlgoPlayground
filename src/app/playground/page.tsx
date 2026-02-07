@@ -30,6 +30,7 @@ import Data_tree from "@/src/components/visualizer/data_tree";
 import Data_graph from "@/src/components/visualizer/data_graph";
 import CustomNode from "@/src/components/shared/customNode";
 import '@xyflow/react/dist/base.css';
+import { useSortingDrag } from "@/src/components/visualizer/useSortingDrag";
 
 const nodeTypes = {
     custom: CustomNode,
@@ -69,6 +70,7 @@ function Playground() {
     const [nodes, setNodes] = useState<Node[]>(initialNodes);
     const [edges, setEdges] = useState<Edge[]>(initialEdges);
     const [showTutorial, setShowTutorial] = useState(true);
+    const { onSortDrag, onSortDragStop } = useSortingDrag(setNodes);
 
     /* These three constants are defining functions that handle changes to nodes, edges, and
     connections in the ReactFlow component. */
@@ -119,16 +121,17 @@ function Playground() {
             {/* Implement Change page to canvas */}
             <ReactFlow
                 nodes={nodes}
-                edges={edges}
+                edges={algoType === "sort" ? [] : edges}
                 onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
+                onEdgesChange={algoType === "sort" ? undefined : onEdgesChange}
+                onConnect={algoType === "sort" ? undefined : onConnect}
                 nodeTypes={nodeTypes}
                 onDragOver={onDragOver}
                 fitView
                 fitViewOptions={fitViewOptions}
                 defaultEdgeOptions={defaultEdgeOptions}
-                onNodeDrag={onNodeDrag}
+                onNodeDrag={algoType === "sort" ? onSortDrag : undefined}
+                onNodeDragStop={algoType === "sort" ? onSortDragStop : undefined}
             >
                 <Background />
                 <Controls />
