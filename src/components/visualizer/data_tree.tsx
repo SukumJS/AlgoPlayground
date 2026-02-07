@@ -6,7 +6,7 @@ import { useReactFlow, XYPosition } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
 import { Plus, Search, Trash } from "lucide-react";
-import { GLOW_ZONE } from "./tutorial";
+import { GLOW_ZONE } from "./tutorial_tree";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;

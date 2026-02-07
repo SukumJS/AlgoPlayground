@@ -8,7 +8,7 @@ import CodeAlgo from "../../components/visualizer/codeAlgo";
 import Data_sort from "../../components/visualizer/data_sort";
 import { DnDProvider, useDnD } from "@/src/components/visualizer/useDnD";
 import Tutorial_modal from "../../components/shared/tutorial_modal";
-import Tutorial from "../../components/visualizer/tutorial";
+import TutorialTree from "../../components/visualizer/tutorial_tree";
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -78,9 +78,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
     animated: false,
 };
 
-const onNodeDrag: OnNodeDrag = (_, node) => {
-    console.log("drag event", node.data);
-};
+
 
 let id = 0;
 const getId = (): string => `dndnode_${id++}`;
@@ -104,59 +102,75 @@ function Playground() {
     const [node30ScreenPos, setNode30ScreenPos] = useState<{ x: number; y: number } | null>(null);
     const [node90ScreenPos, setNode90ScreenPos] = useState<{ x: number; y: number } | null>(null);
     const [sidebarNode3Pos, setSidebarNode3Pos] = useState<{ x: number; y: number } | null>(null);
+    const [trashBinPos, setTrashBinPos] = useState<{ x: number; y: number } | null>(null);
+    const [isTrashActive, setIsTrashActive] = useState(false);
     const { flowToScreenPosition } = useReactFlow();
 
-    // Compute screen positions for nodes when nodes change
-    useEffect(() => {
-        if (showTutorial) {
-            // Find dropped node 3 (id starts with 'dndnode_')
-            const droppedNode = nodes.find(n => n.id.startsWith('dndnode_'));
-            if (droppedNode) {
-                const screenPos = flowToScreenPosition({
-                    x: droppedNode.position.x + 28, // Center of node (56px / 2)
-                    y: droppedNode.position.y + 28,
-                });
-                setDroppedNodeScreenPos(screenPos);
-            }
+    // Compute screen positions for nodes when nodes change or window resizes
+    const updateTutorialPositions = useCallback(() => {
+        if (!showTutorial) return;
 
-            // Find node 30 (label === "30")
-            const node30 = nodes.find(n => n.data?.label === '30' || n.data?.label === 30);
-            if (node30) {
-                const screenPos = flowToScreenPosition({
-                    x: node30.position.x + 28, // Center of node
-                    y: node30.position.y + 28,
-                });
-                setNode30ScreenPos(screenPos);
-            }
-
-            // Find node 90 (label === "90") for step 5
-            const node90 = nodes.find(n => n.data?.label === '90' || n.data?.label === 90);
-            if (node90) {
-                const screenPos = flowToScreenPosition({
-                    x: node90.position.x + 28, // Center of node
-                    y: node90.position.y + 28,
-                });
-                setNode90ScreenPos(screenPos);
-            }
-
-            // Find Sidebar Node 3 for Step 1 spotlight
-            // We use a DOM selector approach since it's outside React Flow
-            if (!sidebarNode3Pos) {
-                const sidebarNodes = Array.from(document.querySelectorAll('div'));
-                const targetNode = sidebarNodes.find(el =>
-                    el.textContent?.trim() === '3' &&
-                    el.getBoundingClientRect().left > window.innerWidth / 2 // Ensure it's in the right sidebar
-                );
-                if (targetNode) {
-                    const rect = targetNode.getBoundingClientRect();
-                    setSidebarNode3Pos({
-                        x: rect.left + rect.width / 2,
-                        y: rect.top + rect.height / 2
-                    });
-                }
-            }
+        // Find dropped node 3 (id starts with 'dndnode_')
+        const droppedNode = nodes.find(n => n.id.startsWith('dndnode_'));
+        if (droppedNode) {
+            const screenPos = flowToScreenPosition({
+                x: droppedNode.position.x + 28, // Center of node (56px / 2)
+                y: droppedNode.position.y + 28,
+            });
+            setDroppedNodeScreenPos(screenPos);
         }
-    }, [nodes, showTutorial, flowToScreenPosition, sidebarNode3Pos]);
+
+        // Find node 30 (label === "30")
+        const node30 = nodes.find(n => n.data?.label === '30' || n.data?.label === 30);
+        if (node30) {
+            const screenPos = flowToScreenPosition({
+                x: node30.position.x + 28, // Center of node
+                y: node30.position.y + 28,
+            });
+            setNode30ScreenPos(screenPos);
+        }
+
+        // Find node 90 (label === "90") for step 5
+        const node90 = nodes.find(n => n.data?.label === '90' || n.data?.label === 90);
+        if (node90) {
+            const screenPos = flowToScreenPosition({
+                x: node90.position.x + 28, // Center of node
+                y: node90.position.y + 28,
+            });
+            setNode90ScreenPos(screenPos);
+        }
+
+        // Find Sidebar Node 3 for Step 1 spotlight
+        // We use a DOM selector approach since it's outside React Flow
+        const sidebarNodes = Array.from(document.querySelectorAll('div'));
+        const targetNode = sidebarNodes.find(el =>
+            el.textContent?.trim() === '3' &&
+            el.getBoundingClientRect().left > window.innerWidth / 2 // Ensure it's in the right sidebar
+        );
+        if (targetNode) {
+            const rect = targetNode.getBoundingClientRect();
+            setSidebarNode3Pos({
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            });
+        }
+
+        // Trash bin position logic (matches tutorial.tsx CSS)
+        // bottom: 140px, left: 50%
+        setTrashBinPos({
+            x: window.innerWidth / 2,
+            y: window.innerHeight - 140
+        });
+
+    }, [nodes, showTutorial, flowToScreenPosition]);
+
+    // Initial position update & Resize listener
+    useEffect(() => {
+        updateTutorialPositions();
+
+        window.addEventListener('resize', updateTutorialPositions);
+        return () => window.removeEventListener('resize', updateTutorialPositions);
+    }, [updateTutorialPositions]);
 
     // Check if user needs to see tutorial (default: show if tree type)
     useEffect(() => {
@@ -177,6 +191,19 @@ function Playground() {
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
         [setNodes],
     );
+
+    const onNodeDrag: OnNodeDrag = useCallback((event, node) => {
+        if (showTutorial && tutorialStep === 5) {
+            const trashX = window.innerWidth / 2;
+            const trashY = window.innerHeight - 140;
+            const dropTargetRadius = 150; // Glow activation radius
+
+            // Calculate distance
+            const dist = Math.sqrt(Math.pow(event.clientX - trashX, 2) + Math.pow(event.clientY - trashY, 2));
+
+            setIsTrashActive(dist < dropTargetRadius);
+        }
+    }, [showTutorial, tutorialStep]);
     const onEdgesChange: OnEdgesChange = useCallback(
         (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
         [setEdges],
@@ -357,7 +384,7 @@ function Playground() {
 
             {/* Tutorial overlay for tree */}
             {showTutorial && isTree && (
-                <Tutorial
+                <TutorialTree
                     onComplete={handleTutorialComplete}
                     currentStep={tutorialStep}
                     setCurrentStep={setTutorialStep}
@@ -365,6 +392,8 @@ function Playground() {
                     node30ScreenPos={node30ScreenPos}
                     node90ScreenPos={node90ScreenPos}
                     sidebarNode3Pos={sidebarNode3Pos}
+                    isTrashActive={isTrashActive}
+                    trashBinPos={trashBinPos}
                 />
             )}
 

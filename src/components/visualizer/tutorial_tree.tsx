@@ -69,6 +69,8 @@ interface TutorialProps {
     node30ScreenPos?: { x: number; y: number } | null;
     node90ScreenPos?: { x: number; y: number } | null;
     sidebarNode3Pos?: { x: number; y: number } | null;
+    isTrashActive?: boolean;
+    trashBinPos?: { x: number; y: number } | null;
 }
 
 // Custom Dashed Arrow Component matching Lucide style
@@ -102,7 +104,7 @@ const DashedArrow = ({ className, style, width = 50, color = "#333" }: { classNa
     </svg>
 );
 
-export default function Tutorial({ onComplete, currentStep, setCurrentStep, onNodeDropped, droppedNodeScreenPos, node30ScreenPos, node90ScreenPos, sidebarNode3Pos }: TutorialProps) {
+export default function TutorialTree({ onComplete, currentStep, setCurrentStep, onNodeDropped, droppedNodeScreenPos, node30ScreenPos, node90ScreenPos, sidebarNode3Pos, isTrashActive, trashBinPos }: TutorialProps) {
     const [steps, setSteps] = useState<TutorialStep[]>(TREE_TUTORIAL_STEPS);
 
     const handleStepComplete = useCallback(() => {
@@ -243,7 +245,7 @@ export default function Tutorial({ onComplete, currentStep, setCurrentStep, onNo
                         width: '326px',
                         height: '88px',
                         top: sidebarNode3Pos ? `${sidebarNode3Pos.y - 44}px` : '225px',
-                        right: sidebarNode3Pos ? `calc(100vw - ${sidebarNode3Pos.x}px + 100px)` : '420px',
+                        right: sidebarNode3Pos ? `calc(100vw - ${sidebarNode3Pos.x}px + 110px)` : '420px',
                     }}
                 >
                     <p className="text-base text-gray-800">
@@ -288,12 +290,10 @@ export default function Tutorial({ onComplete, currentStep, setCurrentStep, onNo
                     <div
                         className="fixed z-50 bg-white rounded-lg shadow-xl px-4 py-2 border border-gray-200"
                         style={{
-                            // Position relative to node 90 (or should it be relative to trash?)
-                            // User request: "Drag it to the trash bin icon" after pressing.
-                            // Position tooltip relative to Node 90 again for clarity? Or Trash?
-                            // Let's keep it near Node 90 as per previous implementation but maybe adjusted.
-                            left: '720px',
-                            top: '815px',
+                            // Position relative to trash bin, or fallback to fixed if not ready
+                            left: trashBinPos ? `${trashBinPos.x - 350}px` : '55%',
+                            top: trashBinPos ? `${trashBinPos.y - 30}px` : '85%',
+                            transform: 'translateY(-50%)', // Center vertically relative to target
                         }}
                     >
                         <p className="text-base text-gray-800 font-medium">
@@ -301,20 +301,27 @@ export default function Tutorial({ onComplete, currentStep, setCurrentStep, onNo
                         </p>
                         {/* Arrow pointing RIGHT to node 90 */}
                         <DashedArrow
-                            width={40}
-                            className="absolute pointer-events-none"
-                            style={{
-                                left: '100%',
-                                top: '50%',
-                                marginTop: '-12px',
-                                marginLeft: '10px',
-                                transform: 'rotate(180deg)',
-                            }}
+                        width={60}
+                        className="absolute pointer-events-none"
+                        style={{
+                            left: '100%',
+                            top: '50%',
+                            marginTop: '-12px',
+                            marginLeft: '10px',
+                            transform: 'rotate(180deg)', // Point Right
+                        }}
                         />
                     </div>
                     <div
-                        className="trash-bin fixed z-50 flex items-center justify-center w-17 h-17 rounded-full bg-[#FF4D4D] cursor-pointer hover:bg-[#FF3333] transition-colors shadow-lg border-3 border-[#5D5D5D]"
-                        style={{ bottom: '140px', left: '50%', transform: 'translateX(-50%)' }}
+                        className={`trash-bin fixed z-50 flex items-center justify-center w-17 h-17 rounded-full bg-[#FF4D4D] cursor-pointer hover:bg-[#FF3333] transition-all duration-300 shadow-lg border-3 border-[#5D5D5D] ${isTrashActive ? 'scale-110' : ''}`}
+                        style={{
+                            bottom: '140px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            boxShadow: isTrashActive
+                                ? '0 0 30px 10px rgba(255, 77, 77, 0.8), 0 0 10px 5px rgba(255, 255, 255, 0.5)'
+                                : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+                        }}
                         onClick={handleStepComplete}
                         onDrop={(e) => { e.preventDefault(); handleStepComplete(); }}
                         onDragOver={(e) => e.preventDefault()}
@@ -388,7 +395,7 @@ export default function Tutorial({ onComplete, currentStep, setCurrentStep, onNo
                     <div
                         className="fixed z-50 bg-white rounded-lg shadow-xl px-4 py-2 border border-gray-200"
                         style={{
-                            left: `${(droppedNodeScreenPos.x + node30ScreenPos.x) / 2 + 40}px`,
+                            left: `${(droppedNodeScreenPos.x + node30ScreenPos.x) / 2 + 50}px`,
                             top: `${(droppedNodeScreenPos.y + node30ScreenPos.y) / 2 - 15}px`,
                             pointerEvents: 'none',
                         }}
