@@ -103,6 +103,7 @@ function Playground() {
     const [droppedNodeScreenPos, setDroppedNodeScreenPos] = useState<{ x: number; y: number } | null>(null);
     const [node30ScreenPos, setNode30ScreenPos] = useState<{ x: number; y: number } | null>(null);
     const [node90ScreenPos, setNode90ScreenPos] = useState<{ x: number; y: number } | null>(null);
+    const [sidebarNode3Pos, setSidebarNode3Pos] = useState<{ x: number; y: number } | null>(null);
     const { flowToScreenPosition } = useReactFlow();
 
     // Compute screen positions for nodes when nodes change
@@ -137,8 +138,25 @@ function Playground() {
                 });
                 setNode90ScreenPos(screenPos);
             }
+
+            // Find Sidebar Node 3 for Step 1 spotlight
+            // We use a DOM selector approach since it's outside React Flow
+            if (!sidebarNode3Pos) {
+                const sidebarNodes = Array.from(document.querySelectorAll('div'));
+                const targetNode = sidebarNodes.find(el =>
+                    el.textContent?.trim() === '3' &&
+                    el.getBoundingClientRect().left > window.innerWidth / 2 // Ensure it's in the right sidebar
+                );
+                if (targetNode) {
+                    const rect = targetNode.getBoundingClientRect();
+                    setSidebarNode3Pos({
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                    });
+                }
+            }
         }
-    }, [nodes, showTutorial, flowToScreenPosition]);
+    }, [nodes, showTutorial, flowToScreenPosition, sidebarNode3Pos]);
 
     // Check if user needs to see tutorial (default: show if tree type)
     useEffect(() => {
@@ -213,7 +231,7 @@ function Playground() {
                             targetHandle: 'target-top-right',
                             type: 'straight',
                             // Highlight the new edge
-                            style: { stroke: '#333', strokeWidth: 2 },
+                            // style: { stroke: '#333', strokeWidth: 2 }, // Link should not have strong stroke anymore
                         };
                         setEdges(eds => [...eds, newEdge]);
                     }
@@ -228,6 +246,19 @@ function Playground() {
                     })));
                     setSelectedNodeId(null);
                     setTutorialStep(3);
+                }
+            } else if (tutorialStep === 4) {
+                // Step 5: Press Node 90
+                if (node.data.label === '90' || node.data.label === 90) {
+                    setNodes(nds => nds.map(n => ({
+                        ...n,
+                        data: {
+                            ...n.data,
+                            isHighlighted: n.id === node.id, // Highlight Node 90
+                            isGlowing: n.id === node.id,
+                        }
+                    })));
+                    setTutorialStep(5); // Move to Step 6 (Drag to Trash)
                 }
             }
         }
@@ -285,7 +316,26 @@ function Playground() {
                 zoomOnScroll={!showTutorial}
                 zoomOnPinch={!showTutorial}
                 zoomOnDoubleClick={!showTutorial}
-                nodesDraggable={!showTutorial}
+                nodesDraggable={!showTutorial || (showTutorial && tutorialStep === 5)} // Allow drag only in Step 6 (index 5)
+                onNodeDragStop={(e, node) => {
+                    if (showTutorial && tutorialStep === 5) {
+                        // Trash bin position logic (matches tutorial.tsx CSS)
+                        // bottom: 140px, left: 50%
+                        const trashX = window.innerWidth / 2;
+                        const trashY = window.innerHeight - 140;
+                        const dropTargetRadius = 60; // Hit radius
+
+                        // Calculate drop distance
+                        const dist = Math.sqrt(Math.pow(e.clientX - trashX, 2) + Math.pow(e.clientY - trashY, 2));
+
+                        if (dist < dropTargetRadius) {
+                            // Delete the node
+                            setNodes(nds => nds.filter(n => n.id !== node.id));
+                            // Complete tutorial
+                            handleTutorialComplete();
+                        }
+                    }
+                }}
                 fitView
                 fitViewOptions={fitViewOptions}
                 defaultEdgeOptions={defaultEdgeOptions}
@@ -313,6 +363,8 @@ function Playground() {
                     setCurrentStep={setTutorialStep}
                     droppedNodeScreenPos={droppedNodeScreenPos}
                     node30ScreenPos={node30ScreenPos}
+                    node90ScreenPos={node90ScreenPos}
+                    sidebarNode3Pos={sidebarNode3Pos}
                 />
             )}
 

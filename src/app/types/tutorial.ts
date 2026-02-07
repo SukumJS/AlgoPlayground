@@ -6,7 +6,7 @@ export type Tutorial = {
 export type TutorialStep = {
     id: number;
     instruction: string;
-    action: 'drag' | 'tap' | 'connect' | 'delete';
+    action: 'drag' | 'tap' | 'connect' | 'delete' | 'click';
     targetSelector?: string;
     completed: boolean;
 }
