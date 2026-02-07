@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import TrackProgress from "@/src/components/TrackProgress";
-import ChoiceCard from "@/src/components/ChoiceCard";
+import TrackProgress from "@/src/components/pretest/TrackProgress";
+import ChoiceCard from "@/src/components/pretest/ChoiceCard";
 import { QuizData, UserAnswer } from "../types/quiz";
 
 type ResultPageProps = {
@@ -19,7 +19,9 @@ function ResultPage({
   className = "",
 }: ResultPageProps) {
   // Calculate score for each question
-  const getQuestionScore = (questionId: string): { earned: number; total: number } => {
+  const getQuestionScore = (
+    questionId: string,
+  ): { earned: number; total: number } => {
     const question = quizData.questions.find((q) => q.id === questionId);
     const userAnswer = userAnswers.find((a) => a.questionId === questionId);
 
@@ -51,7 +53,7 @@ function ResultPage({
         <div className="space-y-10 px-8">
           {quizData.questions.map((question, questionIndex) => {
             const userAnswer = userAnswers.find(
-              (a) => a.questionId === question.id
+              (a) => a.questionId === question.id,
             );
             const score = getQuestionScore(question.id);
 
@@ -60,8 +62,7 @@ function ResultPage({
                 {/* Question Header with Score */}
                 <div className="flex items-start justify-between gap-4">
                   <p className="text-[#222121] text-base md:text-lg font-semibold">
-                    <span>{questionIndex + 1}.</span>{" "}
-                    {question.question}
+                    <span>{questionIndex + 1}.</span> {question.question}
                   </p>
                   <div className="shrink-0 px-3 py-1 border border-gray-300 rounded-lg text-sm font-medium text-gray-600">
                     {score.earned}/{score.total}
