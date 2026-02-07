@@ -50,9 +50,43 @@ interface TutorialProps {
     currentStep: number;
     setCurrentStep: (step: number) => void;
     onNodeDropped?: () => void;
+    // Dynamic screen positions for spotlight
+    droppedNodeScreenPos?: { x: number; y: number } | null;
+    node30ScreenPos?: { x: number; y: number } | null;
 }
 
-export default function Tutorial({ onComplete, currentStep, setCurrentStep, onNodeDropped }: TutorialProps) {
+// Custom Dashed Arrow Component matching Lucide style
+const DashedArrow = ({ className, style, width = 50, color = "#333" }: { className?: string, style?: React.CSSProperties, width?: number, color?: string }) => (
+    <svg
+        width={width}
+        height="24"
+        viewBox={`0 0 ${width} 24`}
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+        style={style}
+    >
+        {/* Dashed Shaft */}
+        <path
+            d={`M${width - 2} 12H5`}
+            stroke={color}
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="4 4"
+        />
+        {/* Solid Arrowhead (Left pointing) */}
+        <path
+            d="M12 19L5 12L12 5"
+            stroke={color}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
+
+export default function Tutorial({ onComplete, currentStep, setCurrentStep, onNodeDropped, droppedNodeScreenPos, node30ScreenPos }: TutorialProps) {
     const [steps, setSteps] = useState<TutorialStep[]>(TREE_TUTORIAL_STEPS);
 
     const handleStepComplete = useCallback(() => {
@@ -90,10 +124,76 @@ export default function Tutorial({ onComplete, currentStep, setCurrentStep, onNo
 
     return (
         <>
-            {/* Dark overlay */}
-            <div className="fixed inset-0 z-40 pointer-events-none">
-                <div className="absolute inset-0 bg-black/50" />
-            </div>
+            {/* Dark overlay with spotlight cutouts - using SVG for multiple holes */}
+            <svg
+                className="fixed inset-0 z-40 pointer-events-none"
+                style={{ width: '100vw', height: '100vh' }}
+            >
+                <defs>
+                    <mask id="spotlight-mask">
+                        {/* White = visible (dark overlay shows), Black = hidden (spotlight hole) */}
+                        <rect width="100%" height="100%" fill="white" />
+
+                        {/* Step 2: Spotlight on node 3 (dropped node) */}
+                        {currentStep === 1 && droppedNodeScreenPos && (
+                            <circle
+                                cx={droppedNodeScreenPos.x}
+                                cy={droppedNodeScreenPos.y}
+                                r="57"
+                                fill="black"
+                            />
+                        )}
+
+                        {/* Step 3: Dual spotlight - both node 3 AND node 30 */}
+                        {currentStep === 2 && droppedNodeScreenPos && (
+                            <circle
+                                cx={droppedNodeScreenPos.x}
+                                cy={droppedNodeScreenPos.y}
+                                r="57"
+                                fill="black"
+                            />
+                        )}
+                        {currentStep === 2 && node30ScreenPos && (
+                            <circle
+                                cx={node30ScreenPos.x}
+                                cy={node30ScreenPos.y}
+                                r="57"
+                                fill="black"
+                            />
+                        )}
+
+                        {/* Step 5: Spotlight on node 90 (trash step) - with fallback */}
+                        {currentStep === 4 && (
+                            <circle
+                                cx={node30ScreenPos ? node30ScreenPos.x + 546 : 1086} // node90 is relative to 30 roughly? or just static fallback: 1086
+                                cy={node30ScreenPos ? node30ScreenPos.y + 65 : 630}
+                                r="57"
+                                fill="black"
+                            />
+                        )}
+                    </mask>
+                </defs>
+
+                {/* Step 0: Full dark overlay (no spotlight) */}
+                {currentStep === 0 && (
+                    <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.5)" />
+                )}
+
+                {/* Steps 1-2 & 4: Dark overlay with spotlight mask applied */}
+                {(currentStep === 1 || currentStep === 2 || currentStep === 4) && (
+                    <rect
+                        width="100%"
+                        height="100%"
+                        fill="rgba(0, 0, 0, 0.5)"
+                        mask="url(#spotlight-mask)"
+                    />
+                )}
+
+                {/* Step 3 (Link Created): Full dark overlay (or maybe spotlight on link? keeping simple for now) */}
+                {currentStep === 3 && (
+                    <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.5)" />
+                )}
+            </svg>
 
             {/* Step 1: Tooltip with exact Figma size 326x88px */}
             {currentStep === 0 && (
@@ -109,48 +209,30 @@ export default function Tutorial({ onComplete, currentStep, setCurrentStep, onNo
                     <p className="text-base text-gray-800">
                         <span className="font-bold">Drag a node</span> from the panel and drop it where the playground glows.
                     </p>
-                    {/* Arrow pointing RIGHT - shorter to point at node 3 */}
-                    <div
-                        className="absolute w-0 h-0"
-                        style={{
-                            right: '-10px',
-                            top: '50%',
-                            marginTop: '-6px',
-                            borderTop: '6px solid transparent',
-                            borderBottom: '6px solid transparent',
-                            borderLeft: '10px solid white',
-                        }}
-                    />
-                    {/* Short dashed line pointing to node 3 */}
-                    <svg
+                    {/* Arrow pointing RIGHT - rotated 180deg */}
+                    <DashedArrow
+                        width={60}
                         className="absolute pointer-events-none"
                         style={{
                             left: '100%',
                             top: '50%',
-                            marginTop: '-5px',
-                            width: '100px',
-                            height: '10px',
+                            marginTop: '-12px',
+                            marginLeft: '10px',
+                            transform: 'rotate(180deg)', // Point Right
                         }}
-                    >
-                        <defs>
-                            <marker id="arrowhead-right" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                                <polygon points="0 0, 6 3, 0 6" fill="#333" />
-                            </marker>
-                        </defs>
-                        <line x1="10" y1="5" x2="65" y2="5" stroke="#333" strokeWidth="2" strokeDasharray="5,3" markerEnd="url(#arrowhead-right)" />
-                    </svg>
+                    />
                 </div>
             )}
 
-            {/* Glow drop zone (Step 1) - Visual indicator only, pointer-events pass through to RF pane */}
+            {/* Glow drop zone (Step 1) - Visual indicator only */}
             {currentStep === 0 && (
                 <div
                     className="fixed z-50 pointer-events-none"
                     style={{
                         left: '500px',
                         top: '525px',
-                        width: `${GLOW_ZONE.radius * 2}px`,
-                        height: `${GLOW_ZONE.radius * 2}px`,
+                        width: '100px',
+                        height: '100px',
                         borderRadius: '50%',
                         border: '3px solid rgba(255,255,255,0.9)',
                         background: 'transparent',
@@ -183,15 +265,117 @@ export default function Tutorial({ onComplete, currentStep, setCurrentStep, onNo
                 </>
             )}
 
-            {/* Step 2 & 3 tooltips */}
-            {(currentStep === 1 || currentStep === 2) && (
+            {/* Step 2: Tooltip pointing to node 3 */}
+            {currentStep === 1 && droppedNodeScreenPos && (
                 <div
                     className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 max-w-xs border border-gray-200"
-                    style={{ top: '120px', left: '50%', transform: 'translateX(-50%)' }}
+                    style={{
+                        left: `${droppedNodeScreenPos.x + 120}px`,
+                        top: `${droppedNodeScreenPos.y - 20}px`,
+                        borderRadius: '10px',
+                    }}
                 >
-                    <p className="text-sm text-gray-800 font-medium">
-                        {currentStepData.instruction}
+                    <p className="text-base text-gray-800 font-medium whitespace-nowrap">
+                        Tap a node to start.
                     </p>
+                    {/* Arrow pointing LEFT */}
+                    <DashedArrow
+                        width={50}
+                        className="absolute pointer-events-none"
+                        style={{
+                            right: '100%',
+                            top: '50%',
+                            marginTop: '-12px',
+                            marginRight: '10px',
+                        }}
+                    />
+                </div>
+            )}
+
+            {/* Step 3: Tooltip pointing to node 30 */}
+            {currentStep === 2 && node30ScreenPos && (
+                <div
+                    className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 max-w-xs border border-gray-200"
+                    style={{
+                        left: `${node30ScreenPos.x + 120}px`,
+                        top: `${node30ScreenPos.y - 20}px`,
+                        borderRadius: '10px',
+                    }}
+                >
+                    <p className="text-base text-gray-800 font-medium">
+                        Now, tap another node to create a link.
+                    </p>
+                    {/* Arrow pointing LEFT */}
+                    <DashedArrow
+                        width={50}
+                        className="absolute pointer-events-none"
+                        style={{
+                            right: '100%',
+                            top: '50%',
+                            marginTop: '-12px',
+                            marginRight: '10px',
+                        }}
+                    />
+                </div>
+            )}
+
+            {/* Step 4: Link Created! */}
+            {currentStep === 3 && droppedNodeScreenPos && node30ScreenPos && (
+                <>
+                    <div
+                        className="fixed inset-0 z-[45] cursor-pointer"
+                        onClick={() => setCurrentStep(4)}
+                    />
+                    <div
+                        className="fixed z-50 bg-white rounded-lg shadow-xl px-4 py-2 border border-gray-200"
+                        style={{
+                            left: `${(droppedNodeScreenPos.x + node30ScreenPos.x) / 2 + 40}px`,
+                            top: `${(droppedNodeScreenPos.y + node30ScreenPos.y) / 2 - 15}px`,
+                        }}
+                    >
+                        <p className="text-base text-gray-800 font-medium whitespace-nowrap">
+                            Link Created!
+                        </p>
+                        {/* Arrow pointing LEFT */}
+                        <DashedArrow
+                            width={30}
+                            className="absolute pointer-events-none"
+                            style={{
+                                right: '100%',
+                                top: '50%',
+                                marginTop: '-12px',
+                                marginRight: '10px',
+                            }}
+                        />
+                    </div>
+                </>
+            )}
+
+            {/* Step 5: Drag to trash bin */}
+            {currentStep === 4 && (
+                <div
+                    className="fixed z-50 bg-white rounded-lg shadow-xl px-4 py-2 border border-gray-200"
+                    style={{
+                        // Fallback position for node 90
+                        left: `${(node30ScreenPos ? node30ScreenPos.x + 546 : 1086) - 260}px`,
+                        top: `${(node30ScreenPos ? node30ScreenPos.y + 65 : 630) - 15}px`,
+                    }}
+                >
+                    <p className="text-base text-gray-800 font-medium">
+                        Drag it to the trash bin icon.
+                    </p>
+                    {/* Arrow pointing RIGHT to node 90 */}
+                    <DashedArrow
+                        width={40}
+                        className="absolute pointer-events-none"
+                        style={{
+                            left: '100%',
+                            top: '50%',
+                            marginTop: '-12px',
+                            marginLeft: '10px',
+                            transform: 'rotate(180deg)',
+                        }}
+                    />
                 </div>
             )}
 

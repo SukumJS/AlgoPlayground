@@ -57,7 +57,7 @@ function Data_tree({ tutorialMode = false, tutorialStep = 0, onTutorialDropSucce
                     // Use GLOW_ZONE constant for consistency
                     const glowCenterX = GLOW_ZONE.x;
                     const glowCenterY = GLOW_ZONE.y;
-                    const allowedRadius = GLOW_ZONE.radius * 2.5; // Allow generous drop area
+                    const allowedRadius = GLOW_ZONE.radius; // Allow generous drop area
 
                     const dx = position.x - glowCenterX;
                     const dy = position.y - glowCenterY;
@@ -74,6 +74,8 @@ function Data_tree({ tutorialMode = false, tutorialStep = 0, onTutorialDropSucce
                     type: "custom",
                     position,
                     data: { label: Sample.toString(), variant: "circle" },
+                    // Higher z-index during tutorial so node 3 appears above others
+                    zIndex: tutorialMode ? 100 : undefined,
                 };
 
                 setNodes((nds) => nds.concat(newNode));
