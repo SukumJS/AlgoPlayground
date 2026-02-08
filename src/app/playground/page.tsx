@@ -9,7 +9,9 @@ import Data_sort from "../../components/visualizer/data_sort";
 import { DnDProvider } from "@/src/components/visualizer/useDnD";
 import Tutorial_modal from "../../components/shared/tutorial_modal";
 import TutorialTree from "../../components/visualizer/tutorial_tree";
+import TreeTrashBin from "../../components/visualizer/TreeTrashBin";
 import { useTreeTutorial } from "@/src/hooks/useTreeTutorial";
+import { useTreeNodeInteraction } from "@/src/hooks/useTreeNodeInteraction";
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -97,6 +99,16 @@ function Playground() {
         isTree,
     });
 
+    // Node interaction (only active when NOT in tutorial)
+    const nodeInteraction = useTreeNodeInteraction({
+        nodes,
+        edges,
+        setNodes,
+        setEdges,
+        isTree,
+        isTutorialActive: tutorial.showTutorial,
+    });
+
     const onNodesChange: OnNodesChange = useCallback(
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
         [setNodes],
@@ -122,6 +134,52 @@ function Playground() {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
     }, []);
+
+    // Combined node click handler
+    const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+        if (tutorial.showTutorial) {
+            tutorial.handleNodeClick(event, node);
+        } else if (isTree) {
+            nodeInteraction.handleNodeClick(event, node);
+        }
+    }, [tutorial, nodeInteraction, isTree]);
+
+    // Combined node drag handlers
+    const handleNodeDrag = useCallback((event: React.MouseEvent, node: Node) => {
+        if (tutorial.showTutorial) {
+            tutorial.onNodeDrag(event, node);
+        } else if (isTree) {
+            nodeInteraction.handleNodeDrag(event, node);
+        }
+    }, [tutorial, nodeInteraction, isTree]);
+
+    const handleNodeDragStop = useCallback((event: React.MouseEvent, node: Node) => {
+        if (tutorial.showTutorial) {
+            tutorial.onNodeDragStop(event, node);
+        } else if (isTree) {
+            nodeInteraction.handleNodeDragStop(event, node);
+        }
+    }, [tutorial, nodeInteraction, isTree]);
+
+    // Node mouse down/up for hold detection
+    const handleNodeMouseDown = useCallback((event: React.MouseEvent, node: Node) => {
+        if (!tutorial.showTutorial && isTree) {
+            nodeInteraction.handleNodeMouseDown(event, node);
+        }
+    }, [tutorial.showTutorial, nodeInteraction, isTree]);
+
+    const handleNodeMouseUp = useCallback(() => {
+        if (!tutorial.showTutorial && isTree) {
+            nodeInteraction.handleNodeMouseUp();
+        }
+    }, [tutorial.showTutorial, nodeInteraction, isTree]);
+
+    // Pane click to clear selection
+    const handlePaneClick = useCallback(() => {
+        if (!tutorial.showTutorial && isTree) {
+            nodeInteraction.handlePaneClick();
+        }
+    }, [tutorial.showTutorial, nodeInteraction, isTree]);
 
     const renderDataVisualizer = () => {
         switch (algoType) {
@@ -164,14 +222,17 @@ function Playground() {
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
                 onDragOver={onDragOver}
-                onNodeClick={tutorial.handleNodeClick}
+                onNodeClick={handleNodeClick}
+                onNodeMouseEnter={handleNodeMouseDown}
+                onNodeMouseLeave={handleNodeMouseUp}
+                onPaneClick={handlePaneClick}
                 panOnDrag={!tutorial.showTutorial}
                 zoomOnScroll={!tutorial.showTutorial}
                 zoomOnPinch={!tutorial.showTutorial}
                 zoomOnDoubleClick={!tutorial.showTutorial}
                 nodesDraggable={!tutorial.showTutorial || (tutorial.showTutorial && tutorial.tutorialStep === 5)}
-                onNodeDrag={tutorial.onNodeDrag}
-                onNodeDragStop={tutorial.onNodeDragStop}
+                onNodeDrag={handleNodeDrag}
+                onNodeDragStop={handleNodeDragStop}
                 fitView
                 fitViewOptions={fitViewOptions}
                 defaultEdgeOptions={defaultEdgeOptions}
@@ -202,6 +263,15 @@ function Playground() {
                     sidebarNode3Pos={tutorial.sidebarNode3Pos}
                     isTrashActive={tutorial.isTrashActive}
                     trashBinPos={tutorial.trashBinPos}
+                />
+            )}
+
+            {/* Tree trash bin (non-tutorial mode) */}
+            {!tutorial.showTutorial && isTree && (
+                <TreeTrashBin
+                    show={nodeInteraction.showTrashBin}
+                    isActive={nodeInteraction.isTrashActive}
+                    position={nodeInteraction.trashBinPos}
                 />
             )}
 

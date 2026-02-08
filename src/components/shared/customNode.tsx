@@ -7,14 +7,19 @@ type CustomNodeData = {
     variant?: 'square' | 'circle';
     isHighlighted?: boolean;
     isGlowing?: boolean;
+    isDanger?: boolean;
 };
 
 export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
     const isCircle = data.variant === 'circle';
+    const bgColor = data.isDanger ? 'bg-[#BF1A1A]' : 'bg-[#D9E363]';
+    const textColor = data.isDanger ? 'text-white' : 'text-[#222121]';
+    const borderColor = data.isDanger ? 'border-[#BF1A1A]' : (data.isHighlighted ? 'border-[#D9E363]' : 'border-[#5D5D5D]');
+    const borderWidth = data.isHighlighted || data.isDanger ? 'border-4' : 'border-2';
 
     return (
         <div
-            className={`relative shrink-0 flex text-[#222121] text-2xl font-semibold justify-center items-center border-2 bg-[#D9E363] w-14 h-14 cursor-grab ${isCircle ? 'rounded-full' : 'rounded-lg'} ${data.isHighlighted ? 'border-[#D9E363] border-4' : 'border-[#5D5D5D]'}`}
+            className={`relative shrink-0 flex ${textColor} text-2xl font-semibold justify-center items-center ${borderWidth} ${borderColor} ${bgColor} w-14 h-14 cursor-grab transition-colors duration-200 ${isCircle ? 'rounded-full' : 'rounded-lg'}`}
             style={{
                 boxShadow: data.isGlowing
                     ? '0 0 20px rgba(40, 40, 40, 0.8), 0 0 40px rgba(55, 55, 55, 0.5)'
