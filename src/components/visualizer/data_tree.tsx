@@ -139,6 +139,7 @@ function Data_tree({ tutorialMode = false, tutorialStep = 0, onTutorialDropSucce
                         <div
                             key={index}
                             className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] cursor-grab bg-[#D9E363]"
+                            data-tutorial-target={item.number === "3" ? "sidebar-node-3" : undefined}
                             onPointerDown={(event) => {
                                 setType("custom");
                                 setDraggedValue(parseInt(item.number));

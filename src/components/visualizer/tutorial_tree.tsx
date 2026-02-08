@@ -54,9 +54,9 @@ const TREE_TUTORIAL_STEPS: TutorialStep[] = [
 // Screen position: left:500px, top:525px (center: 540, 565)
 // Calculated canvas coords: x=78.5, y=283.25 (scale=2, tx=383, ty=-1.5)
 export const GLOW_ZONE = {
-    x: 80,
+    x: 5,
     y: 285,
-    radius: 40,
+    radius: 20,
 };
 
 interface TutorialProps {
@@ -271,8 +271,8 @@ export default function TutorialTree({ onComplete, currentStep, setCurrentStep, 
                 <div
                     className="fixed z-50 pointer-events-none"
                     style={{
-                        left: '500px',
-                        top: '525px',
+                        left: '300px',
+                        top: '500px',
                         width: '100px',
                         height: '100px',
                         borderRadius: '50%',
