@@ -97,11 +97,13 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
         title: "Queue",
         progress: {
           pretest: {
-            status: "locked",
+            status: "completed",
+            score: 5,
             totalCount: 5,
           },
           posttest: {
-            status: "locked",
+            status: "completed",
+            score: 5,
             totalCount: 5,
           },
         },

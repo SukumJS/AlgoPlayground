@@ -8,43 +8,60 @@ interface ProgressRowProps {
 }
 
 
-const getRowBgColor = (
+const getRowColors = (
   score: number,
   status: "locked" | "active" | "completed",
   isPretest: boolean
 ) => {
-  if (status === "locked") return "bg-[#E5E5E5]"
+  if (status === "locked") {
+    return {
+      bg: "bg-[#E5E5E5]",
+      text: "text-gray-600",
+    }
+  }
 
+  if (status === "active") {
+    return {
+      bg: "bg-[#62A2F7]/30",
+      text: "text-blue-700",
+    }
+  }
 
-  if (score <= 2) return "bg-red-100"
-  if (score <= 4) return "bg-yellow-100"
+  // completed → ดูคะแนน
+  if (score <= 2) {
+    return {
+      bg: "bg-red-100",
+      text: "text-red-700",
+    }
+  }
 
+  if (score <= 4) {
+    return {
+      bg: "bg-yellow-100",
+      text: "text-yellow-700",
+    }
+  }
 
-  return isPretest ? "bg-[#EAF2FF]" : "bg-[#EAF7EA]"
+  // full score
+  return isPretest
+    ? {
+      bg: "bg-[#EAF2FF]",
+      text: "text-blue-700",
+    }
+    : {
+      bg: "bg-[#EAF7EA]",
+      text: "text-green-700",
+    }
 }
+
 
 
 export function ProgressRow({ label, score, status }: ProgressRowProps) {
   const isPretest = label.toLowerCase().includes("pre")
 
 
-  const bgColor = getRowBgColor(score, status, isPretest)
+  const { bg, text } = getRowColors(score, status, isPretest)
 
-
-  const textColor =
-    status === "locked"
-      ? "text-[#6B6B6B]"
-      : isPretest
-      ? "text-blue-700"
-      : "text-green-700"
-
-
-  const statusLabel =
-    status === "locked"
-      ? "Not start"
-      : status === "active"
-      ? "progress"
-      : "Completed"
 
 
   return (
@@ -53,21 +70,25 @@ export function ProgressRow({ label, score, status }: ProgressRowProps) {
         min-w-[212px] px-[8px] py-[6px]
         rounded-[15px] flex items-center
         transition-colors duration-300
-        ${bgColor}
+        ${bg}
       `}
     >
-      
+
       {/* label - center */}
-      <span className={`flex-1  text-[14px] ${textColor}`}>
+      <span className={`flex-1 text-[14px] ${text}`}>
         {label}
       </span>
 
 
       {/* score - right */}
-      <span className={`text-[12px] text-center font-medium ${textColor} shrink-0  px-2`}>
-        {status === "completed" ? `${score} / 5` : "— / 5"}
+      <span className={`text-[12px] text-center font-medium ${text} shrink-0 px-2`}>
+        {status === "locked"
+          ? "Not started"
+          : status === "active"
+            ? "In progress"
+            : `${score} / 5`}
       </span>
-      
+
     </div>
   )
 }

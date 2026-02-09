@@ -20,14 +20,7 @@ interface Props {
     }
   }
 }
-const getStatusLabel = (
-  status: "locked" | "active" | "completed"
-) =>
-  status === "locked"
-    ? "Not start"
-    : status === "active"
-      ? "progress"
-      : "Completed"
+
 
 
 export default function AlgorithmCard({ slug, title, shortTitle, progress }: Props) {
@@ -110,31 +103,13 @@ export default function AlgorithmCard({ slug, title, shortTitle, progress }: Pro
         <h2 className="text-lg font-semibold text-gray-900 text-center leading-tight relative -top-3"title={title}>
           {shortTitle ?? title}
         </h2>
-        <span
-          className="
-    absolute
-    top-[3rem]   
-    text-xs
-    text-gray-600
-  "
-        >
-          {getStatusLabel(progress.pretest.status)}
-        </span>
+
         <ProgressRow
           label="Pretest"
           score={progress.pretest.score}
           status={progress.pretest.status}
         />
-        <span
-          className="
-    absolute
-    bottom-[4rem]   
-    text-xs
-    text-gray-600
-  "
-        >
-          {getStatusLabel(progress.posttest.status)}
-        </span>
+     
         <ProgressRow
           label="Posttest"
           score={progress.posttest.score}
