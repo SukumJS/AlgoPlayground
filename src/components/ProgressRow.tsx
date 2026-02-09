@@ -1,64 +1,76 @@
 import { Circle, CircleCheck } from "lucide-react"
 
+
 interface ProgressRowProps {
   label: string
-  percent: number
+  score: number // 0 - 5
   status: "locked" | "active" | "completed"
 }
 
-export function ProgressRow({ label, percent, status }: ProgressRowProps) {
-  const lockedStyles = {
-    bg: "bg-[#E5E5E5]",
-    text: "text-[#6B6B6B]",
-    badge: "bg-[#9E9E9E]",
-  }
 
-  const typeStyles = {
-    posttest: {
-      bg: "bg-[#EAF7EA]",
-      text: "text-[#2E7D32]",
-      badge: "bg-[#2E7D32]",
-    },
-    pretest: {
-      bg: "bg-[#EAF2FF]",
-      text: "text-[#1E5EFF]",
-      badge: "bg-[#1E5EFF]",
-    },
-  }
+const getRowBgColor = (
+  score: number,
+  status: "locked" | "active" | "completed",
+  isPretest: boolean
+) => {
+  if (status === "locked") return "bg-[#E5E5E5]"
 
+
+  if (score <= 2) return "bg-red-100"
+  if (score <= 4) return "bg-yellow-100"
+
+
+  return isPretest ? "bg-[#EAF2FF]" : "bg-[#EAF7EA]"
+}
+
+
+export function ProgressRow({ label, score, status }: ProgressRowProps) {
   const isPretest = label.toLowerCase().includes("pre")
 
-  const styles =
+
+  const bgColor = getRowBgColor(score, status, isPretest)
+
+
+  const textColor =
     status === "locked"
-      ? lockedStyles
+      ? "text-[#6B6B6B]"
       : isPretest
-      ? typeStyles.pretest
-      : typeStyles.posttest
+      ? "text-blue-700"
+      : "text-green-700"
+
+
+  const statusLabel =
+    status === "locked"
+      ? "Not start"
+      : status === "active"
+      ? "progress"
+      : "Completed"
+
 
   return (
     <div
-      className={`min-w-[212px] px-[8px] py-[6px]
-      rounded-[15px] flex items-center justify-between
-      ${styles.bg}`}
+      className={`
+        min-w-[212px] px-[8px] py-[6px]
+        rounded-[15px] flex items-center
+        transition-colors duration-300
+        ${bgColor}
+      `}
     >
-      {/* icon */}
-      {percent === 100 && status !== "locked" ? (
-        <CircleCheck className={`w-[18px] h-[18px] ${styles.text}`} />
-      ) : (
-        <Circle className={`w-[18px] h-[18px] ${styles.text}`} />
-      )}
-
-      <span className={`text-[14px] ${styles.text}`}>
+      
+      {/* label - center */}
+      <span className={`flex-1  text-[14px] ${textColor}`}>
         {label}
       </span>
 
-      <span
-        className={`text-white text-[12px]
-        px-[6px] py-[2px] rounded-[10px]
-        ${styles.badge}`}
-      >
-        {percent}%
+
+      {/* score - right */}
+      <span className={`text-[12px] text-center font-medium ${textColor} shrink-0  px-2`}>
+        {status === "completed" ? `${score} / 5` : "— / 5"}
       </span>
+      
     </div>
   )
 }
+
+
+

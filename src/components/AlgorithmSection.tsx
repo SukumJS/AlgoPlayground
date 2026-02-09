@@ -3,13 +3,14 @@ import AlgorithmCard from "./AlgorithmCard"
 interface Item {
   slug: string
   title: string
+  shortTitle?: string
   progress: {
     pretest: {
-      percent: number
+      score: number
       status: "locked" | "active" | "completed"
     }
     posttest: {
-      percent: number
+      score: number
       status: "locked" | "active" | "completed"
     }
   }
@@ -33,6 +34,7 @@ export default function AlgorithmSection({ title, items }: Props) {
             key={item.slug}
             slug={item.slug}         
             title={item.title}
+            shortTitle={item.shortTitle || item.title}
             progress={item.progress}
           />
         ))}
