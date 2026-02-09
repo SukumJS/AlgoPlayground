@@ -8,9 +8,7 @@ import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
 import { positionFromIndex } from "./useSortingDrag";
 
-const NODE_WIDTH = 63;
-const NODE_MARGIN = 2;
-const NODE_GAP = NODE_WIDTH + NODE_MARGIN;
+const NODE_GAP = 65;
 const SORT_Y = 6;
 
 let id = 0;
@@ -36,26 +34,33 @@ function Data_sort({nodeInput, setNodeInput}: nodeProps) {
             return ({ position }) => {
             const nodes = getNodes();
 
-            let insertIndex = Math.round(position.x / NODE_GAP);
+            const pointerCenterX = position.x;
 
-            insertIndex = Math.max(
-                0,
-                Math.min(nodes.length, insertIndex)
+            const sorted = [...nodes].sort(
+                (a, b) => a.position.x - b.position.x
             );
+
+            let insertIndex = sorted.findIndex((n) => {
+                const centerX = n.position.x + NODE_GAP / 2;
+                return pointerCenterX < centerX;
+            });
+
+            if (insertIndex === -1) {
+                insertIndex = sorted.length;
+            }
 
             const newNode: Node = {
                 id: getId(),
                 type: "custom",
                 data: { label: sampleValue.toString() },
-                position: { x: 0, y: SORT_Y }, 
+                position: { x: 0, y: SORT_Y },
                 className: "sortable-node",
             };
 
-            const updated = [...nodes];
-            updated.splice(insertIndex, 0, newNode);
+            sorted.splice(insertIndex, 0, newNode);
 
             setNodes(
-                updated.map((n, i) => ({
+                sorted.map((n, i) => ({
                 ...n,
                 position: positionFromIndex(i),
                 }))

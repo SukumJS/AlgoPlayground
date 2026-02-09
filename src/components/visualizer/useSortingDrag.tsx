@@ -1,18 +1,13 @@
 import { Node, OnNodeDrag } from "@xyflow/react";
 
-const NODE_WIDTH = 63;
-const NODE_MARGIN = 2;
-const NODE_GAP = NODE_WIDTH + NODE_MARGIN;
-const SORT_Y = 6;
+const NODE_GAP = 65;
+const SORT_Y = 5;
+const START_X = -50;
 
 export const positionFromIndex = (index: number) => ({
-  x: index * NODE_GAP,
+  x: START_X + index * NODE_GAP,
   y: SORT_Y,
 });
-
-export const indexFromX = (x: number) =>
-  Math.round(x / NODE_GAP);
-
 
 export function useSortingDrag(
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
@@ -35,29 +30,31 @@ export function useSortingDrag(
 
   const onSortDragStop: OnNodeDrag = (_, draggedNode) => {
     setNodes((prev) => {
-      const sorted = [...prev].sort(
-        (a, b) => a.position.x - b.position.x
+      const others = prev.filter(
+        (n) => n.id !== draggedNode.id
       );
 
-      const oldIndex = sorted.findIndex(
-        (n) => n.id === draggedNode.id
+      const draggedCenterX =
+        draggedNode.position.x + NODE_GAP / 2;
+
+      const sortedOthers = [...others].sort(
+        (a, b) =>
+          a.position.x - b.position.x
       );
 
-      let newIndex = Math.round(
-        draggedNode.position.x / NODE_GAP
-      );
+      let insertIndex = sortedOthers.findIndex((n) => {
+        const centerX =
+          n.position.x + NODE_GAP / 2;
+        return draggedCenterX < centerX;
+      });
 
-      newIndex = Math.max(
-        0,
-        Math.min(sorted.length - 1, newIndex)
-      );
-
-      if (oldIndex !== newIndex) {
-        const [moved] = sorted.splice(oldIndex, 1);
-        sorted.splice(newIndex, 0, moved);
+      if (insertIndex === -1) {
+        insertIndex = sortedOthers.length;
       }
 
-      return sorted.map((n, i) => ({
+      sortedOthers.splice(insertIndex, 0, draggedNode);
+
+      return sortedOthers.map((n, i) => ({
         ...n,
         position: positionFromIndex(i),
       }));
