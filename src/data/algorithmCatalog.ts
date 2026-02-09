@@ -1,16 +1,21 @@
 export type Status = "active" | "locked" | "completed"
 
-export type Item = {
+export type TestProgress = {
   slug: string
   title: string
+  shortTitle?: string
   progress: {
     pretest: {
-      percent: number
       status: Status
+      score?: number
+      answeredCount?: number
+      totalCount: number
     }
     posttest: {
-      percent: number
       status: Status
+      score?: number
+      answeredCount?: number
+      totalCount: number
     }
   }
 }
@@ -18,7 +23,7 @@ export type Item = {
 export type AlgorithmSectionData = {
   id: string
   title: string
-  items: Item[]
+  items: TestProgress[]
 }
 export const algorithmCatalog: AlgorithmSectionData[] = [
   {
@@ -29,40 +34,76 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
         slug: "array",
         title: "Array",
         progress: {
-          pretest: { percent: 100, status: "active" },
-          posttest: { percent: 60, status: "active" },
+          pretest: {
+            status: "completed",
+            score: 2,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "doubly-linked-list",
         title: "Doubly Linked List",
         progress: {
-          pretest: { percent: 100, status: "completed" },
-          posttest: { percent: 100, status: "completed" },
+          pretest: {
+            status: "completed",
+            score: 5,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "completed",
+            score: 4,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "singly-linked-list",
         title: "Singly Linked List",
         progress: {
-          pretest: { percent: 30, status: "active" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "active",
+            answeredCount: 3,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "stack",
         title: "Stack",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 4,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "active",
+            answeredCount: 3,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "queue",
         title: "Queue",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "locked",
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
     ],
@@ -75,57 +116,112 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
       {
         slug: "binary-tree-inorder",
         title: "Binary Tree Traversal (Inorder)",
+        shortTitle: "BT Inorder",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 5,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "completed",
+            score: 5,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "binary-tree-preorder",
         title: "Binary Tree Traversal (Preorder)",
+        shortTitle: "BT Preorder",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 4,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "active",
+            answeredCount: 3,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "binary-tree-postorder",
         title: "Binary Tree Traversal (Postorder)",
+        shortTitle: "BT Postorder",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "active",
+            answeredCount: 2,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "binary-search-tree",
         title: "Binary Search Tree",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 5,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "completed",
+            score: 4,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "avl-tree",
         title: "AVL Tree",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "active",
+            answeredCount: 3,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "min-heap",
         title: "Min Heap",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 4,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "active",
+            answeredCount: 2,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "max-heap",
         title: "Max Heap",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "locked",
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
     ],
@@ -139,48 +235,92 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
         slug: "breadth-first-search",
         title: "Breadth-First Search",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 5,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "completed",
+            score: 5,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "depth-first-search",
         title: "Depth-First Search",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 4,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "active",
+            answeredCount: 3,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "dijkstra",
-        title: "Dijkstra’s ",
+        title: "Dijkstra’s",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "active",
+            answeredCount: 3,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "bellman-ford",
-        title: "Bellman-Ford ",
+        title: "Bellman-Ford",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "active",
+            answeredCount: 2,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "prims",
-        title: "Prim’s ",
+        title: "Prim’s",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 5,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "completed",
+            score: 4,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "kruskals",
-        title: "Kruskal’s ",
+        title: "Kruskal’s",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "locked",
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
     ],
@@ -194,40 +334,76 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
         slug: "bubble-sort",
         title: "Bubble Sort",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 4,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "completed",
+            score: 5,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "selection-sort",
         title: "Selection Sort",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "active",
+            answeredCount: 3,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "insertion-sort",
         title: "Insertion Sort",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 5,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "completed",
+            score: 4,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "merge-sort",
         title: "Merge Sort",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "active",
+            answeredCount: 2,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "queue-sort",
         title: "Queue Sort",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "locked",
+            totalCount: 5,
+          },
+          posttest: {
+            status: "locked",
+            totalCount: 5,
+          },
         },
       },
     ],
@@ -241,18 +417,35 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
         slug: "linear-search",
         title: "Linear Search",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 4,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "active",
+            answeredCount: 3,
+            totalCount: 5,
+          },
         },
       },
       {
         slug: "binary-search",
         title: "Binary Search",
         progress: {
-          pretest: { percent: 0, status: "locked" },
-          posttest: { percent: 0, status: "locked" },
+          pretest: {
+            status: "completed",
+            score: 5,
+            totalCount: 5,
+          },
+          posttest: {
+            status: "completed",
+            score: 5,
+            totalCount: 5,
+          },
         },
       },
     ],
   },
 ]
+
