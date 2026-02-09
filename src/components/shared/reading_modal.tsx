@@ -50,7 +50,7 @@ function Reading_modal({ isOpen, onClose }: Props) {
     const data = Reading_Mock;
     return (
         <ModalOverlay isOpen={isOpen} onClose={onClose}>
-            <div className='w-132 h-146 bg-white border border-gray-300 rounded-lg p-4 overflow-auto'>
+            <div className='w-172 h-156 bg-white border border-gray-300 rounded-lg p-4 overflow-auto'>
                 <div className='flex justify-end'>
                     <X className='cursor-pointer' onClick={onClose}/>
                 </div>

@@ -33,6 +33,7 @@ import CustomNode from "@/src/components/shared/customNode";
 import '@xyflow/react/dist/base.css';
 import Reading_modal from "@/src/components/shared/reading_modal";
 import { Info } from "lucide-react";
+import StatusNode from "@/src/components/shared/statusNode";
 
 const nodeTypes = {
     custom: CustomNode,
@@ -144,20 +145,25 @@ function Playground() {
         
         {/* Add SideTab Component Here */}
         <SideTab title={getTitle()}>
-            <CodeAlgo />
-            <ExplainAlgo />
-            {renderDataVisualizer()}
-            <PostTest_portal />
+            <div>
+                <CodeAlgo />
+                <ExplainAlgo />
+                {renderDataVisualizer()}
+            </div>
+            <div>
+                <PostTest_portal />
+            </div>
         </SideTab>
 
-        <div className="absolute top-4 left-8 z-10">
+        <div className="absolute top-4 left-8 z-10 flex gap-2">
             <button
             onClick={(e) => {
                 e.stopPropagation();
                 setShowInfo(true)}}
-            className="rounded-full bg-white p-2 border border-gray-200 shadow hover:shadow-md transition">
+            className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition">
                 <Info color='#000000' />
-            </button>    
+            </button>
+            <StatusNode />  
         </div>
 
         <Reading_modal 
