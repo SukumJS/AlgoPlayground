@@ -95,6 +95,7 @@ function Playground() {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
+    {/*Check Type & Display Data Input of Current Algorithms */}
     const renderDataVisualizer = () => {
         switch (algoType) {
         case "tree":
@@ -108,6 +109,7 @@ function Playground() {
         }
     };
 
+    {/*Check Type & Display Title of Current Algorithms */}
     const getTitle = () => {
         switch (algoType) {
         case "tree":
@@ -155,6 +157,7 @@ function Playground() {
             </div>
         </SideTab>
 
+        {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
         <div className="absolute top-4 left-8 z-10 flex gap-2">
             <button
             onClick={(e) => {
@@ -166,10 +169,13 @@ function Playground() {
             <StatusNode />  
         </div>
 
+        {/* Info Reading inside Playground */}
         <Reading_modal 
         isOpen={showInfo} 
         onClose={() => setShowInfo(false)} />
 
+        
+        {/* STutorial Complelte Modal Show When User Finish Tutorial */}
         {/* <Tutorial_modal
             showModal={showTutorial}
             onClose={() => setShowTutorial(false)}
