@@ -104,7 +104,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
         {/*Sign in*/}
         <div className="ml-4">
           {!isLoggedIn ? (
-            <Link href="/auth/login">
+            <Link href="/auth/signin">
               <button className="px-6 py-2 rounded-full bg-[#1A75D1] text-[#F1F1F1] font-bold shadow-md">
                 Sign in
               </button>
