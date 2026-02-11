@@ -232,10 +232,11 @@ export function useGraphTutorial({
                 id: `e-${pendingEdge.source}-${pendingEdge.target}`,
                 source: pendingEdge.source,
                 target: pendingEdge.target,
-                type: 'straight',
+                type: 'floatingEdge',
                 label: String(weight),
                 data: { weight },
-                markerEnd: { type: 'arrowclosed' as const },
+                style: { stroke: '#222121', strokeWidth: 1 },
+                markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' },
             };
             setEdges(eds => [...eds, newEdge]);
             setPendingEdge(null);

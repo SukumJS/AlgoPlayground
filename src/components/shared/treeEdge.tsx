@@ -1,14 +1,15 @@
 import React from 'react';
-import { BaseEdge, getStraightPath, type EdgeProps } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, getStraightPath, type EdgeProps } from '@xyflow/react';
 
-// Custom Tree Edge that extends to touch circle node borders
-// Adjusts the path to account for node radius so edge touches the circle
+// Custom Edge that extends to touch circle node borders
+// Supports labels for graph weights
 export default function TreeEdge({
     id,
     sourceX,
     sourceY,
     targetX,
     targetY,
+    label,
     style,
     markerEnd,
 }: EdgeProps) {
@@ -20,15 +21,15 @@ export default function TreeEdge({
     const deltaY = targetY - sourceY;
     const angle = Math.atan2(deltaY, deltaX);
 
-    // Adjust source point to be at circle edge (move towards target)
-    const adjustedSourceX = sourceX + Math.cos(angle) * (nodeRadius * 0.3);
-    const adjustedSourceY = sourceY + Math.sin(angle) * (nodeRadius * 0.3);
+    // Adjust source point to be at circle edge
+    const adjustedSourceX = sourceX + Math.cos(angle) * nodeRadius;
+    const adjustedSourceY = sourceY + Math.sin(angle) * nodeRadius;
 
-    // Adjust target point to be at circle edge (move towards source)
-    const adjustedTargetX = targetX - Math.cos(angle) * (nodeRadius * 0.3);
-    const adjustedTargetY = targetY - Math.sin(angle) * (nodeRadius * 0.3);
+    // Adjust target point to be at circle edge
+    const adjustedTargetX = targetX - Math.cos(angle) * nodeRadius;
+    const adjustedTargetY = targetY - Math.sin(angle) * nodeRadius;
 
-    const [edgePath] = getStraightPath({
+    const [edgePath, labelX, labelY] = getStraightPath({
         sourceX: adjustedSourceX,
         sourceY: adjustedSourceY,
         targetX: adjustedTargetX,
@@ -36,15 +37,34 @@ export default function TreeEdge({
     });
 
     return (
-        <BaseEdge
-            id={id}
-            path={edgePath}
-            style={{
-                ...style,
-                strokeWidth: 2,
-                stroke: '#5D5D5D',
-            }}
-            markerEnd={markerEnd}
-        />
+        <>
+            <BaseEdge
+                id={id}
+                path={edgePath}
+                style={{
+                    ...style,
+                    strokeWidth: 2,
+                    stroke: '#5D5D5D',
+                }}
+                markerEnd={markerEnd}
+            />
+            {label && (
+                <EdgeLabelRenderer>
+                    <div
+                        style={{
+                            position: 'absolute',
+                            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+                            pointerEvents: 'all',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: '#5D5D5D',
+                        }}
+                        className="nodrag nopan"
+                    >
+                        {label}
+                    </div>
+                </EdgeLabelRenderer>
+            )}
+        </>
     );
 }

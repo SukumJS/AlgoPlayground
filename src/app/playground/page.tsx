@@ -36,6 +36,7 @@ import Data_tree from "@/src/components/visualizer/data_tree";
 import Data_graph from "@/src/components/visualizer/data_graph";
 import CustomNode from "@/src/components/shared/customNode";
 import TreeEdge from "@/src/components/shared/treeEdge";
+import FloatingEdge from "@/src/components/shared/FloatingEdge";
 import '@xyflow/react/dist/base.css';
 
 const nodeTypes = {
@@ -44,6 +45,7 @@ const nodeTypes = {
 
 const edgeTypes = {
     tree: TreeEdge,
+    floatingEdge: FloatingEdge,
 };
 
 // Initial nodes for sorting (horizontal layout)
@@ -74,22 +76,21 @@ const treeInitialEdges: Edge[] = [
 
 const sortingInitialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
 
-// Initial nodes for graph (Dijkstra's algorithm layout from Figma)
+// Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
 const graphInitialNodes: Node[] = [
-    { id: "g1", type: "custom", data: { label: "64", variant: "circle" }, position: { x: 50, y: 100 } },
-    { id: "g2", type: "custom", data: { label: "39", variant: "circle" }, position: { x: 150, y: 50 } },
-    { id: "g3", type: "custom", data: { label: "97", variant: "circle" }, position: { x: 350, y: 50 } },
-    { id: "g4", type: "custom", data: { label: "69", variant: "circle" }, position: { x: 150, y: 220 } },
-    { id: "g5", type: "custom", data: { label: "70", variant: "circle" }, position: { x: 350, y: 200 } },
+    { id: "g1", type: "custom", data: { label: "64", variant: "circle" }, position: { x: 50, y: 280 } },
+    { id: "g2", type: "custom", data: { label: "39", variant: "circle" }, position: { x: 260, y: 120 } },
+    { id: "g3", type: "custom", data: { label: "97", variant: "circle" }, position: { x: 520, y: 130 } },
+    { id: "g4", type: "custom", data: { label: "69", variant: "circle" }, position: { x: 330, y: 380 } },
+    { id: "g5", type: "custom", data: { label: "70", variant: "circle" }, position: { x: 620, y: 320 } },
 ];
 
-// Initial edges for graph (directed with weights)
+// Initial edges for graph (directed with weights) - 69→39 is created during tutorial
 const graphInitialEdges: Edge[] = [
-    { id: "eg-64-39", source: "g1", target: "g2", type: "straight", label: "4", data: { weight: 4 }, markerEnd: { type: 'arrowclosed' as const } },
-    { id: "eg-64-69", source: "g1", target: "g4", type: "straight", label: "1", data: { weight: 1 }, markerEnd: { type: 'arrowclosed' as const } },
-    { id: "eg-69-39", source: "g4", target: "g2", type: "straight", label: "2", data: { weight: 2 }, markerEnd: { type: 'arrowclosed' as const } },
-    { id: "eg-39-97", source: "g2", target: "g3", type: "straight", label: "3", data: { weight: 3 }, markerEnd: { type: 'arrowclosed' as const } },
-    { id: "eg-97-70", source: "g3", target: "g5", type: "straight", label: "1", data: { weight: 1 }, markerEnd: { type: 'arrowclosed' as const } },
+    { id: "eg-64-39", source: "g1", target: "g2", type: "floatingEdge", label: "4", data: { weight: 4 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
+    { id: "eg-64-69", source: "g1", target: "g4", type: "floatingEdge", label: "1", data: { weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
+    { id: "eg-39-97", source: "g2", target: "g3", type: "floatingEdge", label: "3", data: { weight: 3 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
+    { id: "eg-97-70", source: "g3", target: "g5", type: "floatingEdge", label: "1", data: { weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
 ];
 
 const fitViewOptions: FitViewOptions = {
