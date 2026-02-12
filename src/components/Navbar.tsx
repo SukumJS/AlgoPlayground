@@ -95,7 +95,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
           </div>
 
           <button className="py-2 text-lg font-bold text-[#222121] capitalize">
-            <a href="/examplesquestions">
+            <a href="/exercise">
             examples questions
             </a>
           </button>
@@ -124,17 +124,20 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
 
               {profileOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg">
-                  <button
-                    className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
-                  >
-                    Profile
-                  </button>
-
-                  <button
-                    className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
-                  >
-                    Log out
-                  </button>
+                  <Link href="/profile">
+                    <button
+                      className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
+                    >
+                      Profile
+                    </button>
+                  </Link>
+                  <Link href="/">
+                    <button
+                      className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
+                    >
+                      Log out
+                    </button>
+                  </Link>
                 </div>
               )}
             </div>

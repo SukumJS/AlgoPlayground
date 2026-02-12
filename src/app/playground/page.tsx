@@ -34,6 +34,7 @@ import '@xyflow/react/dist/base.css';
 import Reading_modal from "@/src/components/shared/reading_modal";
 import { Info } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
+import GoToHome_Portal from "@/src/components/shared/goToHome_Portal"; 
 
 const nodeTypes = {
     custom: CustomNode,
@@ -159,11 +160,12 @@ function Playground() {
 
         {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
         <div className="absolute top-4 left-8 z-10 flex gap-2">
+            <GoToHome_Portal/>
             <button
             onClick={(e) => {
                 e.stopPropagation();
                 setShowInfo(true)}}
-            className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition">
+            className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer">
                 <Info color='#000000' />
             </button>
             <StatusNode />  
