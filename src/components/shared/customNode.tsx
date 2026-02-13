@@ -8,13 +8,43 @@ type CustomNodeData = {
     isHighlighted?: boolean;
     isGlowing?: boolean;
     isDanger?: boolean;
+    highlightColor?: 'blue' | 'yellow' | 'red' | 'green';
 };
 
 export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
     const isCircle = data.variant === 'circle';
-    const bgColor = data.isDanger ? 'bg-[#BF1A1A]' : 'bg-[#D9E363]';
-    const textColor = data.isDanger ? 'text-white' : 'text-[#222121]';
-    const borderColor = data.isDanger ? 'border-[#BF1A1A]' : (data.isHighlighted ? 'border-[#D9E363]' : 'border-[#5D5D5D]');
+    
+    // Determine colors based on highlight status
+    let bgColor = data.isDanger ? 'bg-[#BF1A1A]' : 'bg-[#D9E363]';
+    let textColor = data.isDanger ? 'text-white' : 'text-[#222121]';
+    let borderColor = data.isDanger ? 'border-[#BF1A1A]' : 'border-[#5D5D5D]';
+    
+    // Override with highlight colors if highlighted
+    if (data.isHighlighted && data.highlightColor) {
+        switch (data.highlightColor) {
+            case 'blue':
+                bgColor = 'bg-blue-400';
+                borderColor = 'border-blue-600';
+                textColor = 'text-white';
+                break;
+            case 'red':
+                bgColor = 'bg-red-500';
+                borderColor = 'border-red-700';
+                textColor = 'text-white';
+                break;
+            case 'yellow':
+                bgColor = 'bg-yellow-300';
+                borderColor = 'border-yellow-600';
+                textColor = 'text-gray-800';
+                break;
+            case 'green':
+                bgColor = 'bg-green-500';
+                borderColor = 'border-green-700';
+                textColor = 'text-white';
+                break;
+        }
+    }
+    
     const borderWidth = data.isHighlighted || data.isDanger ? 'border-4' : 'border-2';
 
     return (

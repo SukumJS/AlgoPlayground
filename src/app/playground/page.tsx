@@ -240,6 +240,13 @@ function Playground() {
     }, [tutorial.showTutorial, nodeInteraction, isTree]);
 
     const renderDataVisualizer = () => {
+        const treeNodes = nodes
+            .filter(node => node.type === "custom" && typeof node.data === 'object' && 'label' in node.data)
+            .map(node => ({
+                id: node.id,
+                data: { label: (node.data as Record<string, unknown>).label as string }
+            }));
+
         switch (algoType) {
             case "tree":
                 return (
@@ -247,12 +254,13 @@ function Playground() {
                         tutorialMode={tutorial.showTutorial}
                         tutorialStep={tutorial.tutorialStep}
                         onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
+                        currentNodes={treeNodes}
                     />
                 );
             case 'graph':
                 return <Data_graph />;
             default:
-                return <Data_sort nodeInput={0} setNodeInput={function (value: React.SetStateAction<number>): void {
+                return <Data_sort nodeInput={0} setNodeInput={function (): void {
                     throw new Error("Function not implemented.");
                 }} />;
         }
