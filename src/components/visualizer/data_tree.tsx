@@ -26,7 +26,8 @@ function Data_tree({ tutorialMode = false, tutorialStep = 0, onTutorialDropSucce
     const [isDataSortOpen, setIsDataSortOpen] = useState(true);
     const { onDragStart, isDragging } = useDnD();
     const [type, setType] = useState<string | null>(null);
-    const { setNodes, setEdges } = useReactFlow();;
+    const rf = useReactFlow();
+    const { setNodes, setEdges } = rf;
     const [inputValue, setInputValue] = useState<string>("");
     const [searchValue, setSearchValue] = useState<string>("");
     const [removeValue, setRemoveValue] = useState<string>("");
@@ -302,7 +303,7 @@ function Data_tree({ tutorialMode = false, tutorialStep = 0, onTutorialDropSucce
                 };
                 const positions = calculateTreePositions(previewRoot);
                 const { nodes: baseNodes, edges: baseEdges } = avlTreeToReactFlow(previewRoot, [], [], positions);
-
+                
                 // show preview (green) then auto-play insertion steps for root
                 const newNodeId = previewRoot.id;
                 setNodes(baseNodes.map(n => ({ ...n, data: { ...n.data, isHighlighted: true, highlightColor: 'green' } })));
@@ -397,8 +398,8 @@ function Data_tree({ tutorialMode = false, tutorialStep = 0, onTutorialDropSucce
             // IMPORTANT: do NOT replace the current visible nodes immediately with the freshly computed layout.
             // That causes a visual jump / structure change before the traversal animation begins.
             // Instead, read the current ReactFlow nodes/edges and use them as the starting template for highlighting
-            const currentRFNodes = (rf as any).getNodes ? (rf as any).getNodes() : baseNodes;
             const currentRFEdges = (rf as any).getEdges ? (rf as any).getEdges() : baseEdges;
+            const currentRFNodes = (rf as any).getNodes ? (rf as any).getNodes() : baseNodes;
             // Keep the current view as-is and start the traversal animation
             setAnimationDescription(`Searching for position to insert ${valueToInsert}...`);
 
