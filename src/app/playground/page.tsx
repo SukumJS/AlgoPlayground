@@ -104,6 +104,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 function Playground() {
     const searchParams = useSearchParams();
     const algoType = searchParams.get("type");
+    const algorithm = searchParams.get("algorithm");
 
     // Set initial nodes and edges based on algorithm type
     const isTree = algoType === "tree";
@@ -255,6 +256,7 @@ function Playground() {
                         tutorialStep={tutorial.tutorialStep}
                         onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
                         currentNodes={treeNodes}
+                        algorithm={algorithm || "avl"}
                     />
                 );
             case 'graph':

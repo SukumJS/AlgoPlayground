@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react'
-import controlBus from '@/src/lib/controlBus';
+import controlBus from '@/src/hooks/controlBus';
 import { ChevronFirst, ChevronLast, ChevronsLeft, ChevronsRight, Play, Pause } from 'lucide-react';
 
 

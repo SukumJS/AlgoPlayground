@@ -1,4 +1,4 @@
-import * as core from '@/src/utils/AVLtree/avlTree';
+import * as core from '@/src/components/algorithms/AVLtree/avlTree';
 
 export const insertAVLWithAnimation = core.insertAVLWithAnimation;
 export const insertAVL = core.insertAVL;
