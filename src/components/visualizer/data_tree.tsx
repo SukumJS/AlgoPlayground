@@ -113,7 +113,6 @@ function Data_tree({ tutorialMode = false, tutorialStep = 0, onTutorialDropSucce
                 setNodes((nds) => nds.concat(newNode));
                 setType(null);
 
-                // During tutorial step 1, advance to next step after successful drop
                 if (tutorialMode && tutorialStep === 0) {
                     onTutorialDropSuccess?.();
                 }
