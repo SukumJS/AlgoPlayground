@@ -240,17 +240,8 @@ export function useNodeInteraction({
         if (isTutorialActive) return;
 
         if (showTrashBin) {
-            const trashX = window.innerWidth / 2;
-            const trashY = window.innerHeight - 140;
-            const deleteRadius = 60;
-
-            const dist = Math.sqrt(
-                Math.pow(event.clientX - trashX, 2) +
-                Math.pow(event.clientY - trashY, 2)
-            );
-
-            if (dist < deleteRadius) {
-                // Delete node and connected edges
+            // Delete if node is in danger zone (red) — no need for cursor to be on trash icon
+            if (isTrashActive) {
                 setNodes(nds => nds.filter(n => n.id !== node.id));
                 setEdges(eds => eds.filter(e => e.source !== node.id && e.target !== node.id));
                 setSelectedNodeId(null);
@@ -267,7 +258,7 @@ export function useNodeInteraction({
         setShowTrashBin(false);
         setIsTrashActive(false);
         draggingNodeIdRef.current = null;
-    }, [isTutorialActive, showTrashBin, setNodes, setEdges]);
+    }, [isTutorialActive, showTrashBin, isTrashActive, setNodes, setEdges]);
 
     /**
      * Handle pane click - clear selection
