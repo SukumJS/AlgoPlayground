@@ -205,6 +205,9 @@ export default function TutorialGraph({
                             type="number"
                             value={weightInputValue}
                             onChange={(e) => onWeightInputChange?.(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') onWeightConfirm?.();
+                            }}
                             className="w-full text-center text-3xl font-bold p-4 border-2 border-gray-300 rounded-xl focus:border-[#D9E363] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             placeholder="0"
                             autoFocus

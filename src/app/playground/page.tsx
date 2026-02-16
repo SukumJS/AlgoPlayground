@@ -151,6 +151,7 @@ function Playground() {
         setNodes,
         setEdges,
         isTree,
+        isGraph,
         isTutorialActive: tutorial.showTutorial || graphTutorial.showTutorial,
     });
 
@@ -180,12 +181,14 @@ function Playground() {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
-    // Edge click handler (for weight editing in graph tutorial)
+    // Edge click handler (for weight editing)
     const handleEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
         if (graphTutorial.showTutorial && isGraph) {
             graphTutorial.handleWeightClick(edge.id);
+        } else {
+            nodeInteraction.handleEdgeClick(event, edge.id);
         }
-    }, [graphTutorial, isGraph]);
+    }, [graphTutorial, isGraph, nodeInteraction]);
 
     // Combined node click handler
     const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
@@ -341,6 +344,43 @@ function Playground() {
                     isActive={nodeInteraction.isTrashActive}
                     position={nodeInteraction.trashBinPos}
                 />
+            )}
+
+            {/* Weight Modal (non-tutorial mode, graph) */}
+            {nodeInteraction.showWeightModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200 min-w-[280px]">
+                        <p className="text-lg text-gray-800 font-medium mb-4 text-center">
+                            Enter edge weight
+                        </p>
+                        <input
+                            type="number"
+                            value={nodeInteraction.weightInputValue}
+                            onChange={(e) => nodeInteraction.handleWeightInputChange(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') nodeInteraction.handleWeightConfirm();
+                                if (e.key === 'Escape') nodeInteraction.handleWeightModalClose();
+                            }}
+                            className="w-full text-center text-3xl font-bold p-4 border-2 border-gray-300 rounded-xl focus:border-[#D9E363] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            placeholder="0"
+                            autoFocus
+                        />
+                        <div className="flex gap-3 mt-4">
+                            <button
+                                onClick={nodeInteraction.handleWeightModalClose}
+                                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={nodeInteraction.handleWeightConfirm}
+                                className="flex-1 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors"
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Completion modal for tree */}

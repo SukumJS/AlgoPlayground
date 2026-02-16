@@ -9,6 +9,7 @@ interface UseNodeInteractionProps {
     setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
     setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
     isTree: boolean;
+    isGraph: boolean;
     isTutorialActive: boolean;
 }
 
@@ -18,11 +19,19 @@ interface UseNodeInteractionReturn {
     showTrashBin: boolean;
     isTrashActive: boolean;
 
+    // Weight modal state
+    showWeightModal: boolean;
+    weightInputValue: string;
+    handleWeightInputChange: (value: string) => void;
+    handleWeightConfirm: () => void;
+    handleWeightModalClose: () => void;
+
     // Handlers
     handleNodeClick: (event: React.MouseEvent, node: Node) => void;
     handleNodeDragStart: (event: React.MouseEvent, node: Node) => void;
     handleNodeDrag: (event: React.MouseEvent, node: Node) => void;
     handleNodeDragStop: (event: React.MouseEvent, node: Node) => void;
+    handleEdgeClick: (event: React.MouseEvent, edgeId: string) => void;
     handlePaneClick: () => void;
 
     // Trash bin position
@@ -41,9 +50,10 @@ export function useNodeInteraction({
     setNodes,
     setEdges,
     isTree,
+    isGraph,
     isTutorialActive,
 }: UseNodeInteractionProps): UseNodeInteractionReturn {
-    // Selection state (used for tree linking)
+    // Selection state (used for tree/graph linking)
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
     // Drag-to-delete state
@@ -51,6 +61,12 @@ export function useNodeInteraction({
     const [isTrashActive, setIsTrashActive] = useState(false);
     const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
     const draggingNodeIdRef = useRef<string | null>(null);
+
+    // Weight modal state (for graph linking & edge editing)
+    const [showWeightModal, setShowWeightModal] = useState(false);
+    const [weightInputValue, setWeightInputValue] = useState('');
+    const [pendingEdge, setPendingEdge] = useState<{ sourceId: string; targetId: string } | null>(null);
+    const [editingEdgeId, setEditingEdgeId] = useState<string | null>(null);
 
     // Trash bin position (bottom center)
     const [trashBinPos, setTrashBinPos] = useState({ x: 0, y: 0 });
@@ -110,8 +126,42 @@ export function useNodeInteraction({
         if (isTutorialActive) return;
         if (showTrashBin) return; // Don't process click if trash was just shown
 
+        if (isGraph) {
+            // Graph mode: click to select, click second node to link with weight
+            if (selectedNodeId === null) {
+                setSelectedNodeId(node.id);
+                setNodes(nds => nds.map(n => ({
+                    ...n,
+                    data: {
+                        ...n.data,
+                        isHighlighted: n.id === node.id,
+                        isGlowing: n.id === node.id,
+                    },
+                })));
+            } else if (selectedNodeId === node.id) {
+                // Deselect
+                setSelectedNodeId(null);
+                setNodes(nds => nds.map(n => ({
+                    ...n,
+                    data: { ...n.data, isHighlighted: false, isGlowing: false },
+                })));
+            } else {
+                // Link: show weight modal
+                setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
+                setWeightInputValue('');
+                setShowWeightModal(true);
+                // Clear selection visual
+                setNodes(nds => nds.map(n => ({
+                    ...n,
+                    data: { ...n.data, isHighlighted: false, isGlowing: false },
+                })));
+                setSelectedNodeId(null);
+            }
+            return;
+        }
+
         if (!isTree) {
-            // Non-tree: click to select/deselect only
+            // Non-tree/non-graph (sorting): click to select/deselect only
             if (selectedNodeId === node.id) {
                 setSelectedNodeId(null);
                 setNodes(nds => nds.map(n => ({
@@ -175,7 +225,7 @@ export function useNodeInteraction({
                 data: { ...n.data, isHighlighted: false, isGlowing: false },
             })));
         }
-    }, [isTutorialActive, isTree, selectedNodeId, nodes, edges, setNodes, setEdges, validateBSTLink, showTrashBin]);
+    }, [isTutorialActive, isTree, isGraph, selectedNodeId, nodes, edges, setNodes, setEdges, validateBSTLink, showTrashBin]);
 
     /**
      * Handle node drag start - start 300ms timer to show trash
@@ -261,6 +311,77 @@ export function useNodeInteraction({
     }, [isTutorialActive, showTrashBin, isTrashActive, setNodes, setEdges]);
 
     /**
+     * Handle edge click - open weight editor (graph only)
+     */
+    const handleEdgeClick = useCallback((event: React.MouseEvent, edgeId: string) => {
+        if (isTutorialActive) return;
+        if (!isGraph) return;
+
+        const edge = edges.find(e => e.id === edgeId);
+        if (!edge) return;
+
+        setEditingEdgeId(edgeId);
+        setWeightInputValue(String(edge.data?.weight ?? edge.label ?? ''));
+        setShowWeightModal(true);
+        // Clear node selection
+        setSelectedNodeId(null);
+        setNodes(nds => nds.map(n => ({
+            ...n,
+            data: { ...n.data, isHighlighted: false, isGlowing: false },
+        })));
+    }, [isTutorialActive, isGraph, edges, setNodes]);
+
+    /**
+     * Weight modal handlers
+     */
+    const handleWeightInputChange = useCallback((value: string) => {
+        setWeightInputValue(value);
+    }, []);
+
+    const handleWeightConfirm = useCallback(() => {
+        const weight = Number(weightInputValue);
+        if (isNaN(weight) || weightInputValue.trim() === '') return;
+
+        if (editingEdgeId) {
+            // Editing existing edge weight
+            setEdges(eds => eds.map(e => {
+                if (e.id !== editingEdgeId) return e;
+                return {
+                    ...e,
+                    label: String(weight),
+                    data: { ...e.data, weight },
+                };
+            }));
+        } else if (pendingEdge) {
+            // Creating new edge
+            const newEdge: Edge = {
+                id: `eg-${pendingEdge.sourceId}-${pendingEdge.targetId}-${Date.now()}`,
+                source: pendingEdge.sourceId,
+                target: pendingEdge.targetId,
+                type: 'floatingEdge',
+                label: String(weight),
+                data: { weight },
+                style: { stroke: '#222121', strokeWidth: 1 },
+                markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' },
+            };
+            setEdges(eds => [...eds, newEdge]);
+        }
+
+        // Reset modal state
+        setShowWeightModal(false);
+        setWeightInputValue('');
+        setPendingEdge(null);
+        setEditingEdgeId(null);
+    }, [weightInputValue, editingEdgeId, pendingEdge, setEdges]);
+
+    const handleWeightModalClose = useCallback(() => {
+        setShowWeightModal(false);
+        setWeightInputValue('');
+        setPendingEdge(null);
+        setEditingEdgeId(null);
+    }, []);
+
+    /**
      * Handle pane click - clear selection
      */
     const handlePaneClick = useCallback(() => {
@@ -290,10 +411,16 @@ export function useNodeInteraction({
         selectedNodeId,
         showTrashBin,
         isTrashActive,
+        showWeightModal,
+        weightInputValue,
+        handleWeightInputChange,
+        handleWeightConfirm,
+        handleWeightModalClose,
         handleNodeClick,
         handleNodeDragStart,
         handleNodeDrag,
         handleNodeDragStop,
+        handleEdgeClick,
         handlePaneClick,
         trashBinPos,
     };
