@@ -13,7 +13,7 @@ import TutorialGraph from "../../components/visualizer/tutorial_graph";
 import TreeTrashBin from "../../components/visualizer/TreeTrashBin";
 import { useTreeTutorial } from "@/src/hooks/useTreeTutorial";
 import { useGraphTutorial } from "@/src/hooks/useGraphTutorial";
-import { useTreeNodeInteraction } from "@/src/hooks/useTreeNodeInteraction";
+import { useNodeInteraction } from "@/src/hooks/useNodeInteraction";
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -144,8 +144,8 @@ function Playground() {
         isGraph,
     });
 
-    // Node interaction (only active when NOT in tutorial)
-    const nodeInteraction = useTreeNodeInteraction({
+    // Node interaction (universal - works for all node types, only active when NOT in tutorial)
+    const nodeInteraction = useNodeInteraction({
         nodes,
         edges,
         setNodes,
@@ -193,18 +193,23 @@ function Playground() {
             tutorial.handleNodeClick(event, node);
         } else if (graphTutorial.showTutorial && isGraph) {
             graphTutorial.handleNodeClick(event, node);
-        } else if (isTree) {
+        } else {
             nodeInteraction.handleNodeClick(event, node);
         }
     }, [tutorial, graphTutorial, nodeInteraction, isTree, isGraph]);
 
     // Combined node drag handlers
+    const handleNodeDragStart = useCallback((event: React.MouseEvent, node: Node) => {
+        if (tutorial.showTutorial || graphTutorial.showTutorial) return;
+        nodeInteraction.handleNodeDragStart(event, node);
+    }, [tutorial.showTutorial, graphTutorial.showTutorial, nodeInteraction]);
+
     const handleNodeDrag = useCallback((event: React.MouseEvent, node: Node) => {
         if (tutorial.showTutorial && isTree) {
             tutorial.onNodeDrag(event, node);
         } else if (graphTutorial.showTutorial && isGraph) {
             graphTutorial.onNodeDrag(event, node);
-        } else if (isTree) {
+        } else {
             nodeInteraction.handleNodeDrag(event, node);
         }
     }, [tutorial, graphTutorial, nodeInteraction, isTree, isGraph]);
@@ -214,30 +219,17 @@ function Playground() {
             tutorial.onNodeDragStop(event, node);
         } else if (graphTutorial.showTutorial && isGraph) {
             graphTutorial.onNodeDragStop(event, node);
-        } else if (isTree) {
+        } else {
             nodeInteraction.handleNodeDragStop(event, node);
         }
     }, [tutorial, graphTutorial, nodeInteraction, isTree, isGraph]);
 
-    // Node mouse down/up for hold detection
-    const handleNodeMouseDown = useCallback((event: React.MouseEvent, node: Node) => {
-        if (!tutorial.showTutorial && isTree) {
-            nodeInteraction.handleNodeMouseDown(event, node);
-        }
-    }, [tutorial.showTutorial, nodeInteraction, isTree]);
-
-    const handleNodeMouseUp = useCallback(() => {
-        if (!tutorial.showTutorial && isTree) {
-            nodeInteraction.handleNodeMouseUp();
-        }
-    }, [tutorial.showTutorial, nodeInteraction, isTree]);
-
-    // Pane click to clear selection
+    // Pane click to clear selection (universal)
     const handlePaneClick = useCallback(() => {
-        if (!tutorial.showTutorial && isTree) {
+        if (!(tutorial.showTutorial || graphTutorial.showTutorial)) {
             nodeInteraction.handlePaneClick();
         }
-    }, [tutorial.showTutorial, nodeInteraction, isTree]);
+    }, [tutorial.showTutorial, graphTutorial.showTutorial, nodeInteraction]);
 
     const renderDataVisualizer = () => {
         switch (algoType) {
@@ -282,8 +274,7 @@ function Playground() {
                 onDragOver={onDragOver}
                 onNodeClick={handleNodeClick}
                 onEdgeClick={handleEdgeClick}
-                onNodeMouseEnter={handleNodeMouseDown}
-                onNodeMouseLeave={handleNodeMouseUp}
+                onNodeDragStart={handleNodeDragStart}
                 onPaneClick={handlePaneClick}
                 panOnDrag={!(tutorial.showTutorial || graphTutorial.showTutorial)}
                 zoomOnScroll={!(tutorial.showTutorial || graphTutorial.showTutorial)}
@@ -343,8 +334,8 @@ function Playground() {
                 />
             )}
 
-            {/* Tree trash bin (non-tutorial mode) */}
-            {!tutorial.showTutorial && isTree && (
+            {/* Universal trash bin (non-tutorial mode) */}
+            {!(tutorial.showTutorial || graphTutorial.showTutorial) && (
                 <TreeTrashBin
                     show={nodeInteraction.showTrashBin}
                     isActive={nodeInteraction.isTrashActive}

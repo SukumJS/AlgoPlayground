@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 
-interface UseTreeNodeInteractionProps {
+interface UseNodeInteractionProps {
     nodes: Node[];
     edges: Edge[];
     setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
@@ -12,7 +12,7 @@ interface UseTreeNodeInteractionProps {
     isTutorialActive: boolean;
 }
 
-interface UseTreeNodeInteractionReturn {
+interface UseNodeInteractionReturn {
     // State
     selectedNodeId: string | null;
     showTrashBin: boolean;
@@ -20,8 +20,7 @@ interface UseTreeNodeInteractionReturn {
 
     // Handlers
     handleNodeClick: (event: React.MouseEvent, node: Node) => void;
-    handleNodeMouseDown: (event: React.MouseEvent, node: Node) => void;
-    handleNodeMouseUp: () => void;
+    handleNodeDragStart: (event: React.MouseEvent, node: Node) => void;
     handleNodeDrag: (event: React.MouseEvent, node: Node) => void;
     handleNodeDragStop: (event: React.MouseEvent, node: Node) => void;
     handlePaneClick: () => void;
@@ -31,27 +30,27 @@ interface UseTreeNodeInteractionReturn {
 }
 
 /**
- * Hook for managing tree node interactions:
- * - Click to select/highlight
- * - Click another node to link (with BST validation)
- * - Hold 300ms to show trash, drag to delete
+ * Universal hook for node interactions across all node types:
+ * - Drag and hold 300ms → trash bin appears → drop on trash to delete
+ * - Click to select/highlight (tree only: click another to link)
+ * Works for tree, graph, and sorting nodes.
  */
-export function useTreeNodeInteraction({
+export function useNodeInteraction({
     nodes,
     edges,
     setNodes,
     setEdges,
     isTree,
     isTutorialActive,
-}: UseTreeNodeInteractionProps): UseTreeNodeInteractionReturn {
-    // Selection state
+}: UseNodeInteractionProps): UseNodeInteractionReturn {
+    // Selection state (used for tree linking)
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-    // Hold-to-delete state
+    // Drag-to-delete state
     const [showTrashBin, setShowTrashBin] = useState(false);
     const [isTrashActive, setIsTrashActive] = useState(false);
     const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const isHoldingRef = useRef(false);
+    const draggingNodeIdRef = useRef<string | null>(null);
 
     // Trash bin position (bottom center)
     const [trashBinPos, setTrashBinPos] = useState({ x: 0, y: 0 });
@@ -70,8 +69,7 @@ export function useTreeNodeInteraction({
     }, []);
 
     /**
-     * Validate BST rule for linking two nodes
-     * Returns the correct sourceHandle based on child value
+     * Validate BST rule for linking two nodes (tree-only)
      */
     const validateBSTLink = useCallback((
         parentNode: Node,
@@ -85,12 +83,10 @@ export function useTreeNodeInteraction({
             return { valid: false, sourceHandle: '', targetHandle: '', error: 'Invalid node values' };
         }
 
-        // Determine which side the child should be on
         const isLeftChild = childValue < parentValue;
         const sourceHandle = isLeftChild ? 'source-bottom-left' : 'source-bottom-right';
         const targetHandle = isLeftChild ? 'target-top-right' : 'target-top-left';
 
-        // Check if parent already has a child on that side
         const existingEdge = currentEdges.find(
             e => e.source === parentNode.id && e.sourceHandle === sourceHandle
         );
@@ -108,16 +104,36 @@ export function useTreeNodeInteraction({
     }, []);
 
     /**
-     * Handle node click - select or link
+     * Handle node click - select or link (tree mode keeps linking behavior)
      */
     const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-        if (!isTree || isTutorialActive) return;
+        if (isTutorialActive) return;
+        if (showTrashBin) return; // Don't process click if trash was just shown
 
-        // If holding, don't process click
-        if (isHoldingRef.current || showTrashBin) return;
+        if (!isTree) {
+            // Non-tree: click to select/deselect only
+            if (selectedNodeId === node.id) {
+                setSelectedNodeId(null);
+                setNodes(nds => nds.map(n => ({
+                    ...n,
+                    data: { ...n.data, isHighlighted: false, isGlowing: false },
+                })));
+            } else {
+                setSelectedNodeId(node.id);
+                setNodes(nds => nds.map(n => ({
+                    ...n,
+                    data: {
+                        ...n.data,
+                        isHighlighted: n.id === node.id,
+                        isGlowing: n.id === node.id,
+                    },
+                })));
+            }
+            return;
+        }
 
+        // Tree mode: select or link
         if (selectedNodeId === null) {
-            // First click - select this node
             setSelectedNodeId(node.id);
             setNodes(nds => nds.map(n => ({
                 ...n,
@@ -128,26 +144,18 @@ export function useTreeNodeInteraction({
                 },
             })));
         } else if (selectedNodeId === node.id) {
-            // Clicked same node - deselect
             setSelectedNodeId(null);
             setNodes(nds => nds.map(n => ({
                 ...n,
-                data: {
-                    ...n.data,
-                    isHighlighted: false,
-                    isGlowing: false,
-                },
+                data: { ...n.data, isHighlighted: false, isGlowing: false },
             })));
         } else {
-            // Clicked different node - try to link
+            // Try to link
             const selectedNode = nodes.find(n => n.id === selectedNodeId);
             if (!selectedNode) return;
 
-            // Selected node becomes child, clicked node becomes parent
             const validation = validateBSTLink(node, selectedNode, edges);
-
             if (validation.valid) {
-                // Create edge from parent to child
                 const newEdge: Edge = {
                     id: `e-${node.id}-${selectedNodeId}`,
                     source: node.id,
@@ -157,59 +165,45 @@ export function useTreeNodeInteraction({
                     type: 'straight',
                 };
                 setEdges(eds => [...eds, newEdge]);
-
-                // Clear selection
-                setSelectedNodeId(null);
-                setNodes(nds => nds.map(n => ({
-                    ...n,
-                    data: {
-                        ...n.data,
-                        isHighlighted: false,
-                        isGlowing: false,
-                    },
-                })));
             } else {
-                // Invalid link - could show toast/error here
                 console.warn('Invalid BST link:', validation.error);
             }
+
+            setSelectedNodeId(null);
+            setNodes(nds => nds.map(n => ({
+                ...n,
+                data: { ...n.data, isHighlighted: false, isGlowing: false },
+            })));
         }
-    }, [
-        isTree, isTutorialActive, selectedNodeId, nodes, edges,
-        setNodes, setEdges, validateBSTLink, showTrashBin
-    ]);
+    }, [isTutorialActive, isTree, selectedNodeId, nodes, edges, setNodes, setEdges, validateBSTLink, showTrashBin]);
 
     /**
-     * Handle node mouse down - start hold timer
+     * Handle node drag start - start 300ms timer to show trash
+     * This is the key change: trash shows after dragging for 300ms (no prior click needed)
      */
-    const handleNodeMouseDown = useCallback((event: React.MouseEvent, node: Node) => {
-        if (!isTree || isTutorialActive) return;
-        if (selectedNodeId !== node.id) return; // Only for selected node
+    const handleNodeDragStart = useCallback((event: React.MouseEvent, node: Node) => {
+        if (isTutorialActive) return;
 
-        isHoldingRef.current = false;
+        draggingNodeIdRef.current = node.id;
 
-        // Start 100ms timer
-        holdTimerRef.current = setTimeout(() => {
-            isHoldingRef.current = true;
-            setShowTrashBin(true);
-        }, 100);
-    }, [isTree, isTutorialActive, selectedNodeId]);
-
-    /**
-     * Handle node mouse up - cancel hold timer
-     */
-    const handleNodeMouseUp = useCallback(() => {
+        // Clear any existing timer
         if (holdTimerRef.current) {
             clearTimeout(holdTimerRef.current);
-            holdTimerRef.current = null;
         }
-        // Don't reset isHoldingRef here - let drag handle it
-    }, []);
+
+        // Start 300ms timer - if still dragging after 300ms, show trash
+        holdTimerRef.current = setTimeout(() => {
+            setShowTrashBin(true);
+        }, 300);
+    }, [isTutorialActive]);
 
     /**
-     * Handle node drag - check trash proximity and update node danger state
+     * Handle node drag - check trash proximity
      */
     const handleNodeDrag = useCallback((event: React.MouseEvent, node: Node) => {
-        if (!showTrashBin) return;
+        if (isTutorialActive) return;
+
+        if (!showTrashBin) return; // Trash not yet visible
 
         const trashX = window.innerWidth / 2;
         const trashY = window.innerHeight - 140;
@@ -231,52 +225,59 @@ export function useTreeNodeInteraction({
                 isDanger: n.id === node.id ? isNearTrash : false,
             },
         })));
-    }, [showTrashBin, setNodes]);
+    }, [isTutorialActive, showTrashBin, setNodes]);
 
     /**
-     * Handle node drag stop - delete if over trash
+     * Handle node drag stop - delete if over trash, otherwise reset
      */
     const handleNodeDragStop = useCallback((event: React.MouseEvent, node: Node) => {
-        if (!showTrashBin) return;
+        // Always clear the timer
+        if (holdTimerRef.current) {
+            clearTimeout(holdTimerRef.current);
+            holdTimerRef.current = null;
+        }
 
-        const trashX = window.innerWidth / 2;
-        const trashY = window.innerHeight - 140;
-        const deleteRadius = 60;
+        if (isTutorialActive) return;
 
-        const dist = Math.sqrt(
-            Math.pow(event.clientX - trashX, 2) +
-            Math.pow(event.clientY - trashY, 2)
-        );
+        if (showTrashBin) {
+            const trashX = window.innerWidth / 2;
+            const trashY = window.innerHeight - 140;
+            const deleteRadius = 60;
 
-        if (dist < deleteRadius) {
-            // Delete node and connected edges
-            setNodes(nds => nds.filter(n => n.id !== node.id));
-            setEdges(eds => eds.filter(e => e.source !== node.id && e.target !== node.id));
-            setSelectedNodeId(null);
-        } else {
-            // Clear danger state
-            setNodes(nds => nds.map(n => ({
-                ...n,
-                data: { ...n.data, isDanger: false },
-            })));
+            const dist = Math.sqrt(
+                Math.pow(event.clientX - trashX, 2) +
+                Math.pow(event.clientY - trashY, 2)
+            );
+
+            if (dist < deleteRadius) {
+                // Delete node and connected edges
+                setNodes(nds => nds.filter(n => n.id !== node.id));
+                setEdges(eds => eds.filter(e => e.source !== node.id && e.target !== node.id));
+                setSelectedNodeId(null);
+            } else {
+                // Clear danger state
+                setNodes(nds => nds.map(n => ({
+                    ...n,
+                    data: { ...n.data, isDanger: false },
+                })));
+            }
         }
 
         // Reset state
         setShowTrashBin(false);
         setIsTrashActive(false);
-        isHoldingRef.current = false;
-    }, [showTrashBin, setNodes, setEdges]);
+        draggingNodeIdRef.current = null;
+    }, [isTutorialActive, showTrashBin, setNodes, setEdges]);
 
     /**
      * Handle pane click - clear selection
      */
     const handlePaneClick = useCallback(() => {
-        if (!isTree || isTutorialActive) return;
+        if (isTutorialActive) return;
 
         setSelectedNodeId(null);
         setShowTrashBin(false);
         setIsTrashActive(false);
-        isHoldingRef.current = false;
 
         if (holdTimerRef.current) {
             clearTimeout(holdTimerRef.current);
@@ -292,15 +293,14 @@ export function useTreeNodeInteraction({
                 isDanger: false,
             },
         })));
-    }, [isTree, isTutorialActive, setNodes]);
+    }, [isTutorialActive, setNodes]);
 
     return {
         selectedNodeId,
         showTrashBin,
         isTrashActive,
         handleNodeClick,
-        handleNodeMouseDown,
-        handleNodeMouseUp,
+        handleNodeDragStart,
         handleNodeDrag,
         handleNodeDragStop,
         handlePaneClick,
