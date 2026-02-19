@@ -6,7 +6,7 @@ const STATUS_BG: Record<SortNodeData["status"], string> = {
   compare: "#62A2F7",
   swap: "#F19F72",
   sorted: "#D9E363",
-  merge: "#B784F7",
+  merge: "#F19F72",
 };
 
 export default function CustomNode({ data }: NodeProps) {
