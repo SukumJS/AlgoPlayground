@@ -8,6 +8,7 @@ import CodeAlgo from "../../components/visualizer/codeAlgo";
 import Data_sort from "../../components/visualizer/data_sort";
 import { DnDProvider, useDnD } from "@/src/components/visualizer/useDnD";
 import Tutorial_modal from "../../components/shared/tutorial_modal";
+import PostTest_portal from "@/src/components/shared/postTest_portal";
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -35,6 +36,10 @@ import type { SortNodeData } from "@/src/components/shared/sortNode";
 import { useSortableDrag } from "@/src/hooks/useSortableDrag";
 import { useSortSpeed } from "@/src/hooks/useSortSpeed";
 import { useSortRunner } from "@/src/hooks/useSortRunner";
+import Reading_modal from "@/src/components/shared/reading_modal";
+import { Info } from "lucide-react";
+import StatusNode from "@/src/components/shared/statusNode";
+import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 const nodeTypes = {
     custom: CustomNode,
 };
@@ -49,13 +54,6 @@ const positionFromIndex = (index: number) => ({
 
 /* This block of code is setting up initial data for a visualizer component using ReactFlow library in
 a TypeScript React application. Here's a breakdown of what each constant is doing: */
-// const initialNodes: Node[] = [
-//     { id: "1", type: "custom", data: { label : "1" }, position: { x: -50, y: 5 }},
-//     { id: "2", type: "custom", data: { label: "2" }, position: { x: 15, y: 5}},
-//     { id: "3", type: "custom", data: { label: "3" }, position: { x: 80, y: 5}},
-//     { id: "4", type: "custom", data: { label: "4" }, position: { x: 145, y: 5}},
-//     { id: "5", type: "custom", data: { label: "5" }, position: { x: 210, y: 5}},
-// ];
 const initialNodes: Node<SortNodeData>[] = [
     { id: "1", type: "custom", position: positionFromIndex(0), data: { value: 1, index: 0, status: "idle" } },
     { id: "2", type: "custom", position: positionFromIndex(1), data: { value: 2, index: 1, status: "idle" } },
@@ -92,6 +90,9 @@ function Playground() {
 
     const [edges, setEdges] = useState<Edge[]>(initialEdges);
     const [showTutorial, setShowTutorial] = useState(true);
+    const [showInfo, setShowInfo] = useState(false);
+
+
     /* These three constants are defining functions that handle changes to nodes, edges, and
     connections in the ReactFlow component. */
     const onNodesChange: OnNodesChange = useCallback(
@@ -115,6 +116,7 @@ function Playground() {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
+
     /* Hook สำหรับ drag แล้ว swap node */
     const { onNodeDrag, onNodeDragStop } =
         useSortableDrag(setNodes, positionFromIndex);
@@ -132,6 +134,7 @@ function Playground() {
             delayRef
         );
 
+    {/*Check Type & Display Data Input of Current Algorithms */ }
     const renderDataVisualizer = () => {
         switch (algoType) {
             case "tree":
@@ -147,6 +150,8 @@ function Playground() {
                 );
         }
     };
+    {/*Check Type & Display Title of Current Algorithms */ }
+
     const getTitle = () => {
         switch (algoType) {
             case "tree":
@@ -175,13 +180,14 @@ function Playground() {
                 fitView
                 fitViewOptions={fitViewOptions}
                 defaultEdgeOptions={defaultEdgeOptions}
-                
+
             >
                 <Background />
                 <Controls />
             </ReactFlow>
 
-            <div className="absolute bottom-4 w-full z-50">
+
+            <div className="absolute bottom-4 w-full z-10">
                 <ControlPanel
                     onRun={handleRunSort}
                     onStop={handleStop}
@@ -191,11 +197,37 @@ function Playground() {
 
             {/* Add SideTab Component Here */}
             <SideTab title={getTitle()}>
-                <CodeAlgo />
-                <ExplainAlgo />
-                {renderDataVisualizer()}
+                <div>
+                    <CodeAlgo />
+                    <ExplainAlgo />
+                    {renderDataVisualizer()}
+                </div>
+                <div>
+                    <PostTest_portal />
+                </div>
             </SideTab>
 
+            {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
+            <div className="absolute top-4 left-8 z-10 flex gap-2">
+                <GoToHome_Portal />
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowInfo(true)
+                    }}
+                    className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer">
+                    <Info color='#000000' />
+                </button>
+                <StatusNode />
+            </div>
+
+            {/* Info Reading inside Playground */}
+            <Reading_modal
+                isOpen={showInfo}
+                onClose={() => setShowInfo(false)} />
+
+
+            {/* STutorial Complelte Modal Show When User Finish Tutorial */}
             {/* <Tutorial_modal
             showModal={showTutorial}
             onClose={() => setShowTutorial(false)}
@@ -204,6 +236,7 @@ function Playground() {
                 description: "You are ready to play."
             }]} 
         /> */}
+
         </div>
 
     );
