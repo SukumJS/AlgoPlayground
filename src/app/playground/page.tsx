@@ -146,7 +146,7 @@ function Playground() {
                     <Data_sort
                         nodeInput={nodeInput}
                         setNodeInput={setNodeInput}
-                    />
+                    /> //ตัวอย่าง http://localhost:3000/playground?type=insertion 
                 );
         }
     };

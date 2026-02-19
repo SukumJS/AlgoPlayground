@@ -10,3 +10,4 @@ export const sortAlgorithms = {
     queue: runQueueSort,
     merge: runMergeSort,
 };
+//ชื่อ type เปลี่ยนตามที่ส่งมาจาก url query เปลี่ยนตรงนี้ เช่น url query เป็น ?type=bubble ก็จะไปเรียก runBubbleSort
