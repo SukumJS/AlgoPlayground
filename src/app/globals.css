@@ -123,9 +123,6 @@
     @apply bg-background text-foreground;
   }
 }
-.react-flow__node {
-  transition: none !important;
-}
 
 .react-flow.sorting .react-flow__node {
   transition: transform 0.3s ease-in-out !important;
