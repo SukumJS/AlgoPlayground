@@ -18,7 +18,7 @@ type nodeProps = {
     setNodeInput: React.Dispatch<React.SetStateAction<number>>;
 };
 
-function Data_sort({nodeInput, setNodeInput}: nodeProps) {
+function Data_sort({ nodeInput, setNodeInput }: nodeProps) {
     const [isDataSortOpen, setIsDataSortOpen] = useState(false);
     const { setNodes } = useReactFlow();
     const { onDragStart, isDragging } = useDnD();
@@ -26,20 +26,28 @@ function Data_sort({nodeInput, setNodeInput}: nodeProps) {
     const [draggedValue, setDraggedValue] = useState<number | null>(null);
 
     const createAddNewNode = useCallback(
-        (sampleValue: number): OnDropAction =>
-        {
-        return ({ position }: { position: XYPosition }) => {
-            const newNode: Node = { // Changed node type to "custom"
-            id: getId(),
-            type: "custom",
-            position,
-            data: { label: sampleValue.toString() },
-            };
+        (sampleValue: number): OnDropAction => {
+            return ({ position }: { position: XYPosition }) => {
+                setNodes((prev) => {
+                    const currentIndex = prev.length; // index ใหม่ = ต่อท้าย
 
-            setNodes((nds) => nds.concat(newNode));
-            setType(null); // Reset drag state
-            setDraggedValue(null);
-        };
+                    const newNode: Node = {
+                        id: getId(),
+                        type: "custom",
+                        position, // ตำแหน่งเมาส์ตอนวาง 
+                        data: {
+                            value: sampleValue,
+                            status: "idle",
+                            index: currentIndex,
+                        },
+                    };
+
+                    return prev.concat(newNode);
+                });
+
+                setType(null);
+                setDraggedValue(null);
+            };
         },
         [setNodes],
     );
@@ -53,76 +61,73 @@ function Data_sort({nodeInput, setNodeInput}: nodeProps) {
     ];
 
     return (
-    <>
-        {/* Ghost node following the pointer */}
-        {isDragging && <DragGhost type={type} value={draggedValue} />}
+        <>
+            {/* Ghost node following the pointer */}
+            {isDragging && <DragGhost type={type} value={draggedValue} />}
 
-        <button
-            className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${
-            isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"
-            }`}
-            onClick={() => setIsDataSortOpen(!isDataSortOpen)}
-        >
-            <div className="flex items-center">
-            <div
-                className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${
-                isDataSortOpen ? "" : "hidden opacity-0"
-                }`}
-            ></div>
-            <div className={`flex text-lg p-2`}>Data Sort</div>
-            </div>
-            <div className="mr-2 flex justify-end">
-            {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
-            </div>
-        </button>
-
-        <div
-            className={`flex-col transition-opacity duration-300 ${
-            isDataSortOpen ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"
-            }`}
-        >
-            <div className="overflow-x-auto flex gap-2 mb-2 p-2">
-            {/* Input Node Item */}
-            <div
-                className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg cursor-grab"
-                onPointerDown={(event) => {
-                    const value = nodeInput || 0;
-                    setType("input");
-                    setDraggedValue(value);
-                    onDragStart(event, createAddNewNode(value));
-                }}
+            <button
+                className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"
+                    }`}
+                onClick={() => setIsDataSortOpen(!isDataSortOpen)}
             >
-                <input
-                type="number"
-                placeholder="0"
-                className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={nodeInput}
-                onChange={(e) => setNodeInput(parseInt(e.target.value) || 0)}
-                onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
-                />
-            </div>
-
-            {/* Sample Node Items */}
-            {Sample.map((item, index) => (
-                <div
-                key={index}
-                className="shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] cursor-grab"
-                onPointerDown={(event) => {
-                    const value = parseInt(item.number);
-                    setType("custom"); // Changed drag ghost type to "custom"
-                    setDraggedValue(value);
-                    onDragStart(event, createAddNewNode(value));
-                }}
-                >
-                {item.number}
+                <div className="flex items-center">
+                    <div
+                        className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? "" : "hidden opacity-0"
+                            }`}
+                    ></div>
+                    <div className={`flex text-lg p-2`}>Data Sort</div>
                 </div>
-            ))}
+                <div className="mr-2 flex justify-end">
+                    {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
+                </div>
+            </button>
+
+            <div
+                className={`flex-col transition-opacity duration-300 ${isDataSortOpen ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"
+                    }`}
+            >
+                <div className="overflow-x-auto flex gap-2 mb-2 p-2">
+                    {/* Input Node Item */}
+                    <div
+                        className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg cursor-grab"
+                        onPointerDown={(event) => {
+                            const value = nodeInput || 0;
+                            setType("input");
+                            setDraggedValue(value);
+                            onDragStart(event, createAddNewNode(value));
+                        }}
+                    >
+                        <input
+                            type="number"
+                            placeholder="0"
+                            className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            value={nodeInput}
+                            onChange={(e) => setNodeInput(parseInt(e.target.value) || 0)}
+                            onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
+                        />
+                    </div>
+
+                    {/* Sample Node Items */}
+                    {Sample.map((item, index) => (
+                        <div
+                            key={index}
+                            className="shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] cursor-grab"
+                            onPointerDown={(event) => {
+                                const value = parseInt(item.number);
+                                setType("custom"); // Changed drag ghost type to "custom"
+                                setDraggedValue(value);
+                                onDragStart(event, createAddNewNode(value));
+                            }}
+                        >
+                            {item.number}
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex justify-center items-center text-center p-2">
+                    <RandomSize />
+                </div>
             </div>
-            
-            <div className="flex justify-center items-center text-center p-2">
-            <RandomSize />
-            </div>
-        </div>
         </>
     );
 }
@@ -141,11 +146,11 @@ export function DragGhost({ type, value }: DragGhostProps) {
 
     return (
         <div
-        className={`fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`}
-        style={{
-            transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
-        }}>
-        {value}
+            className={`fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`}
+            style={{
+                transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
+            }}>
+            {value}
         </div>
     );
 }
