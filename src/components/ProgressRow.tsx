@@ -1,9 +1,7 @@
-import { Circle, CircleCheck } from "lucide-react"
-
 
 interface ProgressRowProps {
   label: string
-  score: number // 0 - 5
+  score?: number // 0 - 5
   status: "locked" | "active" | "completed"
 }
 
@@ -59,8 +57,8 @@ const getRowColors = (
 export function ProgressRow({ label, score, status }: ProgressRowProps) {
   const isPretest = label.toLowerCase().includes("pre")
 
-
-  const { bg, text } = getRowColors(score, status, isPretest)
+  const safeScore = score ?? 0
+  const { bg, text } = getRowColors(safeScore, status, isPretest)
 
 
 
@@ -86,7 +84,7 @@ export function ProgressRow({ label, score, status }: ProgressRowProps) {
           ? "Not started"
           : status === "active"
             ? "In progress"
-            : `${score} / 5`}
+            : `${score ?? 0} / 5`}
       </span>
 
     </div>

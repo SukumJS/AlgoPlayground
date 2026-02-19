@@ -11,11 +11,11 @@ interface Props {
   shortTitle?: string
   progress: {
     pretest: {
-      score: number
+      score?: number
       status: "locked" | "active" | "completed"
     }
     posttest: {
-      score: number
+      score?: number
       status: "locked" | "active" | "completed"
     }
   }
