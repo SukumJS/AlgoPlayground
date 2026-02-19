@@ -171,6 +171,7 @@ function Playground() {
                 onDragOver={onDragOver}
                 onNodeDrag={onNodeDrag}
                 onNodeDragStop={onNodeDragStop}
+                nodesDraggable={!isSorting}
                 fitView
                 fitViewOptions={fitViewOptions}
                 defaultEdgeOptions={defaultEdgeOptions}
