@@ -21,6 +21,7 @@ function Data_graph() {
     const [searchValue, setSearchValue] = useState<string>("");
     const [removeValue, setRemoveValue] = useState<string>("");
     const [nodeInput, setNodeInput] = useState<string>("");
+    const [draggedValue, setDraggedValue] = useState<number | null>(null); // Added draggedValue state
 
     const Sample = [
         { number: "1" },
@@ -36,11 +37,12 @@ function Data_graph() {
             // Here, we create a new node and add it to the flow.
             // You can customize the behavior of what happens when a node is dropped on the flow here.
             const newNode = {
-            id: getId(),
-            type: "default",
-            position,
-            data: { label: `${Sample}` },
+                id: getId(),
+                type: "custom", // Changed node type to "custom"
+                position,
+                data: { label: Sample.toString() },
             };
+
 
             setNodes((nds) => nds.concat(newNode));
             setType(null);
@@ -65,7 +67,7 @@ function Data_graph() {
     return (
         <>
         {/* The ghost node will be rendered at pointer position when dragging. */}
-        {isDragging && <DragGhost type={type} />}
+        {isDragging && <DragGhost type={type} value={draggedValue} />} {/* Pass draggedValue */}
         <button
             className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"}`}
             onClick={() => setIsDataSortOpen(!isDataSortOpen)}
@@ -91,8 +93,9 @@ function Data_graph() {
             <div
                 className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-16 h-16 rounded-full cursor-grab"
                 onPointerDown={(event) => {
-                setType("input");
-                onDragStart(event, createAddNewNode(parseInt(nodeInput) || 0));
+                    setType("custom"); // Changed drag ghost type to "custom"
+                    setDraggedValue(parseInt(nodeInput) || 0); // Set dragged value
+                    onDragStart(event, createAddNewNode(parseInt(nodeInput) || 0));
                 }}
             >
                 <input
@@ -109,7 +112,8 @@ function Data_graph() {
                 key={index}
                 className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363]"
                 onPointerDown={(event) => {
-                    setType("input");
+                    setType("custom"); // Changed drag ghost type to "custom"
+                    setDraggedValue(parseInt(item.number)); // Set dragged value
                     onDragStart(event, createAddNewNode(parseInt(item.number)));
                 }}
                 >
@@ -156,23 +160,22 @@ export default Data_graph;
 
 interface DragGhostProps {
     type: string | null;
+    value: number | null; // Added value prop
 }
 
 // The DragGhost component is used to display a ghost node when dragging a node into the flow.
-export function DragGhost({ type }: DragGhostProps) {
+export function DragGhost({ type, value }: DragGhostProps) { // Added value prop
     const { position } = useDnDPosition();
 
-    if (!position) return null;
+    if (!position || !type) return null; // Added !type check
 
     return (
         <div
-        className="flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg opacity-80"
+        className={`fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`} // Standardized classes
         style={{
             transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
-            position: "fixed",
-            pointerEvents: "none",
-            zIndex: 1000,
-        }}
-        ></div>
+        }}>
+        {value} {/* Display value */}
+        </div>
     );
 }
