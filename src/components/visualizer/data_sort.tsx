@@ -59,11 +59,13 @@ function Data_sort({nodeInput, setNodeInput}: nodeProps) {
 
         <button
             className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${
-            isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"
+                isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"
             }`}
             onClick={() => setIsDataSortOpen(!isDataSortOpen)}
-        >
+            >
             <div className="flex items-center">
+            
+            {/* When Data is Open Show Blue highlight and Gray BG*/}
             <div
                 className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${
                 isDataSortOpen ? "" : "hidden opacity-0"
