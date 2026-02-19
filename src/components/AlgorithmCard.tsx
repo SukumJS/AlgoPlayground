@@ -24,8 +24,12 @@ export default function AlgorithmCard({ slug, title, progress }: Props) {
   const router = useRouter()
 
   //กดการ์ด = ไปหน้า pretest เสมอ
+  // const handleCardClick = () => {
+  //   router.push(`/pretest/${slug}`)
+  // }
+
   const handleCardClick = () => {
-    router.push(`/pretest/${slug}`)
+    router.push(`/pretest`)
   }
 
   // กด Info = ดูข้อมูล (ไม่เปลี่ยนหน้า)
