@@ -22,6 +22,7 @@ export interface NodePosition {
  */
 export interface AnimationRecorder {
     recordTraverse?: (nodeId: string, value: number, direction: "left" | "right" | "here") => void;
+    recordFoundParent?: (parentId: string, value: number, direction: 'left' | 'right') => void;
     recordInsert?: (nodeId: string, value: number) => void;
     recordBalanceCheck?: (nodeId: string, balanceFactor: number) => void;
     recordLeftRotation?: (nodeId: string, rightChild: string) => void;
@@ -110,10 +111,15 @@ function insertAVLInternal(
     root: AVLTreeNode | null,
     value: number,
     nodeId: string,
-    recorder?: AnimationRecorder
+    recorder?: AnimationRecorder,
+    parent?: AVLTreeNode | null,
+    parentDir?: 'left' | 'right'
 ): AVLTreeNode {
     // Step 1: Perform normal BST insertion
     if (root === null) {
+        if (parent && parentDir) {
+            recorder?.recordFoundParent?.(parent.id, value, parentDir);
+        }
         recorder?.recordInsert?.(nodeId, value);
         return {
             id: nodeId,
@@ -128,11 +134,11 @@ function insertAVLInternal(
     if (value < root.value) {
         recorder?.recordTraverse?.(root.id, value, 'left');
         const newId = nodeId || `node_${Date.now()}_left`;
-        root.left = insertAVLInternal(root.left, value, newId, recorder);
+        root.left = insertAVLInternal(root.left, value, newId, recorder, root, 'left');
     } else if (value > root.value) {
         recorder?.recordTraverse?.(root.id, value, 'right');
         const newId = nodeId || `node_${Date.now()}_right`;
-        root.right = insertAVLInternal(root.right, value, newId, recorder);
+        root.right = insertAVLInternal(root.right, value, newId, recorder, root, 'right');
     } else {
         // Duplicate values not allowed
         return root;
@@ -462,7 +468,7 @@ export function findInsertionPosition(
         // Continue searching left
         return findInsertionPosition(root.left, value, [...path, root.id]);
     }
-    
+
     // Should go right
     if (value > root.value) {
         if (root.right === null) {
@@ -570,7 +576,7 @@ export function validateAVLTree(root: AVLTreeNode | null): boolean {
  */
 export function rebuildAVLTreeFromNodes(nodes: Array<{ id: string; data: { label: string } }>): AVLTreeNode | null {
     let root: AVLTreeNode | null = null;
-    
+
     // Extract values from nodes, sorted by value for optimal tree building
     const values = nodes
         .map(node => ({

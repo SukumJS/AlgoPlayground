@@ -1,9 +1,15 @@
 import { useCallback, MutableRefObject } from "react";
-import type { AVLTreeNode } from "@/src/components/algorithms/AVLtree/avlTree";
-import { findInsertionPosition } from "@/src/hooks/treeAdapters/avlAdapter";
-import { animateRootInsertion } from "@/src/components/algorithms/AVLtree/index";
-import { animateNonRootInsertion } from "@/src/components/algorithms/AVLtree/index";
-import { AnimationController } from "@/src/components/algorithms/AVLtree/animationController";
+import type { AVLTreeNode } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+import {
+    findInsertionPosition,
+    rebuildAVLTreeFromNodes
+} from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+import {
+    animateRootInsertion,
+    animateNonRootInsertion
+} from "@/src/components/visualizer/animations/AVLtree/insertAnimation";
+
+import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
 
 /**
  * Hook: AVL Insert Handler
@@ -21,7 +27,6 @@ export function useAVLInsertHandler(params: {
     setNodeIdCounter: React.Dispatch<React.SetStateAction<number>>;
 }) {
     const {
-        avlRoot,
         nodeIdCounter,
         animationSpeed,
         rf,
@@ -39,15 +44,15 @@ export function useAVLInsertHandler(params: {
         setAnimationDescription(`Finding position for value ${valueToInsert}...`);
 
         setTimeout(() => {
-            const currentRoot = avlRoot;
+            const rfNodes = rf?.getNodes?.() || [];
+            const latestRoot = rebuildAVLTreeFromNodes(rfNodes);
 
-            const insertionPos = findInsertionPosition(currentRoot, valueToInsert);
+            const insertionPos = findInsertionPosition(latestRoot, valueToInsert);
 
-            // Duplicate check
             if (
-                currentRoot !== null &&
+                latestRoot &&
                 insertionPos.parentId === null &&
-                currentRoot.value === valueToInsert
+                latestRoot.value === valueToInsert
             ) {
                 setIsAnimating(false);
                 setAnimationDescription(`⚠️ Value ${valueToInsert} already exists!`);
@@ -57,8 +62,8 @@ export function useAVLInsertHandler(params: {
 
             const newNodeId = `avl_${nodeIdCounter}`;
 
-            // Empty tree → root insert
-            if (!currentRoot) {
+            /** Empty tree → root */
+            if (!latestRoot) {
                 animateRootInsertion(
                     valueToInsert,
                     newNodeId,
@@ -73,12 +78,12 @@ export function useAVLInsertHandler(params: {
                 return;
             }
 
-            // Non-empty tree
+            /** Non-root insert */
             const currentRFNodes = rf?.getNodes?.() || [];
             const currentRFEdges = rf?.getEdges?.() || [];
 
             animateNonRootInsertion(
-                currentRoot,
+                latestRoot,
                 valueToInsert,
                 newNodeId,
                 insertionPos.path || [],
@@ -97,7 +102,6 @@ export function useAVLInsertHandler(params: {
             );
         }, 150);
     }, [
-        avlRoot,
         nodeIdCounter,
         animationSpeed,
         rf,

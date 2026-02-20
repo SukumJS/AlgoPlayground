@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, Suspense, DragEvent } from "react";
+import React, { useState, useCallback, Suspense, DragEvent, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import ControlPanel from "../../components/shared/controlPanel";
 import SideTab from "../../components/shared/sideTab";
@@ -38,6 +38,8 @@ import CustomNode from "@/src/components/shared/customNode";
 import TreeEdge from "@/src/components/shared/treeEdge";
 import FloatingEdge from "@/src/components/shared/FloatingEdge";
 import '@xyflow/react/dist/base.css';
+import { insertBST, type BSTNode } from "@/src/components/visualizer/algorithmsTree/BST/bstTree";
+import { BTNode, insertBT } from "@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree";
 
 const nodeTypes = {
     custom: CustomNode,
@@ -74,6 +76,13 @@ const treeInitialEdges: Edge[] = [
     { id: "e-t4-t5", source: "t4", sourceHandle: "source-bottom-right", target: "t5", targetHandle: "target-top-left", type: "straight" },
 ];
 
+const btInitialEdges: Edge[] = [
+    { id: "bt-e-t1-t2", source: "t1", sourceHandle: "source-bottom-left", target: "t2", targetHandle: "target-top-right", type: "straight" },
+    { id: "bt-e-t1-t3", source: "t1", sourceHandle: "source-bottom-right", target: "t3", targetHandle: "target-top-left", type: "straight" },
+    { id: "bt-e-t2-t4", source: "t2", sourceHandle: "source-bottom-left", target: "t4", targetHandle: "target-top-right", type: "straight" },
+    { id: "bt-e-t2-t5", source: "t2", sourceHandle: "source-bottom-right", target: "t5", targetHandle: "target-top-left", type: "straight" },
+];
+
 const sortingInitialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
 
 // Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
@@ -93,6 +102,42 @@ const graphInitialEdges: Edge[] = [
     { id: "eg-97-70", source: "g3", target: "g5", type: "floatingEdge", label: "1", data: { weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
 ];
 
+// ── Build initial BST from treeInitialNodes ───────────────────────────────────
+const buildTreeInitialBSTRoot = (): BSTNode => {
+    // t1=64 (root), t2=30, t3=70, t4=80, t5=90
+    const insertOrder: Array<{ id: string; value: number }> = [
+        { id: "t1", value: 64 },
+        { id: "t2", value: 30 },
+        { id: "t3", value: 70 },
+        { id: "t4", value: 80 },
+    ];
+    let root: BSTNode | null = null;
+    for (const { id, value } of insertOrder) {
+        root = insertBST(root, value, id);
+    }
+    return root!;
+};
+
+// ── Build initial BT root (สำหรับ bt-inorder, bt-preorder, bt-postorder) ────
+const buildTreeInitialBTRoot = (): BTNode => {
+    const insertOrder: Array<{ id: string; value: number }> = [
+        { id: "t1", value: 64 },
+        { id: "t2", value: 30 },
+        { id: "t3", value: 70 },
+        { id: "t4", value: 80 },
+        { id: "t5", value: 90 },
+    ];
+    let root: BTNode | null = null;
+    for (const { id, value } of insertOrder) {
+        root = insertBT(root, value, id);
+    }
+    return root!;
+};
+
+const treeInitialBTRoot = buildTreeInitialBTRoot();
+
+const treeInitialBSTRoot = buildTreeInitialBSTRoot();
+
 const fitViewOptions: FitViewOptions = {
     padding: 0.2,
 };
@@ -103,12 +148,14 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 
 function Playground() {
     const searchParams = useSearchParams();
-    const algoType = searchParams.get("type");
-    const algorithm = searchParams.get("algorithm");
+    const typeParam = searchParams.get("type") || "";
 
     // Set initial nodes and edges based on algorithm type
-    const isTree = algoType === "tree";
-    const isGraph = algoType === "graph";
+    const treeAlgorithms = ["avl-tree", "binary-search-tree", "binary-tree-postorder", "binary-tree-preorder", "binary-tree-inorder", "min-heap", "max-heap", "tree"];
+    const graphAlgorithms = ["breadth-first-search", "depth-first-search", "dijkstra", "bellman-ford", "prims", "kruskals", "graph"];
+
+    const isTree = treeAlgorithms.includes(typeParam);
+    const isGraph = graphAlgorithms.includes(typeParam);
 
     const getInitialNodes = () => {
         if (isTree) return treeInitialNodes;
@@ -125,6 +172,8 @@ function Playground() {
     const [nodes, setNodes] = useState<Node[]>(getInitialNodes());
     const [edges, setEdges] = useState<Edge[]>(getInitialEdges());
     const { flowToScreenPosition } = useReactFlow();
+    const rebalanceRef = useRef<(() => void) | null>(null);
+    const btRebalanceRef = useRef<(() => void) | null>(null);
 
     // Tutorial logic extracted to custom hook
     const tutorial = useTreeTutorial({
@@ -248,35 +297,33 @@ function Playground() {
                 data: { label: (node.data as Record<string, unknown>).label as string }
             }));
 
-        switch (algoType) {
-            case "tree":
-                return (
-                    <Data_tree
-                        tutorialMode={tutorial.showTutorial}
-                        tutorialStep={tutorial.tutorialStep}
-                        onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
-                        currentNodes={treeNodes}
-                        algorithm={algorithm || "avl"}
-                    />
-                );
-            case 'graph':
-                return <Data_graph />;
-            default:
-                return <Data_sort nodeInput={0} setNodeInput={function (): void {
-                    throw new Error("Function not implemented.");
-                }} />;
+        if (isTree) {
+            return (
+                <Data_tree
+                    tutorialMode={tutorial.showTutorial}
+                    tutorialStep={tutorial.tutorialStep}
+                    onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
+                    currentNodes={treeNodes}
+                    algorithm={typeParam}
+                    onRebalanceReady={(fn) => { rebalanceRef.current = fn; }}
+                    onBTRebalanceReady={(fn) => { btRebalanceRef.current = fn; }}
+                    initialBSTRoot={["binary-search-tree", "avl-tree"].includes(typeParam) ? treeInitialBSTRoot : null}
+                    initialBTRoot={['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(typeParam) ? treeInitialBTRoot : null}
+                />
+            );
+        } else if (isGraph) {
+            return <Data_graph />;
+        } else {
+            return <Data_sort nodeInput={0} setNodeInput={function (): void {
+                throw new Error("Function not implemented.");
+            }} />;
         }
     };
 
     const getTitle = () => {
-        switch (algoType) {
-            case "tree":
-                return "Tree Algorithms";
-            case 'graph':
-                return 'Graph Algorithms';
-            default:
-                return "Sorting Algorithms";
-        }
+        if (isTree) return "Tree Algorithms";
+        if (isGraph) return "Graph Algorithms";
+        return "Sorting Algorithms";
     };
 
     return (
@@ -371,6 +418,13 @@ function Playground() {
                         title: "Tutorial Complete!",
                         description: "You are now ready to explore Binary Search Tree."
                     }]}
+                    onLetsPlay={
+                        typeParam === "avl-tree"
+                            ? () => rebalanceRef.current?.()
+                            : ['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(typeParam)
+                                ? () => btRebalanceRef.current?.()
+                                : undefined
+                    }
                 />
             )}
 

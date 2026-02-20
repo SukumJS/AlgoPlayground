@@ -1,28 +1,46 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import controlBus from '@/src/hooks/controlBus';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useReactFlow, XYPosition } from "@xyflow/react";
-import type { Node as RFNode } from '@xyflow/react';
+import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
 import { Plus, Search, Trash } from "lucide-react";
 import { GLOW_ZONE } from "./tutorial_tree";
-import { 
-  rebuildAVLTreeFromNodes, 
-  validateTreeStructure,
-  type AVLTreeNode 
-} from "@/src/hooks/treeAdapters/avlAdapter";
-import { type AnimationCallbacks } from "@/src/components/algorithms/AVLtree/index";
+import {
+    rebuildAVLTreeFromNodes,
+    validateTreeStructure,
+    type AVLTreeNode,
+} from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+import { type AnimationCallbacks } from "@/src/components/visualizer/animations/AVLtree/insertAnimation";
 
-import { useAVLInsertHandler } from "@/src/hooks/avlTree/useAVLInsertHandler";
-import { useAVLSearchHandler } from "@/src/hooks/avlTree/useAVLSearchHandler";
-import { useAVLRemoveHandler } from "@/src/hooks/avlTree/useAVLRemoveHandler";
+import { useAVLInsertHandler } from "@/src/hooks/AVLTree/useAVLInsertHandler";
+import { useAVLSearchHandler } from "@/src/hooks/AVLTree/useAVLSearchHandler";
+import { useAVLRemoveHandler } from "@/src/hooks/AVLTree/useAVLRemoveHandler";
+import { useAVLRebalanceHandler } from "@/src/hooks/AVLTree/useAVLRebalanceHandler";
 
+// BST
+import { useBSTInsertHandler } from "@/src/hooks/ฺBST/useBSTInsertHandler";
+import { useBSTSearchHandler } from "@/src/hooks/ฺBST/useBSTSearchHandler";
+import { useBSTRemoveHandler } from "@/src/hooks/ฺBST/useBSTRemoveHandler";
+import { insertBST, cloneBSTTree, type BSTNode } from "@/src/components/visualizer/algorithmsTree/BST/bstTree";
 
-let id = 0;
-const getId = () => `dndnode_${id++}`;
+// Binary Tree (no BST constraint)
+import { useBTInsertHandler } from "@/src/hooks/BinaryTree/useBTInsertHandler";
+import { useBTSearchHandler } from "@/src/hooks/BinaryTree/useBTSearchHandler";
+import { useBTRemoveHandler } from "@/src/hooks/BinaryTree/useBTRemoveHandler";
+import { useBTTraversalHandler } from "@/src/hooks/BinaryTree/useBTTraversalHandler";
+import { insertBT, cloneBT, type BTNode } from "@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree";
+import { calculateBTPositions, btToReactFlow } from "@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree";
+
+import { resolveColor } from '@/src/components/visualizer/animations/highlightColors';
+
+// let id = 0;
+const getId = () => `dndnode_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+const BST_ALGORITHMS = ['binary-search-tree'];
+const BT_ALGORITHMS = ['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'];
 
 interface Data_treeProps {
     tutorialMode?: boolean;
@@ -30,61 +48,81 @@ interface Data_treeProps {
     onTutorialDropSuccess?: () => void;
     currentNodes?: Array<{ id: string; data: { label: string } }>;
     algorithm?: string;
+    onRebalanceReady?: (fn: () => void) => void;
+    initialBSTRoot?: BSTNode | null;
+    initialBTRoot?: BTNode | null;
+    onBTRebalanceReady?: (fn: () => void) => void;
 }
 
-function Data_tree({ 
-  tutorialMode = false, 
-  tutorialStep = 0, 
-  onTutorialDropSuccess, 
-  currentNodes = [],
-  algorithm,
+function Data_tree({
+    tutorialMode = false,
+    tutorialStep = 0,
+    onTutorialDropSuccess,
+    currentNodes = [],
+    algorithm,
+    onRebalanceReady,
+    onBTRebalanceReady,
+    initialBSTRoot = null,
+    initialBTRoot = null,
 }: Data_treeProps) {
     const [isDataSortOpen, setIsDataSortOpen] = useState(true);
     const { onDragStart, isDragging } = useDnD();
     const [type, setType] = useState<string | null>(null);
     const rf = useReactFlow();
     const { setNodes, setEdges } = rf;
-    
-    // Input states
+
     const [inputValue, setInputValue] = useState<string>("");
     const [searchValue, setSearchValue] = useState<string>("");
     const [removeValue, setRemoveValue] = useState<string>("");
     const [draggedValue, setDraggedValue] = useState<number | null>(null);
     const [nodeIdCounter, setNodeIdCounter] = useState(5);
-    
+
     // Animation states
     const [isAnimating, setIsAnimating] = useState(false);
-    const [animationSpeed, setAnimationSpeed] = useState(500); // ms per step
-    const [animationDescription, setAnimationDescription] = useState<string>("");
+    const [animationSpeed] = useState(500);
+    const [, setAnimationDescription] = useState<string>("");
     const isPausedRef = useRef<boolean>(false);
 
-    // Sample nodes for tutorial
-    const Sample = [
-        { number: "3" },
-        { number: "67" },
-        { number: "46" },
-    ];
+    // Tree roots
+    const [bstRoot, setBSTRoot] = useState<BSTNode | null>(initialBSTRoot);
+    const [btRoot, setBTRoot] = useState<BTNode | null>(initialBTRoot);
 
-    // Get current AVL tree root from ReactFlow nodes
+    const isBST = BST_ALGORITHMS.includes(algorithm ?? '');
+    const isBT = BT_ALGORITHMS.includes(algorithm ?? '');
+    const hasTraversal = isBT;
+    const traversalType = isBT ? algorithm : null; // 'binary-tree-inorder' | 'binary-tree-preorder' | 'binary-tree-postorder'
+
+    // sync initial roots
+    const bstInitRef = useRef(false);
+    const btInitRef = useRef(false);
+    useEffect(() => {
+        if (!bstInitRef.current && initialBSTRoot) { setBSTRoot(initialBSTRoot); bstInitRef.current = true; }
+    }, [initialBSTRoot]);
+    useEffect(() => {
+        if (!btInitRef.current && initialBTRoot) { setBTRoot(initialBTRoot); btInitRef.current = true; }
+    }, [initialBTRoot]);
+
+    // reset on clear
+    const prevLenRef = useRef(currentNodes.length);
+    useEffect(() => {
+        const prev = prevLenRef.current;
+        prevLenRef.current = currentNodes.length;
+        if (prev > 0 && currentNodes.length === 0) {
+            setBSTRoot(null);
+            setBTRoot(null);
+        }
+    });
+
+    const Sample = [{ number: "3" }, { number: "67" }, { number: "46" }];
+
     const avlRoot = useMemo((): AVLTreeNode | null => {
         if (currentNodes.length === 0) return null;
-
-        // Filter only nodes with numeric labels
-        const numericNodes = currentNodes.filter(node => 
-          !isNaN(parseInt(node.data.label))
-        );
-        
+        const numericNodes = currentNodes.filter(n => !isNaN(parseInt(n.data.label)));
         if (numericNodes.length === 0) return null;
 
         // Rebuild AVL tree from current nodes to ensure structure is valid
         const rebuilt = rebuildAVLTreeFromNodes(numericNodes);
-        
-        // Verify structure is valid
-        if (!validateTreeStructure(numericNodes, rebuilt)) {
-            console.warn("Tree structure invalid, rebuilding...");
-            return rebuilt;
-        }
-
+        if (!validateTreeStructure(numericNodes, rebuilt)) return rebuilt;
         return rebuilt;
     }, [currentNodes]);
 
@@ -93,188 +131,144 @@ function Data_tree({
         setNodes,
         setEdges,
         setDescription: setAnimationDescription,
-        applyHighlighting: (nodes, edges, highlightedNodeIds, highlightedEdgeIds, color) => {
-            const highlightedNodes = nodes.map((node: any) => ({
-                ...node,
-                data: {
-                    ...node.data,
-                    isHighlighted: highlightedNodeIds.has(node.id),
-                    highlightColor: highlightedNodeIds.has(node.id) ? color : undefined,
-                },
-            }));
-            
-            const highlightedEdges = edges.map((edge: any) => ({
-                ...edge,
-                style: highlightedEdgeIds.has(edge.id)
-                    ? { 
-                        stroke: color === 'red' ? '#EF4444' 
-                              : color === 'blue' ? '#3B82F6' 
-                              : color === 'yellow' ? '#FBBF24' 
-                              : '#22C55E', 
-                        strokeWidth: 3 
-                      }
-                    : { stroke: '#999', strokeWidth: 2 },
-            }));
-            
-            return { highlightedNodes, highlightedEdges };
+        applyHighlighting: (
+            nodes: RFNode[], edges: RFEdge[],
+            highlightedNodeIds: Set<string>, highlightedEdgeIds: Set<string>,
+            color: string,
+            edgeColor?: string
+        ) => {
+            const resolvedColor = resolveColor(color); // '#62A2F7', '#F7AD45', etc.
+            const resolvedEdgeColor = edgeColor ? resolveColor(edgeColor) : resolvedColor;
+
+            return {
+                highlightedNodes: nodes.map((n: RFNode) => ({
+                    ...n,
+                    data: {
+                        ...n.data,
+                        isHighlighted: highlightedNodeIds.has(n.id),
+                        // ส่ง hex ตรงๆ ให้ custom node component
+                        highlightColor: highlightedNodeIds.has(n.id) ? resolvedColor : undefined,
+                    },
+                })),
+                highlightedEdges: edges.map((e: RFEdge) => ({
+                    ...e,
+                    style: highlightedEdgeIds.has(e.id)
+                        ? { stroke: resolvedEdgeColor, strokeWidth: 3 }
+                        : { stroke: '#999', strokeWidth: 2 },
+                })),
+            };
         },
     }), [setNodes, setEdges]);
 
-    const handleAVLInsert = useAVLInsertHandler({
-        avlRoot,
-        nodeIdCounter,
-        animationSpeed,
-        rf,
-        animationCallbacks,
-        isPausedRef,
-        setIsAnimating,
-        setAnimationDescription,
-        setNodeIdCounter
-    });
+    // AVL Handlers
+    const handleAVLInsert = useAVLInsertHandler({ avlRoot, nodeIdCounter, animationSpeed, rf, animationCallbacks, isPausedRef, setIsAnimating, setAnimationDescription, setNodeIdCounter });
+    const handleAVLSearch = useAVLSearchHandler({ avlRoot, animationSpeed, rf, animationCallbacks, isPausedRef, setIsAnimating, setSearchValue });
+    const handleAVLRemove = useAVLRemoveHandler({ avlRoot, animationSpeed, rf, animationCallbacks, isPausedRef, setIsAnimating, setRemoveValue });
+    const handleAVLRebalance = useAVLRebalanceHandler({ avlRoot, rf, animationCallbacks, isPausedRef, setIsAnimating });
 
-    const handleAVLSearch = useAVLSearchHandler({
-        avlRoot,
-        animationSpeed,
-        rf,
-        animationCallbacks,
-        isPausedRef,
-        setIsAnimating,
-        setSearchValue
-    });
+    // BST Handlers
+    const { handleInsert: bstInsert } = useBSTInsertHandler({ bstRoot, setBSTRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
+    const { handleSearch: bstSearch } = useBSTSearchHandler({ bstRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
+    const { handleRemove: bstRemove } = useBSTRemoveHandler({ bstRoot, setBSTRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
 
-    const handleAVLRemove = useAVLRemoveHandler({
-        avlRoot,
-        animationSpeed,
-        rf,
-        animationCallbacks,
-        isPausedRef,
-        setIsAnimating,
-        setRemoveValue
-    });
+    // BT Handlers
+    const { handleInsert: btInsert } = useBTInsertHandler({ btRoot, setBTRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
+    const { handleSearch: btSearch } = useBTSearchHandler({ btRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
+    const { handleRemove: btRemove } = useBTRemoveHandler({ btRoot, setBTRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
+    const { handleInorder, handlePreorder, handlePostorder } = useBTTraversalHandler({ btRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef, setIsAnimating });
 
-    // Create drag and drop handler for tutorial
+    useEffect(() => { onRebalanceReady?.(handleAVLRebalance); }, [handleAVLRebalance, onRebalanceReady]);
+
+    // Drag & Drop
     const createAddNewNode = useCallback(
-        (Sample: number): OnDropAction => {
+        (sampleValue: number): OnDropAction => {
             return ({ position }: { position: XYPosition }) => {
-                // During tutorial step 1, only allow drop in glow zone area
                 if (tutorialMode && tutorialStep === 0) {
-                    // Use GLOW_ZONE constant for consistency
-                    const glowCenterX = GLOW_ZONE.x;
-                    const glowCenterY = GLOW_ZONE.y;
-                    const allowedRadius = GLOW_ZONE.radius;
-
-                    const dx = position.x - glowCenterX;
-                    const dy = position.y - glowCenterY;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance > allowedRadius) {
-                        return; // Drop outside glow zone
-                    }
+                    const dx = position.x - GLOW_ZONE.x;
+                    const dy = position.y - GLOW_ZONE.y;
+                    if (Math.sqrt(dx * dx + dy * dy) > GLOW_ZONE.radius) return;
                 }
-
                 const newNode = {
-                    id: getId(),
-                    type: "custom",
-                    position,
-                    data: { label: Sample.toString(), variant: "circle" },
-                    // Higher z-index during tutorial so node 3 appears above others
+                    id: getId(), type: "custom", position,
+                    data: { label: sampleValue.toString(), variant: "circle" },
                     zIndex: tutorialMode ? 100 : undefined,
                 };
-
-                setNodes((nds) => nds.concat(newNode));
+                setNodes(nds => nds.concat(newNode));
                 setType(null);
 
-                // During tutorial step 1, advance to next step after successful drop
-                if (tutorialMode && tutorialStep === 0) {
-                    onTutorialDropSuccess?.();
-                }
+                if (isBST) setBSTRoot(prev => insertBST(cloneBSTTree(prev), sampleValue, newNode.id));
+                if (isBT) setBTRoot(prev => insertBT(cloneBT(prev), sampleValue, newNode.id));
+
+                if (tutorialMode && tutorialStep === 0) onTutorialDropSuccess?.();
             };
         },
-        [setNodes, setType, tutorialMode, tutorialStep, onTutorialDropSuccess],
+        [setNodes, tutorialMode, tutorialStep, onTutorialDropSuccess, isBST, isBT]
     );
 
     // Handle insert operation
     const handleInsert = useCallback(() => {
         if (tutorialMode) return;
+        const v = inputValue ? parseInt(inputValue) : Math.floor(Math.random() * 100) + 1;
+        if (isNaN(v)) return;
+        if (algorithm === 'avl-tree') handleAVLInsert(v);
+        else if (isBST) bstInsert(v);
+        else if (isBT) btInsert(v);
+        else console.warn(`Insert not implemented for ${algorithm}`);
+        setInputValue('');
+    }, [tutorialMode, inputValue, algorithm, isBST, isBT, handleAVLInsert, bstInsert, btInsert]);
 
-        const valueToInsert = inputValue
-            ? parseInt(inputValue)
-            : Math.floor(Math.random() * 100) + 1;
-        if (isNaN(valueToInsert)) return;
-
-        if (algorithm === "avl") {
-            handleAVLInsert(valueToInsert);
-        } else {
-            console.warn(`Insert not implemented for ${algorithm}`);
-        }
-
-        setInputValue("");
-    }, [tutorialMode, inputValue, algorithm, handleAVLInsert]);
-
-
+    // Handle search operation
     const handleSearch = useCallback(() => {
         if (tutorialMode) return;
+        const v = searchValue ? parseInt(searchValue) : NaN;
+        if (isNaN(v)) return;
+        if (algorithm === 'avl-tree') handleAVLSearch(v);
+        else if (isBST) bstSearch(v);
+        else if (isBT) btSearch(v);
+        else console.warn(`Search not implemented for ${algorithm}`);
+    }, [tutorialMode, searchValue, algorithm, isBST, isBT, handleAVLSearch, bstSearch, btSearch]);
 
-        const value = searchValue ? parseInt(searchValue) : NaN;
-        if (isNaN(value)) return;
-
-        if (algorithm === "avl") {
-            handleAVLSearch(value);
-        } else {
-            console.warn(`Search not implemented for ${algorithm}`);
-        }
-    }, [tutorialMode, searchValue, algorithm, handleAVLSearch]);
-
-
+    // Handle remove operation
     const handleRemove = useCallback(() => {
         if (tutorialMode) return;
+        const v = removeValue ? parseInt(removeValue) : NaN;
+        if (isNaN(v)) return;
+        if (algorithm === 'avl-tree') handleAVLRemove(v);
+        else if (isBST) bstRemove(v);
+        else if (isBT) btRemove(v);
+        else console.warn(`Remove not implemented for ${algorithm}`);
+    }, [tutorialMode, removeValue, algorithm, isBST, isBT, handleAVLRemove, bstRemove, btRemove]);
 
-        const value = removeValue ? parseInt(removeValue) : NaN;
-        if (isNaN(value)) return;
+    // Handle rebalance operation
+    const handleBTRebalance = useCallback(() => {
+        const root = btRoot;
+        if (!root) return;
 
-        if (algorithm === "avl") {
-            handleAVLRemove(value);
-        } else {
-            console.warn(`Remove not implemented for ${algorithm}`);
-        }
-    }, [tutorialMode, removeValue, algorithm, handleAVLRemove]);
+        setEdges([]);
 
-    // Handle reset
+        setTimeout(() => {
+            const positions = calculateBTPositions(root);
+            const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(root, [], [], positions);
+            setNodes(rfNodes as RFNode[]);
+            setEdges(rfEdges as RFEdge[]);
+        }, 0);
+    }, [btRoot, setNodes, setEdges]);
+
+    useEffect(() => { onRebalanceReady?.(handleAVLRebalance); }, [handleAVLRebalance, onRebalanceReady]);
+    useEffect(() => { onBTRebalanceReady?.(handleBTRebalance); }, [handleBTRebalance, onBTRebalanceReady]);
+
+    // Handle reset operation
     const handleReset = useCallback(() => {
         if (tutorialMode) return;
-        setInputValue("");
-        setSearchValue("");
-        setRemoveValue("");
+        setInputValue(''); setSearchValue(''); setRemoveValue('');
+        setBSTRoot(null); setBTRoot(null);
     }, [tutorialMode]);
 
     // Toggle expand/collapse
     const handleToggle = useCallback(() => {
         if (tutorialMode) return;
-        setIsDataSortOpen(!isDataSortOpen);
-    }, [tutorialMode, isDataSortOpen]);
-
-    // Subscribe to control bus events
-    useEffect(() => {
-        const unsubSpeed = controlBus.subscribe('setSpeed', (ms?: number) => {
-            if (typeof ms === 'number') setAnimationSpeed(ms);
-        });
-
-        const unsubStop = controlBus.subscribe('stop', () => {
-            isPausedRef.current = true;
-            setIsAnimating(false);
-            setAnimationDescription('Paused');
-        });
-
-        const unsubRun = controlBus.subscribe('run', () => {
-            isPausedRef.current = false;
-        });
-
-        return () => {
-            unsubSpeed();
-            unsubStop();
-            unsubRun();
-        };
-    }, []);
+        setIsDataSortOpen(prev => !prev);
+    }, [tutorialMode]);
 
     return (
         <>
@@ -283,16 +277,14 @@ function Data_tree({
 
             {/* Header button */}
             <button
-                className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${
-                    isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"
-                } ${tutorialMode ? "cursor-default" : ""}`}
+                className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"
+                    } ${tutorialMode ? "cursor-default" : ""}`}
                 onClick={handleToggle}
             >
                 <div className="flex items-center">
                     <div
-                        className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${
-                            isDataSortOpen ? "" : "hidden opacity-100"
-                        }`}
+                        className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? "" : "hidden opacity-100"
+                            }`}
                     ></div>
                     <div className="flex text-lg p-2">Data</div>
                 </div>
@@ -321,8 +313,47 @@ function Data_tree({
                     ))}
                 </div>
 
-                {/* Form controls - visible but disabled during tutorial */}
-                <div className={`flex-col justify-center items-center text-center ${tutorialMode ? 'pointer-events-none opacity-60' : ''}`}>
+                <div className={`flex-col justify-center items-center text-center ${tutorialMode ? "pointer-events-none opacity-60" : ""}`}>
+
+                    {/* Traversal Buttons (เฉพาะ bt-* algorithms) */}
+                    {hasTraversal && (
+                        <div className="grid-cols-1 grid gap-2 text-start m-1">
+                            <p className="font-bold text-md">Traversal</p>
+                            <div className="flex gap-2">
+                                {traversalType === 'binary-tree-inorder' && (
+                                    <button
+                                        className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 hover:bg-blue-600 transition-colors"
+                                        onClick={handleInorder}
+                                        disabled={isAnimating}
+                                        title="Left → Root → Right"
+                                    >
+                                        Traversal Inorder
+                                    </button>
+                                )}
+                                {traversalType === 'binary-tree-preorder' && (
+                                    <button
+                                        className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 hover:bg-yellow-600 transition-colors"
+                                        onClick={handlePreorder}
+                                        disabled={isAnimating}
+                                        title="Root → Left → Right"
+                                    >
+                                        Traversal Preorder
+                                    </button>
+                                )}
+                                {traversalType === 'binary-tree-postorder' && (
+                                    <button
+                                        className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 hover:bg-red-600 transition-colors"
+                                        onClick={handlePostorder}
+                                        disabled={isAnimating}
+                                        title="Left → Right → Root"
+                                    >
+                                        Traversal Postorder
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    {/* Insert */}
                     <div className="grid-cols-1 grid gap-2 text-start m-1">
                         <p className="font-bold text-md">Insert</p>
                         <div className="flex gap-2">
@@ -353,8 +384,8 @@ function Data_tree({
                                 onChange={(e) => setSearchValue(e.target.value)}
                                 disabled={isAnimating}
                             />
-                            <button 
-                                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50" 
+                            <button
+                                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
                                 onClick={handleSearch}
                                 disabled={isAnimating}
                             >
@@ -374,8 +405,8 @@ function Data_tree({
                                 onChange={(e) => setRemoveValue(e.target.value)}
                                 disabled={isAnimating}
                             />
-                            <button 
-                                className="bg-[#E82B2B] rounded-lg p-2 disabled:opacity-50" 
+                            <button
+                                className="bg-[#E82B2B] rounded-lg p-2 disabled:opacity-50"
                                 onClick={handleRemove}
                                 disabled={isAnimating}
                             >

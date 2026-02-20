@@ -1,7 +1,7 @@
 'use client'
 
 import { CircleCheck } from 'lucide-react';
-import React, { useState } from 'react'
+import React from 'react'
 import ModalOverlay from '../excercise/ModalOverlay';
 import { Tutorial } from '@/src/app/types/tutorial';
 
@@ -9,11 +9,10 @@ type TutorialModal = {
   showModal: boolean
   onClose: () => void
   tutorialContent: Tutorial[]
+  onLetsPlay?: () => void 
 }
 
-
-const Tutorial_modal = ({ showModal, onClose, tutorialContent }: TutorialModal) => {
-
+const Tutorial_modal = ({ showModal, onClose, tutorialContent, onLetsPlay }: TutorialModal) => {
   return (
     <ModalOverlay isOpen={showModal} onClose={() => {}}>
       {tutorialContent.map((item, index) => (
@@ -26,7 +25,15 @@ const Tutorial_modal = ({ showModal, onClose, tutorialContent }: TutorialModal) 
             <p>{item.description}</p>
           </div>
           <div className='flex justify-end'>
-            <button onClick={() => onClose()} className='bg-[#0066CC] text-white w-23 h-10 rounded-md mt-8 hover:bg-[#0470dd]'>Let&apos;s Play</button>
+            <button 
+              onClick={() => {
+                onClose();
+                onLetsPlay?.(); 
+              }} 
+              className='bg-[#0066CC] text-white w-23 h-10 rounded-md mt-8 hover:bg-[#0470dd]'
+            >
+              Let&apos;s Play
+            </button>
           </div>
         </div>
       ))}

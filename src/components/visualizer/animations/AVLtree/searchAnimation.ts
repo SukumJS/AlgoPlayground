@@ -1,7 +1,7 @@
 import type { Node as RFNode } from '@xyflow/react';
-import type { AVLTreeNode } from "@/src/hooks/treeAdapters/avlAdapter";
-import { searchAVL } from "@/src/hooks/treeAdapters/avlAdapter";
-import { AnimationController } from './animationController';
+import type { AVLTreeNode } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+import { searchAVL } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+import { AnimationController } from '../Tree/animationController';
 import type { AnimationCallbacks } from './insertAnimation';
 
 /**

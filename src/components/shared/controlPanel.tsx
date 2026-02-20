@@ -1,6 +1,5 @@
 "use client"
 import React, { useState } from 'react'
-import controlBus from '@/src/hooks/controlBus';
 import { ChevronFirst, ChevronLast, ChevronsLeft, ChevronsRight, Play, Pause } from 'lucide-react';
 
 
@@ -17,13 +16,13 @@ function ControlPanel() {
                 <div className='flex gap-2 items-center'>
                     <p className='font-semibold text-sm'>Auto Execution</p>
                     <button type="button" className={`w-28.25 h-10 p-2 gap-2 border border-gray-300 rounded-lg flex items-center justify-center ${activeExecution === 'run' ? 'bg-[#0066CC] text-white' : 'hover:bg-gray-200'}`}
-                    onClick={() => { setActiveExecution('run'); controlBus.emit('run'); }}
+                    onClick={() => setActiveExecution('run')}
                     >
                         <Play fill={activeExecution === 'run' ? 'white' : 'black'} />
                         Run
                     </button>
                     <button type="button" className={`w-28.25 h-10 p-2 gap-2 border border-gray-300 rounded-lg flex items-center justify-center ${activeExecution === 'stop' ? 'bg-[#0066CC] text-white' : 'hover:bg-gray-200'}`}
-                    onClick={() => { setActiveExecution('stop'); controlBus.emit('stop'); }}
+                    onClick={() => setActiveExecution('stop')}
                     >
                         <Pause fill={activeExecution === 'stop' ? 'white' : 'black'} />
                         Stop
@@ -34,15 +33,15 @@ function ControlPanel() {
                 <div className='flex gap-2 items-center'>
                     <p className='font-semibold text-sm'>Speed</p>
                     <button type="button" className={`w-auto h-10 p-2 border border-gray-300 rounded-lg ${activeSpeed === '1x' ? 'bg-[#0066CC] text-white' : 'hover:bg-gray-200'}`}
-                    onClick={() => { setActiveSpeed('1x'); controlBus.emit('setSpeed', 500); }}>
+                    onClick={() => setActiveSpeed('1x')}>
                         1x
                     </button>
                     <button type="button" className={`w-auto h-10 p-2 border border-gray-300 rounded-lg ${activeSpeed === '2x' ? 'bg-[#0066CC] text-white' : 'hover:bg-gray-200'}`}
-                    onClick={() => { setActiveSpeed('2x'); controlBus.emit('setSpeed', 250); }}>
+                    onClick={() => setActiveSpeed('2x')}>
                         2x
                     </button>
                     <button type="button" className={`w-auto h-10 p-2 border border-gray-300 rounded-lg ${activeSpeed === '5x' ? 'bg-[#0066CC] text-white' : 'hover:bg-gray-200'}`}
-                    onClick={() => { setActiveSpeed('5x'); controlBus.emit('setSpeed', 100); }}>
+                    onClick={() => setActiveSpeed('5x')}>
                         5x
                     </button>
                 </div>
@@ -51,13 +50,11 @@ function ControlPanel() {
 
             {/* Button for show algo step by step line */}
             <div className='flex flex-row gap-2'>
-                <button type="button" className='w-30 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'
-                onClick={() => controlBus.emit('prevStep')}>
+                <button type="button" className='w-30 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
                     <ChevronFirst />
                     Prev Step
                 </button>
-                <button type="button" className='w-30 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'
-                onClick={() => controlBus.emit('confirmInsert')}>
+                <button type="button" className='w-30 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
                     Next Step
                     <ChevronLast />
                 </button>

@@ -1,25 +1,25 @@
 import type { Node as RFNode } from '@xyflow/react';
 import type { XYPosition } from '@xyflow/react';
-import type { AVLTreeNode } from "@/src/hooks/treeAdapters/avlAdapter";
-import { 
-  calculateTreePositions, 
+import type { AVLTreeNode } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+import {
+  calculateTreePositions,
   avlTreeToReactFlow,
-  insertAVLWithAnimation 
-} from "@/src/hooks/treeAdapters/avlAdapter";
-import { AVLAnimationRecorder } from "@/src/components/algorithms/AVLtree/avlAnimation";
-import { AnimationController } from './animationController';
-import { 
-  cloneTree, 
+  insertAVLWithAnimation
+} from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+import { AVLAnimationRecorder } from "@/src/components/visualizer/animations/AVLtree/avlAnimation";
+import { AnimationController } from '../Tree/animationController';
+import {
+  cloneTree,
   buildInsertSnapshots,
-  type AnimationStep 
-} from './snapshotBuilder';
-import { 
-  interpolateNodes, 
-  mergeNodeArrays, 
+  type AnimationStep
+} from '@/src/components/visualizer/algorithmsTree/AVLtree/snapshotBuilder';
+import {
+  interpolateNodes,
+  mergeNodeArrays,
   mergeEdgeArrays,
   buildPositionMap,
-  filterValidEdges 
-} from './nodeInterpolation';
+  filterValidEdges
+} from '../Tree/nodeInterpolation';
 
 export interface AnimationCallbacks {
   setNodes: (nodes: any) => void;
@@ -30,7 +30,8 @@ export interface AnimationCallbacks {
     edges: any[],
     highlightedNodeIds: Set<string>,
     highlightedEdgeIds: Set<string>,
-    color: 'blue' | 'yellow' | 'red' | 'green'
+    color: string,
+    edgeColor?: string
   ) => { highlightedNodes: any[]; highlightedEdges: any[] };
 }
 
@@ -116,14 +117,14 @@ export function animateInsertionSteps(
 
     // Calculate positions for both snapshots
     let startPositions = calculateTreePositions(startSnap);
-    
+
     // For the first step, use current ReactFlow positions as start
     if (stepIndex === 0 && rfPosMap.size > 0) {
       const mergedStart = new Map(startPositions);
       rfPosMap.forEach((pos, id) => mergedStart.set(id, pos));
       startPositions = mergedStart;
     }
-    
+
     const endPositions = calculateTreePositions(endSnap);
 
     // Convert to ReactFlow format
@@ -143,15 +144,15 @@ export function animateInsertionSteps(
     // Animate with multiple frames for smooth transition
     for (let frame = 1; frame <= framesPerStep; frame++) {
       const fraction = frame / framesPerStep;
-      
+
       controller.scheduleStep(() => {
         const template = mergeNodeArrays(startNodes, endNodes);
         const templateEdges = mergeEdgeArrays(startEdges, endEdges);
         const intermediate = interpolateNodes(template, startPositions, endPositions, fraction);
-        
+
         const nodeIdSet = new Set(template.map(n => n.id));
         const filteredEdges = filterValidEdges(templateEdges, nodeIdSet);
-        
+
         const { highlightedNodes, highlightedEdges } = callbacks.applyHighlighting(
           intermediate,
           filteredEdges,
@@ -159,13 +160,13 @@ export function animateInsertionSteps(
           new Set(step.highlightedEdges),
           step.highlightColor || 'blue'
         );
-        
+
         callbacks.setNodes(highlightedNodes);
         callbacks.setEdges(highlightedEdges);
         callbacks.setDescription(step.description);
       }, animationSpeed * (delayOffset + globalOffset + frame));
     }
-    
+
     globalOffset += framesPerStep;
   });
 }
@@ -180,7 +181,7 @@ export function finalizeInsertAnimation(
   delayOffset: number,
   controller: AnimationController,
   callbacks: AnimationCallbacks,
-  onComplete: () => void
+  onComplete: (finalRoot: AVLTreeNode | null) => void
 ): void {
   controller.scheduleStep(() => {
     const finalPositions = calculateTreePositions(finalSnapshot);
@@ -190,9 +191,9 @@ export function finalizeInsertAnimation(
       [],
       finalPositions
     );
-    
+
     callbacks.setDescription('Insertion complete!');
-    
+
     const { highlightedNodes, highlightedEdges } = callbacks.applyHighlighting(
       finalNodes,
       finalEdges,
@@ -200,16 +201,16 @@ export function finalizeInsertAnimation(
       new Set(),
       'green'
     );
-    
+
     callbacks.setNodes(highlightedNodes);
     callbacks.setEdges(highlightedEdges);
-    
+
     // Clean up after a brief delay
     controller.scheduleStep(() => {
-      onComplete();
       callbacks.setDescription('');
+      onComplete(finalSnapshot);
     }, animationSpeed);
-    
+
   }, animationSpeed * (delayOffset + totalSteps));
 }
 
@@ -222,7 +223,7 @@ export function animateRootInsertion(
   animationSpeed: number,
   controller: AnimationController,
   callbacks: AnimationCallbacks,
-  onComplete: () => void
+  onComplete: (finalRoot: AVLTreeNode | null) => void
 ): void {
   // Create preview root
   const previewRoot: AVLTreeNode = {
@@ -246,7 +247,7 @@ export function animateRootInsertion(
     ...n,
     data: { ...n.data, isHighlighted: true, highlightColor: 'green' }
   }));
-  
+
   callbacks.setNodes(previewNodes);
   callbacks.setEdges(baseEdges);
   callbacks.setDescription(`Inserting ${value} as root...`);
@@ -300,11 +301,11 @@ export function animateNonRootInsertion(
   animationSpeed: number,
   controller: AnimationController,
   callbacks: AnimationCallbacks,
-  onComplete: () => void
+  onComplete: (finalRoot: AVLTreeNode | null) => void
 ): void {
   // Step 1: Animate traversal
   callbacks.setDescription(`Searching for position to insert ${value}...`);
-  
+
   animateInsertTraversal(
     path,
     currentRFNodes,
@@ -333,7 +334,7 @@ export function animateNonRootInsertion(
     const rootCopy = cloneTree(currentRoot);
     const recorder = new AVLAnimationRecorder();
     insertAVLWithAnimation(rootCopy, value, newNodeId, recorder);
-    
+
     const steps = recorder.getSteps();
     const snapshots = buildInsertSnapshots(rootCopy, steps, value, newNodeId);
 

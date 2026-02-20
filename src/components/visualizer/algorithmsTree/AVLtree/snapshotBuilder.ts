@@ -1,5 +1,6 @@
-import type { AVLTreeNode } from "@/src/hooks/treeAdapters/avlAdapter";
-import { updateHeight } from "@/src/hooks/treeAdapters/avlAdapter";
+import type { AVLTreeNode } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+import { updateHeight } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+import { rotateLeft, rotateRight } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
 
 /**
  * Deep clone an AVL tree
@@ -39,13 +40,13 @@ export function removeLeafWithoutBalance(
   value: number
 ): AVLTreeNode | null {
   if (!root) return null;
-  
+
   if (value < root.value) {
     root.left = removeLeafWithoutBalance(root.left, value);
     updateHeight(root);
     return root;
   }
-  
+
   if (value > root.value) {
     root.right = removeLeafWithoutBalance(root.right, value);
     updateHeight(root);
@@ -61,12 +62,12 @@ export function removeLeafWithoutBalance(
   while (successor && successor.left) {
     successor = successor.left;
   }
-  
+
   if (successor) {
     root.value = successor.value;
     root.right = removeLeafWithoutBalance(root.right, successor.value);
   }
-  
+
   updateHeight(root);
   return root;
 }
@@ -80,13 +81,12 @@ export function applyRotationAt(
   direction: 'left' | 'right'
 ): AVLTreeNode | null {
   if (!root) return null;
-  
+
   if (root.id === targetId) {
     // Import rotateLeft and rotateRight here to avoid circular deps
-    const { rotateLeft, rotateRight } = require('@/src/hooks/treeAdapters/avlAdapter');
     return direction === 'left' ? rotateLeft(root) : rotateRight(root);
   }
-  
+
   root.left = applyRotationAt(root.left, targetId, direction);
   root.right = applyRotationAt(root.right, targetId, direction);
   updateHeight(root);
@@ -101,7 +101,8 @@ export interface AnimationStep {
   description: string;
   highlightedNodes: string[];
   highlightedEdges: string[];
-  highlightColor?: 'blue' | 'yellow' | 'red' | 'green';
+  highlightColor?: string;
+  edgeColor?: string;
 }
 
 /**
@@ -116,7 +117,7 @@ export function buildInsertSnapshots(
 ): Array<AVLTreeNode | null> {
   const snapshots: Array<AVLTreeNode | null> = [];
   let stateRoot = cloneTree(rootCopy);
-  
+
   // Initial state
   snapshots.push(cloneTree(stateRoot));
 
@@ -147,7 +148,7 @@ export function buildRemoveSnapshots(
 ): Array<AVLTreeNode | null> {
   const snapshots: Array<AVLTreeNode | null> = [];
   let stateRoot = cloneTree(rootCopy);
-  
+
   // Initial state
   snapshots.push(cloneTree(stateRoot));
 

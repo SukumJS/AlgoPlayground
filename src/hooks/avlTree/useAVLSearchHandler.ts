@@ -1,7 +1,7 @@
 import { useCallback, MutableRefObject } from "react";
-import type { AVLTreeNode } from "@/src/components/algorithms/AVLtree/avlTree";
-import { animateSearch } from "@/src/components/algorithms/AVLtree/searchAnimation";
-import { AnimationController } from "@/src/components/algorithms/AVLtree/index";
+import { avlTreeToReactFlow, calculateTreePositions, type AVLTreeNode } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+import { animateSearch } from "@/src/components/visualizer/animations/AVLtree/searchAnimation";
+import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
 
 export function useAVLSearchHandler(params: {
     avlRoot: AVLTreeNode | null;
@@ -26,8 +26,15 @@ export function useAVLSearchHandler(params: {
         const controller = new AnimationController(isPausedRef);
         setIsAnimating(true);
 
-        const currentRFNodes = rf?.getNodes?.() || [];
-        const currentRFEdges = rf?.getEdges?.() || [];
+        let currentRFNodes: any[] = [];
+        let currentRFEdges: any[] = [];
+
+        if (avlRoot) {
+            const positions = calculateTreePositions(avlRoot);
+            const rfData = avlTreeToReactFlow(avlRoot, [], [], positions);
+            currentRFNodes = rfData.nodes;
+            currentRFEdges = rfData.edges;
+        }
 
         animateSearch(
             avlRoot,
@@ -45,7 +52,6 @@ export function useAVLSearchHandler(params: {
     }, [
         avlRoot,
         animationSpeed,
-        rf,
         animationCallbacks,
         isPausedRef,
         setIsAnimating,
