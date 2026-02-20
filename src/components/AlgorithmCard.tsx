@@ -11,18 +11,15 @@ interface Props {
   shortTitle?: string
   progress: {
     pretest: {
-      score: number
+      score?: number
       status: "locked" | "active" | "completed"
     }
     posttest: {
-      score: number
+      score?: number
       status: "locked" | "active" | "completed"
     }
   }
 }
-
-
-
 export default function AlgorithmCard({ slug, title, shortTitle, progress }: Props) {
   const router = useRouter()
 
@@ -72,7 +69,6 @@ export default function AlgorithmCard({ slug, title, shortTitle, progress }: Pro
         onClick={(e) => {
           e.stopPropagation()
           console.log("Algorithm slug:", slug)
-          // router.push(`/reading/${slug}`)
           router.push(`/reading`)
         }}
         className="
@@ -104,7 +100,7 @@ export default function AlgorithmCard({ slug, title, shortTitle, progress }: Pro
           p-6 gap-4
         "
       >
-        <h2 className="text-lg font-semibold text-gray-900 text-center leading-tight relative -top-3"title={title}>
+        <h2 className="text-lg font-semibold text-gray-900 text-center leading-tight relative -top-3" title={title}>
           {shortTitle ?? title}
         </h2>
 
@@ -113,7 +109,7 @@ export default function AlgorithmCard({ slug, title, shortTitle, progress }: Pro
           score={progress.pretest.score}
           status={progress.pretest.status}
         />
-     
+
         <ProgressRow
           label="Posttest"
           score={progress.posttest.score}
