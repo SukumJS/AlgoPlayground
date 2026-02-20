@@ -43,24 +43,20 @@ const getRowColors = (
   // full score
   return isPretest
     ? {
-      bg: "bg-[#EAF2FF]",
-      text: "text-blue-700",
-    }
+        bg: "bg-[#EAF2FF]",
+        text: "text-blue-700",
+      }
     : {
-      bg: "bg-[#EAF7EA]",
-      text: "text-green-700",
-    }
+        bg: "bg-[#EAF7EA]",
+        text: "text-green-700",
+      }
 }
-
-
 
 export function ProgressRow({ label, score, status }: ProgressRowProps) {
   const isPretest = label.toLowerCase().includes("pre")
 
   const safeScore = score ?? 0
   const { bg, text } = getRowColors(safeScore, status, isPretest)
-
-
 
   return (
     <div
@@ -76,7 +72,6 @@ export function ProgressRow({ label, score, status }: ProgressRowProps) {
       <span className={`flex-1 text-[14px] ${text}`}>
         {label}
       </span>
-
 
       {/* score - right */}
       <span className={`text-[12px] text-center font-medium ${text} shrink-0 px-2`}>
