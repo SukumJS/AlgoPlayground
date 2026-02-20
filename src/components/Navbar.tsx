@@ -33,7 +33,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
           flex items-center
           rounded-[50px]
           bg-[#B4D4F1]
-          border border-black
+          border border-[#5D5D5D]
           shadow-[0px_6px_18px_rgba(0,0,0,0.25)]
         "
       >
