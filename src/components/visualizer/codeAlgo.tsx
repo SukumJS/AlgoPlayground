@@ -13,7 +13,7 @@ interface CodeBlockProps {
 export default function CodeAlgo({
   title = "Code",
   code = "",
-  language = "python", 
+  language = "python", // ไม่เป็นปัญหากับ Pseudo Code เอาแค่สีกับ format มา
 }: CodeBlockProps) {
   const [isCodeOpen, setIsCodeOpen] = useState<boolean>(true);
   const [currentStepIdx, setCurrentStepIdx] = useState<number>(0);
