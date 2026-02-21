@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 
@@ -10,6 +8,7 @@ interface UseTreeNodeInteractionProps {
     setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
     isTree: boolean;
     isTutorialActive: boolean;
+    onNodeDeleted?: (nodeId: string, nodeValue: number) => void;
 }
 
 interface UseTreeNodeInteractionReturn {
@@ -43,6 +42,7 @@ export function useTreeNodeInteraction({
     setEdges,
     isTree,
     isTutorialActive,
+    onNodeDeleted,
 }: UseTreeNodeInteractionProps): UseTreeNodeInteractionReturn {
     // Selection state
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -250,9 +250,14 @@ export function useTreeNodeInteraction({
 
         if (dist < deleteRadius) {
             // Delete node and connected edges
+            const nodeValue = Number(node.data?.label);
             setNodes(nds => nds.filter(n => n.id !== node.id));
             setEdges(eds => eds.filter(e => e.source !== node.id && e.target !== node.id));
             setSelectedNodeId(null);
+            // Notify parent to sync internal tree roots
+            if (!isNaN(nodeValue)) {
+                onNodeDeleted?.(node.id, nodeValue);
+            }
         } else {
             // Clear danger state
             setNodes(nds => nds.map(n => ({
@@ -265,7 +270,7 @@ export function useTreeNodeInteraction({
         setShowTrashBin(false);
         setIsTrashActive(false);
         isHoldingRef.current = false;
-    }, [showTrashBin, setNodes, setEdges]);
+    }, [showTrashBin, setNodes, setEdges, onNodeDeleted]);
 
     /**
      * Handle pane click - clear selection

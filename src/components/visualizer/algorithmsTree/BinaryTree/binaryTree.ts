@@ -26,38 +26,28 @@ export function insertBT(root: BTNode | null, value: number, nodeId: string): BT
   return root;
 }
 
-//  Remove 
+//  Remove — detach the target node (and its subtree), leaving a null gap
 export function removeBT(root: BTNode | null, value: number): BTNode | null {
   if (!root) return null;
-  if (!root.left && !root.right) return root.value === value ? null : root;
+  // If root is the target, remove the entire tree
+  if (root.value === value) return null;
 
-  let targetNode: BTNode | null = null;
-  let lastParent: BTNode | null = null;
-  let lastIsLeft = false;
-  let lastNode: BTNode = root;
-
+  // BFS to find the parent of the target node
   const queue: BTNode[] = [root];
   while (queue.length > 0) {
     const cur = queue.shift()!;
-    if (cur.value === value) targetNode = cur;
-    if (cur.left) {
-      lastParent = cur; lastIsLeft = true; lastNode = cur.left;
-      queue.push(cur.left);
+    if (cur.left && cur.left.value === value) {
+      cur.left = null; // detach entire subtree
+      return root;
     }
-    if (cur.right) {
-      lastParent = cur; lastIsLeft = false; lastNode = cur.right;
-      queue.push(cur.right);
+    if (cur.right && cur.right.value === value) {
+      cur.right = null; // detach entire subtree
+      return root;
     }
+    if (cur.left) queue.push(cur.left);
+    if (cur.right) queue.push(cur.right);
   }
-
-  if (!targetNode) return root;
-  targetNode.value = lastNode.value;
-  targetNode.id = lastNode.id;
-  if (lastParent) {
-    if (lastIsLeft) lastParent.left = null;
-    else lastParent.right = null;
-  }
-  return root;
+  return root; // value not found
 }
 
 //  Search (BFS) 

@@ -1,14 +1,14 @@
 import { useCallback, MutableRefObject } from "react";
-import { AnimationCallbacks } from "@/src/components/visualizer/animations/AVLtree/insertAnimation";
+import { AnimationCallbacks } from "@/src/components/visualizer/animations/types";
 import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
 import { AVLTreeNode, avlTreeToReactFlow, calculateTreePositions } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
-import { rebuildAVLTreeFromNodes } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
 import { useReactFlow } from "@xyflow/react";
 
 const INSTANT_SPEED = 1;
 
 export function useAVLRebalanceFromTree(params: {
     avlRoot: AVLTreeNode | null;
+    setAVLRoot: (root: AVLTreeNode | null) => void;
     rf: ReturnType<typeof useReactFlow>;
     animationCallbacks: AnimationCallbacks;
     isPausedRef: React.MutableRefObject<boolean>;
@@ -19,6 +19,7 @@ export function useAVLRebalanceFromTree(params: {
 
 export function useAVLRebalanceHandler(params: {
     avlRoot: AVLTreeNode | null;
+    setAVLRoot: (root: AVLTreeNode | null) => void;
     rf: any;
     animationCallbacks: any;
     isPausedRef: MutableRefObject<boolean>;
@@ -26,6 +27,7 @@ export function useAVLRebalanceHandler(params: {
 }) {
     const {
         avlRoot,
+        setAVLRoot,
         rf,
         animationCallbacks,
         isPausedRef,
@@ -36,7 +38,7 @@ export function useAVLRebalanceHandler(params: {
         setIsAnimating(true);
 
         const rfNodes = rf?.getNodes?.() || [];
-        const latestRoot = rebuildAVLTreeFromNodes(rfNodes) || avlRoot;
+        const latestRoot = avlRoot;
 
         if (!latestRoot) {
             setIsAnimating(false);
@@ -54,6 +56,7 @@ export function useAVLRebalanceHandler(params: {
             animationCallbacks.setNodes(nodes);
             animationCallbacks.setEdges(edges);
             animationCallbacks.setDescription("Tree rebalanced!");
+            setAVLRoot(latestRoot);
         }, INSTANT_SPEED);
 
         controller.scheduleStep(() => {
@@ -63,6 +66,7 @@ export function useAVLRebalanceHandler(params: {
 
     }, [
         avlRoot,
+        setAVLRoot,
         rf,
         animationCallbacks,
         isPausedRef,

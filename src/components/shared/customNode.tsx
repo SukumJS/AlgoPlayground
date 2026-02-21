@@ -9,6 +9,7 @@ type CustomNodeData = {
     isGlowing?: boolean;
     isDanger?: boolean;
     highlightColor?: string;
+    balanceFactor?: number;
 };
 
 export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
@@ -97,6 +98,23 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
             />
 
             {data.label}
+
+            {/* Balance factor badge — shown only during AVL balance-check animations */}
+            {data.balanceFactor !== undefined && (
+                <div
+                    className="absolute -top-3 -right-3 flex items-center justify-center text-xs font-bold rounded-full w-8 h-8 border-2"
+                    style={{
+                        backgroundColor: Math.abs(data.balanceFactor) > 1 ? '#EF4444' : '#4CAF7D',
+                        borderColor: Math.abs(data.balanceFactor) > 1 ? '#DC2626' : '#388E5C',
+                        color: 'white',
+                        fontSize: '18px',
+                        lineHeight: 1,
+                        zIndex: 10,
+                    }}
+                >
+                    {data.balanceFactor > 0 ? `+${data.balanceFactor}` : data.balanceFactor}
+                </div>
+            )}
 
             {/* Source handles - positioned at circle corners (45° angles) */}
             <Handle

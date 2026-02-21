@@ -1,13 +1,7 @@
-/**
- * useBTRemoveHandler — Remove handler สำหรับ Binary Tree
- *
- * วางไฟล์นี้ที่: src/hooks/BinaryTree/useBTRemoveHandler.ts
- */
-
 import { useCallback, useRef } from 'react';
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 import { AnimationController } from '@/src/components/visualizer/animations/Tree/animationController';
-import type { AnimationCallbacks } from '@/src/components/visualizer/animations/AVLtree/insertAnimation';
+import type { AnimationCallbacks } from '@/src/components/visualizer/animations/types';
 import { removeBT, searchBT, calculateBTPositions, btToReactFlow, type BTNode } from '@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree';
 
 interface UseBTRemoveHandlerProps {
@@ -75,7 +69,7 @@ export function useBTRemoveHandler({
               data: {
                 ...n.data,
                 isHighlighted: n.id === id,
-                highlightColor: n.id === id ? 'blue' : undefined,
+                highlightColor: n.id === id ? '#62A2F7' : undefined,
               },
             }));
 
@@ -107,7 +101,7 @@ export function useBTRemoveHandler({
           data: {
             ...n.data,
             isHighlighted: n.id === nodeId,
-            highlightColor: n.id === nodeId ? 'red' : undefined,
+            highlightColor: n.id === nodeId ? '#EF4444' : undefined,
           },
         }));
         setNodes(highlighted);
@@ -116,6 +110,7 @@ export function useBTRemoveHandler({
       }, animationSpeed * globalOffset);
 
       // ลบและแสดง tree ใหม่
+      globalOffset++;
       controller.scheduleStep(() => {
         const newRoot = removeBT(root, value);
         setBTRoot(newRoot);
@@ -125,11 +120,12 @@ export function useBTRemoveHandler({
         setNodes(rfNodes as RFNode[]);
         setEdges(rfEdges as RFEdge[]);
         setDescription(`Removed ${value}`);
+      }, animationSpeed * globalOffset);
 
-        controller.scheduleStep(() => {
-          setDescription('');
-        }, animationSpeed * 1.5);
-      }, animationSpeed * 1.5);
+      // Clear description
+      controller.scheduleStep(() => {
+        setDescription('');
+      }, animationSpeed * (globalOffset + 2));
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [animationSpeed, isPausedRef, setBTRoot, setNodes, setEdges, setDescription]

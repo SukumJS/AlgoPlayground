@@ -63,6 +63,23 @@ function getMinNode(node: BSTNode): BSTNode {
   return cur;
 }
 
+/** Find inorder successor of a node to be deleted (node must have right child) */
+export function findBSTSuccessor(root: BSTNode | null, value: number): { successorId: string | null; successorValue: number | null } {
+  if (!root) return { successorId: null, successorValue: null };
+  let cur = root;
+  // Find the node
+  while (cur && cur.value !== value) {
+    cur = value < cur.value ? cur.left! : cur.right!;
+    if (!cur) return { successorId: null, successorValue: null };
+  }
+  // If has right subtree, successor is min of right
+  if (cur.right) {
+    const suc = getMinNode(cur.right);
+    return { successorId: suc.id, successorValue: suc.value };
+  }
+  return { successorId: null, successorValue: null };
+}
+
 function removeBSTInternal(
   root: BSTNode | null,
   value: number,

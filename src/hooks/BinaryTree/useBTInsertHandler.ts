@@ -1,14 +1,7 @@
-/**
- * useBTInsertHandler — Insert handler สำหรับ Binary Tree
- * ใช้ level-order insert (BFS) ไม่มี BST constraint
- *
- * วางไฟล์นี้ที่: src/hooks/BinaryTree/useBTInsertHandler.ts
- */
-
 import { useCallback, useRef } from 'react';
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 import { AnimationController } from '@/src/components/visualizer/animations/Tree/animationController';
-import type { AnimationCallbacks } from '@/src/components/visualizer/animations/AVLtree/insertAnimation';
+import type { AnimationCallbacks } from '@/src/components/visualizer/animations/types';
 import { insertBT, calculateBTPositions, btToReactFlow, type BTNode } from '@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree';
 
 interface UseBTInsertHandlerProps {
@@ -80,7 +73,7 @@ export function useBTInsertHandler({
               data: {
                 ...n.data,
                 isHighlighted: n.id === id,
-                highlightColor: n.id === id ? 'blue' : undefined,
+                highlightColor: n.id === id ? '#62A2F7' : undefined,
               },
             }));
 
@@ -114,7 +107,7 @@ export function useBTInsertHandler({
             data: {
               ...n.data,
               isHighlighted: n.id === parentId,
-              highlightColor: n.id === parentId ? 'yellow' : undefined,
+              highlightColor: n.id === parentId ? '#F7AD45' : undefined,
             },
           }));
           setNodes(highlightedNodes);
@@ -138,7 +131,7 @@ export function useBTInsertHandler({
           data: {
             ...n.data,
             isHighlighted: n.id === newNodeId,
-            highlightColor: n.id === newNodeId ? 'green' : undefined,
+            highlightColor: n.id === newNodeId ? '#4CAF7D' : undefined,
           },
         }));
 

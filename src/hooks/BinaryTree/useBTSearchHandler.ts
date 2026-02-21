@@ -1,13 +1,7 @@
-/**
- * useBTSearchHandler — Search handler สำหรับ Binary Tree (BFS)
- *
- * วางไฟล์นี้ที่: src/hooks/BinaryTree/useBTSearchHandler.ts
- */
-
 import { useCallback, useRef } from 'react';
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 import { AnimationController } from '@/src/components/visualizer/animations/Tree/animationController';
-import type { AnimationCallbacks } from '@/src/components/visualizer/animations/AVLtree/insertAnimation';
+import type { AnimationCallbacks } from '@/src/components/visualizer/animations/types';
 import { searchBT, calculateBTPositions, btToReactFlow, type BTNode } from '@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree';
 
 interface UseBTSearchHandlerProps {
@@ -22,6 +16,11 @@ interface UseBTSearchHandlerProps {
   isPausedRef: React.MutableRefObject<boolean>;
 }
 
+/**
+ * Hook: BT Search Handler
+ * - Node highlight: current node ONLY (not persisted)
+ * - Edge highlight: accumulated path (persisted), color #F7AD45
+ */
 export function useBTSearchHandler({
   btRoot,
   setNodes,
@@ -46,42 +45,37 @@ export function useBTSearchHandler({
       const { found, nodeId, path } = searchBT(root, value);
       const positions = calculateBTPositions(root);
 
-      // animate ทีละ node ตาม BFS path
+      // Animate BFS traversal — only current node highlighted, edges accumulated
       path.forEach((id, idx) => {
         controller.scheduleStep(() => {
           const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(root, [], [], positions);
-          const visited = new Set(path.slice(0, idx));
 
+          // Node: highlight ONLY current node
           const highlighted = (rfNodes as RFNode[]).map((n: RFNode) => ({
             ...n,
             data: {
               ...n.data,
-              isHighlighted: n.id === id || visited.has(n.id),
-              highlightColor:
-                n.id === id ? 'blue'
-                  : visited.has(n.id) ? 'yellow' // mark visited as yellow instead of green while travelling
-                    : undefined,
+              isHighlighted: n.id === id,
+              highlightColor: n.id === id ? '#62A2F7' : undefined,
             },
           }));
 
-          const highlightedEdges = (rfEdges as RFEdge[]).map((e: RFEdge) => {
-            // Find if this edge connects two visited nodes or the current node
-            const isHighlightedEdge = path.slice(0, idx + 1).includes(e.source) && path.slice(0, idx + 1).includes(e.target);
-            return {
-              ...e,
-              style: isHighlightedEdge
-                ? { stroke: '#F7AD45', strokeWidth: 3 }
-                : { stroke: '#999', strokeWidth: 2 },
-            };
-          });
+          // Edges: accumulate highlighted path
+          const visitedIds = new Set(path.slice(0, idx + 1));
+          const highlightedEdges = (rfEdges as RFEdge[]).map((e: RFEdge) => ({
+            ...e,
+            style: (visitedIds.has(e.source) && visitedIds.has(e.target))
+              ? { stroke: '#F7AD45', strokeWidth: 3 }
+              : { stroke: '#999', strokeWidth: 2 },
+          }));
 
           setNodes(highlighted);
           setEdges(highlightedEdges);
-          setDescription(`Searching... visiting node (step ${idx + 1}/${path.length})`);
+          setDescription(`🔍 Searching for ${value}... (step ${idx + 1}/${path.length})`);
         }, animationSpeed * (idx + 1));
       });
 
-      // แสดงผลลัพธ์
+      // Show result
       controller.scheduleStep(() => {
         const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(root, [], [], positions);
         if (found && nodeId) {
@@ -90,7 +84,7 @@ export function useBTSearchHandler({
             data: {
               ...n.data,
               isHighlighted: n.id === nodeId,
-              highlightColor: n.id === nodeId ? 'green' : undefined,
+              highlightColor: n.id === nodeId ? '#4CAF7D' : undefined,
             },
           }));
           setNodes(highlighted);

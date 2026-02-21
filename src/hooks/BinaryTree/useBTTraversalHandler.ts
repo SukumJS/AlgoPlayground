@@ -1,13 +1,7 @@
-/**
- * useBTTraversalHandler — Inorder / Preorder / Postorder animation
- *
- * วางไฟล์นี้ที่: src/hooks/BinaryTree/useBTTraversalHandler.ts
- */
-
 import { useCallback, useRef } from 'react';
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 import { AnimationController } from '@/src/components/visualizer/animations/Tree/animationController';
-import type { AnimationCallbacks } from '@/src/components/visualizer/animations/AVLtree/insertAnimation';
+import type { AnimationCallbacks } from '@/src/components/visualizer/animations/types';
 import { type BTNode } from '@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree';
 import {
   animateBTInorder,

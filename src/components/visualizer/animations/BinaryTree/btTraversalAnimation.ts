@@ -1,6 +1,6 @@
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 import type { AnimationController } from '@/src/components/visualizer/animations/Tree/animationController';
-import type { AnimationCallbacks } from '@/src/components/visualizer/animations/AVLtree/insertAnimation';
+import type { AnimationCallbacks } from '@/src/components/visualizer/animations/types';
 import { calculateBTPositions, btToReactFlow, type BTNode } from '@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree';
 
 //  Collect traversal order 
@@ -41,7 +41,7 @@ function animateTraversal(
   root: BTNode,
   order: string[],
   label: string,
-  currentColor: 'blue' | 'yellow' | 'red',
+  currentColor: string,
   animationSpeed: number,
   controller: AnimationController,
   callbacks: AnimationCallbacks,
@@ -77,7 +77,7 @@ function animateTraversal(
           isHighlighted: n.id === nodeId || visited.has(n.id),
           highlightColor:
             n.id === nodeId ? currentColor
-              : visited.has(n.id) ? 'green'
+              : visited.has(n.id) ? '#4CAF7D'
                 : undefined,
         },
       }));
@@ -108,7 +108,7 @@ function animateTraversal(
     const allVisited = new Set(order);
     const final = (nodes as RFNode[]).map((n: RFNode) => ({
       ...n,
-      data: { ...n.data, isHighlighted: allVisited.has(n.id), highlightColor: 'green' },
+      data: { ...n.data, isHighlighted: allVisited.has(n.id), highlightColor: '#4CAF7D' },
     }));
     callbacks.setNodes(final);
     callbacks.setEdges(edges as never[]);
@@ -134,7 +134,7 @@ export function animateBTInorder(
   onComplete: () => void
 ): void {
   if (!root) { callbacks.setDescription('Tree is empty'); onComplete(); return; }
-  animateTraversal(root, collectInorder(root), 'Inorder (L → Root → R)', 'blue', animationSpeed, controller, callbacks, onComplete);
+  animateTraversal(root, collectInorder(root), 'Inorder (L → Root → R)', '#62A2F7', animationSpeed, controller, callbacks, onComplete);
 }
 
 export function animateBTPreorder(
@@ -145,7 +145,7 @@ export function animateBTPreorder(
   onComplete: () => void
 ): void {
   if (!root) { callbacks.setDescription('Tree is empty'); onComplete(); return; }
-  animateTraversal(root, collectPreorder(root), 'Preorder (Root → L → R)', 'yellow', animationSpeed, controller, callbacks, onComplete);
+  animateTraversal(root, collectPreorder(root), 'Preorder (Root → L → R)', '#F7AD45', animationSpeed, controller, callbacks, onComplete);
 }
 
 export function animateBTPostorder(
@@ -156,5 +156,5 @@ export function animateBTPostorder(
   onComplete: () => void
 ): void {
   if (!root) { callbacks.setDescription('Tree is empty'); onComplete(); return; }
-  animateTraversal(root, collectPostorder(root), 'Postorder (L → R → Root)', 'red', animationSpeed, controller, callbacks, onComplete);
+  animateTraversal(root, collectPostorder(root), 'Postorder (L → R → Root)', '#EF4444', animationSpeed, controller, callbacks, onComplete);
 }

@@ -40,6 +40,7 @@ import FloatingEdge from "@/src/components/shared/FloatingEdge";
 import '@xyflow/react/dist/base.css';
 import { insertBST, type BSTNode } from "@/src/components/visualizer/algorithmsTree/BST/bstTree";
 import { BTNode, insertBT } from "@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree";
+import { insertHeap, type HeapNode } from "@/src/components/visualizer/algorithmsTree/Heap/heapTree";
 
 const nodeTypes = {
     custom: CustomNode,
@@ -125,7 +126,6 @@ const buildTreeInitialBTRoot = (): BTNode => {
         { id: "t2", value: 30 },
         { id: "t3", value: 70 },
         { id: "t4", value: 80 },
-        { id: "t5", value: 90 },
     ];
     let root: BTNode | null = null;
     for (const { id, value } of insertOrder) {
@@ -138,6 +138,25 @@ const treeInitialBTRoot = buildTreeInitialBTRoot();
 
 const treeInitialBSTRoot = buildTreeInitialBSTRoot();
 
+// ── Build initial Heap root (for min-heap / max-heap) ─────────────────────────
+const buildTreeInitialHeapRoot = (isMinHeap: boolean): HeapNode => {
+    const insertOrder: Array<{ id: string; value: number }> = [
+        { id: "t1", value: 64 },
+        { id: "t2", value: 30 },
+        { id: "t3", value: 70 },
+        { id: "t4", value: 80 },
+    ];
+    let root: HeapNode | null = null;
+    for (const { id, value } of insertOrder) {
+        const result = insertHeap(root, value, id, isMinHeap);
+        root = result.root;
+    }
+    return root!;
+};
+
+const treeInitialMinHeapRoot = buildTreeInitialHeapRoot(true);
+const treeInitialMaxHeapRoot = buildTreeInitialHeapRoot(false);
+
 const fitViewOptions: FitViewOptions = {
     padding: 0.2,
 };
@@ -148,14 +167,12 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 
 function Playground() {
     const searchParams = useSearchParams();
-    const typeParam = searchParams.get("type") || "";
+    const algoType = searchParams.get("type") || "";
+    const algorithm = searchParams.get("algorithm") || "";
 
     // Set initial nodes and edges based on algorithm type
-    const treeAlgorithms = ["avl-tree", "binary-search-tree", "binary-tree-postorder", "binary-tree-preorder", "binary-tree-inorder", "min-heap", "max-heap", "tree"];
-    const graphAlgorithms = ["breadth-first-search", "depth-first-search", "dijkstra", "bellman-ford", "prims", "kruskals", "graph"];
-
-    const isTree = treeAlgorithms.includes(typeParam);
-    const isGraph = graphAlgorithms.includes(typeParam);
+    const isTree = algoType === "tree";
+    const isGraph = algoType === "graph";
 
     const getInitialNodes = () => {
         if (isTree) return treeInitialNodes;
@@ -174,6 +191,8 @@ function Playground() {
     const { flowToScreenPosition } = useReactFlow();
     const rebalanceRef = useRef<(() => void) | null>(null);
     const btRebalanceRef = useRef<(() => void) | null>(null);
+    const heapRebalanceRef = useRef<(() => void) | null>(null);
+    const trashDeleteRef = useRef<((nodeId: string, value: number) => void) | null>(null);
 
     // Tutorial logic extracted to custom hook
     const tutorial = useTreeTutorial({
@@ -202,6 +221,9 @@ function Playground() {
         setEdges,
         isTree,
         isTutorialActive: tutorial.showTutorial || graphTutorial.showTutorial,
+        onNodeDeleted: (nodeId, value) => {
+            trashDeleteRef.current?.(nodeId, value);
+        },
     });
 
     const onNodesChange: OnNodesChange = useCallback(
@@ -304,11 +326,14 @@ function Playground() {
                     tutorialStep={tutorial.tutorialStep}
                     onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
                     currentNodes={treeNodes}
-                    algorithm={typeParam}
+                    algorithm={algorithm}
                     onRebalanceReady={(fn) => { rebalanceRef.current = fn; }}
                     onBTRebalanceReady={(fn) => { btRebalanceRef.current = fn; }}
-                    initialBSTRoot={["binary-search-tree", "avl-tree"].includes(typeParam) ? treeInitialBSTRoot : null}
-                    initialBTRoot={['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(typeParam) ? treeInitialBTRoot : null}
+                    onHeapRebalanceReady={(fn) => { heapRebalanceRef.current = fn; }}
+                    initialBSTRoot={["binary-search-tree", "avl-tree"].includes(algorithm) ? treeInitialBSTRoot : null}
+                    initialBTRoot={['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm) ? treeInitialBTRoot : null}
+                    initialHeapRoot={algorithm === 'min-heap' ? treeInitialMinHeapRoot : algorithm === 'max-heap' ? treeInitialMaxHeapRoot : null}
+                    onTrashDeleteReady={(fn) => { trashDeleteRef.current = fn; }}
                 />
             );
         } else if (isGraph) {
@@ -419,11 +444,13 @@ function Playground() {
                         description: "You are now ready to explore Binary Search Tree."
                     }]}
                     onLetsPlay={
-                        typeParam === "avl-tree"
+                        algorithm === "avl-tree"
                             ? () => rebalanceRef.current?.()
-                            : ['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(typeParam)
+                            : ['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm)
                                 ? () => btRebalanceRef.current?.()
-                                : undefined
+                                : ['min-heap', 'max-heap'].includes(algorithm)
+                                    ? () => heapRebalanceRef.current?.()
+                                    : undefined
                     }
                 />
             )}

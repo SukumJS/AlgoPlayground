@@ -321,6 +321,142 @@ export function removeAVLWithAnimation(root: AVLTreeNode | null, value: number, 
 }
 
 /**
+ * Simple BST insert (no rebalance) — produces the "before rotation" snapshot
+ */
+function insertBSTOnly(root: AVLTreeNode | null, value: number, nodeId: string): AVLTreeNode {
+    if (root === null) {
+        return { id: nodeId, value, left: null, right: null, height: 1 };
+    }
+    if (value < root.value) {
+        root.left = insertBSTOnly(root.left, value, nodeId);
+    } else if (value > root.value) {
+        root.right = insertBSTOnly(root.right, value, nodeId);
+    }
+    updateHeight(root);
+    return root;
+}
+
+/**
+ * Detect what rotation (if any) would occur at a given node
+ */
+function detectRotation(root: AVLTreeNode | null): { type: string | null; nodeId: string | null } {
+    if (!root) return { type: null, nodeId: null };
+
+    const balance = getBalanceFactor(root);
+
+    if (balance > 1 && root.left && getBalanceFactor(root.left) >= 0) {
+        return { type: 'LL (Right Rotation)', nodeId: root.id };
+    }
+    if (balance > 1 && root.left && getBalanceFactor(root.left) < 0) {
+        return { type: 'LR (Left-Right Rotation)', nodeId: root.id };
+    }
+    if (balance < -1 && root.right && getBalanceFactor(root.right) <= 0) {
+        return { type: 'RR (Left Rotation)', nodeId: root.id };
+    }
+    if (balance < -1 && root.right && getBalanceFactor(root.right) > 0) {
+        return { type: 'RL (Right-Left Rotation)', nodeId: root.id };
+    }
+
+    // Check children recursively
+    const leftResult = detectRotation(root.left);
+    if (leftResult.type) return leftResult;
+    return detectRotation(root.right);
+}
+
+/**
+ * Insert with intermediate steps for animation:
+ * 1. afterInsert: BST insert only (no rebalance)
+ * 2. rotationType + rotationNodeId: what rotation occurs
+ * 3. afterRebalance: final balanced tree
+ */
+export function insertAVLWithSteps(
+    root: AVLTreeNode | null,
+    value: number,
+    nodeId: string
+): {
+    afterInsert: AVLTreeNode;
+    rotationType: string | null;
+    rotationNodeId: string | null;
+    afterRebalance: AVLTreeNode;
+} {
+    // Phase 1: BST-only insert (clone first)
+    const bstClone = root ? JSON.parse(JSON.stringify(root)) : null;
+    const afterInsert = insertBSTOnly(bstClone, value, nodeId);
+
+    // Detect rotation needed
+    const { type: rotationType, nodeId: rotationNodeId } = detectRotation(afterInsert);
+
+    // Phase 2: Full AVL insert (clone original)
+    const avlClone = root ? JSON.parse(JSON.stringify(root)) : null;
+    const afterRebalance = insertAVL(avlClone, value, nodeId);
+
+    return { afterInsert, rotationType, rotationNodeId, afterRebalance };
+}
+
+/**
+ * Simple BST delete (no rebalance) — produces the "before rotation" snapshot
+ */
+function removeBSTOnly(root: AVLTreeNode | null, value: number): { root: AVLTreeNode | null; successorId: string | null } {
+    if (!root) return { root: null, successorId: null };
+    let successorId: string | null = null;
+
+    if (value < root.value) {
+        const result = removeBSTOnly(root.left, value);
+        root.left = result.root;
+        successorId = result.successorId;
+    } else if (value > root.value) {
+        const result = removeBSTOnly(root.right, value);
+        root.right = result.root;
+        successorId = result.successorId;
+    } else {
+        if (!root.left) return { root: root.right, successorId: null };
+        if (!root.right) return { root: root.left, successorId: null };
+
+        const successor = getMinNode(root.right);
+        if (successor) {
+            successorId = successor.id;
+            root.value = successor.value;
+            const result = removeBSTOnly(root.right, successor.value);
+            root.right = result.root;
+        }
+    }
+
+    if (root) updateHeight(root);
+    return { root, successorId };
+}
+
+/**
+ * Remove with intermediate steps for animation:
+ * 1. successorId: inorder successor (if 2-child case)
+ * 2. afterRemove: tree after BST delete (before rebalance)
+ * 3. rotationType + rotationNodeId
+ * 4. afterRebalance: final balanced tree
+ */
+export function removeAVLWithSteps(
+    root: AVLTreeNode | null,
+    value: number
+): {
+    successorId: string | null;
+    afterRemove: AVLTreeNode | null;
+    rotationType: string | null;
+    rotationNodeId: string | null;
+    afterRebalance: AVLTreeNode | null;
+} {
+    // Phase 1: BST-only remove (clone first)
+    const bstClone = root ? JSON.parse(JSON.stringify(root)) : null;
+    const { root: afterRemove, successorId } = removeBSTOnly(bstClone, value);
+
+    // Detect rotation needed
+    const { type: rotationType, nodeId: rotationNodeId } = detectRotation(afterRemove);
+
+    // Phase 2: Full AVL remove (clone original)
+    const avlClone = root ? JSON.parse(JSON.stringify(root)) : null;
+    const afterRebalance = removeAVL(avlClone, value);
+
+    return { successorId, afterRemove, rotationType, rotationNodeId, afterRebalance };
+}
+
+/**
  * Calculate optimal positions for AVL tree nodes (level-order spacing)
  */
 export function calculateTreePositions(
