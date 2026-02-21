@@ -99,7 +99,6 @@ print("In-order traversal:", inorder_traversal(root))`;
         onClick={() => setIsCodeOpen(!isCodeOpen)}
       >
         <div className="flex items-center">
-          {/* Blue highlight indicator */}
           <div
             className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${
               isCodeOpen ? "" : "hidden opacity-0"
