@@ -11,6 +11,8 @@ interface UseNodeInteractionProps {
     isTree: boolean;
     isGraph: boolean;
     isTutorialActive: boolean;
+    /** true = directed/weighted graph (Dijkstra), false = undirected/unweighted (BFS/DFS). Defaults to true. */
+    directed?: boolean;
 }
 
 interface UseNodeInteractionReturn {
@@ -52,6 +54,7 @@ export function useNodeInteraction({
     isTree,
     isGraph,
     isTutorialActive,
+    directed = true,
 }: UseNodeInteractionProps): UseNodeInteractionReturn {
     // Selection state (used for tree/graph linking)
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -127,7 +130,7 @@ export function useNodeInteraction({
         if (showTrashBin) return; // Don't process click if trash was just shown
 
         if (isGraph) {
-            // Graph mode: click to select, click second node to link with weight
+            // Graph mode: click to select, click second node to link
             if (selectedNodeId === null) {
                 setSelectedNodeId(node.id);
                 setNodes(nds => nds.map(n => ({
@@ -146,10 +149,23 @@ export function useNodeInteraction({
                     data: { ...n.data, isHighlighted: false, isGlowing: false },
                 })));
             } else {
-                // Link: show weight modal
-                setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
-                setWeightInputValue('');
-                setShowWeightModal(true);
+                if (directed) {
+                    // Directed mode: show weight modal before creating edge
+                    setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
+                    setWeightInputValue('');
+                    setShowWeightModal(true);
+                } else {
+                    // Undirected mode: create edge immediately (no weight)
+                    const newEdge: Edge = {
+                        id: `eg-${selectedNodeId}-${node.id}-${Date.now()}`,
+                        source: selectedNodeId,
+                        target: node.id,
+                        type: 'floatingEdge',
+                        data: { directed: false },
+                        style: { stroke: '#222121', strokeWidth: 1 },
+                    };
+                    setEdges(eds => [...eds, newEdge]);
+                }
                 // Clear selection visual
                 setNodes(nds => nds.map(n => ({
                     ...n,
@@ -225,7 +241,7 @@ export function useNodeInteraction({
                 data: { ...n.data, isHighlighted: false, isGlowing: false },
             })));
         }
-    }, [isTutorialActive, isTree, isGraph, selectedNodeId, nodes, edges, setNodes, setEdges, validateBSTLink, showTrashBin]);
+    }, [isTutorialActive, isTree, isGraph, directed, selectedNodeId, nodes, edges, setNodes, setEdges, validateBSTLink, showTrashBin]);
 
     /**
      * Handle node drag start - start 300ms timer to show trash
@@ -311,11 +327,12 @@ export function useNodeInteraction({
     }, [isTutorialActive, showTrashBin, isTrashActive, setNodes, setEdges]);
 
     /**
-     * Handle edge click - open weight editor (graph only)
+     * Handle edge click - open weight editor (graph only, directed mode only)
      */
     const handleEdgeClick = useCallback((event: React.MouseEvent, edgeId: string) => {
         if (isTutorialActive) return;
         if (!isGraph) return;
+        if (!directed) return; // No weight editing for undirected graphs
 
         const edge = edges.find(e => e.id === edgeId);
         if (!edge) return;
@@ -329,7 +346,7 @@ export function useNodeInteraction({
             ...n,
             data: { ...n.data, isHighlighted: false, isGlowing: false },
         })));
-    }, [isTutorialActive, isGraph, edges, setNodes]);
+    }, [isTutorialActive, isGraph, directed, edges, setNodes]);
 
     /**
      * Weight modal handlers

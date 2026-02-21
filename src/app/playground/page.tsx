@@ -88,11 +88,19 @@ const graphInitialNodes: Node[] = [
 ];
 
 // Initial edges for graph (directed with weights) - 69→39 is created during tutorial
-const graphInitialEdges: Edge[] = [
+const graphDirectedInitialEdges: Edge[] = [
     { id: "eg-64-39", source: "g1", target: "g2", type: "floatingEdge", label: "4", data: { weight: 4 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
     { id: "eg-64-69", source: "g1", target: "g4", type: "floatingEdge", label: "1", data: { weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
     { id: "eg-39-97", source: "g2", target: "g3", type: "floatingEdge", label: "3", data: { weight: 3 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
     { id: "eg-97-70", source: "g3", target: "g5", type: "floatingEdge", label: "1", data: { weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
+];
+
+// Initial edges for graph (undirected, no weights) — used by BFS/DFS
+const graphUndirectedInitialEdges: Edge[] = [
+    { id: "eg-64-39", source: "g1", target: "g2", type: "floatingEdge", data: { directed: false }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-64-69", source: "g1", target: "g4", type: "floatingEdge", data: { directed: false }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-39-97", source: "g2", target: "g3", type: "floatingEdge", data: { directed: false }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-97-70", source: "g3", target: "g5", type: "floatingEdge", data: { directed: false }, style: { stroke: '#222121', strokeWidth: 1 } },
 ];
 
 const fitViewOptions: FitViewOptions = {
@@ -112,6 +120,9 @@ function Playground() {
     const isTree = algoType === "tree";
     const isGraph = algoType === "graph";
 
+    // Determine if this graph algorithm uses directed (weighted) edges
+    const isDirectedGraph = algorithmSlug === "dijkstra";
+
     // Resolve algorithm runner (e.g. "dijkstra" → dijkstraRunner)
     const algorithmRunner = isGraph ? getAlgorithmRunner(algorithmSlug) : undefined;
 
@@ -123,7 +134,7 @@ function Playground() {
 
     const getInitialEdges = () => {
         if (isTree) return treeInitialEdges;
-        if (isGraph) return graphInitialEdges;
+        if (isGraph) return isDirectedGraph ? graphDirectedInitialEdges : graphUndirectedInitialEdges;
         return sortingInitialEdges;
     };
 
@@ -166,6 +177,7 @@ function Playground() {
         setNodes,
         setEdges,
         isGraph,
+        directed: isDirectedGraph,
     });
 
     // Node interaction (universal - works for all node types, only active when NOT in tutorial)
@@ -177,6 +189,7 @@ function Playground() {
         isTree,
         isGraph,
         isTutorialActive: tutorial.showTutorial || graphTutorial.showTutorial,
+        directed: isDirectedGraph,
     });
 
     const onNodesChange: OnNodesChange = useCallback(
@@ -307,7 +320,7 @@ function Playground() {
                 zoomOnScroll={!(tutorial.showTutorial || graphTutorial.showTutorial)}
                 zoomOnPinch={!(tutorial.showTutorial || graphTutorial.showTutorial)}
                 zoomOnDoubleClick={!(tutorial.showTutorial || graphTutorial.showTutorial)}
-                nodesDraggable={!(tutorial.showTutorial || graphTutorial.showTutorial) || (tutorial.showTutorial && tutorial.tutorialStep === 5) || (graphTutorial.showTutorial && graphTutorial.tutorialStep === 8)}
+                nodesDraggable={!(tutorial.showTutorial || graphTutorial.showTutorial) || (tutorial.showTutorial && tutorial.tutorialStep === 5) || (graphTutorial.showTutorial && graphTutorial.tutorialStep === graphTutorial.dragDeleteStep)}
                 onNodeDrag={handleNodeDrag}
                 onNodeDragStop={handleNodeDragStop}
                 fitView
@@ -371,6 +384,7 @@ function Playground() {
                     weightInputValue={graphTutorial.weightInputValue}
                     onWeightInputChange={graphTutorial.handleWeightInputChange}
                     onWeightConfirm={graphTutorial.handleWeightConfirm}
+                    directed={graphTutorial.directed}
                 />
             )}
 

@@ -15,12 +15,14 @@ interface UseGraphTutorialProps {
     setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
     setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
     isGraph: boolean;
+    /** true = directed/weighted (Dijkstra), false = undirected/unweighted (BFS/DFS) */
+    directed?: boolean;
 }
 
 /**
  * Graph Tutorial Hook
  * 
- * 10 Steps:
+ * DIRECTED mode (Dijkstra) – 10 Steps:
  * 0: Tap node 69 to start (highlight)
  * 1: Tap node 70 to create link (69→70)
  * 2: Type weight '2' for the new edge
@@ -31,6 +33,14 @@ interface UseGraphTutorialProps {
  * 7: Click node 70 (highlight for delete)
  * 8: Hold and drag to trash bin
  * 9: Tutorial Completed!
+ * 
+ * UNDIRECTED mode (BFS/DFS) – 6 Steps:
+ * 0: Tap node 69 to start (highlight)
+ * 1: Tap node 70 to create link (undirected, no weight)
+ * 2: Link Created! confirmation
+ * 3: Click node 70 (highlight for delete)
+ * 4: Hold and drag to trash bin
+ * 5: Tutorial Completed!
  */
 export function useGraphTutorial({
     nodes,
@@ -39,6 +49,7 @@ export function useGraphTutorial({
     setNodes,
     setEdges,
     isGraph,
+    directed = true,
 }: UseGraphTutorialProps) {
     // Tutorial state
     const [showTutorial, setShowTutorial] = useState(false);
@@ -217,25 +228,51 @@ export function useGraphTutorial({
         } else if (tutorialStep === 1) {
             // Step 1: Click node 70 to create link (69→70)
             if (nodeLabel === '70' && selectedNodeId) {
-                // Store pending edge (will be created after weight input)
-                setPendingEdge({ source: selectedNodeId, target: node.id });
-                // Clear node highlight
-                setNodes(nds => nds.map(n => ({
-                    ...n,
-                    data: {
-                        ...n.data,
-                        isHighlighted: false,
-                        isGlowing: false,
-                    },
-                })));
-                setSelectedNodeId(null);
-                // Show weight input
-                setShowWeightInput(true);
-                setWeightInputValue('');
-                setTutorialStep(2);
+                if (directed) {
+                    // Directed mode: store pending edge → open weight input
+                    setPendingEdge({ source: selectedNodeId, target: node.id });
+                    setNodes(nds => nds.map(n => ({
+                        ...n,
+                        data: {
+                            ...n.data,
+                            isHighlighted: false,
+                            isGlowing: false,
+                        },
+                    })));
+                    setSelectedNodeId(null);
+                    setShowWeightInput(true);
+                    setWeightInputValue('');
+                    setTutorialStep(2);
+                } else {
+                    // Undirected mode: create edge immediately (no weight)
+                    const newEdge: Edge = {
+                        id: `e-${selectedNodeId}-${node.id}`,
+                        source: selectedNodeId,
+                        target: node.id,
+                        type: 'floatingEdge',
+                        data: { directed: false },
+                        style: { stroke: '#222121', strokeWidth: 1 },
+                    };
+                    setEdges(eds => [...eds, newEdge]);
+                    setNodes(nds => nds.map(n => ({
+                        ...n,
+                        data: {
+                            ...n.data,
+                            isHighlighted: false,
+                            isGlowing: false,
+                        },
+                    })));
+                    setSelectedNodeId(null);
+                    // Step 2 = "Link Created!" confirmation in undirected mode
+                    setTutorialStep(2);
+                    // Auto-advance to step 3 (delete highlight) after short delay
+                    setTimeout(() => {
+                        setTutorialStep(3);
+                    }, 1500);
+                }
             }
-        } else if (tutorialStep === 7) {
-            // Step 7: Click node 70 (highlight for delete)
+        } else if (directed && tutorialStep === 7) {
+            // Directed step 7: Click node 70 (highlight for delete)
             if (nodeLabel === '70') {
                 setNodes(nds => nds.map(n => ({
                     ...n,
@@ -247,8 +284,21 @@ export function useGraphTutorial({
                 })));
                 setTutorialStep(8);
             }
+        } else if (!directed && tutorialStep === 3) {
+            // Undirected step 3: Click node 70 (highlight for delete)
+            if (nodeLabel === '70') {
+                setNodes(nds => nds.map(n => ({
+                    ...n,
+                    data: {
+                        ...n.data,
+                        isHighlighted: n.id === node.id,
+                        isGlowing: n.id === node.id,
+                    },
+                })));
+                setTutorialStep(4);
+            }
         }
-    }, [showTutorial, tutorialStep, selectedNodeId, setNodes]);
+    }, [showTutorial, tutorialStep, selectedNodeId, directed, setNodes, setEdges]);
 
     // Handle weight click for editing (Step 4)
     const handleWeightClick = useCallback((edgeId: string) => {
@@ -320,9 +370,12 @@ export function useGraphTutorial({
         }
     }, [tutorialStep, pendingEdge, editingEdgeId, weightInputValue, setEdges]);
 
-    // Handle node drag for trash bin glow effect (Step 8)
+    // Handle node drag for trash bin glow effect (directed step 8 / undirected step 4)
+    const dragDeleteStep = directed ? 8 : 4;
+    const completedStep = directed ? 9 : 5;
+
     const onNodeDrag = useCallback((event: React.MouseEvent, node: Node) => {
-        if (showTutorial && tutorialStep === 8) {
+        if (showTutorial && tutorialStep === dragDeleteStep) {
             const trashX = window.innerWidth / 2;
             const trashY = window.innerHeight - 140;
             const dropTargetRadius = 150;
@@ -343,18 +396,18 @@ export function useGraphTutorial({
                 },
             })));
         }
-    }, [showTutorial, tutorialStep, setNodes]);
+    }, [showTutorial, tutorialStep, dragDeleteStep, setNodes]);
 
-    // Handle node drag stop for trash bin deletion (Step 8)
+    // Handle node drag stop for trash bin deletion
     const onNodeDragStop = useCallback((event: React.MouseEvent, node: Node) => {
-        if (showTutorial && tutorialStep === 8) {
+        if (showTutorial && tutorialStep === dragDeleteStep) {
             // Delete if node is in danger zone (red) — matches normal mode behavior
             if (isTrashActive) {
                 // Delete node and connected edges
                 setNodes(nds => nds.filter(n => n.id !== node.id));
                 setEdges(eds => eds.filter(e => e.source !== node.id && e.target !== node.id));
                 // Complete tutorial
-                setTutorialStep(9);
+                setTutorialStep(completedStep);
                 handleTutorialComplete();
             } else {
                 // Clear danger state
@@ -366,7 +419,7 @@ export function useGraphTutorial({
 
             setIsTrashActive(false);
         }
-    }, [showTutorial, tutorialStep, isTrashActive, setNodes, setEdges, handleTutorialComplete]);
+    }, [showTutorial, tutorialStep, dragDeleteStep, completedStep, isTrashActive, setNodes, setEdges, handleTutorialComplete]);
 
     return {
         // State
@@ -377,6 +430,10 @@ export function useGraphTutorial({
         showWeightInput,
         weightInputValue,
         pendingEdge,
+        directed,
+
+        // The tutorial step that requires dragging (for nodesDraggable check)
+        dragDeleteStep,
 
         // Screen positions
         node69ScreenPos,

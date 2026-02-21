@@ -46,14 +46,21 @@ function getCircleIntersection(
  * Uses actual node positions (via useStore) to calculate exact
  * circle-border intersection points. Renders a custom arrowhead
  * polygon flush against the target node border with no gap.
+ *
+ * Supports `data.directed` flag:
+ *   - true (default): directed edge with arrowhead + weight label
+ *   - false: undirected edge — plain line, no arrow, no label gap
  */
 export default function FloatingEdge({
     id,
     source,
     target,
     label,
+    data,
     style,
 }: EdgeProps) {
+    const isDirected = data?.directed !== false;
+
     // Get actual internal nodes (with positionAbsolute and measured dimensions)
     const { sourceNode, targetNode } = useStore((s) => {
         return {
@@ -68,6 +75,22 @@ export default function FloatingEdge({
     const sourcePoint = getCircleIntersection(sourceNode, targetNode);
     const targetPoint = getCircleIntersection(targetNode, sourceNode);
 
+    const strokeColor = (style?.stroke as string) || '#222121';
+
+    // ── Undirected mode: simple line, no arrow, no label ──────────
+    if (!isDirected) {
+        const path = `M ${sourcePoint.x} ${sourcePoint.y} L ${targetPoint.x} ${targetPoint.y}`;
+        return (
+            <path
+                id={id}
+                className="react-flow__edge-path"
+                d={path}
+                style={style}
+            />
+        );
+    }
+
+    // ── Directed mode: arrowhead + split path around label ────────
     // Arrow dimensions
     const arrowLength = 14;
     const arrowWidth = 8;
@@ -103,8 +126,6 @@ export default function FloatingEdge({
         `${lineEndX + Math.cos(perpAngle) * arrowWidth},${lineEndY + Math.sin(perpAngle) * arrowWidth}`,
         `${lineEndX - Math.cos(perpAngle) * arrowWidth},${lineEndY - Math.sin(perpAngle) * arrowWidth}`,
     ].join(' ');
-
-    const strokeColor = (style?.stroke as string) || '#222121';
 
     return (
         <>
