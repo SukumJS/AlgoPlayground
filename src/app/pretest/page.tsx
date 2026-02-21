@@ -98,7 +98,7 @@ function PretestPage({
           current={currentQuestionIndex + 1}
           total={totalQuestions}
           title={quizData.title}
-          className="mb-32"
+          className="mb-16"
         />
         <div className="sm:px-8">
           {/* Question Card */}

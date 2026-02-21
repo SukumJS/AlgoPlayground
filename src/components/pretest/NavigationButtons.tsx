@@ -26,8 +26,8 @@ function NavigationButtons({
         onClick={onBack}
         disabled={isFirstQuestion}
         className={`
-          flex items-center justify-center px-2 py-2 rounded-lg
-          font-medium text-base transition-all duration-200 border-1 border-black
+          flex items-center justify-center px-3 py-2 rounded-lg border-1 border-[#222121]
+          font-medium text-base transition-all duration-200 wx-[24px] h-[38px]
           ${
             isFirstQuestion
               ? "opacity-30 cursor-not-allowed"
@@ -54,17 +54,11 @@ function NavigationButtons({
       {/* Next / Submit Button - Blue solid style */}
       <button
         onClick={onNext}
-        disabled={!hasSelectedAnswer}
-        className={`
+        // disabled={!hasSelectedAnswer}
+        className="
           flex items-center justify-center px-6 py-2 rounded-lg
           font-medium text-base transition-all duration-200
-          ${
-            hasSelectedAnswer
-              ? "bg-[#0066cc] text-white hover:bg-[#0052a3] cursor-pointer"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }
-        `}
-      >
+          bg-[#0066cc] text-white hover:bg-[#0052a3] cursor-pointer">
         {isLastQuestion ? "Submit" : "Next"}
       </button>
     </div>

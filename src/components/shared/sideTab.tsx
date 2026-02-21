@@ -13,21 +13,25 @@ export default function Sidebar({ children, title }: RightSidebarProps) {
 
   return (
     <aside 
-      className={`fixed right-0 top-0 h-full bg-white transition-all duration-300 ease-in-out z-50 border-l shadow-xl overflow-auto ${
-        isOpen ? "w-96" : "w-16"
+      className={`fixed right-0 top-0 h-full bg-white transition-all duration-300 ease-in-out z-50 border-l shadow-xl flex flex-col ${
+        isOpen ? "w-96 lg:w-108" : "w-16 overflow-hidden"
       }`}
     >
-      {/* ปุ่ม Toggle */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="absolute left-3 top-4 p-1 hover:scale-110 transition-transform"
-      >
-        {isOpen ? <X /> : <Menu />}
-      </button>
+      {/* Header */}
+      <div className="relative flex items-center h-16 p-4 shrink-0">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="absolute left-3 top-1/2 -translate-y-1/2 p-1 hover:scale-110 transition-transform"
+        >
+          {isOpen ? <X /> : <Menu />}
+        </button>
+        {isOpen && <h1 className="text-xl font-bold mx-auto">{title}</h1>}
+      </div>
 
+      {/* Content */}
       {isOpen && (
-        <div className="p-6 flex flex-col justify-between overflow-auto gap-4 mt-8">
-          {children} {/* แสดงเนื้อหาที่ส่งมาจากแต่ละ Page */}
+        <div className="px-4 flex flex-col justify-between grow overflow-y-auto gap-4">
+          {children}
         </div>
       )}
     </aside>
