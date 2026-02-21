@@ -212,23 +212,17 @@ export function useTreeTutorial({
     // Handle node drag stop for trash bin deletion
     const onNodeDragStop = useCallback((event: React.MouseEvent, node: Node) => {
         if (showTutorial && tutorialStep === 5) {
-            // Trash bin position logic (matches tutorial.tsx CSS)
-            // bottom: 140px, left: 50%
-            const trashX = window.innerWidth / 2;
-            const trashY = window.innerHeight - 140;
-            const dropTargetRadius = 60; // Hit radius
-
-            // Calculate drop distance
-            const dist = Math.sqrt(Math.pow(event.clientX - trashX, 2) + Math.pow(event.clientY - trashY, 2));
-
-            if (dist < dropTargetRadius) {
+            // Delete if node is in danger zone (red) — matches normal mode behavior
+            if (isTrashActive) {
                 // Delete the node
                 setNodes(nds => nds.filter(n => n.id !== node.id));
                 // Complete tutorial
                 handleTutorialComplete();
             }
+
+            setIsTrashActive(false);
         }
-    }, [showTutorial, tutorialStep, setNodes, handleTutorialComplete]);
+    }, [showTutorial, tutorialStep, isTrashActive, setNodes, handleTutorialComplete]);
 
     return {
         // State

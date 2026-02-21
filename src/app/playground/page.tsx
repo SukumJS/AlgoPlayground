@@ -14,6 +14,8 @@ import TreeTrashBin from "../../components/visualizer/TreeTrashBin";
 import { useTreeTutorial } from "@/src/hooks/useTreeTutorial";
 import { useGraphTutorial } from "@/src/hooks/useGraphTutorial";
 import { useNodeInteraction } from "@/src/hooks/useNodeInteraction";
+import { useAlgorithmAnimation } from "@/src/hooks/useAlgorithmAnimation";
+import { getAlgorithmRunner } from "@/src/algorithms";
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -104,10 +106,14 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 function Playground() {
     const searchParams = useSearchParams();
     const algoType = searchParams.get("type");
+    const algorithmSlug = searchParams.get("algorithm") ?? "";
 
     // Set initial nodes and edges based on algorithm type
     const isTree = algoType === "tree";
     const isGraph = algoType === "graph";
+
+    // Resolve algorithm runner (e.g. "dijkstra" → dijkstraRunner)
+    const algorithmRunner = isGraph ? getAlgorithmRunner(algorithmSlug) : undefined;
 
     const getInitialNodes = () => {
         if (isTree) return treeInitialNodes;
@@ -124,6 +130,24 @@ function Playground() {
     const [nodes, setNodes] = useState<Node[]>(getInitialNodes());
     const [edges, setEdges] = useState<Edge[]>(getInitialEdges());
     const { flowToScreenPosition } = useReactFlow();
+
+    // Algorithm animation hook (only active for graph algorithms)
+    const animation = useAlgorithmAnimation(
+        algorithmRunner,
+        nodes,
+        edges,
+        setNodes,
+        setEdges,
+    );
+
+    // Handler for Search button in Data_graph
+    const handleGraphSearch = useCallback(
+        (startLabel: string, endLabel: string) => {
+            animation.reset();
+            animation.start(startLabel, endLabel);
+        },
+        [animation],
+    );
 
     // Tutorial logic extracted to custom hook
     const tutorial = useTreeTutorial({
@@ -245,7 +269,7 @@ function Playground() {
                     />
                 );
             case 'graph':
-                return <Data_graph />;
+                return <Data_graph onSearch={handleGraphSearch} />;
             default:
                 return <Data_sort nodeInput={0} setNodeInput={function (value: React.SetStateAction<number>): void {
                     throw new Error("Function not implemented.");
@@ -295,7 +319,18 @@ function Playground() {
             </ReactFlow>
 
             <div className="absolute bottom-4 w-full z-10">
-                <ControlPanel />
+                <ControlPanel
+                    onPlay={animation.play}
+                    onPause={animation.pause}
+                    onPrevStep={animation.prevStep}
+                    onNextStep={animation.nextStep}
+                    onSkipToStart={animation.skipToStart}
+                    onSkipToEnd={animation.skipToEnd}
+                    onSpeedChange={animation.setSpeed}
+                    onReset={animation.totalSteps > 0 ? animation.reset : undefined}
+                    isPlaying={animation.isPlaying}
+                    speed={animation.speed}
+                />
             </div>
 
             <SideTab title={getTitle()}>
@@ -330,6 +365,8 @@ function Playground() {
                     edge64to39WeightPos={graphTutorial.edge64to39WeightPos}
                     trashBinPos={graphTutorial.trashBinPos}
                     isTrashActive={graphTutorial.isTrashActive}
+                    nodeSpotlightRadius={graphTutorial.nodeSpotlightRadius}
+                    weightSpotlightRadius={graphTutorial.weightSpotlightRadius}
                     showWeightInput={graphTutorial.showWeightInput}
                     weightInputValue={graphTutorial.weightInputValue}
                     onWeightInputChange={graphTutorial.handleWeightInputChange}

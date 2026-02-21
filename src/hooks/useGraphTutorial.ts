@@ -58,6 +58,10 @@ export function useGraphTutorial({
     const [trashBinPos, setTrashBinPos] = useState<ScreenPosition | null>(null);
     const [isTrashActive, setIsTrashActive] = useState(false);
 
+    // Zoom-aware spotlight radii (screen pixels)
+    const [nodeSpotlightRadius, setNodeSpotlightRadius] = useState(40);
+    const [weightSpotlightRadius, setWeightSpotlightRadius] = useState(30);
+
     // Track first selected node for linking
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
@@ -65,27 +69,42 @@ export function useGraphTutorial({
     const updateTutorialPositions = useCallback(() => {
         if (!showTutorial) return;
 
+        // Compute zoom-aware node radius by measuring screen distance
+        // Node is 56px (w-14) in flow space → radius 28 in flow space
+        const NODE_FLOW_RADIUS = 28;
+
         // Find node 69
         const node69 = nodes.find(n => String(n.data?.label) === '69');
         if (node69) {
-            const screenPos = flowToScreenPosition({
-                x: node69.position.x + 28,
-                y: node69.position.y + 28,
-            });
-            setNode69ScreenPos(screenPos);
+            const centerFlow = {
+                x: node69.position.x + NODE_FLOW_RADIUS,
+                y: node69.position.y + NODE_FLOW_RADIUS,
+            };
+            const screenCenter = flowToScreenPosition(centerFlow);
+            setNode69ScreenPos(screenCenter);
+
+            // Measure screen-space radius by converting a point on the node edge
+            const edgeFlow = {
+                x: node69.position.x + NODE_FLOW_RADIUS * 2,
+                y: node69.position.y + NODE_FLOW_RADIUS,
+            };
+            const screenEdge = flowToScreenPosition(edgeFlow);
+            const screenRadius = Math.abs(screenEdge.x - screenCenter.x);
+            setNodeSpotlightRadius(screenRadius);
         }
 
         // Find node 70
         const node70 = nodes.find(n => String(n.data?.label) === '70');
         if (node70) {
             const screenPos = flowToScreenPosition({
-                x: node70.position.x + 28,
-                y: node70.position.y + 28,
+                x: node70.position.x + NODE_FLOW_RADIUS,
+                y: node70.position.y + NODE_FLOW_RADIUS,
             });
             setNode70ScreenPos(screenPos);
         }
 
-        // Find edge 64→39 weight position (midpoint of edge)
+        // Find edge 64→39 weight position
+        // Match how FloatingEdge computes midpoint (circle borders + arrowhead offset)
         const edge64to39 = edges.find(e => {
             const sourceNode = nodes.find(n => n.id === e.source);
             const targetNode = nodes.find(n => n.id === e.target);
@@ -96,10 +115,43 @@ export function useGraphTutorial({
             const sourceNode = nodes.find(n => n.id === edge64to39.source);
             const targetNode = nodes.find(n => n.id === edge64to39.target);
             if (sourceNode && targetNode) {
-                const midX = (sourceNode.position.x + targetNode.position.x) / 2 + 28;
-                const midY = (sourceNode.position.y + targetNode.position.y) / 2 + 28;
+                const srcCx = sourceNode.position.x + NODE_FLOW_RADIUS;
+                const srcCy = sourceNode.position.y + NODE_FLOW_RADIUS;
+                const tgtCx = targetNode.position.x + NODE_FLOW_RADIUS;
+                const tgtCy = targetNode.position.y + NODE_FLOW_RADIUS;
+
+                // Direction vector from source center to target center
+                const dx = tgtCx - srcCx;
+                const dy = tgtCy - srcCy;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const dirX = dx / dist;
+                const dirY = dy / dist;
+
+                // Source border intersection (28px from source center toward target)
+                const srcBorderX = srcCx + dirX * NODE_FLOW_RADIUS;
+                const srcBorderY = srcCy + dirY * NODE_FLOW_RADIUS;
+
+                // Target border intersection (28px from target center toward source)
+                const tgtBorderX = tgtCx - dirX * NODE_FLOW_RADIUS;
+                const tgtBorderY = tgtCy - dirY * NODE_FLOW_RADIUS;
+
+                // Arrowhead occupies 14px before target border, pushing line end inward
+                const ARROW_LENGTH = 14;
+                const lineEndX = tgtBorderX - dirX * ARROW_LENGTH;
+                const lineEndY = tgtBorderY - dirY * ARROW_LENGTH;
+
+                // Midpoint of visible line (matches FloatingEdge label position)
+                const midX = (srcBorderX + lineEndX) / 2;
+                const midY = (srcBorderY + lineEndY) / 2;
+
                 const screenPos = flowToScreenPosition({ x: midX, y: midY });
                 setEdge64to39WeightPos(screenPos);
+
+                // Weight spotlight radius (scale with zoom too)
+                const weightEdgeFlow = { x: midX + 18, y: midY };
+                const weightScreenEdge = flowToScreenPosition(weightEdgeFlow);
+                const wRadius = Math.abs(weightScreenEdge.x - screenPos.x);
+                setWeightSpotlightRadius(Math.max(wRadius, 22));
             }
         }
 
@@ -296,16 +348,8 @@ export function useGraphTutorial({
     // Handle node drag stop for trash bin deletion (Step 8)
     const onNodeDragStop = useCallback((event: React.MouseEvent, node: Node) => {
         if (showTutorial && tutorialStep === 8) {
-            const trashX = window.innerWidth / 2;
-            const trashY = window.innerHeight - 140;
-            const dropTargetRadius = 60;
-
-            const dist = Math.sqrt(
-                Math.pow(event.clientX - trashX, 2) +
-                Math.pow(event.clientY - trashY, 2)
-            );
-
-            if (dist < dropTargetRadius) {
+            // Delete if node is in danger zone (red) — matches normal mode behavior
+            if (isTrashActive) {
                 // Delete node and connected edges
                 setNodes(nds => nds.filter(n => n.id !== node.id));
                 setEdges(eds => eds.filter(e => e.source !== node.id && e.target !== node.id));
@@ -322,7 +366,7 @@ export function useGraphTutorial({
 
             setIsTrashActive(false);
         }
-    }, [showTutorial, tutorialStep, setNodes, setEdges, handleTutorialComplete]);
+    }, [showTutorial, tutorialStep, isTrashActive, setNodes, setEdges, handleTutorialComplete]);
 
     return {
         // State
@@ -339,6 +383,10 @@ export function useGraphTutorial({
         node70ScreenPos,
         edge64to39WeightPos,
         trashBinPos,
+
+        // Zoom-aware spotlight radii
+        nodeSpotlightRadius,
+        weightSpotlightRadius,
 
         // Setters
         setShowTutorial,

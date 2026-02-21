@@ -11,7 +11,7 @@ import Data_sort from "./data_sort";
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-function Data_graph() {
+function Data_graph({ onSearch }: { onSearch?: (startVertex: string, endVertex: string) => void }) {
     const [isDataSortOpen, setIsDataSortOpen] = useState(false);
     const { onDragStart, isDragging } = useDnD();
     // The type of the node that is being dragged.
@@ -145,7 +145,11 @@ function Data_graph() {
                 </div>
             </div>
             <div className="grid-cols-1 grid gap-2 text-start m-1">
-                <button className="bg-[#222121] rounded-lg p-2 mt-2 text-white">
+                <button
+                    className="bg-[#222121] rounded-lg p-2 mt-2 text-white disabled:opacity-50"
+                    onClick={() => onSearch?.(inputValue, searchValue)}
+                    disabled={!inputValue || !searchValue}
+                >
                     Search
                 </button>
             </div>
