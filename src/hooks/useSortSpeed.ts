@@ -7,16 +7,19 @@ const SPEED_MAP = {
 } as const;
 
 export function useSortSpeed() {
-  const [delay, setDelay] = useState(1000);
+  const [speed, setSpeedState] = useState<keyof typeof SPEED_MAP>("1x");
+  const [delay, setDelay] = useState<number>(SPEED_MAP["1x"]);
+
   const delayRef = useRef(delay);
 
   useEffect(() => {
     delayRef.current = delay;
   }, [delay]);
 
-  const setSpeed = (speed: keyof typeof SPEED_MAP) => {
-    setDelay(SPEED_MAP[speed]);
+  const setSpeed = (newSpeed: keyof typeof SPEED_MAP) => {
+    setSpeedState(newSpeed);            
+    setDelay(SPEED_MAP[newSpeed]);
   };
 
-  return { delayRef, setSpeed };
+  return { delayRef, setSpeed, speed }; 
 }

@@ -115,24 +115,39 @@ function Playground() {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
     }, []);
-
-
-    /* Hook สำหรับ drag แล้ว swap node */
-    const { onNodeDrag, onNodeDragStop } =
-        useSortableDrag(setNodes, positionFromIndex);
     /* Hook สำหรับควบคุมความเร็ว animation */
-    const { delayRef, setSpeed } =
-        useSortSpeed();
-
+    const { delayRef, setSpeed, speed } = useSortSpeed();
     /* Hook สำหรับควบคุมการรัน algorithm */
-    const { handleRunSort, handleStop, isSorting } =
+    const { handleRunSort, handleStop, isSorting, markUserModified } =
         useSortRunner(
             nodes,
             setNodes,
             algoType,
             positionFromIndex,
-            delayRef
+            delayRef,
+
         );
+    /* Hook สำหรับ drag แล้ว swap node */
+    const { onNodeDrag, onNodeDragStop } = useSortableDrag(setNodes, positionFromIndex);
+    const prevNodesRef = useRef(nodes);
+
+    useEffect(() => {
+        if (!isSorting) {
+            if (prevNodesRef.current !== nodes) {
+                markUserModified();
+            }
+        }
+
+        prevNodesRef.current = nodes;
+    }, [nodes, isSorting, markUserModified]);
+
+    const controller = {
+        run: handleRunSort,
+        stop: handleStop,
+        setSpeed,
+        isRunning: isSorting,
+        speed,
+    };
 
     {/*Check Type & Display Data Input of Current Algorithms */ }
     const renderDataVisualizer = () => {
@@ -188,11 +203,7 @@ function Playground() {
 
 
             <div className="absolute bottom-4 w-full z-10">
-                <ControlPanel
-                    onRun={handleRunSort}
-                    onStop={handleStop}
-                    onSpeedChange={setSpeed}
-                />
+                <ControlPanel controller={controller} />
             </div>
 
             {/* Add SideTab Component Here */}

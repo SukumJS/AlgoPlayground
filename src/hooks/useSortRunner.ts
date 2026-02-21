@@ -11,16 +11,38 @@ export function useSortRunner(
   delayRef: React.MutableRefObject<number>
 ) {
   const [isSorting, setIsSorting] = useState(false);
-  const isRunningRef = useRef(false);
 
+  const isRunningRef = useRef(false);
+  const isPausedRef = useRef(false);
+  const hasUserModifiedRef = useRef(false);
+
+  const executionIdRef = useRef(0);
+  const isRunning = isRunningRef.current;
+
+  const markUserModified = () => {
+    hasUserModifiedRef.current = true;
+  };
   const handleRunSort = async () => {
+    // ถ้ากำลังรันอยู่ ไม่ต้องทำอะไร
     if (isRunningRef.current) return;
+
+    // ถ้า pause อยู่ และ user ไม่ได้แก้ไข → resume
+    if (isPausedRef.current && !hasUserModifiedRef.current) {
+      isPausedRef.current = false;
+      isRunningRef.current = true;
+      setIsSorting(true);
+      return;
+    }
 
     const runner =
       sortAlgorithms[algoType as keyof typeof sortAlgorithms];
 
     if (!runner) return;
+    executionIdRef.current += 1;
+    const currentExecutionId = executionIdRef.current;
 
+
+    isPausedRef.current = false;
     isRunningRef.current = true;
     setIsSorting(true);
 
@@ -31,23 +53,38 @@ export function useSortRunner(
       }))
       .sort((a, b) => a.data.index - b.data.index);
 
-    setNodes(snapped);
+    // reset status ทุกตัวก่อน run ใหม่
+    const resetNodes: Node<SortNodeData>[] = snapped.map(node => ({
+      ...node,
+      data: {
+        ...node.data,
+        status: "idle" as const,
+      }
+    }));
+
+    setNodes(resetNodes);
 
     await runner({
-      nodes: snapped,
+      nodes: resetNodes,
       setNodes,
       positionFromIndex,
       delayRef,
       isRunningRef,
+      executionId: currentExecutionId,
+      executionIdRef,
     });
 
+    hasUserModifiedRef.current = false;
     isRunningRef.current = false;
+    isPausedRef.current = false;
     setIsSorting(false);
   };
 
   const handleStop = () => {
+    isPausedRef.current = true;
     isRunningRef.current = false;
+    setIsSorting(false);
   };
 
-  return { handleRunSort, handleStop, isSorting };
+  return { handleRunSort, handleStop, isSorting, markUserModified , isRunning};
 }

@@ -8,10 +8,34 @@ type BubbleSortParams = {
   positionFromIndex: (index: number) => { x: number; y: number };
   delayRef: React.MutableRefObject<number>;
   isRunningRef: React.MutableRefObject<boolean>;
+  executionId: number;
+  executionIdRef: React.MutableRefObject<number>;
 };
+const sleepWithPause = (
+  delay: number,
+  isRunningRef: React.MutableRefObject<boolean>
+) => {
+  return new Promise<void>((resolve) => {
+    const start = Date.now();
 
-const sleep = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+    const check = () => {
+      // ถ้า pause อยู่ → รอจนกว่าจะ resume
+      if (!isRunningRef.current) {
+        setTimeout(check, 10);
+        return;
+      }
+
+      // ถ้าครบ delay แล้ว → ไป step ต่อไป
+      if (Date.now() - start >= delay) {
+        resolve();
+      } else {
+        setTimeout(check, 10);
+      }
+    };
+
+    check();
+  });
+};
 
 export const runBubbleSort = async ({
   nodes,
@@ -19,7 +43,11 @@ export const runBubbleSort = async ({
   positionFromIndex,
   delayRef,
   isRunningRef,
+  executionId,
+  executionIdRef,
 }: BubbleSortParams) => {
+
+  // clone nodes แล้ว snap ตำแหน่งให้ตรง index
   let arr = [...nodes].map((node) => ({
     ...node,
     position: positionFromIndex(node.data.index),
@@ -28,10 +56,9 @@ export const runBubbleSort = async ({
   const n = arr.length;
 
   for (let i = 0; i < n; i++) {
-    if (!isRunningRef.current) return;
-
     for (let j = 0; j < n - i - 1; j++) {
-      if (!isRunningRef.current) return;
+
+      if (executionId !== executionIdRef.current) return;
 
       const a = arr[j];
       const b = arr[j + 1];
@@ -45,13 +72,16 @@ export const runBubbleSort = async ({
         )
       );
 
-      await sleep(delayRef.current);
+      await sleepWithPause(delayRef.current, isRunningRef);
+
+      if (executionId !== executionIdRef.current) return;
 
       if (a.data.value > b.data.value) {
-        //  swap logic ใน arr ก่อน
+
+        // swap logic ใน arr ก่อน
         arr = swapByIndex(arr, j, j + 1, positionFromIndex);
 
-        //  update position จริงของทั้งคู่
+        // update position จริงของทั้งคู่
         setNodes((prev) =>
           prev.map((node) => {
             if (node.id === a.id) {
@@ -80,7 +110,9 @@ export const runBubbleSort = async ({
           })
         );
 
-        await sleep(delayRef.current);
+        // 🔥 ใช้ sleepWithPause แทน
+        await sleepWithPause(delayRef.current, isRunningRef);
+        if (executionId !== executionIdRef.current) return;
       }
 
       // reset status
