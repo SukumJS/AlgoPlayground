@@ -1,53 +1,64 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import type { Node } from "@xyflow/react";
-import type { SortNodeData } from "@/src/components/shared/sortNode";
 import { sortAlgorithms } from "@/src/components/visualizer/algorithmsSort";
+import type { SortNodeData } from "@/src/components/shared/sortNode";
 
-export function useSortRunner(
-  nodes: Node<SortNodeData>[],
-  setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>,
-  algoType: string | null,
-  positionFromIndex: (index: number) => { x: number; y: number },
-  delayRef: React.MutableRefObject<number>
-) {
-  const [isSorting, setIsSorting] = useState(false);
-  const isRunningRef = useRef(false);
+export const useSortRunner = (
+    nodes: Node<SortNodeData>[],
+    setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>,
+    algoType: string | null,
+    positionFromIndex: (index: number) => { x: number; y: number },
+    delayRef: React.MutableRefObject<number>,
+    setExplanation: React.Dispatch<React.SetStateAction<string>>
+) => {
+    const [isSorting, setIsSorting] = useState(false);
+    const isRunningRef = useRef(false);
 
-  const handleRunSort = async () => {
-    if (isRunningRef.current) return;
+    const handleRunSort = useCallback(async () => {
+        if (isSorting || !algoType) return;
 
-    const runner =
-      sortAlgorithms[algoType as keyof typeof sortAlgorithms];
+        const sortFunction = sortAlgorithms[algoType as keyof typeof sortAlgorithms];
+        if (!sortFunction) {
+            console.error(`Algorithm type "${algoType}" not found.`);
+            setExplanation(`Algorithm type "${algoType}" not found.`);
+            return;
+        }
 
-    if (!runner) return;
+        setIsSorting(true);
+        isRunningRef.current = true;
 
-    isRunningRef.current = true;
-    setIsSorting(true);
+        // Reset node statuses before running
+        setNodes((prevNodes) =>
+            prevNodes.map((node) => ({
+                ...node,
+                data: { ...node.data, status: "idle" },
+            }))
+        );
 
-    const snapped = nodes
-      .map((node) => ({
-        ...node,
-        position: positionFromIndex(node.data.index),
-      }))
-      .sort((a, b) => a.data.index - b.data.index);
+        try {
+            await sortFunction({
+                nodes,
+                setNodes,
+                positionFromIndex,
+                delayRef,
+                isRunningRef,
+                setExplanation, // Pass it down
+            });
+        } catch (error) {
+            console.error("Error during sort execution:", error);
+            setExplanation("An error occurred during the algorithm execution.");
+        } finally {
+            setIsSorting(false);
+            isRunningRef.current = false;
+        }
+    }, [nodes, setNodes, algoType, positionFromIndex, delayRef, setExplanation, isSorting]);
 
-    setNodes(snapped);
+    const handleStop = useCallback(() => {
+        if (isSorting) {
+            isRunningRef.current = false;
+            // The algorithm's loop will terminate, and the `finally` block in handleRunSort will handle the rest.
+        }
+    }, [isSorting]);
 
-    await runner({
-      nodes: snapped,
-      setNodes,
-      positionFromIndex,
-      delayRef,
-      isRunningRef,
-    });
-
-    isRunningRef.current = false;
-    setIsSorting(false);
-  };
-
-  const handleStop = () => {
-    isRunningRef.current = false;
-  };
-
-  return { handleRunSort, handleStop, isSorting };
-}
+    return { handleRunSort, handleStop, isSorting };
+};

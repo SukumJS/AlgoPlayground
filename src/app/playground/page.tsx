@@ -86,8 +86,7 @@ function Playground() {
     //state สำหรับ input ใน sorting
     const [nodes, setNodes] = useState<Node<SortNodeData>[]>(initialNodes);
     const [nodeInput, setNodeInput] = useState<number>(0);
-
-
+    const [explanation, setExplanation] = useState<string>("This section will explain the algorithm's steps as it runs. Click 'Run' to start.");
     const [edges, setEdges] = useState<Edge[]>(initialEdges);
     const [showTutorial, setShowTutorial] = useState(true);
     const [showInfo, setShowInfo] = useState(false);
@@ -131,7 +130,8 @@ function Playground() {
             setNodes,
             algoType,
             positionFromIndex,
-            delayRef
+            delayRef,
+            setExplanation
         );
 
     {/*Check Type & Display Data Input of Current Algorithms */ }
@@ -199,7 +199,7 @@ function Playground() {
             <SideTab title={getTitle()}>
                 <div>
                     <CodeAlgo />
-                    <ExplainAlgo />
+                    <ExplainAlgo isOpen={true} onToggle={() => { }} explanation={explanation} />
                     {renderDataVisualizer()}
                 </div>
                 <div>

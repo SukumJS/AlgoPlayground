@@ -15,12 +15,14 @@ export async function runInsertionSort({
   positionFromIndex,
   delayRef,
   isRunningRef,
+  setExplanation,
 }: {
   nodes: Node<SortNodeData>[];
   setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>;
   positionFromIndex: (index: number) => { x: number; y: number };
   delayRef: React.MutableRefObject<number>;
   isRunningRef: React.MutableRefObject<boolean>;
+  setExplanation: React.Dispatch<React.SetStateAction<string>>;
 }) {
   let current = [...nodes].sort((a, b) => a.data.index - b.data.index);
   const n = current.length;
@@ -33,7 +35,9 @@ export async function runInsertionSort({
   const MICRO_PAUSE = speed * 0.3;
 
   for (let i = 1; i < n; i++) {
-    if (!isRunningRef.current) return;
+    if (!isRunningRef.current) {
+      return;
+    }
 
     let j = i;
 
@@ -42,10 +46,16 @@ export async function runInsertionSort({
       getByIndex(current, j - 1).data.value >
         getByIndex(current, j).data.value
     ) {
-      if (!isRunningRef.current) return;
+      if (!isRunningRef.current) {
+        return;
+      }
 
       const left = getByIndex(current, j - 1);
       const right = getByIndex(current, j);
+
+      setExplanation(
+        `Comparing key ${right.data.value} with ${left.data.value}. Since ${left.data.value} is more than ${right.data.value}, we swap them.`
+      );
 
       //  compare
       setNodes((prev) =>
@@ -56,7 +66,7 @@ export async function runInsertionSort({
         )
       );
 
-      await sleep(speed);
+      await sleep(speed * 2); // Add delay for reading during comparison
 
       //  lift
       setNodes((prev) =>
@@ -171,11 +181,14 @@ export async function runInsertionSort({
     }
   }
 
-  // mark sorted
-  setNodes((prev) =>
-    prev.map((node) => ({
-      ...node,
-      data: { ...node.data, status: "sorted" },
-    }))
-  );
+  if (isRunningRef.current) {
+    setExplanation("Insertion Sort complete. The array is now fully sorted.");
+    // mark sorted
+    setNodes((prev) =>
+      prev.map((node) => ({
+        ...node,
+        data: { ...node.data, status: "sorted" },
+      }))
+    );
+  }
 }
