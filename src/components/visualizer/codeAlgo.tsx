@@ -18,7 +18,7 @@ export default function CodeAlgo({ tutorialMode = false }: CodeAlgoProps) {
 
     return (
         <button
-            className={`flex border-b border-black text-lg p-2 justify-between transition-all duration-300 ease-in-out z-50 ${isCodeOpen ? "h-120" : "h-10"} ${tutorialMode ? "cursor-default opacity-60" : ""}`}
+            className={`flex border-b border-black text-lg p-2 h-12 justify-between transition-all duration-300 ease-in-out z-50 w-full ${isCodeOpen ? "h-96" : "h-10" }`}
             onClick={handleClick}
         >
             Code
