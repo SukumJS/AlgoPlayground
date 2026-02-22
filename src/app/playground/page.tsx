@@ -13,7 +13,7 @@ import TutorialGraph from "../../components/visualizer/tutorial_graph";
 import TreeTrashBin from "../../components/visualizer/TreeTrashBin";
 import { useTreeTutorial } from "@/src/hooks/useTreeTutorial";
 import { useGraphTutorial } from "@/src/hooks/useGraphTutorial";
-import { useTreeNodeInteraction } from "@/src/hooks/useTreeNodeInteraction";
+import { useNodeInteraction } from "@/src/hooks/useNodeInteraction";
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -230,16 +230,14 @@ function Playground() {
     });
 
     // Node interaction (only active when NOT in tutorial)
-    const nodeInteraction = useTreeNodeInteraction({
+    const nodeInteraction = useNodeInteraction({
         nodes,
         edges,
         setNodes,
         setEdges,
         isTree,
+        isGraph,
         isTutorialActive: tutorial.showTutorial || graphTutorial.showTutorial,
-        onNodeDeleted: (nodeId, value) => {
-            trashDeleteRef.current?.(nodeId, value);
-        },
     });
 
     const onNodesChange: OnNodesChange = useCallback(
@@ -336,18 +334,6 @@ function Playground() {
         }
     }, [tutorial, graphTutorial, nodeInteraction, isTree, isGraph]);
 
-    // Node mouse down/up for hold detection
-    const handleNodeMouseDown = useCallback((event: React.MouseEvent, node: Node) => {
-        if (!tutorial.showTutorial && isTree) {
-            nodeInteraction.handleNodeMouseDown(event, node);
-        }
-    }, [tutorial.showTutorial, nodeInteraction, isTree]);
-
-    const handleNodeMouseUp = useCallback(() => {
-        if (!tutorial.showTutorial && isTree) {
-            nodeInteraction.handleNodeMouseUp();
-        }
-    }, [tutorial.showTutorial, nodeInteraction, isTree]);
 
     // Pane click to clear selection
     const handlePaneClick = useCallback(() => {
@@ -412,8 +398,6 @@ function Playground() {
                 onDragOver={onDragOver}
                 onNodeClick={handleNodeClick}
                 onEdgeClick={handleEdgeClick}
-                onNodeMouseEnter={handleNodeMouseDown}
-                onNodeMouseLeave={handleNodeMouseUp}
                 onPaneClick={handlePaneClick}
                 panOnDrag={!(tutorial.showTutorial || graphTutorial.showTutorial)}
                 zoomOnScroll={!(tutorial.showTutorial || graphTutorial.showTutorial)}
