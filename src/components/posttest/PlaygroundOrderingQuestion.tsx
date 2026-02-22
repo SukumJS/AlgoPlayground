@@ -6,7 +6,6 @@ import {
     Background,
     BackgroundVariant,
     type Node,
-    type Edge,
     type NodeTypes,
     type EdgeTypes,
     type NodeMouseHandler,
@@ -35,7 +34,7 @@ type SelectedBadgeListProps = {
 
 function SelectedBadgeList({ selectedOrder, items, correctOrder }: SelectedBadgeListProps) {
     return (
-        <div className="flex flex-wrap gap-2 items-center justify-center mt-4">
+        <div className="flex flex-wrap gap-1 items-center justify-center mt-4">
             {selectedOrder.map((id, index) => {
                 const item = items.find((i) => i.id === id);
                 const isWrong = correctOrder
@@ -44,15 +43,17 @@ function SelectedBadgeList({ selectedOrder, items, correctOrder }: SelectedBadge
                 const badgeBg = isWrong
                     ? "bg-[#BF1A1A] border-[#BF1A1A] text-white"
                     : "bg-[#D9E363] border-[#5D5D5D] text-[#222121]";
-                const numColor = isWrong ? "text-red-200" : "text-gray-600";
                 return (
-                    <div
-                        key={id}
-                        className={`flex items-center gap-1 px-3 py-1 border-2 rounded-full text-sm font-bold ${badgeBg}`}
-                    >
-                        <span className={`text-xs ${numColor}`}>{index + 1}.</span>
-                        {item?.label || id}
-                    </div>
+                    <React.Fragment key={id}>
+                        <div
+                            className={`flex items-center justify-center w-12 h-10 border-2 rounded-full text-base font-bold shrink-0 ${badgeBg}`}
+                        >
+                            {item?.label || id}
+                        </div>
+                        {index < selectedOrder.length - 1 && (
+                            <span className="text-gray-400 font-bold text-lg select-none">→</span>
+                        )}
+                    </React.Fragment>
                 );
             })}
         </div>
@@ -105,11 +106,8 @@ function PlaygroundOrderingQuestion({
             const currentIndex = selectedOrder.indexOf(nodeId);
 
             if (currentIndex >= 0) {
-                // If clicking the last selected node, deselect it
-                if (currentIndex === selectedOrder.length - 1) {
-                    onOrderChange(selectedOrder.slice(0, -1));
-                }
-                // Otherwise ignore click on already-selected non-last node
+                // Remove this node from the order (and shift subsequent nodes)
+                onOrderChange(selectedOrder.filter((_, i) => i !== currentIndex));
             } else {
                 // Select this node (add to order)
                 if (selectedOrder.length < items.length) {
@@ -194,7 +192,6 @@ type PlaygroundOrderingResultProps = {
 };
 
 export function PlaygroundOrderingResult({
-    canvasData,
     items,
     orderedIds,
     correctOrder,

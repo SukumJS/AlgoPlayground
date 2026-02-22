@@ -11,7 +11,7 @@ import {
     PosttestQuestion,
     PosttestUserAnswer,
 } from "@/src/app/types/posttest";
-import { posttestDataMap } from "@/src/app/data/posttestData";
+import { posttestDataMap } from "@/src/data/posttestData";
 
 // ─── Random question selection ───────────────────────────────────────
 // Select 5 questions ensuring at least 1 of each type
@@ -123,32 +123,13 @@ function PosttestContent() {
     );
     const [isSubmitted, setIsSubmitted] = useState(false);
 
-    // No data found
-    if (!posttest || selectedQuestions.length === 0) {
-        return (
-            <div className="bg-white min-h-screen w-full flex items-center justify-center">
-                <div className="text-center space-y-4">
-                    <p className="text-xl font-semibold text-[#222121]">
-                        No posttest data found for &quot;{algorithm}&quot;
-                    </p>
-                    <button
-                        onClick={() => router.push("/")}
-                        className="px-6 py-3 bg-[#0066cc] text-white rounded-lg hover:bg-[#0052a3] transition-colors cursor-pointer"
-                    >
-                        Go to Home
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     const currentQuestion = selectedQuestions[currentQuestionIndex];
     const totalQuestions = selectedQuestions.length;
     const isFirstQuestion = currentQuestionIndex === 0;
     const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
 
     const currentAnswer = userAnswers.find(
-        (a) => a.questionId === currentQuestion.id
+        (a) => a.questionId === currentQuestion?.id
     );
     const answered = currentAnswer ? hasAnswer(currentAnswer) : false;
 
@@ -179,6 +160,25 @@ function PosttestContent() {
         router.push("/");
     }, [router]);
 
+    // No data found
+    if (!posttest || selectedQuestions.length === 0) {
+        return (
+            <div className="bg-white min-h-screen w-full flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <p className="text-xl font-semibold text-[#222121]">
+                        No posttest data found for &quot;{algorithm}&quot;
+                    </p>
+                    <button
+                        onClick={() => router.push("/")}
+                        className="px-6 py-3 bg-[#0066cc] text-white rounded-lg hover:bg-[#0052a3] transition-colors cursor-pointer"
+                    >
+                        Go to Home
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // Show result page after submission
     if (isSubmitted) {
         return (
@@ -194,7 +194,7 @@ function PosttestContent() {
 
     return (
         <div className="bg-white min-h-screen w-full">
-            <div className="max-w-[1440px] mx-auto sm:px-8 sm:py-8">
+            <div className="max-w-360 mx-auto sm:px-8 sm:py-8">
                 {/* Progress Bar */}
                 <TrackProgress
                     current={currentQuestionIndex + 1}

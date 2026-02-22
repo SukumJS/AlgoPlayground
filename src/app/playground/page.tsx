@@ -8,6 +8,7 @@ import CodeAlgo from "../../components/visualizer/codeAlgo";
 import Data_sort from "../../components/visualizer/data_sort";
 import { DnDProvider } from "@/src/components/visualizer/useDnD";
 import Tutorial_modal from "../../components/shared/tutorial_modal";
+import PostTest_portal from "@/src/components/shared/postTest_portal";
 import TutorialTree from "../../components/visualizer/tutorial_tree";
 import TutorialGraph from "../../components/visualizer/tutorial_graph";
 import TreeTrashBin from "../../components/visualizer/TreeTrashBin";
@@ -38,6 +39,10 @@ import CustomNode from "@/src/components/shared/customNode";
 import TreeEdge from "@/src/components/shared/treeEdge";
 import FloatingEdge from "@/src/components/shared/FloatingEdge";
 import '@xyflow/react/dist/base.css';
+import Reading_modal from "@/src/components/shared/reading_modal";
+import { Info } from "lucide-react";
+import StatusNode from "@/src/components/shared/statusNode";
+import GoToHome_Portal from "@/src/components/shared/goToHome_Portal"; 
 
 const nodeTypes = {
     custom: CustomNode,
@@ -47,15 +52,6 @@ const edgeTypes = {
     tree: TreeEdge,
     floatingEdge: FloatingEdge,
 };
-
-// Initial nodes for sorting (horizontal layout)
-const sortingInitialNodes: Node[] = [
-    { id: "1", type: "custom", data: { label: "1" }, position: { x: -50, y: 5 } },
-    { id: "2", type: "custom", data: { label: "2" }, position: { x: 15, y: 5 } },
-    { id: "3", type: "custom", data: { label: "3" }, position: { x: 80, y: 5 } },
-    { id: "4", type: "custom", data: { label: "4" }, position: { x: 145, y: 5 } },
-    { id: "5", type: "custom", data: { label: "5" }, position: { x: 210, y: 5 } },
-];
 
 // Initial nodes for tree (BST layout with circle variant)
 const treeInitialNodes: Node[] = [
@@ -74,7 +70,15 @@ const treeInitialEdges: Edge[] = [
     { id: "e-t4-t5", source: "t4", sourceHandle: "source-bottom-right", target: "t5", targetHandle: "target-top-left", type: "straight" },
 ];
 
-const sortingInitialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
+const initialNodes: Node[] = [
+    { id: "1", type: "custom", data: { label : "1" }, position: { x: -50, y: 5 }},
+    { id: "2", type: "custom", data: { label: "2" }, position: { x: 15, y: 5}},
+    { id: "3", type: "custom", data: { label: "3" }, position: { x: 80, y: 5}},
+    { id: "4", type: "custom", data: { label: "4" }, position: { x: 145, y: 5}},
+    { id: "5", type: "custom", data: { label: "5" }, position: { x: 210, y: 5}},
+];
+
+const initialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
 
 // Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
 const graphInitialNodes: Node[] = [
@@ -112,13 +116,13 @@ function Playground() {
     const getInitialNodes = () => {
         if (isTree) return treeInitialNodes;
         if (isGraph) return graphInitialNodes;
-        return sortingInitialNodes;
+        return initialNodes;
     };
 
     const getInitialEdges = () => {
         if (isTree) return treeInitialEdges;
         if (isGraph) return graphInitialEdges;
-        return sortingInitialEdges;
+        return initialEdges;
     };
 
     const [nodes, setNodes] = useState<Node[]>(getInitialNodes());
@@ -133,6 +137,7 @@ function Playground() {
         setEdges,
         isTree,
     });
+    const [showInfo, setShowInfo] = useState(false);
 
     // Graph Tutorial hook
     const graphTutorial = useGraphTutorial({
@@ -234,6 +239,7 @@ function Playground() {
         }
     }, [tutorial.showTutorial, graphTutorial.showTutorial, nodeInteraction]);
 
+    {/*Check Type & Display Data Input of Current Algorithms */}
     const renderDataVisualizer = () => {
         switch (algoType) {
             case "tree":
@@ -247,12 +253,13 @@ function Playground() {
             case 'graph':
                 return <Data_graph />;
             default:
-                return <Data_sort nodeInput={0} setNodeInput={function (value: React.SetStateAction<number>): void {
+                return <Data_sort nodeInput={0} setNodeInput={function (): void {
                     throw new Error("Function not implemented.");
                 }} />;
         }
     };
 
+    {/*Check Type & Display Title of Current Algorithms */}
     const getTitle = () => {
         switch (algoType) {
             case "tree":
@@ -299,11 +306,36 @@ function Playground() {
             </div>
 
             <SideTab title={getTitle()}>
-                <CodeAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
-                <ExplainAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
-                {renderDataVisualizer()}
+            <div>
+                    <CodeAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
+                    <ExplainAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
+                    {renderDataVisualizer()}
+            </div>
+            <div>
+                <PostTest_portal />
+            </div>
             </SideTab>
 
+        {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
+        <div className="absolute top-4 left-8 z-10 flex gap-2">
+            <GoToHome_Portal/>
+            <button
+            onClick={(e) => {
+                e.stopPropagation();
+                setShowInfo(true)}}
+            className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer">
+                <Info color='#000000' />
+            </button>
+            <StatusNode />  
+        </div>
+
+        {/* Info Reading inside Playground */}
+        <Reading_modal 
+        isOpen={showInfo} 
+        onClose={() => setShowInfo(false)} />
+
+        
+        {/* STutorial Complelte Modal Show When User Finish Tutorial */}
             {/* Tutorial overlay for tree */}
             {tutorial.showTutorial && isTree && (
                 <TutorialTree
@@ -348,8 +380,8 @@ function Playground() {
 
             {/* Weight Modal (non-tutorial mode, graph) */}
             {nodeInteraction.showWeightModal && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30">
-                    <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200 min-w-[280px]">
+                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/30">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200 min-w-70">
                         <p className="text-lg text-gray-800 font-medium mb-4 text-center">
                             Enter edge weight
                         </p>
@@ -406,6 +438,7 @@ function Playground() {
                     }]}
                 />
             )}
+            
         </div>
     );
 }

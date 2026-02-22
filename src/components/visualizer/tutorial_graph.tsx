@@ -196,8 +196,8 @@ export default function TutorialGraph({
 
             {/* Step 2 & 5: Weight Input Modal */}
             {showWeightInput && (currentStep === 2 || currentStep === 5) && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center">
-                    <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200 min-w-[280px]">
+                <div className="fixed inset-0 z-60 flex items-center justify-center">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200 min-w-70">
                         <p className="text-lg text-gray-800 font-medium mb-4 text-center">
                             {currentStep === 2 ? "Type '2' to set the weight." : "Type '5' to edit the weight."}
                         </p>
@@ -226,7 +226,7 @@ export default function TutorialGraph({
             {(currentStep === 3 || currentStep === 6) && (
                 <>
                     <div
-                        className="fixed inset-0 z-[60] cursor-pointer"
+                        className="fixed inset-0 z-60 cursor-pointer"
                         onClick={() => setCurrentStep(currentStep + 1)}
                     />
                     <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl px-6 py-4 border border-gray-200">
@@ -318,7 +318,7 @@ export default function TutorialGraph({
 
             {/* Step 9: Completion Modal */}
             {currentStep === 9 && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
+                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
                     <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200 text-center min-w-[320px]">
                         <div className="w-16 h-16 mx-auto mb-4 bg-green-500 rounded-full flex items-center justify-center">
                             <Check color="white" size={40} />
