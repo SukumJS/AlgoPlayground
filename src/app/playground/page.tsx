@@ -6,9 +6,15 @@ import SideTab from "../../components/shared/sideTab";
 import ExplainAlgo from "../../components/visualizer/explainAlgo";
 import CodeAlgo from "../../components/visualizer/codeAlgo";
 import Data_sort from "../../components/visualizer/data_sort";
-import { DnDProvider, useDnD } from "@/src/components/visualizer/useDnD";
+import { DnDProvider } from "@/src/components/visualizer/useDnD";
 import Tutorial_modal from "../../components/shared/tutorial_modal";
 import PostTest_portal from "@/src/components/shared/postTest_portal";
+import TutorialTree from "../../components/visualizer/tutorial_tree";
+import TutorialGraph from "../../components/visualizer/tutorial_graph";
+import TreeTrashBin from "../../components/visualizer/TreeTrashBin";
+import { useTreeTutorial } from "@/src/hooks/useTreeTutorial";
+import { useGraphTutorial } from "@/src/hooks/useGraphTutorial";
+import { useNodeInteraction } from "@/src/hooks/useNodeInteraction";
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -17,19 +23,21 @@ import {
     applyNodeChanges,
     applyEdgeChanges,
     Controls,
+    useReactFlow,
     type Node,
     type Edge,
     type FitViewOptions,
     type OnConnect,
     type OnNodesChange,
     type OnEdgesChange,
-    type OnNodeDrag,
     type DefaultEdgeOptions,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import Data_tree from "@/src/components/visualizer/data_tree";
 import Data_graph from "@/src/components/visualizer/data_graph";
 import CustomNode from "@/src/components/shared/customNode";
+import TreeEdge from "@/src/components/shared/treeEdge";
+import FloatingEdge from "@/src/components/shared/FloatingEdge";
 import '@xyflow/react/dist/base.css';
 import Reading_modal from "@/src/components/shared/reading_modal";
 import { Info } from "lucide-react";
@@ -40,8 +48,28 @@ const nodeTypes = {
     custom: CustomNode,
 };
 
-/* This block of code is setting up initial data for a visualizer component using ReactFlow library in
-a TypeScript React application. Here's a breakdown of what each constant is doing: */
+const edgeTypes = {
+    tree: TreeEdge,
+    floatingEdge: FloatingEdge,
+};
+
+// Initial nodes for tree (BST layout with circle variant)
+const treeInitialNodes: Node[] = [
+    { id: "t1", type: "custom", data: { label: "64", variant: "circle" }, position: { x: 200, y: 50 } },
+    { id: "t2", type: "custom", data: { label: "30", variant: "circle" }, position: { x: 100, y: 150 } },
+    { id: "t3", type: "custom", data: { label: "70", variant: "circle" }, position: { x: 300, y: 150 } },
+    { id: "t4", type: "custom", data: { label: "80", variant: "circle" }, position: { x: 375, y: 250 } },
+    { id: "t5", type: "custom", data: { label: "90", variant: "circle" }, position: { x: 450, y: 350 } },
+];
+
+// Initial edges for tree (BST structure) - straight lines at 45° angles
+const treeInitialEdges: Edge[] = [
+    { id: "e-t1-t2", source: "t1", sourceHandle: "source-bottom-left", target: "t2", targetHandle: "target-top-right", type: "straight" },
+    { id: "e-t1-t3", source: "t1", sourceHandle: "source-bottom-right", target: "t3", targetHandle: "target-top-left", type: "straight" },
+    { id: "e-t3-t4", source: "t3", sourceHandle: "source-bottom-right", target: "t4", targetHandle: "target-top-left", type: "straight" },
+    { id: "e-t4-t5", source: "t4", sourceHandle: "source-bottom-right", target: "t5", targetHandle: "target-top-left", type: "straight" },
+];
+
 const initialNodes: Node[] = [
     { id: "1", type: "custom", data: { label : "1" }, position: { x: -50, y: 5 }},
     { id: "2", type: "custom", data: { label: "2" }, position: { x: 15, y: 5}},
@@ -52,43 +80,105 @@ const initialNodes: Node[] = [
 
 const initialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
 
+// Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
+const graphInitialNodes: Node[] = [
+    { id: "g1", type: "custom", data: { label: "64", variant: "circle" }, position: { x: 50, y: 280 } },
+    { id: "g2", type: "custom", data: { label: "39", variant: "circle" }, position: { x: 260, y: 120 } },
+    { id: "g3", type: "custom", data: { label: "97", variant: "circle" }, position: { x: 520, y: 130 } },
+    { id: "g4", type: "custom", data: { label: "69", variant: "circle" }, position: { x: 330, y: 380 } },
+    { id: "g5", type: "custom", data: { label: "70", variant: "circle" }, position: { x: 620, y: 320 } },
+];
+
+// Initial edges for graph (directed with weights) - 69→39 is created during tutorial
+const graphInitialEdges: Edge[] = [
+    { id: "eg-64-39", source: "g1", target: "g2", type: "floatingEdge", label: "4", data: { weight: 4 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
+    { id: "eg-64-69", source: "g1", target: "g4", type: "floatingEdge", label: "1", data: { weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
+    { id: "eg-39-97", source: "g2", target: "g3", type: "floatingEdge", label: "3", data: { weight: 3 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
+    { id: "eg-97-70", source: "g3", target: "g5", type: "floatingEdge", label: "1", data: { weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
+];
+
 const fitViewOptions: FitViewOptions = {
     padding: 0.2,
 };
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
-    animated: true,
+    animated: false,
 };
-
-const onNodeDrag: OnNodeDrag = (_, node) => {
-    console.log("drag event", node.data);
-};
-
-/*  defining a function `getId` that returns a string value with a dynamic ID. */
-let id = 0;
-const getId = (): string => `dndnode_${id++}`;
 
 function Playground() {
     const searchParams = useSearchParams();
     const algoType = searchParams.get("type");
-    const [nodes, setNodes] = useState<Node[]>(initialNodes);
-    const [edges, setEdges] = useState<Edge[]>(initialEdges);
-    const [showTutorial, setShowTutorial] = useState(true);
+
+    // Set initial nodes and edges based on algorithm type
+    const isTree = algoType === "tree";
+    const isGraph = algoType === "graph";
+
+    const getInitialNodes = () => {
+        if (isTree) return treeInitialNodes;
+        if (isGraph) return graphInitialNodes;
+        return initialNodes;
+    };
+
+    const getInitialEdges = () => {
+        if (isTree) return treeInitialEdges;
+        if (isGraph) return graphInitialEdges;
+        return initialEdges;
+    };
+
+    const [nodes, setNodes] = useState<Node[]>(getInitialNodes());
+    const [edges, setEdges] = useState<Edge[]>(getInitialEdges());
+    const { flowToScreenPosition } = useReactFlow();
+
+    // Tutorial logic extracted to custom hook
+    const tutorial = useTreeTutorial({
+        nodes,
+        flowToScreenPosition,
+        setNodes,
+        setEdges,
+        isTree,
+    });
     const [showInfo, setShowInfo] = useState(false);
 
-    /* These three constants are defining functions that handle changes to nodes, edges, and
-    connections in the ReactFlow component. */
+    // Graph Tutorial hook
+    const graphTutorial = useGraphTutorial({
+        nodes,
+        edges,
+        flowToScreenPosition,
+        setNodes,
+        setEdges,
+        isGraph,
+    });
+
+    // Node interaction (universal - works for all node types, only active when NOT in tutorial)
+    const nodeInteraction = useNodeInteraction({
+        nodes,
+        edges,
+        setNodes,
+        setEdges,
+        isTree,
+        isGraph,
+        isTutorialActive: tutorial.showTutorial || graphTutorial.showTutorial,
+    });
+
     const onNodesChange: OnNodesChange = useCallback(
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
         [setNodes],
     );
+
     const onEdgesChange: OnEdgesChange = useCallback(
         (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
         [setEdges],
     );
+
     const onConnect: OnConnect = useCallback(
-        (connection) => setEdges((eds) => addEdge(connection, eds)),
-        [setEdges],
+        (connection) => {
+            setEdges((eds) => addEdge(connection, eds));
+            // If in tutorial step 3 (connect), advance to next step
+            if (tutorial.showTutorial && tutorial.tutorialStep === 2) {
+                tutorial.setTutorialStep(3);
+            }
+        },
+        [setEdges, tutorial],
     );
 
     const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
@@ -96,67 +186,135 @@ function Playground() {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
+    // Edge click handler (for weight editing)
+    const handleEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+        if (graphTutorial.showTutorial && isGraph) {
+            graphTutorial.handleWeightClick(edge.id);
+        } else {
+            nodeInteraction.handleEdgeClick(event, edge.id);
+        }
+    }, [graphTutorial, isGraph, nodeInteraction]);
+
+    // Combined node click handler
+    const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+        if (tutorial.showTutorial && isTree) {
+            tutorial.handleNodeClick(event, node);
+        } else if (graphTutorial.showTutorial && isGraph) {
+            graphTutorial.handleNodeClick(event, node);
+        } else {
+            nodeInteraction.handleNodeClick(event, node);
+        }
+    }, [tutorial, graphTutorial, nodeInteraction, isTree, isGraph]);
+
+    // Combined node drag handlers
+    const handleNodeDragStart = useCallback((event: React.MouseEvent, node: Node) => {
+        if (tutorial.showTutorial || graphTutorial.showTutorial) return;
+        nodeInteraction.handleNodeDragStart(event, node);
+    }, [tutorial.showTutorial, graphTutorial.showTutorial, nodeInteraction]);
+
+    const handleNodeDrag = useCallback((event: React.MouseEvent, node: Node) => {
+        if (tutorial.showTutorial && isTree) {
+            tutorial.onNodeDrag(event, node);
+        } else if (graphTutorial.showTutorial && isGraph) {
+            graphTutorial.onNodeDrag(event, node);
+        } else {
+            nodeInteraction.handleNodeDrag(event, node);
+        }
+    }, [tutorial, graphTutorial, nodeInteraction, isTree, isGraph]);
+
+    const handleNodeDragStop = useCallback((event: React.MouseEvent, node: Node) => {
+        if (tutorial.showTutorial && isTree) {
+            tutorial.onNodeDragStop(event, node);
+        } else if (graphTutorial.showTutorial && isGraph) {
+            graphTutorial.onNodeDragStop(event, node);
+        } else {
+            nodeInteraction.handleNodeDragStop(event, node);
+        }
+    }, [tutorial, graphTutorial, nodeInteraction, isTree, isGraph]);
+
+    // Pane click to clear selection (universal)
+    const handlePaneClick = useCallback(() => {
+        if (!(tutorial.showTutorial || graphTutorial.showTutorial)) {
+            nodeInteraction.handlePaneClick();
+        }
+    }, [tutorial.showTutorial, graphTutorial.showTutorial, nodeInteraction]);
+
     {/*Check Type & Display Data Input of Current Algorithms */}
     const renderDataVisualizer = () => {
         switch (algoType) {
-        case "tree":
-            return <Data_tree />;
-        case 'graph':
-            return <Data_graph />;
-        default:
-            return <Data_sort nodeInput={0} setNodeInput={function (value: React.SetStateAction<number>): void {
-                throw new Error("Function not implemented.");
-            } } />;
+            case "tree":
+                return (
+                    <Data_tree
+                        tutorialMode={tutorial.showTutorial}
+                        tutorialStep={tutorial.tutorialStep}
+                        onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
+                    />
+                );
+            case 'graph':
+                return <Data_graph />;
+            default:
+                return <Data_sort nodeInput={0} setNodeInput={function (): void {
+                    throw new Error("Function not implemented.");
+                }} />;
         }
     };
 
     {/*Check Type & Display Title of Current Algorithms */}
     const getTitle = () => {
         switch (algoType) {
-        case "tree":
-            return "Tree Algorithms";
-        case 'graph':
-            return 'Graph Algorithms';
-        default:
-            return "Sorting Algorithms";
+            case "tree":
+                return "Tree Algorithms";
+            case 'graph':
+                return 'Graph Algorithms';
+            default:
+                return "Sorting Algorithms";
         }
     };
 
     return (
         <div className="w-screen h-screen">
-            {/* Implement Change page to canvas */}
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
+                onNodesChange={(tutorial.showTutorial || graphTutorial.showTutorial) ? undefined : onNodesChange}
+                onEdgesChange={(tutorial.showTutorial || graphTutorial.showTutorial) ? undefined : onEdgesChange}
                 onConnect={onConnect}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 onDragOver={onDragOver}
+                onNodeClick={handleNodeClick}
+                onEdgeClick={handleEdgeClick}
+                onNodeDragStart={handleNodeDragStart}
+                onPaneClick={handlePaneClick}
+                panOnDrag={!(tutorial.showTutorial || graphTutorial.showTutorial)}
+                zoomOnScroll={!(tutorial.showTutorial || graphTutorial.showTutorial)}
+                zoomOnPinch={!(tutorial.showTutorial || graphTutorial.showTutorial)}
+                zoomOnDoubleClick={!(tutorial.showTutorial || graphTutorial.showTutorial)}
+                nodesDraggable={!(tutorial.showTutorial || graphTutorial.showTutorial) || (tutorial.showTutorial && tutorial.tutorialStep === 5) || (graphTutorial.showTutorial && graphTutorial.tutorialStep === 8)}
+                onNodeDrag={handleNodeDrag}
+                onNodeDragStop={handleNodeDragStop}
                 fitView
                 fitViewOptions={fitViewOptions}
                 defaultEdgeOptions={defaultEdgeOptions}
-                onNodeDrag={onNodeDrag}
             >
                 <Background />
-                <Controls />
+                {!(tutorial.showTutorial || graphTutorial.showTutorial) && <Controls />}
             </ReactFlow>
 
-        <div className="absolute bottom-4 w-full z-10">
-            <ControlPanel />
-        </div>
-        
-        {/* Add SideTab Component Here */}
-        <SideTab title={getTitle()}>
+            <div className="absolute bottom-4 w-full z-10">
+                <ControlPanel />
+            </div>
+
+            <SideTab title={getTitle()}>
             <div>
-                <CodeAlgo />
-                <ExplainAlgo />
-                {renderDataVisualizer()}
+                    <CodeAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
+                    <ExplainAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
+                    {renderDataVisualizer()}
             </div>
             <div>
                 <PostTest_portal />
             </div>
-        </SideTab>
+            </SideTab>
 
         {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
         <div className="absolute top-4 left-8 z-10 flex gap-2">
@@ -178,28 +336,121 @@ function Playground() {
 
         
         {/* STutorial Complelte Modal Show When User Finish Tutorial */}
-        {/* <Tutorial_modal
-            showModal={showTutorial}
-            onClose={() => setShowTutorial(false)}
-            tutorialContent={[{
-                title: "Tutorial Complete!",
-                description: "You are ready to play."
-            }]} 
-        /> */}
+            {/* Tutorial overlay for tree */}
+            {tutorial.showTutorial && isTree && (
+                <TutorialTree
+                    onComplete={tutorial.handleTutorialComplete}
+                    currentStep={tutorial.tutorialStep}
+                    setCurrentStep={tutorial.setTutorialStep}
+                    droppedNodeScreenPos={tutorial.droppedNodeScreenPos}
+                    node30ScreenPos={tutorial.node30ScreenPos}
+                    node90ScreenPos={tutorial.node90ScreenPos}
+                    sidebarNode3Pos={tutorial.sidebarNode3Pos}
+                    isTrashActive={tutorial.isTrashActive}
+                    trashBinPos={tutorial.trashBinPos}
+                />
+            )}
+
+            {/* Tutorial overlay for graph */}
+            {graphTutorial.showTutorial && isGraph && (
+                <TutorialGraph
+                    onComplete={graphTutorial.handleTutorialComplete}
+                    currentStep={graphTutorial.tutorialStep}
+                    setCurrentStep={graphTutorial.setTutorialStep}
+                    node69ScreenPos={graphTutorial.node69ScreenPos}
+                    node70ScreenPos={graphTutorial.node70ScreenPos}
+                    edge64to39WeightPos={graphTutorial.edge64to39WeightPos}
+                    trashBinPos={graphTutorial.trashBinPos}
+                    isTrashActive={graphTutorial.isTrashActive}
+                    showWeightInput={graphTutorial.showWeightInput}
+                    weightInputValue={graphTutorial.weightInputValue}
+                    onWeightInputChange={graphTutorial.handleWeightInputChange}
+                    onWeightConfirm={graphTutorial.handleWeightConfirm}
+                />
+            )}
+
+            {/* Universal trash bin (non-tutorial mode) */}
+            {!(tutorial.showTutorial || graphTutorial.showTutorial) && (
+                <TreeTrashBin
+                    show={nodeInteraction.showTrashBin}
+                    isActive={nodeInteraction.isTrashActive}
+                    position={nodeInteraction.trashBinPos}
+                />
+            )}
+
+            {/* Weight Modal (non-tutorial mode, graph) */}
+            {nodeInteraction.showWeightModal && (
+                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/30">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200 min-w-70">
+                        <p className="text-lg text-gray-800 font-medium mb-4 text-center">
+                            Enter edge weight
+                        </p>
+                        <input
+                            type="number"
+                            value={nodeInteraction.weightInputValue}
+                            onChange={(e) => nodeInteraction.handleWeightInputChange(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') nodeInteraction.handleWeightConfirm();
+                                if (e.key === 'Escape') nodeInteraction.handleWeightModalClose();
+                            }}
+                            className="w-full text-center text-3xl font-bold p-4 border-2 border-gray-300 rounded-xl focus:border-[#D9E363] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            placeholder="0"
+                            autoFocus
+                        />
+                        <div className="flex gap-3 mt-4">
+                            <button
+                                onClick={nodeInteraction.handleWeightModalClose}
+                                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={nodeInteraction.handleWeightConfirm}
+                                className="flex-1 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors"
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Completion modal for tree */}
+            {tutorial.showCompletionModal && (
+                <Tutorial_modal
+                    showModal={tutorial.showCompletionModal}
+                    onClose={() => tutorial.setShowCompletionModal(false)}
+                    tutorialContent={[{
+                        title: "Tutorial Complete!",
+                        description: "You are now ready to explore Binary Search Tree."
+                    }]}
+                />
+            )}
+
+            {/* Completion modal for graph */}
+            {graphTutorial.showCompletionModal && (
+                <Tutorial_modal
+                    showModal={graphTutorial.showCompletionModal}
+                    onClose={() => graphTutorial.setShowCompletionModal(false)}
+                    tutorialContent={[{
+                        title: "Tutorial Complete!",
+                        description: "You are now ready to explore Graph Algorithms."
+                    }]}
+                />
+            )}
             
         </div>
-
     );
 }
 
 export default function Page() {
     return (
         <ReactFlowProvider>
-        <DnDProvider>
-            <Suspense fallback={<div>Loading...</div>}>
-            <Playground />
-            </Suspense>
-        </DnDProvider>
+            <DnDProvider>
+                <Suspense fallback={<div>Loading...</div>}>
+                    <Playground />
+                </Suspense>
+            </DnDProvider>
         </ReactFlowProvider>
     );
 }
