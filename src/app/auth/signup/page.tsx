@@ -24,7 +24,7 @@ export default function RegisterPage() {
 
     return (
         <div className="flex flex-col items-center gap-4">
-
+            
             {/* Email */}
             <div className="w-[454px] flex flex-col gap-2">
                 <label className="text-lg font-semibold text-[#222121]">

@@ -13,7 +13,7 @@ export default function Page() {
       <Navbar onSelectCategory={setSelectedCategory} isLoggedIn={isLoggedIn} />
 
       <main className="pt-[96px]">
-        <div className="mx-auto max-w-[1380px] px-[30px]">
+        <div className="mx-auto max-w-[1440px] px-[30px]">
           {(selectedCategory === "all"
             ? algorithmCatalog
             : algorithmCatalog.filter(

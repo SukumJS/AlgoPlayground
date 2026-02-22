@@ -80,7 +80,7 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
                 id="target-top-left"
                 type="target"
                 position={Position.Top}
-                className="!bg-transparent !border-0 !w-1 !h-1"
+                className="bg-transparent! border-0! w-1! h-1!"
                 style={{
                     left: '15%',
                     top: '15%',
@@ -90,7 +90,7 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
                 id="target-top-right"
                 type="target"
                 position={Position.Top}
-                className="!bg-transparent !border-0 !w-1 !h-1"
+                className="bg-transparent! border-0! w-1! h-1!"
                 style={{
                     left: '85%',
                     top: '15%',
@@ -121,7 +121,7 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
                 id="source-bottom-left"
                 type="source"
                 position={Position.Bottom}
-                className="!bg-transparent !border-0 !w-1 !h-1"
+                className="bg-transparent! border-0! w-1! h-1!"
                 style={{
                     left: '15%',
                     top: '85%',
@@ -131,7 +131,7 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
                 id="source-bottom-right"
                 type="source"
                 position={Position.Bottom}
-                className="!bg-transparent !border-0 !w-1 !h-1"
+                className="bg-transparent! border-0! w-1! h-1!"
                 style={{
                     left: '85%',
                     top: '85%',

@@ -8,24 +8,28 @@ import { AlgorithmIcon } from "./AlgorithmIcon"
 interface Props {
   slug: string
   title: string
+  shortTitle?: string
   progress: {
     pretest: {
-      percent: number
+      score?: number
       status: "locked" | "active" | "completed"
     }
     posttest: {
-      percent: number
+      score?: number
       status: "locked" | "active" | "completed"
     }
   }
 }
-
-export default function AlgorithmCard({ slug, title, progress }: Props) {
+export default function AlgorithmCard({ slug, title, shortTitle, progress }: Props) {
   const router = useRouter()
 
   //กดการ์ด = ไปหน้า pretest เสมอ
+  // const handleCardClick = () => {
+  //   router.push(`/pretest/${slug}`)
+  // }
+
   const handleCardClick = () => {
-    router.push(`/pretest/${slug}`)
+    router.push(`/pretest`)
   }
 
   // กด Info = ดูข้อมูล (ไม่เปลี่ยนหน้า)
@@ -65,7 +69,7 @@ export default function AlgorithmCard({ slug, title, progress }: Props) {
         onClick={(e) => {
           e.stopPropagation()
           console.log("Algorithm slug:", slug)
-          router.push(`/document/${slug}`)
+          router.push(`/reading`)
         }}
         className="
         
@@ -96,19 +100,19 @@ export default function AlgorithmCard({ slug, title, progress }: Props) {
           p-6 gap-4
         "
       >
-        <h2 className="text-lg font-semibold text-gray-900 text-center leading-tight relative -top-3">
-          {title}
+        <h2 className="text-lg font-semibold text-gray-900 text-center leading-tight relative -top-3" title={title}>
+          {shortTitle ?? title}
         </h2>
 
         <ProgressRow
           label="Pretest"
-          percent={progress.pretest.percent}
+          score={progress.pretest.score}
           status={progress.pretest.status}
         />
 
         <ProgressRow
-          label="Post-test"
-          percent={progress.posttest.percent}
+          label="Posttest"
+          score={progress.posttest.score}
           status={progress.posttest.status}
         />
       </div>

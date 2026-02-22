@@ -8,6 +8,7 @@ import CodeAlgo from "../../components/visualizer/codeAlgo";
 import Data_sort from "../../components/visualizer/data_sort";
 import { DnDProvider } from "@/src/components/visualizer/useDnD";
 import Tutorial_modal from "../../components/shared/tutorial_modal";
+import PostTest_portal from "@/src/components/shared/postTest_portal";
 import TutorialTree from "../../components/visualizer/tutorial_tree";
 import TutorialGraph from "../../components/visualizer/tutorial_graph";
 import TreeTrashBin from "../../components/visualizer/TreeTrashBin";
@@ -38,7 +39,6 @@ import CustomNode from "@/src/components/shared/customNode";
 import TreeEdge from "@/src/components/shared/treeEdge";
 import FloatingEdge from "@/src/components/shared/FloatingEdge";
 import '@xyflow/react/dist/base.css';
-import { Info } from "lucide-react";
 
 const nodeTypes = {
     custom: CustomNode,
@@ -66,15 +66,7 @@ const treeInitialEdges: Edge[] = [
     { id: "e-t4-t5", source: "t4", sourceHandle: "source-bottom-right", target: "t5", targetHandle: "target-top-left", type: "straight" },
 ];
 
-const initialNodes: Node[] = [
-    { id: "1", type: "custom", data: { label: "1" }, position: { x: -50, y: 5 } },
-    { id: "2", type: "custom", data: { label: "2" }, position: { x: 15, y: 5 } },
-    { id: "3", type: "custom", data: { label: "3" }, position: { x: 80, y: 5 } },
-    { id: "4", type: "custom", data: { label: "4" }, position: { x: 145, y: 5 } },
-    { id: "5", type: "custom", data: { label: "5" }, position: { x: 210, y: 5 } },
-];
-
-const initialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
+const sortingInitialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
 
 // Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
 const graphInitialNodes: Node[] = [
@@ -235,7 +227,6 @@ function Playground() {
         }
     }, [tutorial.showTutorial, graphTutorial.showTutorial, nodeInteraction]);
 
-    {/*Check Type & Display Data Input of Current Algorithms */ }
     const renderDataVisualizer = () => {
         switch (algoType) {
             case "tree":
@@ -255,7 +246,6 @@ function Playground() {
         }
     };
 
-    {/*Check Type & Display Title of Current Algorithms */ }
     const getTitle = () => {
         switch (algoType) {
             case "tree":
@@ -302,25 +292,11 @@ function Playground() {
             </div>
 
             <SideTab title={getTitle()}>
-                <div>
-                    <CodeAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
-                    <ExplainAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
-                    {renderDataVisualizer()}
-                </div>
+                <CodeAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
+                <ExplainAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
+                {renderDataVisualizer()}
             </SideTab>
-            {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
-            <div className="absolute top-4 left-8 z-10 flex gap-2">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setShowInfo(true)
-                    }}
-                    className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer">
-                    <Info color='#000000' />
-                </button>
-            </div>
 
-            {/* STutorial Complelte Modal Show When User Finish Tutorial */}
             {/* Tutorial overlay for tree */}
             {tutorial.showTutorial && isTree && (
                 <TutorialTree
@@ -423,7 +399,6 @@ function Playground() {
                     }]}
                 />
             )}
-
         </div>
     );
 }
