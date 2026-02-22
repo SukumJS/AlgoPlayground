@@ -134,7 +134,8 @@ export function animateBTInorder(
   onComplete: () => void
 ): void {
   if (!root) { callbacks.setDescription('Tree is empty'); onComplete(); return; }
-  animateTraversal(root, collectInorder(root), 'Inorder (L → Root → R)', '#62A2F7', animationSpeed, controller, callbacks, onComplete);
+  // Changed color to #F7AD45 (Orange) to match Preorder
+  animateTraversal(root, collectInorder(root), 'Inorder (L → Root → R)', '#F7AD45', animationSpeed, controller, callbacks, onComplete);
 }
 
 export function animateBTPreorder(
@@ -156,5 +157,6 @@ export function animateBTPostorder(
   onComplete: () => void
 ): void {
   if (!root) { callbacks.setDescription('Tree is empty'); onComplete(); return; }
-  animateTraversal(root, collectPostorder(root), 'Postorder (L → R → Root)', '#EF4444', animationSpeed, controller, callbacks, onComplete);
+  // Changed color to #F7AD45 (Orange) to match Preorder
+  animateTraversal(root, collectPostorder(root), 'Postorder (L → R → Root)', '#F7AD45', animationSpeed, controller, callbacks, onComplete);
 }

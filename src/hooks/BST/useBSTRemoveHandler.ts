@@ -8,6 +8,7 @@ import {
     calculateBSTPositions,
     bstToReactFlow,
     cloneBSTTree,
+    findBSTSuccessor,
     type BSTNode,
 } from '@/src/components/visualizer/algorithmsTree/BST/bstTree';
 
@@ -45,8 +46,10 @@ export function useBSTRemoveHandler({
                 return;
             }
 
-            // Pre-compute search path
+            // Pre-compute search path and tree states
             const { found, nodeId, path } = searchBST(bstRoot, value);
+            const { successorId } = findBSTSuccessor(bstRoot, value);
+
             const positions = calculateBSTPositions(bstRoot);
             const rfData = bstToReactFlow(bstRoot, [], [], positions);
             const rfNodes = rfData.nodes as RFNode[];
@@ -107,29 +110,137 @@ export function useBSTRemoveHandler({
                 }));
                 setNodes(highlighted);
                 setEdges(rfEdges);
-                setDescription(`Found ${value}! Removing...`);
+                setDescription(`❌ Found ${value}! Removing...`);
             }, animationSpeed * globalOffset);
 
-            // Step 4: Show result after removal (snap to new positions)
-            globalOffset++;
-            controller.scheduleStep(() => {
-                const rootCopy = cloneBSTTree(bstRoot);
-                const newRoot = removeBST(rootCopy, value);
-                setBSTRoot(newRoot);
+            // Step 4: Highlight inorder successor if it exists
+            if (successorId) {
+                globalOffset++;
+                controller.scheduleStep(() => {
+                    const highlighted = rfNodes.map((n: RFNode) => ({
+                        ...n,
+                        data: {
+                            ...n.data,
+                            isHighlighted: n.id === nodeId || n.id === successorId,
+                            highlightColor: n.id === nodeId ? '#EF4444' : (n.id === successorId ? '#F7AD45' : undefined),
+                        },
+                    }));
+                    setNodes(highlighted);
+                    setEdges(rfEdges);
+                    setDescription(`🔄 Found inorder successor — will replace deleted node`);
+                }, animationSpeed * globalOffset);
+            }
 
-                if (newRoot) {
-                    const newPositions = calculateBSTPositions(newRoot);
-                    const newRF = bstToReactFlow(newRoot, [], [], newPositions);
-                    setNodes(newRF.nodes as RFNode[]);
-                    setEdges(newRF.edges as RFEdge[]);
-                } else {
+            // Step 5: Perform Removal and Animate Structural Shift
+            const rootCopy = cloneBSTTree(bstRoot);
+            const newRoot = removeBST(rootCopy, value);
+
+            if (newRoot) {
+                const finalPositions = calculateBSTPositions(newRoot);
+                const finalRF = bstToReactFlow(newRoot, [], [], finalPositions);
+
+                // Build position maps: before-removal → after-removal
+                const beforePosMap = new Map<string, { x: number; y: number }>();
+                (rfNodes as RFNode[]).forEach(n => {
+                    // map by ID. Even if successor changes ID/Value, ReactFlow IDs remain consistent.
+                    beforePosMap.set(n.id, { x: n.position.x, y: n.position.y });
+                });
+                const afterPosMap = new Map<string, { x: number; y: number }>();
+                (finalRF.nodes as RFNode[]).forEach(n => {
+                    afterPosMap.set(n.id, { x: n.position.x, y: n.position.y });
+                });
+
+                // Step 5a: Topology Re-wire
+                globalOffset++;
+                controller.scheduleStep(() => {
+                    // Nodes stay in old positions, but use new edges
+                    const tangledNodes = (finalRF.nodes as RFNode[]).map((n: RFNode) => {
+                        // For the successor that replaced the deleted node, use the deleted node's old position
+                        const beforePosId = (n.id === nodeId && successorId) ? successorId : n.id;
+                        const before = beforePosMap.get(beforePosId) || n.position;
+                        return {
+                            ...n,
+                            position: before,
+                            data: {
+                                ...n.data,
+                                isHighlighted: n.id === nodeId, // The replacing node takes the deleted ID
+                                highlightColor: n.id === nodeId ? '#F7AD45' : undefined,
+                            },
+                        };
+                    });
+
+                    // Highlight new edges connected to the replacement point
+                    const hlEdges = (finalRF.edges as RFEdge[]).map((e: RFEdge) => ({
+                        ...e,
+                        style: (e.source === nodeId || e.target === nodeId)
+                            ? { stroke: '#F7AD45', strokeWidth: 3 }
+                            : { stroke: '#999', strokeWidth: 2 },
+                    }));
+
+                    setNodes(tangledNodes);
+                    setEdges(hlEdges);
+                    setDescription('🔗 Re-wiring tree structure...');
+                }, animationSpeed * globalOffset);
+
+                // Step 5b: Geometry Untangle (15 frames)
+                const INTERP_FRAMES = 15;
+                for (let frame = 1; frame <= INTERP_FRAMES; frame++) {
+                    const t = frame / INTERP_FRAMES;
+                    const fractionOffset = globalOffset + (frame / INTERP_FRAMES);
+
+                    controller.scheduleStep(() => {
+                        const interpolated = (finalRF.nodes as RFNode[]).map((n: RFNode) => {
+                            const beforePosId = (n.id === nodeId && successorId) ? successorId : n.id;
+                            const before = beforePosMap.get(beforePosId);
+                            const after = afterPosMap.get(n.id);
+
+                            let pos = n.position;
+                            if (before && after) {
+                                pos = {
+                                    x: before.x + (after.x - before.x) * t,
+                                    y: before.y + (after.y - before.y) * t,
+                                };
+                            }
+
+                            return {
+                                ...n,
+                                position: pos,
+                                data: {
+                                    ...n.data,
+                                    isHighlighted: n.id === nodeId,
+                                    highlightColor: n.id === nodeId ? '#4CAF7D' : undefined,
+                                },
+                            };
+                        });
+
+                        setNodes(interpolated);
+                        setEdges(finalRF.edges as RFEdge[]);
+                        setDescription('✨ Structuring tree layout...');
+                    }, animationSpeed * fractionOffset);
+                }
+                globalOffset++;
+
+                // Step 5c: Final State Update
+                globalOffset++;
+                controller.scheduleStep(() => {
+                    setBSTRoot(newRoot);
+                    setNodes(finalRF.nodes as RFNode[]);
+                    setEdges(finalRF.edges as RFEdge[]);
+                    setDescription(`✅ Removed ${value}.`);
+                    controller.scheduleStep(() => setDescription(''), animationSpeed * 2);
+                }, animationSpeed * globalOffset);
+
+            } else {
+                // Tree is completely empty
+                globalOffset++;
+                controller.scheduleStep(() => {
+                    setBSTRoot(null);
                     setNodes([]);
                     setEdges([]);
-                }
-                setDescription(`Removed ${value}.`);
-
-                controller.scheduleStep(() => setDescription(''), animationSpeed * 2);
-            }, animationSpeed * globalOffset);
+                    setDescription(`✅ Removed ${value}. Tree is empty.`);
+                    controller.scheduleStep(() => setDescription(''), animationSpeed * 2);
+                }, animationSpeed * globalOffset);
+            }
         },
         [bstRoot, setBSTRoot, nodes, animationSpeed, isPausedRef, setNodes, setEdges, setDescription, applyHighlighting]
     );

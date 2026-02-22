@@ -32,7 +32,7 @@ import { useBTInsertHandler } from "@/src/hooks/BinaryTree/useBTInsertHandler";
 import { useBTSearchHandler } from "@/src/hooks/BinaryTree/useBTSearchHandler";
 import { useBTRemoveHandler } from "@/src/hooks/BinaryTree/useBTRemoveHandler";
 import { useBTTraversalHandler } from "@/src/hooks/BinaryTree/useBTTraversalHandler";
-import { insertBT, cloneBT, type BTNode, removeBT } from "@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree";
+import { insertBT, cloneBT, type BTNode, removeBT, rebuildBTFromReactFlow } from "@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree";
 import { calculateBTPositions, btToReactFlow } from "@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree";
 
 // Heap
@@ -54,14 +54,17 @@ interface Data_treeProps {
     tutorialStep?: number;
     onTutorialDropSuccess?: () => void;
     currentNodes?: Array<{ id: string; data: { label: string } }>;
+    currentEdges?: Array<{ source: string, target: string, sourceHandle?: string | null }>;
     algorithm?: string;
     onRebalanceReady?: (fn: () => void) => void;
     initialBSTRoot?: BSTNode | null;
     initialBTRoot?: BTNode | null;
     initialHeapRoot?: HeapNode | null;
+    initialAVLRoot?: AVLTreeNode | null;
     onBTRebalanceReady?: (fn: () => void) => void;
     onHeapRebalanceReady?: (fn: () => void) => void;
     onTrashDeleteReady?: (fn: (nodeId: string, value: number) => void) => void;
+    onAutoInsertReady?: (fn: (value: number) => void) => void;
 }
 
 function Data_tree({
@@ -69,14 +72,17 @@ function Data_tree({
     tutorialStep = 0,
     onTutorialDropSuccess,
     currentNodes = [],
+    currentEdges = [],
     algorithm,
     onRebalanceReady,
     onBTRebalanceReady,
     initialBSTRoot = null,
     initialBTRoot = null,
     initialHeapRoot = null,
+    initialAVLRoot = null,
     onTrashDeleteReady,
     onHeapRebalanceReady,
+    onAutoInsertReady,
 }: Data_treeProps) {
     const [isDataSortOpen, setIsDataSortOpen] = useState(true);
     const { onDragStart, isDragging } = useDnD();
@@ -111,12 +117,27 @@ function Data_tree({
     // sync initial roots
     const bstInitRef = useRef(false);
     const btInitRef = useRef(false);
+    const avlInitRef = useRef(false);
     useEffect(() => {
         if (!bstInitRef.current && initialBSTRoot) { setBSTRoot(initialBSTRoot); bstInitRef.current = true; }
     }, [initialBSTRoot]);
+
     useEffect(() => {
-        if (!btInitRef.current && initialBTRoot) { setBTRoot(initialBTRoot); btInitRef.current = true; }
-    }, [initialBTRoot]);
+        if (!avlInitRef.current && initialAVLRoot) { setAVLRoot(initialAVLRoot); avlInitRef.current = true; }
+    }, [initialAVLRoot]);
+
+    // For generic Binary Trees, we rebuild the root continuously from React Flow nodes and edges
+    // to support freeform drawing without strict balancing.
+    const nodesStr = JSON.stringify(currentNodes);
+    const edgesStr = JSON.stringify(currentEdges);
+
+    useEffect(() => {
+        if (isBT && !isAnimating) {
+            // Parse the strings to avoid reference equality triggering infinite loops
+            setBTRoot(rebuildBTFromReactFlow(JSON.parse(nodesStr), JSON.parse(edgesStr)));
+        }
+    }, [isBT, isAnimating, nodesStr, edgesStr]);
+
     const heapInitRef = useRef(false);
     useEffect(() => {
         if (!heapInitRef.current && initialHeapRoot && isHeap) {
@@ -145,6 +166,7 @@ function Data_tree({
 
     // AVL root — persistent state (like bstRoot/btRoot)
     const [avlRoot, setAVLRoot] = useState<AVLTreeNode | null>(() => {
+        if (initialAVLRoot) return initialAVLRoot;
         if (currentNodes.length === 0) return null;
         const numericNodes = currentNodes.filter(n => !isNaN(parseInt(n.data.label)));
         if (numericNodes.length === 0) return null;
@@ -234,7 +256,8 @@ function Data_tree({
                 setType(null);
 
                 if (isBST) setBSTRoot(prev => insertBST(cloneBSTTree(prev), sampleValue, newNode.id));
-                if (isBT) setBTRoot(prev => insertBT(cloneBT(prev), sampleValue, newNode.id));
+                // For generic BT, we do NOT auto-insert on drag drop. The user will manually connect it, or we will auto-correct on invalid connect.
+                // if (isBT) setBTRoot(prev => insertBT(cloneBT(prev), sampleValue, newNode.id));
                 if (isAVL) setAVLRoot(prev => insertAVL(prev, sampleValue, newNode.id));
                 if (isHeap) setHeapRoot(prev => {
                     const result = insertHeap(cloneHeap(prev), sampleValue, newNode.id, isMinHeap);
@@ -303,6 +326,7 @@ function Data_tree({
 
     useEffect(() => { onRebalanceReady?.(handleAVLRebalance); }, [handleAVLRebalance, onRebalanceReady]);
     useEffect(() => { onBTRebalanceReady?.(handleBTRebalance); }, [handleBTRebalance, onBTRebalanceReady]);
+    useEffect(() => { onAutoInsertReady?.(btInsert); }, [btInsert, onAutoInsertReady]);
 
     // Handle heap rebalance (reposition heap nodes from heapRoot after tutorial)
     const handleHeapRebalance = useCallback(() => {
@@ -327,7 +351,7 @@ function Data_tree({
             setBSTRoot(prev => prev ? removeBST(prev, value) : null);
         }
         if (isBT) {
-            setBTRoot(prev => prev ? removeBT(prev, value) : null);
+            setBTRoot(prev => prev ? removeBT(prev, value).newRoot : null);
         }
         if (isAVL) {
             setAVLRoot(prev => prev ? removeAVL(prev, value) : null);

@@ -161,21 +161,23 @@ export function insertHeap(
     return { root, insertedId: nodeId, path, siftPath };
 }
 
-/** Remove a value from the heap. Returns { root, siftPath, lastNodeId } for animation. */
+/** Remove a value from the heap. Returns { root, siftPath, lastNodeId, removedId } for animation. */
 export function removeHeap(
     root: HeapNode | null,
     value: number,
     isMinHeap: boolean
-): { root: HeapNode | null; siftPath: string[]; lastNodeId: string | null } {
-    if (!root) return { root: null, siftPath: [], lastNodeId: null };
+): { root: HeapNode | null; siftPath: string[]; lastNodeId: string | null; removedId: string | null } {
+    if (!root) return { root: null, siftPath: [], lastNodeId: null, removedId: null };
 
     // Find node with value
     const nodes = collectBFS(root);
     const targetNode = nodes.find(n => n.value === value);
-    if (!targetNode) return { root, siftPath: [], lastNodeId: null };
+    if (!targetNode) return { root, siftPath: [], lastNodeId: null, removedId: null };
+
+    const removedId = targetNode.id;
 
     // If only one node
-    if (nodes.length === 1) return { root: null, siftPath: [], lastNodeId: null };
+    if (nodes.length === 1) return { root: null, siftPath: [], lastNodeId: null, removedId };
 
     // Get last node
     const last = getLastNode(root);
@@ -187,10 +189,12 @@ export function removeHeap(
         else last.parent.right = null;
     }
 
-    // Replace target's value with last node's value
+    // Replace target's value with last node's value/id to retain visual node for animation
     let siftPath: string[] = [];
     if (targetNode.id !== last.node.id) {
         targetNode.value = last.node.value;
+        targetNode.id = last.node.id;
+
         // Sift down from target position
         siftPath = siftDown(root, targetNode.id, isMinHeap);
         // Also try sift up in case replacement is smaller (min-heap) or larger (max-heap) than parent
@@ -198,7 +202,7 @@ export function removeHeap(
         if (upPath.length > 0) siftPath = upPath;
     }
 
-    return { root, siftPath, lastNodeId };
+    return { root, siftPath, lastNodeId, removedId };
 }
 
 /** Search for a value using BFS. Returns {found, nodeId, path} */

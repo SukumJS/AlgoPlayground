@@ -108,6 +108,37 @@ export function useTreeNodeInteraction({
     }, []);
 
     /**
+     * Validate generic BT rule for linking two nodes
+     * Parent can have at most 2 children. Does not enforce value sorting.
+     */
+    const validateBTLink = useCallback((
+        parentNode: Node,
+        childNode: Node,
+        currentEdges: Edge[]
+    ): { valid: boolean; sourceHandle: string; targetHandle: string; error?: string } => {
+        const parentEdges = currentEdges.filter(e => e.source === parentNode.id);
+
+        if (parentEdges.length >= 2) {
+            return {
+                valid: false,
+                sourceHandle: '',
+                targetHandle: '',
+                error: 'Parent already has 2 children',
+            };
+        }
+
+        const hasLeft = parentEdges.some(e => e.sourceHandle === 'source-bottom-left');
+        const hasRight = parentEdges.some(e => e.sourceHandle === 'source-bottom-right');
+
+        // Prefer left if available, then right.
+        const isLeftChild = !hasLeft;
+        const sourceHandle = isLeftChild ? 'source-bottom-left' : 'source-bottom-right';
+        const targetHandle = isLeftChild ? 'target-top-right' : 'target-top-left';
+
+        return { valid: true, sourceHandle, targetHandle };
+    }, []);
+
+    /**
      * Handle node click - select or link
      */
     const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
@@ -143,8 +174,35 @@ export function useTreeNodeInteraction({
             const selectedNode = nodes.find(n => n.id === selectedNodeId);
             if (!selectedNode) return;
 
-            // Selected node becomes child, clicked node becomes parent
-            const validation = validateBSTLink(node, selectedNode, edges);
+            // Which validation to use?
+            // If we're generic BT, we don't care about values, just topology count.
+            // But how do we know if we are generic BT or BST?
+            // For now, we'll try validating as BST first. If it fails due to value layout,
+            // or if we want generic BT logic, we should probably pass the algo type flag.
+            // Since this hook currently serves both, we should add an `algorithm` prop or 
+            // guess from the structure. Let's just assume `validateBTLink` if the tree 
+            // shouldn't enforce BST rules, but wait, `isTree` is the only flag here.
+
+            // To be perfectly safe across both algorithms without requiring a new prop immediately:
+            // We use validateBTLink only for generic BT, and validateBSTLink for BST.
+            // If the user attempts a link that fails BST validation, maybe we should just
+            // use validateBTLink as a fallback, BUT that breaks BST properties!
+
+            // Wait, we need to know the algorithm type here. But since this is a general hook,
+            // we will export both and let the caller handle it. Wait, handleNodeClick is inside the hook.
+            // Let's modify handleNodeClick to check if the user is doing BST or BT.
+            // We'll temporarily use purely structural validation if value sorting validation fails,
+            // BUT that's wrong for BST. The plan says "Wire user click-linking for BT to use validateBTLink".
+
+            // Actually, for BST, it enforces sorting. For BT, it doesn't. We'll change the hook to accept `algorithm`.
+            // Let's do a quick structural check: if it fails BST rules, it will just warn. Let's just use validateBTLink 
+            // for now, or use a heuristic: if we can parse the URL params.
+            // Let's get algorithm from URL:
+            const params = new URLSearchParams(window.location.search);
+            const algorithm = params.get('algorithm') || '';
+            const isStrictBST = ['binary-search-tree', 'avl-tree'].includes(algorithm);
+
+            const validation = isStrictBST ? validateBSTLink(node, selectedNode, edges) : validateBTLink(node, selectedNode, edges);
 
             if (validation.valid) {
                 // Create edge from parent to child

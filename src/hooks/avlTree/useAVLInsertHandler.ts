@@ -172,22 +172,118 @@ export function useAVLInsertHandler(params: {
             }, animationSpeed * offset);
         });
 
-        // ── Step 5: If rotation needed, show the rotation result ──
+        // ── Step 5: If rotation needed, animate the rotation ──
         if (rotationType) {
+            // Build position maps: before-rotation → after-rotation
+            const beforePosMap = new Map<string, { x: number; y: number }>();
+            (insertedRF.nodes as RFNode[]).forEach(n => {
+                beforePosMap.set(n.id, { x: n.position.x, y: n.position.y });
+            });
+            const afterPosMap = new Map<string, { x: number; y: number }>();
+            (finalRF.nodes as RFNode[]).forEach(n => {
+                afterPosMap.set(n.id, { x: n.position.x, y: n.position.y });
+            });
+
+            // Step 5a: "About to rotate" — highlight rotation node on the unbalanced tree
             offset++;
             controller.scheduleStep(() => {
-                const hl = (finalRF.nodes as RFNode[]).map((n: RFNode) => ({
+                const hl = (insertedRF.nodes as RFNode[]).map((n: RFNode) => ({
                     ...n,
                     data: {
                         ...n.data,
-                        isHighlighted: n.id === rotationNodeId || n.id === newNodeId,
-                        highlightColor: n.id === rotationNodeId ? '#F7AD45'
-                            : n.id === newNodeId ? '#4CAF7D' : undefined,
+                        isHighlighted: n.id === rotationNodeId,
+                        highlightColor: n.id === rotationNodeId ? '#EF4444' : undefined,
                     },
                 }));
+                // Highlight the edges connected to rotation node
+                const hlEdges = (insertedRF.edges as RFEdge[]).map((e: RFEdge) => ({
+                    ...e,
+                    style: (e.source === rotationNodeId || e.target === rotationNodeId)
+                        ? { stroke: '#EF4444', strokeWidth: 3 }
+                        : { stroke: '#999', strokeWidth: 2 },
+                }));
                 animationCallbacks.setNodes(hl);
+                animationCallbacks.setEdges(hlEdges);
+                setAnimationDescription(`🔄 Imbalance detected! Need ${rotationType}`);
+            }, animationSpeed * offset);
+
+            // Step 5b: Reassign Edges (Topology Update)
+            offset++;
+            controller.scheduleStep(() => {
+                // Keep the nodes in their original (before-rotation) positions, but use finalRF edges
+                const tangledNodes = (finalRF.nodes as RFNode[]).map((n: RFNode) => {
+                    const before = beforePosMap.get(n.id) || n.position;
+                    return {
+                        ...n,
+                        position: before,
+                        data: {
+                            ...n.data,
+                            isHighlighted: n.id === rotationNodeId,
+                            highlightColor: n.id === rotationNodeId ? '#F7AD45' : undefined,
+                        },
+                    };
+                });
+
+                // Highlight the new final edges that involve the rotation node to show they changed
+                const hlEdges = (finalRF.edges as RFEdge[]).map((e: RFEdge) => ({
+                    ...e,
+                    style: (e.source === rotationNodeId || e.target === rotationNodeId)
+                        ? { stroke: '#F7AD45', strokeWidth: 3 }
+                        : { stroke: '#999', strokeWidth: 2 },
+                }));
+
+                animationCallbacks.setNodes(tangledNodes);
+                animationCallbacks.setEdges(hlEdges);
+                setAnimationDescription(`🔗 Disconnecting & Reassigning Child Nodes...`);
+            }, animationSpeed * offset);
+
+            // Step 5c: Interpolation frames (Geometry Update)
+            const INTERP_FRAMES = 15;
+            for (let frame = 1; frame <= INTERP_FRAMES; frame++) {
+                const t = frame / INTERP_FRAMES; // 0→1 progress
+
+                // We add offsets fractionally so the total interpolation takes `animationSpeed` ms
+                const fractionOffset = offset + (frame / INTERP_FRAMES);
+
+                controller.scheduleStep(() => {
+                    const interpolated = (finalRF.nodes as RFNode[]).map((n: RFNode) => {
+                        const before = beforePosMap.get(n.id);
+                        const after = afterPosMap.get(n.id);
+
+                        let pos = n.position;
+                        if (before && after) {
+                            pos = {
+                                x: before.x + (after.x - before.x) * t,
+                                y: before.y + (after.y - before.y) * t,
+                            };
+                        } else if (!before && after) {
+                            pos = after;
+                        }
+
+                        return {
+                            ...n,
+                            position: pos,
+                            data: {
+                                ...n.data,
+                                isHighlighted: n.id === rotationNodeId,
+                                highlightColor: n.id === rotationNodeId ? '#4CAF7D' : undefined,
+                            },
+                        };
+                    });
+                    animationCallbacks.setNodes(interpolated);
+                    animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
+                    setAnimationDescription(`✨ Untangling tree structure...`);
+                }, animationSpeed * fractionOffset);
+            }
+            // Advance integer offset past the fractional frames
+            offset++;
+
+            // Step 5d: Final rotation result
+            offset++;
+            controller.scheduleStep(() => {
+                animationCallbacks.setNodes(finalRF.nodes as RFNode[]);
                 animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
-                setAnimationDescription(`🔄 ${rotationType} — Tree rebalanced!`);
+                setAnimationDescription(`✅ ${rotationType} — Tree rebalanced!`);
             }, animationSpeed * offset);
         } else {
             offset++;

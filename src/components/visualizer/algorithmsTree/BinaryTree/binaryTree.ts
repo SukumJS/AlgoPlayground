@@ -26,28 +26,60 @@ export function insertBT(root: BTNode | null, value: number, nodeId: string): BT
   return root;
 }
 
-//  Remove — detach the target node (and its subtree), leaving a null gap
-export function removeBT(root: BTNode | null, value: number): BTNode | null {
-  if (!root) return null;
-  // If root is the target, remove the entire tree
-  if (root.value === value) return null;
+//  Remove (Standard Deepest-Rightmost Replacement) 
+export function removeBT(root: BTNode | null, value: number): { newRoot: BTNode | null, deepestId: string | null } {
+  if (!root) return { newRoot: null, deepestId: null };
 
-  // BFS to find the parent of the target node
-  const queue: BTNode[] = [root];
-  while (queue.length > 0) {
-    const cur = queue.shift()!;
-    if (cur.left && cur.left.value === value) {
-      cur.left = null; // detach entire subtree
-      return root;
-    }
-    if (cur.right && cur.right.value === value) {
-      cur.right = null; // detach entire subtree
-      return root;
-    }
-    if (cur.left) queue.push(cur.left);
-    if (cur.right) queue.push(cur.right);
+  // If only one node in tree
+  if (!root.left && !root.right) {
+    if (root.value === value) return { newRoot: null, deepestId: null };
+    return { newRoot: root, deepestId: null };
   }
-  return root; // value not found
+
+  // 1. Find the target node and the deepest rightmost node
+  let targetNode: BTNode | null = null;
+  let deepestNode: BTNode | null = null;
+  let deepestParent: BTNode | null = null;
+
+  const queue: Array<{ node: BTNode, parent: BTNode | null }> = [{ node: root, parent: null }];
+
+  while (queue.length > 0) {
+    const { node, parent } = queue.shift()!;
+
+    if (node.value === value) {
+      targetNode = node;
+    }
+
+    // As we process strictly left-to-right via BFS, the very last node processed
+    // will be the deepest and rightmost node in the tree.
+    deepestNode = node;
+    deepestParent = parent;
+
+    if (node.left) queue.push({ node: node.left, parent: node });
+    if (node.right) queue.push({ node: node.right, parent: node });
+  }
+
+  // 2. If target found, replace its value/id with the deepest node, then delete deepest node
+  if (targetNode && deepestNode && deepestParent) {
+    const deepestId = deepestNode.id;
+
+    // Only swap if they aren't the exact same node (e.g. deleting the deepest node itself)
+    if (targetNode !== deepestNode) {
+      targetNode.value = deepestNode.value;
+      targetNode.id = deepestNode.id;
+    }
+
+    // Detach deepest node from its parent
+    if (deepestParent.right === deepestNode) {
+      deepestParent.right = null;
+    } else if (deepestParent.left === deepestNode) {
+      deepestParent.left = null;
+    }
+
+    return { newRoot: root, deepestId };
+  }
+
+  return { newRoot: root, deepestId: null }; // value not found
 }
 
 //  Search (BFS) 
@@ -123,14 +155,64 @@ export function btToReactFlow(
   return { nodes, edges };
 }
 
-//  Build from node list 
-export function buildBTFromNodes(
-  nodes: Array<{ id: string; data: { label: string } }>
+//  Build from custom drawings (React Flow nodes and edges) 
+export function rebuildBTFromReactFlow(
+  nodes: Array<{ id: string; data: { label: string } }>,
+  edges: Array<{ source: string, target: string, sourceHandle?: string | null }>
 ): BTNode | null {
-  let root: BTNode | null = null;
-  for (const n of nodes) {
-    const value = parseInt(n.data.label);
-    if (!isNaN(value)) root = insertBT(root, value, n.id);
+  if (!nodes || nodes.length === 0) return null;
+
+  // 1. Create a map of all node IDs to BTNode instances
+  const nodeMap = new Map<string, BTNode>();
+
+  // Find nodes that only contain valid numbers
+  const validNodes = nodes.filter(n => !isNaN(parseInt(n.data.label)));
+  if (validNodes.length === 0) return null;
+
+  validNodes.forEach(n => {
+    nodeMap.set(n.id, {
+      id: n.id,
+      value: parseInt(n.data.label),
+      left: null,
+      right: null
+    });
+  });
+
+  // 2. Map children to parents based on edges
+  // To find the root, we track which nodes are targets
+  const targetIds = new Set<string>();
+
+  edges.forEach(edge => {
+    const parent = nodeMap.get(edge.source);
+    const child = nodeMap.get(edge.target);
+
+    if (parent && child) {
+      targetIds.add(child.id);
+
+      // Determine if left or right child based on sourceHandle
+      if (edge.sourceHandle === 'source-bottom-left') {
+        parent.left = child;
+      } else if (edge.sourceHandle === 'source-bottom-right') {
+        parent.right = child;
+      } else {
+        // Fallback if handles aren't specified clearly: try left then right
+        if (!parent.left) {
+          parent.left = child;
+        } else if (!parent.right) {
+          parent.right = child;
+        }
+      }
+    }
+  });
+
+  // 3. Find the root (the node that is NEVER a target)
+  // If there are multiple disconnected components, we'll just pick the first valid root we find.
+  for (const n of validNodes) {
+    if (!targetIds.has(n.id)) {
+      return nodeMap.get(n.id) || null;
+    }
   }
-  return root;
+
+  // Fallback (e.g. cycles exist, though React Flow UI usually prevents this): just return the first node
+  return nodeMap.get(validNodes[0].id) || null;
 }

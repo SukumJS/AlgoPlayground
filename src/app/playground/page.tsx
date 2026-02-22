@@ -39,8 +39,9 @@ import TreeEdge from "@/src/components/shared/treeEdge";
 import FloatingEdge from "@/src/components/shared/FloatingEdge";
 import '@xyflow/react/dist/base.css';
 import { insertBST, type BSTNode } from "@/src/components/visualizer/algorithmsTree/BST/bstTree";
-import { BTNode, insertBT } from "@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree";
+import { insertBT, type BTNode } from "@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree";
 import { insertHeap, type HeapNode } from "@/src/components/visualizer/algorithmsTree/Heap/heapTree";
+import { insertAVL, type AVLTreeNode } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
 
 const nodeTypes = {
     custom: CustomNode,
@@ -134,9 +135,24 @@ const buildTreeInitialBTRoot = (): BTNode => {
     return root!;
 };
 
-const treeInitialBTRoot = buildTreeInitialBTRoot();
+// ── Build initial AVL root ────────────────────────────────────────────────────
+const buildTreeInitialAVLRoot = (): AVLTreeNode => {
+    const insertOrder: Array<{ id: string; value: number }> = [
+        { id: "t1", value: 64 },
+        { id: "t2", value: 30 },
+        { id: "t3", value: 70 },
+        { id: "t4", value: 80 },
+    ];
+    let root: AVLTreeNode | null = null;
+    for (const { id, value } of insertOrder) {
+        root = insertAVL(root, value, id);
+    }
+    return root!;
+};
 
+const treeInitialBTRoot = buildTreeInitialBTRoot();
 const treeInitialBSTRoot = buildTreeInitialBSTRoot();
+const treeInitialAVLRoot = buildTreeInitialAVLRoot();
 
 // ── Build initial Heap root (for min-heap / max-heap) ─────────────────────────
 const buildTreeInitialHeapRoot = (isMinHeap: boolean): HeapNode => {
@@ -236,15 +252,44 @@ function Playground() {
         [setEdges],
     );
 
+    const autoInsertRef = useRef<((value: number) => void) | null>(null);
+
     const onConnect: OnConnect = useCallback(
         (connection) => {
+            // Intercept connections for algorithms to validate
+            const isStrictBST = ['binary-search-tree', 'avl-tree'].includes(algorithm);
+            const isGenericBT = ['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm);
+
+            if (isGenericBT && connection.source && connection.target) {
+                // Check how many children the parent already has
+                const parentEdges = edges.filter(e => e.source === connection.source);
+                if (parentEdges.length >= 2) {
+                    console.warn("Parent already has 2 children. Auto-correcting placement...");
+
+                    // Reject the edge! Find the target node value
+                    const targetNode = nodes.find(n => n.id === connection.target);
+                    const val = targetNode ? Number(targetNode.data.label) : NaN;
+
+                    if (!isNaN(val)) {
+                        // Delete the manually placed floating node since the connection is invalid
+                        setNodes(nds => nds.filter(n => n.id !== connection.target));
+
+                        // Auto-correct by properly inserting the value (which will find the next level-order gap)
+                        if (autoInsertRef.current) {
+                            setTimeout(() => autoInsertRef.current?.(val), 100);
+                        }
+                    }
+                    return; // abort connection
+                }
+            }
+
             setEdges((eds) => addEdge(connection, eds));
             // If in tutorial step 3 (connect), advance to next step
             if (tutorial.showTutorial && tutorial.tutorialStep === 2) {
                 tutorial.setTutorialStep(3);
             }
         },
-        [setEdges, tutorial],
+        [setEdges, setNodes, edges, nodes, algorithm, tutorial],
     );
 
     const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
@@ -326,6 +371,7 @@ function Playground() {
                     tutorialStep={tutorial.tutorialStep}
                     onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
                     currentNodes={treeNodes}
+                    currentEdges={edges}
                     algorithm={algorithm}
                     onRebalanceReady={(fn) => { rebalanceRef.current = fn; }}
                     onBTRebalanceReady={(fn) => { btRebalanceRef.current = fn; }}
@@ -333,7 +379,9 @@ function Playground() {
                     initialBSTRoot={["binary-search-tree", "avl-tree"].includes(algorithm) ? treeInitialBSTRoot : null}
                     initialBTRoot={['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm) ? treeInitialBTRoot : null}
                     initialHeapRoot={algorithm === 'min-heap' ? treeInitialMinHeapRoot : algorithm === 'max-heap' ? treeInitialMaxHeapRoot : null}
+                    initialAVLRoot={algorithm === 'avl-tree' ? treeInitialAVLRoot : null}
                     onTrashDeleteReady={(fn) => { trashDeleteRef.current = fn; }}
+                    onAutoInsertReady={(fn) => { autoInsertRef.current = fn; }}
                 />
             );
         } else if (isGraph) {

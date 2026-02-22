@@ -7,7 +7,7 @@ export interface BSTNode {
 
 export interface BSTAnimationRecorder {
   recordTraverse?: (nodeId: string, value: number, direction: 'left' | 'right' | 'here') => void;
-  recordFoundParent?: (parentId: string, value: number, direction: 'left' | 'right') => void; // ← เพิ่มใหม่
+  recordFoundParent?: (parentId: string, value: number, direction: 'left' | 'right') => void;
   recordInsert?: (nodeId: string, value: number) => void;
   recordRemove?: (nodeId: string, value: number) => void;
   recordComplete?: (value: number) => void;
