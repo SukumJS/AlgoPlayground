@@ -10,6 +10,7 @@ type BubbleSortParams = {
   isRunningRef: React.MutableRefObject<boolean>;
   executionId: number;
   executionIdRef: React.MutableRefObject<number>;
+  saveStep: (nodes: Node<SortNodeData>[]) => void;
 };
 const sleepWithPause = (
   delay: number,
@@ -45,6 +46,7 @@ export const runBubbleSort = async ({
   isRunningRef,
   executionId,
   executionIdRef,
+  saveStep,
 }: BubbleSortParams) => {
 
   // clone nodes แล้ว snap ตำแหน่งให้ตรง index
@@ -64,13 +66,16 @@ export const runBubbleSort = async ({
       const b = arr[j + 1];
 
       // Highlight compare
-      setNodes((prev) =>
-        prev.map((node) =>
+      setNodes(prev => {
+        const updated = prev.map(node =>
           node.id === a.id || node.id === b.id
-            ? { ...node, data: { ...node.data, status: "compare" } }
+            ? { ...node, data: { ...node.data, status: "compare" as const } }
             : node
-        )
-      );
+        );
+
+        saveStep(updated);
+        return updated;
+      });
 
       await sleepWithPause(delayRef.current, isRunningRef);
 
@@ -82,33 +87,28 @@ export const runBubbleSort = async ({
         arr = swapByIndex(arr, j, j + 1, positionFromIndex);
 
         // update position จริงของทั้งคู่
-        setNodes((prev) =>
-          prev.map((node) => {
+        setNodes(prev => {
+          const swapped = prev.map(node => {
             if (node.id === a.id) {
               return {
                 ...node,
                 position: positionFromIndex(j + 1),
-                data: {
-                  ...node.data,
-                  index: j + 1,
-                  status: "swap",
-                },
+                data: { ...node.data, index: j + 1, status: "swap" as const },
               };
             }
             if (node.id === b.id) {
               return {
                 ...node,
                 position: positionFromIndex(j),
-                data: {
-                  ...node.data,
-                  index: j,
-                  status: "swap",
-                },
+                data: { ...node.data, index: j, status: "swap" as const },
               };
             }
             return node;
-          })
-        );
+          });
+
+          saveStep(swapped);
+          return swapped;
+        });
 
         // 🔥 ใช้ sleepWithPause แทน
         await sleepWithPause(delayRef.current, isRunningRef);
@@ -116,13 +116,16 @@ export const runBubbleSort = async ({
       }
 
       // reset status
-      setNodes((prev) =>
-        prev.map((node) =>
+      setNodes(prev => {
+        const reset = prev.map(node =>
           node.id === a.id || node.id === b.id
-            ? { ...node, data: { ...node.data, status: "idle" } }
+            ? { ...node, data: { ...node.data, status: "idle" as const } }
             : node
-        )
-      );
-    }
+        );
+
+        saveStep(reset);
+        return reset;
+        });
+      }
   }
-};
+  };

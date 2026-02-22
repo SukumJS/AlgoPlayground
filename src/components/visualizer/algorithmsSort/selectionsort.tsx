@@ -2,7 +2,46 @@ import type { Node } from "@xyflow/react";
 import type { SortNodeData } from "../../shared/sortNode";
 import { swapByIndex } from "./swap";
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+type SelectionSortParams = {
+  nodes: Node<SortNodeData>[];
+  setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>;
+  positionFromIndex: (index: number) => { x: number; y: number };
+  delayRef: React.MutableRefObject<number>;
+  isRunningRef: React.MutableRefObject<boolean>;
+  executionId: number;
+  executionIdRef: React.MutableRefObject<number>;
+};
+
+const sleepWithPause = (
+  delay: number,
+  isRunningRef: React.MutableRefObject<boolean>,
+  executionId: number,
+  executionIdRef: React.MutableRefObject<number>
+) => {
+  return new Promise<void>((resolve) => {
+    const start = Date.now();
+
+    const check = () => {
+      if (executionId !== executionIdRef.current) {
+        resolve();
+        return;
+      }
+
+      if (!isRunningRef.current) {
+        setTimeout(check, 10);
+        return;
+      }
+
+      if (Date.now() - start >= delay) {
+        resolve();
+      } else {
+        setTimeout(check, 10);
+      }
+    };
+
+    check();
+  });
+};
 
 const getByIndex = (
   nodes: Node<SortNodeData>[],
@@ -15,88 +54,86 @@ export async function runSelectionSort({
   positionFromIndex,
   delayRef,
   isRunningRef,
-}: {
-  nodes: Node<SortNodeData>[];
-  setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>;
-  positionFromIndex: (index: number) => { x: number; y: number };
-  delayRef: React.MutableRefObject<number>;
-  isRunningRef: React.MutableRefObject<boolean>;
-}) {
-  let current = [...nodes];
+  executionId,
+  executionIdRef,
+}: SelectionSortParams) {
+
+  let current = [...nodes].sort((a, b) => a.data.index - b.data.index);
   const n = current.length;
   const LIFT_Y = 40;
 
   for (let i = 0; i < n; i++) {
-    if (!isRunningRef.current) return;
+
+    if (executionId !== executionIdRef.current) return;
 
     let minIndex = i;
 
-    // ① หาค่าน้อยสุด
+    // 🔹 ① หา minimum
     for (let j = i + 1; j < n; j++) {
-      if (!isRunningRef.current) return;
 
-      setNodes((prev) =>
-        prev.map((node) =>
-          node.data.index === j || node.data.index === minIndex
+      if (executionId !== executionIdRef.current) return;
+
+      const nodeJ = getByIndex(current, j);
+      const nodeMin = getByIndex(current, minIndex);
+
+      setNodes(prev =>
+        prev.map(node =>
+          node.id === nodeJ.id || node.id === nodeMin.id
             ? { ...node, data: { ...node.data, status: "compare" } }
             : node
         )
       );
 
-      await sleep(delayRef.current);
+      await sleepWithPause(delayRef.current, isRunningRef, executionId, executionIdRef);
+      if (executionId !== executionIdRef.current) return;
 
-      if (
-        getByIndex(current, j).data.value <
-        getByIndex(current, minIndex).data.value
-      ) {
+      if (nodeJ.data.value < nodeMin.data.value) {
         minIndex = j;
       }
 
-      // reset compare
-      setNodes((prev) =>
-        prev.map((node) =>
-          node.data.status === "compare"
+      setNodes(prev =>
+        prev.map(node =>
+          node.id === nodeJ.id || node.id === nodeMin.id
             ? { ...node, data: { ...node.data, status: "idle" } }
             : node
         )
       );
     }
 
-    // ② ถ้าต้องสลับ
+    // 🔹 ② ถ้าต้อง swap
     if (minIndex !== i) {
-      // ยก i และ minIndex
-      setNodes((prev) =>
-        prev.map((node) => {
-          if (node.data.index === i) {
+
+      const nodeI = getByIndex(current, i);
+      const nodeMin = getByIndex(current, minIndex);
+
+      // lift
+      setNodes(prev =>
+        prev.map(node => {
+          if (node.id === nodeI.id) {
             return {
               ...node,
               data: { ...node.data, status: "swap" },
-              position: {
-                ...node.position,
-                y: node.position.y - LIFT_Y,
-              },
+              position: { ...node.position, y: node.position.y - LIFT_Y },
             };
           }
-          if (node.data.index === minIndex) {
+          if (node.id === nodeMin.id) {
             return {
               ...node,
               data: { ...node.data, status: "swap" },
-              position: {
-                ...node.position,
-                y: node.position.y + LIFT_Y,
-              },
+              position: { ...node.position, y: node.position.y + LIFT_Y },
             };
           }
           return node;
         })
       );
 
-      await sleep(delayRef.current);
+      await sleepWithPause(delayRef.current, isRunningRef, executionId, executionIdRef);
+      if (executionId !== executionIdRef.current) return;
 
-      // เลื่อนแนวนอน
-      setNodes((prev) =>
-        prev.map((node) => {
-          if (node.data.index === i) {
+      // horizontal move
+      setNodes(prev =>
+        prev.map(node => {
+          if (node.id === nodeI.id) {
             return {
               ...node,
               position: {
@@ -105,7 +142,7 @@ export async function runSelectionSort({
               },
             };
           }
-          if (node.data.index === minIndex) {
+          if (node.id === nodeMin.id) {
             return {
               ...node,
               position: {
@@ -118,44 +155,43 @@ export async function runSelectionSort({
         })
       );
 
-      await sleep(delayRef.current);
+      await sleepWithPause(delayRef.current, isRunningRef, executionId, executionIdRef);
+      if (executionId !== executionIdRef.current) return;
 
-      // กลับลงแถว
-      setNodes((prev) =>
-        prev.map((node) => {
-          if (node.data.index === i) {
-            return {
-              ...node,
-              position: positionFromIndex(minIndex),
-            };
+      // drop
+      setNodes(prev =>
+        prev.map(node => {
+          if (node.id === nodeI.id) {
+            return { ...node, position: positionFromIndex(minIndex) };
           }
-          if (node.data.index === minIndex) {
-            return {
-              ...node,
-              position: positionFromIndex(i),
-            };
+          if (node.id === nodeMin.id) {
+            return { ...node, position: positionFromIndex(i) };
           }
           return node;
         })
       );
 
-      await sleep(delayRef.current);
+      await sleepWithPause(delayRef.current, isRunningRef, executionId, executionIdRef);
+      if (executionId !== executionIdRef.current) return;
 
       // commit index
       current = swapByIndex(current, i, minIndex, positionFromIndex);
       setNodes(current);
 
-      await sleep(delayRef.current);
+      await sleepWithPause(delayRef.current, isRunningRef, executionId, executionIdRef);
+      if (executionId !== executionIdRef.current) return;
     }
 
-    // ③ ตำแหน่ง i เรียงแล้ว
-    current = current.map((node) =>
+    // 🔹 ③ mark sorted
+    current = current.map(node =>
       node.data.index === i
         ? { ...node, data: { ...node.data, status: "sorted" } }
         : node
     );
+
     setNodes(current);
 
-    await sleep(delayRef.current);
+    await sleepWithPause(delayRef.current, isRunningRef, executionId, executionIdRef);
+    if (executionId !== executionIdRef.current) return;
   }
 }

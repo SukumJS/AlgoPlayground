@@ -8,7 +8,9 @@ export function useSortRunner(
   setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>,
   algoType: string | null,
   positionFromIndex: (index: number) => { x: number; y: number },
-  delayRef: React.MutableRefObject<number>
+  delayRef: React.MutableRefObject<number>,
+  saveStep: (nodes: Node<SortNodeData>[]) => void,
+
 ) {
   const [isSorting, setIsSorting] = useState(false);
 
@@ -17,7 +19,7 @@ export function useSortRunner(
   const hasUserModifiedRef = useRef(false);
 
   const executionIdRef = useRef(0);
-  const isRunning = isRunningRef.current;
+
 
   const markUserModified = () => {
     hasUserModifiedRef.current = true;
@@ -43,8 +45,8 @@ export function useSortRunner(
 
 
     isPausedRef.current = false;
-    isRunningRef.current = true;
     setIsSorting(true);
+    isRunningRef.current = true;
 
     const snapped = nodes
       .map((node) => ({
@@ -63,6 +65,8 @@ export function useSortRunner(
     }));
 
     setNodes(resetNodes);
+    //เก็บ initial state ก่อนเริ่ม run algorithm เผื่อ user จะกดย้อนกลับไปขั้นตอนแรก
+    saveStep(resetNodes);
 
     await runner({
       nodes: resetNodes,
@@ -72,8 +76,9 @@ export function useSortRunner(
       isRunningRef,
       executionId: currentExecutionId,
       executionIdRef,
+      saveStep,
     });
-
+    if (currentExecutionId !== executionIdRef.current) return;
     hasUserModifiedRef.current = false;
     isRunningRef.current = false;
     isPausedRef.current = false;
@@ -86,5 +91,5 @@ export function useSortRunner(
     setIsSorting(false);
   };
 
-  return { handleRunSort, handleStop, isSorting, markUserModified , isRunning};
+  return { handleRunSort, handleStop, isSorting, markUserModified, };
 }

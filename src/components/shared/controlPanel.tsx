@@ -7,6 +7,10 @@ type SpeedType = "1x" | "2x" | "5x";
 type AlgorithmController = {
     run?: () => void;
     stop?: () => void;
+    nextStep?: () => void;
+    prevStep?: () => void;
+    skipForward?: () => void;
+    skipBack?: () => void;
     setSpeed?: (speed: SpeedType) => void;
     isRunning?: boolean;
     speed?: SpeedType;
@@ -69,19 +73,19 @@ function ControlPanel({ controller }: ControlPanelProps) {
 
                 {/* Button for show algo step by step line */}
                 <div className='flex flex-row gap-2'>
-                    <button type="button" className='w-30 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
+                    <button onClick={controller.prevStep}type="button" className='w-30 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
                         <ChevronFirst />
                         Prev Step
                     </button>
-                    <button type="button" className='w-30 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
+                    <button onClick={controller.nextStep} type="button" className='w-30 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
                         Next Step
                         <ChevronLast />
                     </button>
-                    <button type="button" className='w-30 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
+                    <button onClick={controller.skipBack} type="button" className='w-30 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
                         <ChevronsLeft />
                         Skip Back
                     </button>
-                    <button type="button" className='w-35.5 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
+                    <button onClick={controller.skipForward} type="button" className='w-35.5 h-10 p-2 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-200'>
                         Skip Forward
                         <ChevronsRight />
                     </button>

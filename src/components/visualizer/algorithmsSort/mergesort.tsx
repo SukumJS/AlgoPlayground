@@ -7,14 +7,45 @@ type MergeSortParams = {
   delayRef: React.MutableRefObject<number>;
   isRunningRef: React.MutableRefObject<boolean>;
   positionFromIndex: (index: number) => { x: number; y: number };
+  executionId: number;
+  executionIdRef: React.MutableRefObject<number>;
 };
 
 const NODE_WIDTH = 65;
 const LEVEL_HEIGHT = 100;
 const BLOCK_GAP = 60;
 
-const sleep = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+//  sleep รองรับ pause + execution guard
+const sleepWithPause = (
+  delay: number,
+  isRunningRef: React.MutableRefObject<boolean>,
+  executionId: number,
+  executionIdRef: React.MutableRefObject<number>
+) => {
+  return new Promise<void>((resolve) => {
+    const start = Date.now();
+
+    const check = () => {
+      if (executionId !== executionIdRef.current) {
+        resolve();
+        return;
+      }
+
+      if (!isRunningRef.current) {
+        setTimeout(check, 10);
+        return;
+      }
+
+      if (Date.now() - start >= delay) {
+        resolve();
+      } else {
+        setTimeout(check, 10);
+      }
+    };
+
+    check();
+  });
+};
 
 export const runMergeSort = async ({
   nodes,
@@ -22,19 +53,24 @@ export const runMergeSort = async ({
   delayRef,
   isRunningRef,
   positionFromIndex,
+  executionId,
+  executionIdRef,
 }: MergeSortParams) => {
+
   let arr = [...nodes].sort((a, b) => a.data.index - b.data.index);
   const n = arr.length;
 
   let level = 0;
 
-  await sleep(delayRef.current);
+  await sleepWithPause(delayRef.current, isRunningRef, executionId, executionIdRef);
+  if (executionId !== executionIdRef.current) return;
 
   for (let size = 1; size < n; size *= 2) {
     level++;
 
     for (let left = 0; left < n; left += size * 2) {
-      if (!isRunningRef.current) return;
+
+      if (executionId !== executionIdRef.current) return;
 
       const mid = Math.min(left + size - 1, n - 1);
       const right = Math.min(left + size * 2 - 1, n - 1);
@@ -44,26 +80,24 @@ export const runMergeSort = async ({
       let i = left;
       let j = mid + 1;
 
-      //  COMPARE PHASE
+      // COMPARE PHASE
       while (i <= mid && j <= right) {
-        if (!isRunningRef.current) return;
+
+        if (executionId !== executionIdRef.current) return;
 
         const leftNode = arr[i];
         const rightNode = arr[j];
 
-        // highlight compare
         setNodes(prev =>
           prev.map(node =>
             node.id === leftNode.id || node.id === rightNode.id
-              ? {
-                  ...node,
-                  data: { ...node.data, status: "compare" },
-                }
+              ? { ...node, data: { ...node.data, status: "compare" } }
               : node
           )
         );
 
-        await sleep(delayRef.current);
+        await sleepWithPause(delayRef.current, isRunningRef, executionId, executionIdRef);
+        if (executionId !== executionIdRef.current) return;
 
         if (leftNode.data.value <= rightNode.data.value) {
           temp.push(arr[i++]);
@@ -71,14 +105,10 @@ export const runMergeSort = async ({
           temp.push(arr[j++]);
         }
 
-        // reset compare -> idle
         setNodes(prev =>
           prev.map(node =>
             node.id === leftNode.id || node.id === rightNode.id
-              ? {
-                  ...node,
-                  data: { ...node.data, status: "idle" },
-                }
+              ? { ...node, data: { ...node.data, status: "idle" } }
               : node
           )
         );
@@ -92,9 +122,10 @@ export const runMergeSort = async ({
         arr[left + k] = temp[k];
       }
 
-      //  MERGE ANIMATION
+      // MERGE ANIMATION
       for (let k = 0; k < temp.length; k++) {
-        if (!isRunningRef.current) return;
+
+        if (executionId !== executionIdRef.current) return;
 
         const newIndex = left + k;
         const nodeToMove = temp[k];
@@ -105,9 +136,7 @@ export const runMergeSort = async ({
               ? {
                   ...node,
                   position: {
-                    x:
-                      newIndex * NODE_WIDTH +
-                      blockIndex * BLOCK_GAP,
+                    x: newIndex * NODE_WIDTH + blockIndex * BLOCK_GAP,
                     y: 5 + level * LEVEL_HEIGHT,
                   },
                   data: {
@@ -120,26 +149,25 @@ export const runMergeSort = async ({
           )
         );
 
-        await sleep(delayRef.current);
+        await sleepWithPause(delayRef.current, isRunningRef, executionId, executionIdRef);
+        if (executionId !== executionIdRef.current) return;
       }
 
-      //  RESET BLOCK BACK TO IDLE
+      // RESET BLOCK
       setNodes(prev =>
         prev.map(node =>
           temp.some(t => t.id === node.id)
-            ? {
-                ...node,
-                data: { ...node.data, status: "idle" },
-              }
+            ? { ...node, data: { ...node.data, status: "idle" } }
             : node
         )
       );
 
-      await sleep(delayRef.current);
+      await sleepWithPause(delayRef.current, isRunningRef, executionId, executionIdRef);
+      if (executionId !== executionIdRef.current) return;
     }
   }
 
-  // FINAL STATE
+  //  FINAL STATE
   setNodes(prev =>
     prev.map(node => ({
       ...node,

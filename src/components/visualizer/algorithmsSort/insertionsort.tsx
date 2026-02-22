@@ -2,7 +2,50 @@ import type { Node } from "@xyflow/react";
 import type { SortNodeData } from "../../shared/sortNode";
 import { swapByIndex } from "./swap";
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+type InsertionSortParams = {
+  nodes: Node<SortNodeData>[];
+  setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>;
+  positionFromIndex: (index: number) => { x: number; y: number };
+  delayRef: React.MutableRefObject<number>;
+  isRunningRef: React.MutableRefObject<boolean>;
+  executionId: number;
+  executionIdRef: React.MutableRefObject<number>;
+};
+
+// sleep รองรับ pause + execution guard
+const sleepWithPause = (
+  delay: number,
+  isRunningRef: React.MutableRefObject<boolean>,
+  executionId: number,
+  executionIdRef: React.MutableRefObject<number>
+) => {
+  return new Promise<void>((resolve) => {
+    const start = Date.now();
+
+    const check = () => {
+      // ถ้ามี execution ใหม่ → kill ทันที
+      if (executionId !== executionIdRef.current) {
+        resolve();
+        return;
+      }
+
+      // ถ้า pause → รอ
+      if (!isRunningRef.current) {
+        setTimeout(check, 10);
+        return;
+      }
+
+      // ครบเวลา → ไปต่อ
+      if (Date.now() - start >= delay) {
+        resolve();
+      } else {
+        setTimeout(check, 10);
+      }
+    };
+
+    check();
+  });
+};
 
 const getByIndex = (
   nodes: Node<SortNodeData>[],
@@ -15,13 +58,10 @@ export async function runInsertionSort({
   positionFromIndex,
   delayRef,
   isRunningRef,
-}: {
-  nodes: Node<SortNodeData>[];
-  setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>;
-  positionFromIndex: (index: number) => { x: number; y: number };
-  delayRef: React.MutableRefObject<number>;
-  isRunningRef: React.MutableRefObject<boolean>;
-}) {
+  executionId,
+  executionIdRef,
+}: InsertionSortParams) {
+
   let current = [...nodes].sort((a, b) => a.data.index - b.data.index);
   const n = current.length;
 
@@ -33,7 +73,7 @@ export async function runInsertionSort({
   const MICRO_PAUSE = speed * 0.3;
 
   for (let i = 1; i < n; i++) {
-    if (!isRunningRef.current) return;
+    if (executionId !== executionIdRef.current) return;
 
     let j = i;
 
@@ -42,12 +82,12 @@ export async function runInsertionSort({
       getByIndex(current, j - 1).data.value >
         getByIndex(current, j).data.value
     ) {
-      if (!isRunningRef.current) return;
+      if (executionId !== executionIdRef.current) return;
 
       const left = getByIndex(current, j - 1);
       const right = getByIndex(current, j);
 
-      //  compare
+      //  Compare
       setNodes((prev) =>
         prev.map((node) =>
           node.id === left.id || node.id === right.id
@@ -56,9 +96,10 @@ export async function runInsertionSort({
         )
       );
 
-      await sleep(speed);
+      await sleepWithPause(speed, isRunningRef, executionId, executionIdRef);
+      if (executionId !== executionIdRef.current) return;
 
-      //  lift
+      //  Lift
       setNodes((prev) =>
         prev.map((node) => {
           if (node.id === left.id) {
@@ -85,9 +126,10 @@ export async function runInsertionSort({
         })
       );
 
-      await sleep(LIFT_TIME);
+      await sleepWithPause(LIFT_TIME, isRunningRef, executionId, executionIdRef);
+      if (executionId !== executionIdRef.current) return;
 
-      //  horizontal move
+      // Horizontal move
       setNodes((prev) =>
         prev.map((node) => {
           if (node.id === left.id) {
@@ -112,9 +154,10 @@ export async function runInsertionSort({
         })
       );
 
-      await sleep(MOVE_TIME);
+      await sleepWithPause(MOVE_TIME, isRunningRef, executionId, executionIdRef);
+      if (executionId !== executionIdRef.current) return;
 
-      //  drop back
+      // Drop
       setNodes((prev) =>
         prev.map((node) => {
           if (node.id === left.id) {
@@ -133,9 +176,10 @@ export async function runInsertionSort({
         })
       );
 
-      await sleep(DROP_TIME);
+      await sleepWithPause(DROP_TIME, isRunningRef, executionId, executionIdRef);
+      if (executionId !== executionIdRef.current) return;
 
-      // ④ commit index (สำคัญมาก)
+      // Commit index (สำคัญ)
       current = swapByIndex(current, j - 1, j, positionFromIndex);
 
       setNodes((prev) =>
@@ -156,9 +200,15 @@ export async function runInsertionSort({
         })
       );
 
-      await sleep(MICRO_PAUSE);
+      await sleepWithPause(
+        MICRO_PAUSE,
+        isRunningRef,
+        executionId,
+        executionIdRef
+      );
+      if (executionId !== executionIdRef.current) return;
 
-      // reset status
+      // Reset status
       setNodes((prev) =>
         prev.map((node) =>
           node.id === left.id || node.id === right.id
@@ -171,7 +221,7 @@ export async function runInsertionSort({
     }
   }
 
-  // mark sorted
+  //  Mark sorted
   setNodes((prev) =>
     prev.map((node) => ({
       ...node,

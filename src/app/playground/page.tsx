@@ -85,6 +85,10 @@ function Playground() {
     const algoType = searchParams.get("type");
     //state สำหรับ input ใน sorting
     const [nodes, setNodes] = useState<Node<SortNodeData>[]>(initialNodes);
+    const historyRef = useRef<Node<SortNodeData>[][]>([]);
+    const currentStepRef = useRef(0);
+
+    const [currentStep, setCurrentStep] = useState(0);
     const [nodeInput, setNodeInput] = useState<number>(0);
 
 
@@ -115,6 +119,15 @@ function Playground() {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
     }, []);
+    //เก็บ node แต่ละขั้นตอนที่เปลี่ยนแปลงลงใน history เพื่อใช้กับ control panel ในการย้อนกลับหรือไปข้างหน้าแต่ละขั้นตอน
+    const saveStep = (newNodes: Node<SortNodeData>[]) => {
+        historyRef.current = [
+            ...historyRef.current.slice(0, currentStepRef.current + 1),
+            newNodes,
+        ];
+
+        currentStepRef.current += 1;
+    };
     /* Hook สำหรับควบคุมความเร็ว animation */
     const { delayRef, setSpeed, speed } = useSortSpeed();
     /* Hook สำหรับควบคุมการรัน algorithm */
@@ -125,12 +138,56 @@ function Playground() {
             algoType,
             positionFromIndex,
             delayRef,
+            saveStep
 
         );
     /* Hook สำหรับ drag แล้ว swap node */
     const { onNodeDrag, onNodeDragStop } = useSortableDrag(setNodes, positionFromIndex);
     const prevNodesRef = useRef(nodes);
 
+    const prevStep = () => {
+        if (currentStepRef.current <= 0) return;
+
+        handleStop(); // หยุด animation ก่อน
+
+        currentStepRef.current -= 1;
+
+        const prev = historyRef.current[currentStepRef.current];
+        setNodes(prev);
+        setCurrentStep(currentStepRef.current);
+    };
+    const nextStep = () => {
+        if (currentStepRef.current >= historyRef.current.length - 1) return;
+
+        handleStop();
+
+        currentStepRef.current += 1;
+
+        const next = historyRef.current[currentStepRef.current];
+        setNodes(next);
+        setCurrentStep(currentStepRef.current);
+    };
+    const skipBack = () => {
+        if (historyRef.current.length === 0) return;
+
+        handleStop();
+
+        currentStepRef.current = 0;
+
+        setNodes(historyRef.current[0]);
+        setCurrentStep(0);
+    };
+    const skipForward = () => {
+        if (historyRef.current.length === 0) return;
+
+        handleStop();
+
+        const lastIndex = historyRef.current.length - 1;
+        currentStepRef.current = lastIndex;
+
+        setNodes(historyRef.current[lastIndex]);
+        setCurrentStep(lastIndex);
+    };
     useEffect(() => {
         if (!isSorting) {
             if (prevNodesRef.current !== nodes) {
@@ -147,6 +204,10 @@ function Playground() {
         setSpeed,
         isRunning: isSorting,
         speed,
+        prevStep,
+        nextStep,
+        skipBack,
+        skipForward,
     };
 
     {/*Check Type & Display Data Input of Current Algorithms */ }
