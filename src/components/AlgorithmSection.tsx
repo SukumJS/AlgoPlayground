@@ -1,24 +1,9 @@
 import AlgorithmCard from "./AlgorithmCard"
-
-interface Item {
-  slug: string
-  title: string
-  shortTitle?: string
-  progress: {
-    pretest: {
-      score: number
-      status: "locked" | "active" | "completed"
-    }
-    posttest: {
-      score: number
-      status: "locked" | "active" | "completed"
-    }
-  }
-}
+import { TestProgress } from "../data/algorithmCatalog"
 
 interface Props {
   title: string
-  items: Item[]
+  items: TestProgress[]
 }
 
 export default function AlgorithmSection({ title, items }: Props) {
