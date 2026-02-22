@@ -151,7 +151,7 @@ function Playground() {
         setEdges,
     );
 
-    // Handler for Search button in Data_graph
+    // Search button triggers animation immediately
     const handleGraphSearch = useCallback(
         (startLabel: string, endLabel: string) => {
             animation.reset();
@@ -332,18 +332,7 @@ function Playground() {
             </ReactFlow>
 
             <div className="absolute bottom-4 w-full z-10">
-                <ControlPanel
-                    onPlay={animation.play}
-                    onPause={animation.pause}
-                    onPrevStep={animation.prevStep}
-                    onNextStep={animation.nextStep}
-                    onSkipToStart={animation.skipToStart}
-                    onSkipToEnd={animation.skipToEnd}
-                    onSpeedChange={animation.setSpeed}
-                    onReset={animation.totalSteps > 0 ? animation.reset : undefined}
-                    isPlaying={animation.isPlaying}
-                    speed={animation.speed}
-                />
+                <ControlPanel />
             </div>
 
             <SideTab title={getTitle()}>

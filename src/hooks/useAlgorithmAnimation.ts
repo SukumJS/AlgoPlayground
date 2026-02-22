@@ -204,6 +204,13 @@ export function useAlgorithmAnimation(
               },
             })),
           );
+
+          // Auto-play from step 0 immediately after applying the first step
+          if (generated.length > 1) {
+            setIsPlaying(true);
+            isPlayingRef.current = true;
+            scheduleNextRef.current();
+          }
         }, 0);
       }
     },
