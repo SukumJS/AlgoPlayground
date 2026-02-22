@@ -4,6 +4,7 @@ import React from "react";
 import TrackProgress from "@/src/components/pretest/TrackProgress";
 import ChoiceCard from "@/src/components/pretest/ChoiceCard";
 import { QuizData, UserAnswer } from "../types/quiz";
+import Link from "next/link";
 
 type ResultPageProps = {
   quizData: QuizData;
@@ -82,7 +83,7 @@ function ResultPage({
                         text={choice.text}
                         isSelected={isUserSelection}
                         disabled={true}
-                        onSelect={() => {}}
+                        onSelect={() => { }}
                       />
                     );
                   })}
@@ -94,12 +95,14 @@ function ResultPage({
 
         {/* Go to Playground Button */}
         <div className="flex justify-end mt-10">
-          <button
-            onClick={onGoToPlayground}
-            className="px-8 py-3 bg-[#0066cc] text-white font-medium text-base rounded-lg hover:bg-[#0052a3] transition-colors cursor-pointer"
-          >
-            Go to playground
-          </button>
+          <Link href="/playground">
+            <button
+              onClick={onGoToPlayground}
+              className="px-8 py-3 bg-[#0066cc] text-white font-medium text-base rounded-lg hover:bg-[#0052a3] transition-colors cursor-pointer"
+            >
+              Go to playground
+            </button>
+          </Link>
         </div>
       </div>
     </div>
