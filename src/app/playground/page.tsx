@@ -33,15 +33,16 @@ import CustomNode from "@/src/components/shared/customNode";
 import '@xyflow/react/dist/base.css';
 // import { sortAlgorithms } from "@/src/components/visualizer/algorithmsSort";
 import type { SortNodeData } from "@/src/components/shared/sortNode";
-import { useSortableDrag } from "@/src/hooks/useSortableDrag";
-import { useSortSpeed } from "@/src/hooks/useSortSpeed";
+import { useSortableDrag } from "@/src/hooks/sort/useSortableDrag";
+import {useExecutionSpeed } from "@/src/hooks/useExecutionSpeed";
 // import { useSortRunner } from "@/src/hooks/useSortRunner";
 import Reading_modal from "@/src/components/shared/reading_modal";
 import { Info } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
-import { useStepSortEngine } from "@/src/hooks/useStepSortEngine";
-
+// import { useStepSortEngine } from "@/src/hooks/useStepSortEngine";
+// import { AlgoController } from "@/src/types/AlgoController";
+import { useAlgoController } from "@/src/hooks/useAlgoController";
 const nodeTypes = {
     custom: CustomNode,
 };
@@ -116,36 +117,19 @@ function Playground() {
     }, []);
 
     /* Hook สำหรับควบคุมความเร็ว animation */
-    const { delayRef, setSpeed, speed } = useSortSpeed();
+    const { delayRef, setSpeed, speed } = useExecutionSpeed();
 
     /* Hook สำหรับ drag แล้ว swap node */
     const { onNodeDrag, onNodeDragStop } = useSortableDrag(setNodes, positionFromIndex);
-    const {
-        run,
-        stop,
-        nextStep,
-        prevStep,
-        skipBack,
-        skipForward,
-        isRunning,
-    } = useStepSortEngine({
+    const controller = useAlgoController({
         algoType,
         nodes,
         setNodes,
         positionFromIndex,
         delayRef,
-    });
-    const controller = {
-        run,
-        stop,
         setSpeed,
-        isRunning,
         speed,
-        prevStep,
-        nextStep,
-        skipBack,
-        skipForward,
-    };
+    });
 
     {/*Check Type & Display Data Input of Current Algorithms */ }
     const renderDataVisualizer = () => {
@@ -178,7 +162,7 @@ function Playground() {
     return (
         <div className={`w-screen h-screen  `}>
             {/* Implement Change page to canvas */}
-            <ReactFlow className={isRunning ? "sorting" : ""}
+            <ReactFlow className={controller.isRunning ? "sorting" : ""}
 
                 nodes={nodes}
                 edges={edges}
@@ -189,7 +173,7 @@ function Playground() {
                 onDragOver={onDragOver}
                 onNodeDrag={onNodeDrag}
                 onNodeDragStop={onNodeDragStop}
-                nodesDraggable={!isRunning}
+                nodesDraggable={!controller.isRunning}
                 fitView
                 fitViewOptions={fitViewOptions}
                 defaultEdgeOptions={defaultEdgeOptions}

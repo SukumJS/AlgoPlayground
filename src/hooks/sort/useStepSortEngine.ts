@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import type { Node } from "@xyflow/react";
 import type { SortNodeData } from "@/src/components/shared/sortNode";
 import { generateStepsByType } from "@/src/components/visualizer/algorithmsSort/generateSteps";
-
+import { useAlgoController } from "@/src/hooks/useAlgoController";
 type Params = {
     algoType: string | null;
     nodes: Node<SortNodeData>[];
@@ -21,7 +21,7 @@ export function useStepSortEngine({
     const [steps, setSteps] = useState<Node<SortNodeData>[][]>([]);
     const [currentStep, setCurrentStep] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
-    
+
     const autoPlayRef = useRef<number | null>(null);
     const isRunningRef = useRef(false);
     const isInternalUpdateRef = useRef(false);

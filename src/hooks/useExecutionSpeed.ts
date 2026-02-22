@@ -6,7 +6,7 @@ const SPEED_MAP = {
   "5x": 300,
 } as const;
 
-export function useSortSpeed() {
+export function useExecutionSpeed() {
   const [speed, setSpeedState] = useState<keyof typeof SPEED_MAP>("1x");
   const [delay, setDelay] = useState<number>(SPEED_MAP["1x"]);
 

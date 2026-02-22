@@ -1,23 +1,10 @@
 "use client"
 import React, { useState } from 'react'
 import { ChevronFirst, ChevronLast, ChevronsLeft, ChevronsRight, Play, Pause } from 'lucide-react';
-
-type SpeedType = "1x" | "2x" | "5x";
-
-type AlgorithmController = {
-    run?: () => void;
-    stop?: () => void;
-    nextStep?: () => void;
-    prevStep?: () => void;
-    skipForward?: () => void;
-    skipBack?: () => void;
-    setSpeed?: (speed: SpeedType) => void;
-    isRunning?: boolean;
-    speed?: SpeedType;
-};
+import { AlgoController } from "@/types/AlgoController";
 
 type ControlPanelProps = {
-    controller: AlgorithmController;
+    controller: AlgoController;
 };
 
 
