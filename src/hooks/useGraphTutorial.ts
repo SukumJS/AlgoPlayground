@@ -41,7 +41,7 @@ export function useGraphTutorial({
     isGraph,
 }: UseGraphTutorialProps) {
     // Tutorial state
-    const [showTutorial, setShowTutorial] = useState(false);
+    const [showTutorial, setShowTutorial] = useState(() => isGraph);
     const [tutorialStep, setTutorialStep] = useState(0);
     const [showCompletionModal, setShowCompletionModal] = useState(false);
 
@@ -112,19 +112,15 @@ export function useGraphTutorial({
 
     // Initial position update & Resize listener
     useEffect(() => {
-        updateTutorialPositions();
+        // Schedule asynchronously to avoid synchronous setState in effect body
+        const rafId = requestAnimationFrame(updateTutorialPositions);
 
         window.addEventListener('resize', updateTutorialPositions);
-        return () => window.removeEventListener('resize', updateTutorialPositions);
+        return () => {
+            cancelAnimationFrame(rafId);
+            window.removeEventListener('resize', updateTutorialPositions);
+        };
     }, [updateTutorialPositions]);
-
-    // Check if user needs to see tutorial (default: show if graph type)
-    useEffect(() => {
-        if (isGraph) {
-            // TODO: Check Firebase here
-            setShowTutorial(true);
-        }
-    }, [isGraph]);
 
     // Trigger position update when tutorial becomes active
     useEffect(() => {

@@ -33,7 +33,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
           flex items-center
           rounded-[50px]
           bg-[#B4D4F1]
-          border border-black
+          border border-[#5D5D5D]
           shadow-[0px_6px_18px_rgba(0,0,0,0.25)]
         "
       >
@@ -95,7 +95,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
           </div>
 
           <button className="py-2 text-lg font-bold text-[#222121] capitalize">
-            <a href="/examplesquestions">
+            <a href="/exercise">
             examples questions
             </a>
           </button>
@@ -104,7 +104,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
         {/*Sign in*/}
         <div className="ml-4">
           {!isLoggedIn ? (
-            <Link href="/auth/login">
+            <Link href="/auth/signin">
               <button className="px-6 py-2 rounded-full bg-[#1A75D1] text-[#F1F1F1] font-bold shadow-md">
                 Sign in
               </button>
@@ -124,17 +124,20 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
 
               {profileOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg">
-                  <button
-                    className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
-                  >
-                    Profile
-                  </button>
-
-                  <button
-                    className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
-                  >
-                    Log out
-                  </button>
+                  <Link href="/profile">
+                    <button
+                      className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
+                    >
+                      Profile
+                    </button>
+                  </Link>
+                  <Link href="/">
+                    <button
+                      className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
+                    >
+                      Log out
+                    </button>
+                  </Link>
                 </div>
               )}
             </div>
