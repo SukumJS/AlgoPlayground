@@ -151,7 +151,7 @@ print("In-order traversal:", inorder_traversal(root))`;
                 paddingTop: '4px',
                 display: 'table-cell',
               }}
-              lineProps={(lineNumber) => {
+              lineProps={(lineNumber: number) => {
                 const activeLine = executionPath[currentStepIdx];
                 return {
                   style: {
