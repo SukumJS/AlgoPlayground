@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 
 const SPEED_MAP = {
-  "1x": 1000,
+  "1x": 900,
   "2x": 500,
-  "5x": 60,
+  "5x": 300,
 } as const;
 
 export function useSortSpeed() {

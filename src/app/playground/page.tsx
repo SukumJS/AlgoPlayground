@@ -31,15 +31,17 @@ import Data_tree from "@/src/components/visualizer/data_tree";
 import Data_graph from "@/src/components/visualizer/data_graph";
 import CustomNode from "@/src/components/shared/customNode";
 import '@xyflow/react/dist/base.css';
-import { sortAlgorithms } from "@/src/components/visualizer/algorithmsSort";
+// import { sortAlgorithms } from "@/src/components/visualizer/algorithmsSort";
 import type { SortNodeData } from "@/src/components/shared/sortNode";
 import { useSortableDrag } from "@/src/hooks/useSortableDrag";
 import { useSortSpeed } from "@/src/hooks/useSortSpeed";
-import { useSortRunner } from "@/src/hooks/useSortRunner";
+// import { useSortRunner } from "@/src/hooks/useSortRunner";
 import Reading_modal from "@/src/components/shared/reading_modal";
 import { Info } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
+import { useStepSortEngine } from "@/src/hooks/useStepSortEngine";
+
 const nodeTypes = {
     custom: CustomNode,
 };
@@ -85,17 +87,10 @@ function Playground() {
     const algoType = searchParams.get("type");
     //state สำหรับ input ใน sorting
     const [nodes, setNodes] = useState<Node<SortNodeData>[]>(initialNodes);
-    const historyRef = useRef<Node<SortNodeData>[][]>([]);
-    const currentStepRef = useRef(0);
-
-    const [currentStep, setCurrentStep] = useState(0);
     const [nodeInput, setNodeInput] = useState<number>(0);
-
-
     const [edges, setEdges] = useState<Edge[]>(initialEdges);
     const [showTutorial, setShowTutorial] = useState(true);
     const [showInfo, setShowInfo] = useState(false);
-
 
     /* These three constants are defining functions that handle changes to nodes, edges, and
     connections in the ReactFlow component. */
@@ -119,90 +114,32 @@ function Playground() {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
     }, []);
-    //เก็บ node แต่ละขั้นตอนที่เปลี่ยนแปลงลงใน history เพื่อใช้กับ control panel ในการย้อนกลับหรือไปข้างหน้าแต่ละขั้นตอน
-    const saveStep = (newNodes: Node<SortNodeData>[]) => {
-        historyRef.current = [
-            ...historyRef.current.slice(0, currentStepRef.current + 1),
-            newNodes,
-        ];
 
-        currentStepRef.current += 1;
-    };
     /* Hook สำหรับควบคุมความเร็ว animation */
     const { delayRef, setSpeed, speed } = useSortSpeed();
-    /* Hook สำหรับควบคุมการรัน algorithm */
-    const { handleRunSort, handleStop, isSorting, markUserModified } =
-        useSortRunner(
-            nodes,
-            setNodes,
-            algoType,
-            positionFromIndex,
-            delayRef,
-            saveStep
 
-        );
     /* Hook สำหรับ drag แล้ว swap node */
     const { onNodeDrag, onNodeDragStop } = useSortableDrag(setNodes, positionFromIndex);
-    const prevNodesRef = useRef(nodes);
-
-    const prevStep = () => {
-        if (currentStepRef.current <= 0) return;
-
-        handleStop(); // หยุด animation ก่อน
-
-        currentStepRef.current -= 1;
-
-        const prev = historyRef.current[currentStepRef.current];
-        setNodes(prev);
-        setCurrentStep(currentStepRef.current);
-    };
-    const nextStep = () => {
-        if (currentStepRef.current >= historyRef.current.length - 1) return;
-
-        handleStop();
-
-        currentStepRef.current += 1;
-
-        const next = historyRef.current[currentStepRef.current];
-        setNodes(next);
-        setCurrentStep(currentStepRef.current);
-    };
-    const skipBack = () => {
-        if (historyRef.current.length === 0) return;
-
-        handleStop();
-
-        currentStepRef.current = 0;
-
-        setNodes(historyRef.current[0]);
-        setCurrentStep(0);
-    };
-    const skipForward = () => {
-        if (historyRef.current.length === 0) return;
-
-        handleStop();
-
-        const lastIndex = historyRef.current.length - 1;
-        currentStepRef.current = lastIndex;
-
-        setNodes(historyRef.current[lastIndex]);
-        setCurrentStep(lastIndex);
-    };
-    useEffect(() => {
-        if (!isSorting) {
-            if (prevNodesRef.current !== nodes) {
-                markUserModified();
-            }
-        }
-
-        prevNodesRef.current = nodes;
-    }, [nodes, isSorting, markUserModified]);
-
+    const {
+        run,
+        stop,
+        nextStep,
+        prevStep,
+        skipBack,
+        skipForward,
+        isRunning,
+    } = useStepSortEngine({
+        algoType,
+        nodes,
+        setNodes,
+        positionFromIndex,
+        delayRef,
+    });
     const controller = {
-        run: handleRunSort,
-        stop: handleStop,
+        run,
+        stop,
         setSpeed,
-        isRunning: isSorting,
+        isRunning,
         speed,
         prevStep,
         nextStep,
@@ -241,7 +178,7 @@ function Playground() {
     return (
         <div className={`w-screen h-screen  `}>
             {/* Implement Change page to canvas */}
-            <ReactFlow className={isSorting ? "sorting" : ""}
+            <ReactFlow className={isRunning ? "sorting" : ""}
 
                 nodes={nodes}
                 edges={edges}
@@ -252,7 +189,7 @@ function Playground() {
                 onDragOver={onDragOver}
                 onNodeDrag={onNodeDrag}
                 onNodeDragStop={onNodeDragStop}
-                nodesDraggable={!isSorting}
+                nodesDraggable={!isRunning}
                 fitView
                 fitViewOptions={fitViewOptions}
                 defaultEdgeOptions={defaultEdgeOptions}
