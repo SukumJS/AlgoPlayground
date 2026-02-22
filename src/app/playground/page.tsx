@@ -74,14 +74,6 @@ const treeInitialEdges: Edge[] = [
     { id: "e-t4-t5", source: "t4", sourceHandle: "source-bottom-right", target: "t5", targetHandle: "target-top-left", type: "straight" },
 ];
 
-const btInitialEdges: Edge[] = [
-    { id: "bt-e-t1-t2", source: "t1", sourceHandle: "source-bottom-left", target: "t2", targetHandle: "target-top-right", type: "straight" },
-    { id: "bt-e-t1-t3", source: "t1", sourceHandle: "source-bottom-right", target: "t3", targetHandle: "target-top-left", type: "straight" },
-    { id: "bt-e-t2-t4", source: "t2", sourceHandle: "source-bottom-left", target: "t4", targetHandle: "target-top-right", type: "straight" },
-    { id: "bt-e-t2-t5", source: "t2", sourceHandle: "source-bottom-right", target: "t5", targetHandle: "target-top-left", type: "straight" },
-];
-
-const sortingInitialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
 const initialNodes: Node[] = [
     { id: "1", type: "custom", data: { label: "1" }, position: { x: -50, y: 5 } },
     { id: "2", type: "custom", data: { label: "2" }, position: { x: 15, y: 5 } },
@@ -188,7 +180,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 
 function Playground() {
     const searchParams = useSearchParams();
-    const algoType = searchParams.get("type") || "";
+    const algoType = searchParams.get("type");
     const algorithm = searchParams.get("algorithm") || "";
 
     // Set initial nodes and edges based on algorithm type
@@ -366,40 +358,51 @@ function Playground() {
                 data: { label: (node.data as Record<string, unknown>).label as string }
             }));
 
-        if (isTree) {
-            return (
-                <Data_tree
-                    tutorialMode={tutorial.showTutorial}
-                    tutorialStep={tutorial.tutorialStep}
-                    onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
-                    currentNodes={treeNodes}
-                    currentEdges={edges}
-                    algorithm={algorithm}
-                    onRebalanceReady={(fn) => { rebalanceRef.current = fn; }}
-                    onBTRebalanceReady={(fn) => { btRebalanceRef.current = fn; }}
-                    onHeapRebalanceReady={(fn) => { heapRebalanceRef.current = fn; }}
-                    initialBSTRoot={["binary-search-tree", "avl-tree"].includes(algorithm) ? treeInitialBSTRoot : null}
-                    initialBTRoot={['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm) ? treeInitialBTRoot : null}
-                    initialHeapRoot={algorithm === 'min-heap' ? treeInitialMinHeapRoot : algorithm === 'max-heap' ? treeInitialMaxHeapRoot : null}
-                    initialAVLRoot={algorithm === 'avl-tree' ? treeInitialAVLRoot : null}
-                    onTrashDeleteReady={(fn) => { trashDeleteRef.current = fn; }}
-                    onAutoInsertReady={(fn) => { autoInsertRef.current = fn; }}
-                />
-            );
-        } else if (isGraph) {
-            return <Data_graph />;
-        } else {
-            return <Data_sort nodeInput={0} setNodeInput={function (): void {
-                throw new Error("Function not implemented.");
-            }} />;
+        switch (algoType) {
+            case "tree":
+                return (
+                    <Data_tree
+                        tutorialMode={tutorial.showTutorial}
+                        tutorialStep={tutorial.tutorialStep}
+                        onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
+                        currentNodes={treeNodes}
+                        currentEdges={edges}
+                        algorithm={algorithm}
+                        onRebalanceReady={(fn) => { rebalanceRef.current = fn; }}
+                        onBTRebalanceReady={(fn) => { btRebalanceRef.current = fn; }}
+                        onHeapRebalanceReady={(fn) => { heapRebalanceRef.current = fn; }}
+                        initialBSTRoot={["binary-search-tree", "avl-tree"].includes(algorithm) ? treeInitialBSTRoot : null}
+                        initialBTRoot={['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm) ? treeInitialBTRoot : null}
+                        initialHeapRoot={algorithm === 'min-heap' ? treeInitialMinHeapRoot : algorithm === 'max-heap' ? treeInitialMaxHeapRoot : null}
+                        initialAVLRoot={algorithm === 'avl-tree' ? treeInitialAVLRoot : null}
+                        onTrashDeleteReady={(fn) => { trashDeleteRef.current = fn; }}
+                        onAutoInsertReady={(fn) => { autoInsertRef.current = fn; }}
+                    />
+                );
+            case 'graph':
+                return <Data_graph />;
+            default:
+                return (
+                    <Data_sort
+                        nodeInput={0}
+                        setNodeInput={function (): void {
+                            throw new Error("Function not implemented.");
+                        }}
+                    />
+                );
         }
     };
 
     {/*Check Type & Display Title of Current Algorithms */ }
     const getTitle = () => {
-        if (isTree) return "Tree Algorithms";
-        if (isGraph) return "Graph Algorithms";
-        return "Sorting Algorithms";
+        switch (algoType) {
+            case "tree":
+                return "Tree Algorithms";
+            case 'graph':
+                return 'Graph Algorithms';
+            default:
+                return "Sorting Algorithms";
+        }
     };
 
     return (

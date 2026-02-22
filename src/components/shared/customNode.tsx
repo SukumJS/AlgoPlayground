@@ -102,12 +102,12 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
             {/* Balance factor badge — shown only during AVL balance-check animations */}
             {data.balanceFactor !== undefined && (
                 <div
-                    className="absolute -top-3 -right-3 flex items-center justify-center text-xs font-bold rounded-full w-8 h-8 border-2"
+                    className="absolute -top-3 -right-3 flex items-center justify-center text-xs font-semibold rounded-full w-6 h-6 border-2"
                     style={{
                         backgroundColor: Math.abs(data.balanceFactor) > 1 ? '#EF4444' : '#4CAF7D',
                         borderColor: Math.abs(data.balanceFactor) > 1 ? '#DC2626' : '#388E5C',
                         color: 'white',
-                        fontSize: '18px',
+                        fontSize: '14px',
                         lineHeight: 1,
                         zIndex: 10,
                     }}

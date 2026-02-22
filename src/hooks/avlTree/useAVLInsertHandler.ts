@@ -94,6 +94,7 @@ export function useAVLInsertHandler(params: {
         if (path.length > 0) {
             path.forEach((nodeId, idx) => {
                 controller.scheduleStep(() => {
+                    // Node: highlight ONLY the current node being visited
                     const hl = (oldRF.nodes as RFNode[]).map((n: RFNode) => ({
                         ...n,
                         data: {
@@ -102,9 +103,19 @@ export function useAVLInsertHandler(params: {
                             highlightColor: n.id === nodeId ? '#62A2F7' : undefined,
                         },
                     }));
+
+                    // Edges: accumulate highlighted path
+                    const visitedIds = new Set(path.slice(0, idx + 1));
+                    const hlEdges = (oldRF.edges as RFEdge[]).map((e: RFEdge) => ({
+                        ...e,
+                        style: (visitedIds.has(e.source) && visitedIds.has(e.target))
+                            ? { stroke: '#F7AD45', strokeWidth: 3 }
+                            : { stroke: '#999', strokeWidth: 2 },
+                    }));
+
                     animationCallbacks.setNodes(hl);
-                    animationCallbacks.setEdges(oldRF.edges as RFEdge[]);
-                    setAnimationDescription(`🔍 Traversing — comparing with node`);
+                    animationCallbacks.setEdges(hlEdges);
+                    setAnimationDescription(`🔍 Traversing — comparing with node ${latestRoot ? (latestRoot as any).value : ''}`);
                 }, animationSpeed * (idx + 1));
                 offset = idx + 1;
             });
