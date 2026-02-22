@@ -236,9 +236,6 @@ function Playground() {
         isTree,
         isGraph,
         isTutorialActive: tutorial.showTutorial || graphTutorial.showTutorial,
-        onNodeDeleted: (nodeId, value) => {
-            trashDeleteRef.current?.(nodeId, value);
-        },
     });
 
     const onNodesChange: OnNodesChange = useCallback(

@@ -163,7 +163,7 @@ export function useHeapRemoveHandler(params: {
 
                 setNodes(extNodesForFlight);
                 setEdges(flyingEdges);
-            }, animationSpeed * (globalOffset - 1) + (animationSpeed / INTERP_FRAMES) * frame);
+            }, animationSpeed * globalOffset + (animationSpeed / INTERP_FRAMES) * frame);
         }
         globalOffset++; // consume time for the fly up
 
@@ -234,8 +234,49 @@ export function useHeapRemoveHandler(params: {
                 setDescription(`Sifting... swapping with ${swapId} (${idx + 1}/${siftPath.length})`);
             }, animationSpeed * globalOffset);
 
-            // Execute the swap in simulation tree
-            globalOffset++;
+            // Interpolation frames for smooth node sliding
+            const INTERP_FRAMES = 15;
+            for (let frame = 1; frame <= INTERP_FRAMES; frame++) {
+                controller.scheduleStep(() => {
+                    const simPos = calculateHeapPositions(simTree);
+                    const { nodes: rfNodes, edges: rfEdges } = heapToReactFlow(simTree, [], [], simPos, 'heap-edge');
+
+                    const posA = simPos.get(currentSiftNodeId);
+                    const posB = simPos.get(swapId);
+
+                    if (posA && posB) {
+                        const t = frame / INTERP_FRAMES;
+                        const currAX = posA.x + (posB.x - posA.x) * t;
+                        const currAY = posA.y + (posB.y - posA.y) * t;
+                        const currBX = posB.x + (posA.x - posB.x) * t;
+                        const currBY = posB.y + (posA.y - posB.y) * t;
+
+                        const movingNodes = (rfNodes as RFNode[]).map(n => {
+                            if (n.id === currentSiftNodeId) {
+                                return {
+                                    ...n,
+                                    position: { x: currAX, y: currAY },
+                                    data: { ...n.data, isHighlighted: true, highlightColor: '#F7AD45' }
+                                };
+                            }
+                            if (n.id === swapId) {
+                                return {
+                                    ...n,
+                                    position: { x: currBX, y: currBY },
+                                    data: { ...n.data, isHighlighted: true, highlightColor: '#F7AD45' }
+                                };
+                            }
+                            return n;
+                        });
+
+                        setNodes(movingNodes);
+                        setEdges(rfEdges as RFEdge[]);
+                    }
+                }, animationSpeed * globalOffset + (animationSpeed / INTERP_FRAMES) * frame);
+            }
+            globalOffset++; // Advance time for interpolation
+
+            // Execute the physical swap in simulation tree
             controller.scheduleStep(() => {
                 let nodeA: HeapNode | null = null;
                 let nodeB: HeapNode | null = null;
@@ -255,11 +296,6 @@ export function useHeapRemoveHandler(params: {
                     nodeB.value = tmpV;
                     nodeB.id = tmpI;
                 }
-
-                const simPos = calculateHeapPositions(simTree);
-                const { nodes: sn, edges: se } = heapToReactFlow(simTree, [], [], simPos, 'heap-edge');
-                setNodes(sn as RFNode[]);
-                setEdges(se as RFEdge[]);
             }, animationSpeed * globalOffset);
         });
 
