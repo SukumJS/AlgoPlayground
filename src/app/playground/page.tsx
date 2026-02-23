@@ -103,6 +103,14 @@ const graphUndirectedInitialEdges: Edge[] = [
     { id: "eg-97-70", source: "g3", target: "g5", type: "floatingEdge", data: { directed: false }, style: { stroke: '#222121', strokeWidth: 1 } },
 ];
 
+// Initial edges for graph (undirected WITH weights) — used by Prim's/Kruskal's
+const graphUndirectedWeightedInitialEdges: Edge[] = [
+    { id: "eg-64-39", source: "g1", target: "g2", type: "floatingEdge", label: "4", data: { directed: false, weight: 4 }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-64-69", source: "g1", target: "g4", type: "floatingEdge", label: "1", data: { directed: false, weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-39-97", source: "g2", target: "g3", type: "floatingEdge", label: "3", data: { directed: false, weight: 3 }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-97-70", source: "g3", target: "g5", type: "floatingEdge", label: "1", data: { directed: false, weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 } },
+];
+
 const fitViewOptions: FitViewOptions = {
     padding: 0.2,
 };
@@ -123,6 +131,9 @@ function Playground() {
     // Determine if this graph algorithm uses directed (weighted) edges
     const isDirectedGraph = algorithmSlug === "dijkstra";
 
+    // Determine if this graph algorithm uses weighted edges
+    const isWeightedGraph = ["dijkstra", "prims", "kruskals"].includes(algorithmSlug);
+
     // Resolve algorithm runner (e.g. "dijkstra" → dijkstraRunner)
     const algorithmRunner = isGraph ? getAlgorithmRunner(algorithmSlug) : undefined;
 
@@ -134,7 +145,11 @@ function Playground() {
 
     const getInitialEdges = () => {
         if (isTree) return treeInitialEdges;
-        if (isGraph) return isDirectedGraph ? graphDirectedInitialEdges : graphUndirectedInitialEdges;
+        if (isGraph) {
+            if (isDirectedGraph) return graphDirectedInitialEdges;
+            if (isWeightedGraph) return graphUndirectedWeightedInitialEdges;
+            return graphUndirectedInitialEdges;
+        }
         return sortingInitialEdges;
     };
 
@@ -160,6 +175,13 @@ function Playground() {
         [animation],
     );
 
+    // Determine Data_graph mode based on algorithm
+    const graphDataMode: "search" | "mst-start" | "mst-auto" = (() => {
+        if (algorithmSlug === "prims") return "mst-start";
+        if (algorithmSlug === "kruskals") return "mst-auto";
+        return "search";
+    })();
+
     // Tutorial logic extracted to custom hook
     const tutorial = useTreeTutorial({
         nodes,
@@ -178,6 +200,7 @@ function Playground() {
         setEdges,
         isGraph,
         directed: isDirectedGraph,
+        weighted: isWeightedGraph,
     });
 
     // Node interaction (universal - works for all node types, only active when NOT in tutorial)
@@ -190,6 +213,7 @@ function Playground() {
         isGraph,
         isTutorialActive: tutorial.showTutorial || graphTutorial.showTutorial,
         directed: isDirectedGraph,
+        weighted: isWeightedGraph,
     });
 
     const onNodesChange: OnNodesChange = useCallback(
@@ -282,7 +306,7 @@ function Playground() {
                     />
                 );
             case 'graph':
-                return <Data_graph onSearch={handleGraphSearch} />;
+                return <Data_graph onSearch={handleGraphSearch} mode={graphDataMode} />;
             default:
                 return <Data_sort nodeInput={0} setNodeInput={function (value: React.SetStateAction<number>): void {
                     throw new Error("Function not implemented.");
@@ -374,6 +398,7 @@ function Playground() {
                     onWeightInputChange={graphTutorial.handleWeightInputChange}
                     onWeightConfirm={graphTutorial.handleWeightConfirm}
                     directed={graphTutorial.directed}
+                    weighted={graphTutorial.weighted}
                 />
             )}
 

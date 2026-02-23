@@ -11,8 +11,10 @@ interface UseNodeInteractionProps {
     isTree: boolean;
     isGraph: boolean;
     isTutorialActive: boolean;
-    /** true = directed/weighted graph (Dijkstra), false = undirected/unweighted (BFS/DFS). Defaults to true. */
+    /** true = directed graph (Dijkstra), false = undirected. Defaults to true. */
     directed?: boolean;
+    /** true = weighted edges (Dijkstra, Prim, Kruskal), false = unweighted (BFS/DFS). Defaults to directed. */
+    weighted?: boolean;
 }
 
 interface UseNodeInteractionReturn {
@@ -55,6 +57,7 @@ export function useNodeInteraction({
     isGraph,
     isTutorialActive,
     directed = true,
+    weighted = directed,
 }: UseNodeInteractionProps): UseNodeInteractionReturn {
     // Selection state (used for tree/graph linking)
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -154,6 +157,11 @@ export function useNodeInteraction({
                     setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
                     setWeightInputValue('');
                     setShowWeightModal(true);
+                } else if (weighted) {
+                    // Undirected + weighted: show weight modal before creating edge (no arrow)
+                    setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
+                    setWeightInputValue('');
+                    setShowWeightModal(true);
                 } else {
                     // Undirected mode: create edge immediately (no weight)
                     const newEdge: Edge = {
@@ -241,7 +249,7 @@ export function useNodeInteraction({
                 data: { ...n.data, isHighlighted: false, isGlowing: false },
             })));
         }
-    }, [isTutorialActive, isTree, isGraph, directed, selectedNodeId, nodes, edges, setNodes, setEdges, validateBSTLink, showTrashBin]);
+    }, [isTutorialActive, isTree, isGraph, directed, weighted, selectedNodeId, nodes, edges, setNodes, setEdges, validateBSTLink, showTrashBin]);
 
     /**
      * Handle node drag start - start 300ms timer to show trash
@@ -332,7 +340,7 @@ export function useNodeInteraction({
     const handleEdgeClick = useCallback((event: React.MouseEvent, edgeId: string) => {
         if (isTutorialActive) return;
         if (!isGraph) return;
-        if (!directed) return; // No weight editing for undirected graphs
+        if (!weighted) return; // No weight editing for unweighted graphs
 
         const edge = edges.find(e => e.id === edgeId);
         if (!edge) return;
@@ -346,7 +354,7 @@ export function useNodeInteraction({
             ...n,
             data: { ...n.data, isHighlighted: false, isGlowing: false },
         })));
-    }, [isTutorialActive, isGraph, directed, edges, setNodes]);
+    }, [isTutorialActive, isGraph, weighted, edges, setNodes]);
 
     /**
      * Weight modal handlers
@@ -370,18 +378,32 @@ export function useNodeInteraction({
                 };
             }));
         } else if (pendingEdge) {
-            // Creating new edge
-            const newEdge: Edge = {
-                id: `eg-${pendingEdge.sourceId}-${pendingEdge.targetId}-${Date.now()}`,
-                source: pendingEdge.sourceId,
-                target: pendingEdge.targetId,
-                type: 'floatingEdge',
-                label: String(weight),
-                data: { weight },
-                style: { stroke: '#222121', strokeWidth: 1 },
-                markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' },
-            };
-            setEdges(eds => [...eds, newEdge]);
+            if (directed) {
+                // Directed: create edge with arrow
+                const newEdge: Edge = {
+                    id: `eg-${pendingEdge.sourceId}-${pendingEdge.targetId}-${Date.now()}`,
+                    source: pendingEdge.sourceId,
+                    target: pendingEdge.targetId,
+                    type: 'floatingEdge',
+                    label: String(weight),
+                    data: { weight },
+                    style: { stroke: '#222121', strokeWidth: 1 },
+                    markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' },
+                };
+                setEdges(eds => [...eds, newEdge]);
+            } else {
+                // Undirected + weighted: edge WITHOUT arrow but WITH weight label
+                const newEdge: Edge = {
+                    id: `eg-${pendingEdge.sourceId}-${pendingEdge.targetId}-${Date.now()}`,
+                    source: pendingEdge.sourceId,
+                    target: pendingEdge.targetId,
+                    type: 'floatingEdge',
+                    label: String(weight),
+                    data: { directed: false, weight },
+                    style: { stroke: '#222121', strokeWidth: 1 },
+                };
+                setEdges(eds => [...eds, newEdge]);
+            }
         }
 
         // Reset modal state
@@ -389,7 +411,7 @@ export function useNodeInteraction({
         setWeightInputValue('');
         setPendingEdge(null);
         setEditingEdgeId(null);
-    }, [weightInputValue, editingEdgeId, pendingEdge, setEdges]);
+    }, [weightInputValue, editingEdgeId, pendingEdge, directed, setEdges]);
 
     const handleWeightModalClose = useCallback(() => {
         setShowWeightModal(false);

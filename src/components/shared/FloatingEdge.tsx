@@ -77,8 +77,53 @@ export default function FloatingEdge({
 
     const strokeColor = (style?.stroke as string) || '#222121';
 
-    // ── Undirected mode: simple line, no arrow, no label ──────────
+    // ── Undirected mode: simple line, no arrow ─────────────────────
     if (!isDirected) {
+        // If there's a weight label, split path around it (like directed but no arrow)
+        if (label) {
+            const dx = targetPoint.x - sourcePoint.x;
+            const dy = targetPoint.y - sourcePoint.y;
+            const angle = Math.atan2(dy, dx);
+            const midX = (sourcePoint.x + targetPoint.x) / 2;
+            const midY = (sourcePoint.y + targetPoint.y) / 2;
+            const labelGap = 16;
+            const halfGap = labelGap / 2;
+            const beforeLabelX = midX - Math.cos(angle) * halfGap;
+            const beforeLabelY = midY - Math.sin(angle) * halfGap;
+            const afterLabelX = midX + Math.cos(angle) * halfGap;
+            const afterLabelY = midY + Math.sin(angle) * halfGap;
+
+            const path1 = `M ${sourcePoint.x} ${sourcePoint.y} L ${beforeLabelX} ${beforeLabelY}`;
+            const path2 = `M ${afterLabelX} ${afterLabelY} L ${targetPoint.x} ${targetPoint.y}`;
+
+            return (
+                <>
+                    <path id={`${id}-path1`} className="react-flow__edge-path" d={path1} style={style} />
+                    <path id={`${id}-path2`} className="react-flow__edge-path" d={path2} style={style} />
+                    <EdgeLabelRenderer>
+                        <div
+                            style={{
+                                position: 'absolute',
+                                transform: `translate(-50%, -50%) translate(${midX}px, ${midY}px)`,
+                                pointerEvents: 'all',
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                color: '#222121',
+                                background: 'transparent',
+                                padding: '4px 8px',
+                                cursor: 'pointer',
+                                zIndex: 1000,
+                            }}
+                            className="nodrag nopan edge-weight-label"
+                        >
+                            {label}
+                        </div>
+                    </EdgeLabelRenderer>
+                </>
+            );
+        }
+
+        // No label: plain line (BFS/DFS)
         const path = `M ${sourcePoint.x} ${sourcePoint.y} L ${targetPoint.x} ${targetPoint.y}`;
         return (
             <path
