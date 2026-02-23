@@ -16,10 +16,10 @@ import {
 } from "@/src/components/visualizer/algorithmsTree/avlTree";
 import { type AnimationCallbacks } from "@/src/components/visualizer/animations/types";
 
-import { useAVLInsertHandler } from "@/src/hooks/AVLTree/useAVLInsertHandler";
-import { useAVLSearchHandler } from "@/src/hooks/AVLTree/useAVLSearchHandler";
-import { useAVLRemoveHandler } from "@/src/hooks/AVLTree/useAVLRemoveHandler";
-import { useAVLRebalanceHandler } from "@/src/hooks/AVLTree/useAVLRebalanceHandler";
+import { useAVLInsertHandler } from "@/src/hooks/avlTree/useAVLInsertHandler";
+import { useAVLSearchHandler } from "@/src/hooks/avlTree/useAVLSearchHandler";
+import { useAVLRemoveHandler } from "@/src/hooks/avlTree/useAVLRemoveHandler";
+import { useAVLRebalanceHandler } from "@/src/hooks/avlTree/useAVLRebalanceHandler";
 
 // BST
 import { useBSTInsertHandler } from "@/src/hooks/BST/useBSTInsertHandler";
@@ -301,7 +301,7 @@ function Data_tree({
         if (tutorialMode || isAnimating) return;
         const v = removeValue ? parseInt(removeValue) : NaN;
         if (isNaN(v)) return;
-        if (algorithm === 'avl-tree') handleAVLRemove(v);
+        if (isAVL) handleAVLRemove(v);
         else if (isBST) bstRemove(v);
         else if (isBT) btRemove(v);
         else if (isHeap) heapRemove(v);
