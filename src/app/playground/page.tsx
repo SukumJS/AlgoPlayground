@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, Suspense, DragEvent } from "react";
+import React, { useState, useCallback, Suspense, DragEvent, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import ControlPanel from "../../components/shared/controlPanel";
 import SideTab from "../../components/shared/sideTab";
@@ -39,10 +39,14 @@ import CustomNode from "@/src/components/shared/customNode";
 import TreeEdge from "@/src/components/shared/treeEdge";
 import FloatingEdge from "@/src/components/shared/FloatingEdge";
 import '@xyflow/react/dist/base.css';
+import { insertBST, type BSTNode } from "@/src/components/visualizer/algorithmsTree/bstTree";
+import { insertBT, type BTNode } from "@/src/components/visualizer/algorithmsTree/binaryTree";
+import { insertHeap, type HeapNode } from "@/src/components/visualizer/algorithmsTree/heapTree";
+import { insertAVL, type AVLTreeNode } from "@/src/components/visualizer/algorithmsTree/avlTree";
 import Reading_modal from "@/src/components/shared/reading_modal";
 import { Info } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
-import GoToHome_Portal from "@/src/components/shared/goToHome_Portal"; 
+import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 
 const nodeTypes = {
     custom: CustomNode,
@@ -71,11 +75,11 @@ const treeInitialEdges: Edge[] = [
 ];
 
 const initialNodes: Node[] = [
-    { id: "1", type: "custom", data: { label : "1" }, position: { x: -50, y: 5 }},
-    { id: "2", type: "custom", data: { label: "2" }, position: { x: 15, y: 5}},
-    { id: "3", type: "custom", data: { label: "3" }, position: { x: 80, y: 5}},
-    { id: "4", type: "custom", data: { label: "4" }, position: { x: 145, y: 5}},
-    { id: "5", type: "custom", data: { label: "5" }, position: { x: 210, y: 5}},
+    { id: "1", type: "custom", data: { label: "1" }, position: { x: -50, y: 5 } },
+    { id: "2", type: "custom", data: { label: "2" }, position: { x: 15, y: 5 } },
+    { id: "3", type: "custom", data: { label: "3" }, position: { x: 80, y: 5 } },
+    { id: "4", type: "custom", data: { label: "4" }, position: { x: 145, y: 5 } },
+    { id: "5", type: "custom", data: { label: "5" }, position: { x: 210, y: 5 } },
 ];
 
 const initialEdges: Edge[] = [{ id: "e1-2", source: "1", target: "2" }];
@@ -97,6 +101,75 @@ const graphInitialEdges: Edge[] = [
     { id: "eg-97-70", source: "g3", target: "g5", type: "floatingEdge", label: "1", data: { weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
 ];
 
+// ── Build initial BST from treeInitialNodes ───────────────────────────────────
+const buildTreeInitialBSTRoot = (): BSTNode => {
+    // t1=64 (root), t2=30, t3=70, t4=80, t5=90
+    const insertOrder: Array<{ id: string; value: number }> = [
+        { id: "t1", value: 64 },
+        { id: "t2", value: 30 },
+        { id: "t3", value: 70 },
+        { id: "t4", value: 80 },
+    ];
+    let root: BSTNode | null = null;
+    for (const { id, value } of insertOrder) {
+        root = insertBST(root, value, id);
+    }
+    return root!;
+};
+
+// ── Build initial BT root (สำหรับ bt-inorder, bt-preorder, bt-postorder) ────
+const buildTreeInitialBTRoot = (): BTNode => {
+    const insertOrder: Array<{ id: string; value: number }> = [
+        { id: "t1", value: 64 },
+        { id: "t2", value: 30 },
+        { id: "t3", value: 70 },
+        { id: "t4", value: 80 },
+    ];
+    let root: BTNode | null = null;
+    for (const { id, value } of insertOrder) {
+        root = insertBT(root, value, id);
+    }
+    return root!;
+};
+
+// ── Build initial AVL root ────────────────────────────────────────────────────
+const buildTreeInitialAVLRoot = (): AVLTreeNode => {
+    const insertOrder: Array<{ id: string; value: number }> = [
+        { id: "t1", value: 64 },
+        { id: "t2", value: 30 },
+        { id: "t3", value: 70 },
+        { id: "t4", value: 80 },
+    ];
+    let root: AVLTreeNode | null = null;
+    for (const { id, value } of insertOrder) {
+        root = insertAVL(root, value, id);
+    }
+    return root!;
+};
+
+const treeInitialBTRoot = buildTreeInitialBTRoot();
+const treeInitialBSTRoot = buildTreeInitialBSTRoot();
+const treeInitialAVLRoot = buildTreeInitialAVLRoot();
+
+// ── Build initial Heap root (for min-heap / max-heap) ─────────────────────────
+const buildTreeInitialHeapRoot = (isMinHeap: boolean): HeapNode => {
+    const insertOrder: Array<{ id: string; value: number }> = [
+        { id: "t1", value: 64 },
+        { id: "t2", value: 30 },
+        { id: "t3", value: 70 },
+        { id: "t4", value: 80 },
+    ];
+    let root: HeapNode | null = null;
+    for (const { id, value } of insertOrder) {
+        const result = insertHeap(root, value, id, isMinHeap);
+        root = result.root;
+    }
+    return root!;
+};
+
+const treeInitialMinHeapRoot = buildTreeInitialHeapRoot(true);
+const treeInitialMaxHeapRoot = buildTreeInitialHeapRoot(false);
+
 const fitViewOptions: FitViewOptions = {
     padding: 0.2,
 };
@@ -108,6 +181,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 function Playground() {
     const searchParams = useSearchParams();
     const algoType = searchParams.get("type");
+    const algorithm = searchParams.get("algorithm") || "";
 
     // Set initial nodes and edges based on algorithm type
     const isTree = algoType === "tree";
@@ -128,6 +202,10 @@ function Playground() {
     const [nodes, setNodes] = useState<Node[]>(getInitialNodes());
     const [edges, setEdges] = useState<Edge[]>(getInitialEdges());
     const { flowToScreenPosition } = useReactFlow();
+    const rebalanceRef = useRef<(() => void) | null>(null);
+    const btRebalanceRef = useRef<(() => void) | null>(null);
+    const heapRebalanceRef = useRef<(() => void) | null>(null);
+    const trashDeleteRef = useRef<((nodeId: string, value: number) => void) | null>(null);
 
     // Tutorial logic extracted to custom hook
     const tutorial = useTreeTutorial({
@@ -170,15 +248,44 @@ function Playground() {
         [setEdges],
     );
 
+    const autoInsertRef = useRef<((value: number) => void) | null>(null);
+
     const onConnect: OnConnect = useCallback(
         (connection) => {
+            // Intercept connections for algorithms to validate
+            const isStrictBST = ['binary-search-tree', 'avl-tree'].includes(algorithm);
+            const isGenericBT = ['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm);
+
+            if (isGenericBT && connection.source && connection.target) {
+                // Check how many children the parent already has
+                const parentEdges = edges.filter(e => e.source === connection.source);
+                if (parentEdges.length >= 2) {
+                    console.warn("Parent already has 2 children. Auto-correcting placement...");
+
+                    // Reject the edge! Find the target node value
+                    const targetNode = nodes.find(n => n.id === connection.target);
+                    const val = targetNode ? Number(targetNode.data.label) : NaN;
+
+                    if (!isNaN(val)) {
+                        // Delete the manually placed floating node since the connection is invalid
+                        setNodes(nds => nds.filter(n => n.id !== connection.target));
+
+                        // Auto-correct by properly inserting the value (which will find the next level-order gap)
+                        if (autoInsertRef.current) {
+                            setTimeout(() => autoInsertRef.current?.(val), 100);
+                        }
+                    }
+                    return; // abort connection
+                }
+            }
+
             setEdges((eds) => addEdge(connection, eds));
             // If in tutorial step 3 (connect), advance to next step
             if (tutorial.showTutorial && tutorial.tutorialStep === 2) {
                 tutorial.setTutorialStep(3);
             }
         },
-        [setEdges, tutorial],
+        [setEdges, setNodes, edges, nodes, algorithm, tutorial],
     );
 
     const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
@@ -239,8 +346,15 @@ function Playground() {
         }
     }, [tutorial.showTutorial, graphTutorial.showTutorial, nodeInteraction]);
 
-    {/*Check Type & Display Data Input of Current Algorithms */}
+    {/*Check Type & Display Data Input of Current Algorithms */ }
     const renderDataVisualizer = () => {
+        const treeNodes = nodes
+            .filter(node => node.type === "custom" && typeof node.data === 'object' && 'label' in node.data)
+            .map(node => ({
+                id: node.id,
+                data: { label: (node.data as Record<string, unknown>).label as string }
+            }));
+
         switch (algoType) {
             case "tree":
                 return (
@@ -248,18 +362,35 @@ function Playground() {
                         tutorialMode={tutorial.showTutorial}
                         tutorialStep={tutorial.tutorialStep}
                         onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
+                        currentNodes={treeNodes}
+                        currentEdges={edges}
+                        algorithm={algorithm}
+                        onRebalanceReady={(fn) => { rebalanceRef.current = fn; }}
+                        onBTRebalanceReady={(fn) => { btRebalanceRef.current = fn; }}
+                        onHeapRebalanceReady={(fn) => { heapRebalanceRef.current = fn; }}
+                        initialBSTRoot={["binary-search-tree", "avl-tree"].includes(algorithm) ? treeInitialBSTRoot : null}
+                        initialBTRoot={['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm) ? treeInitialBTRoot : null}
+                        initialHeapRoot={algorithm === 'min-heap' ? treeInitialMinHeapRoot : algorithm === 'max-heap' ? treeInitialMaxHeapRoot : null}
+                        initialAVLRoot={algorithm === 'avl-tree' ? treeInitialAVLRoot : null}
+                        onTrashDeleteReady={(fn) => { trashDeleteRef.current = fn; }}
+                        onAutoInsertReady={(fn) => { autoInsertRef.current = fn; }}
                     />
                 );
             case 'graph':
                 return <Data_graph />;
             default:
-                return <Data_sort nodeInput={0} setNodeInput={function (): void {
-                    throw new Error("Function not implemented.");
-                }} />;
+                return (
+                    <Data_sort
+                        nodeInput={0}
+                        setNodeInput={function (): void {
+                            throw new Error("Function not implemented.");
+                        }}
+                    />
+                );
         }
     };
 
-    {/*Check Type & Display Title of Current Algorithms */}
+    {/*Check Type & Display Title of Current Algorithms */ }
     const getTitle = () => {
         switch (algoType) {
             case "tree":
@@ -306,36 +437,37 @@ function Playground() {
             </div>
 
             <SideTab title={getTitle()}>
-            <div>
+                <div>
                     <CodeAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
                     <ExplainAlgo tutorialMode={tutorial.showTutorial || graphTutorial.showTutorial} />
                     {renderDataVisualizer()}
-            </div>
-            <div>
-                <PostTest_portal />
-            </div>
+                </div>
+                <div>
+                    <PostTest_portal />
+                </div>
             </SideTab>
 
-        {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
-        <div className="absolute top-4 left-8 z-10 flex gap-2">
-            <GoToHome_Portal/>
-            <button
-            onClick={(e) => {
-                e.stopPropagation();
-                setShowInfo(true)}}
-            className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer">
-                <Info color='#000000' />
-            </button>
-            <StatusNode />  
-        </div>
+            {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
+            <div className="absolute top-4 left-8 z-10 flex gap-2">
+                <GoToHome_Portal />
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowInfo(true)
+                    }}
+                    className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer">
+                    <Info color='#000000' />
+                </button>
+                <StatusNode />
+            </div>
 
-        {/* Info Reading inside Playground */}
-        <Reading_modal 
-        isOpen={showInfo} 
-        onClose={() => setShowInfo(false)} />
+            {/* Info Reading inside Playground */}
+            <Reading_modal
+                isOpen={showInfo}
+                onClose={() => setShowInfo(false)} />
 
-        
-        {/* STutorial Complelte Modal Show When User Finish Tutorial */}
+
+            {/* STutorial Complelte Modal Show When User Finish Tutorial */}
             {/* Tutorial overlay for tree */}
             {tutorial.showTutorial && isTree && (
                 <TutorialTree
@@ -424,6 +556,15 @@ function Playground() {
                         title: "Tutorial Complete!",
                         description: "You are now ready to explore Binary Search Tree."
                     }]}
+                    onLetsPlay={
+                        algorithm === "avl-tree"
+                            ? () => rebalanceRef.current?.()
+                            : ['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm)
+                                ? () => btRebalanceRef.current?.()
+                                : ['min-heap', 'max-heap'].includes(algorithm)
+                                    ? () => heapRebalanceRef.current?.()
+                                    : undefined
+                    }
                 />
             )}
 
@@ -438,7 +579,7 @@ function Playground() {
                     }]}
                 />
             )}
-            
+
         </div>
     );
 }
