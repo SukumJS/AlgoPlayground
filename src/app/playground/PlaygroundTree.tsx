@@ -46,6 +46,7 @@ const edgeTypes = { tree: TreeEdge, floatingEdge: FloatingEdge };
 const fitViewOptions: FitViewOptions = { padding: 0.2 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: false };
 
+// Initial nodes for tree (BST layout with circle variant)
 const treeInitialNodes: Node[] = [
     { id: "t1", type: "custom", data: { label: "64", variant: "circle" }, position: { x: 200, y: 50 } },
     { id: "t2", type: "custom", data: { label: "30", variant: "circle" }, position: { x: 100, y: 150 } },
@@ -54,6 +55,7 @@ const treeInitialNodes: Node[] = [
     { id: "t5", type: "custom", data: { label: "90", variant: "circle" }, position: { x: 450, y: 350 } },
 ];
 
+// Initial edges for tree (BST structure) - straight lines at 45° angles
 const treeInitialEdges: Edge[] = [
     { id: "e-t1-t2", source: "t1", sourceHandle: "source-bottom-left", target: "t2", targetHandle: "target-top-right", type: "straight" },
     { id: "e-t1-t3", source: "t1", sourceHandle: "source-bottom-right", target: "t3", targetHandle: "target-top-left", type: "straight" },
@@ -61,13 +63,16 @@ const treeInitialEdges: Edge[] = [
     { id: "e-t4-t5", source: "t4", sourceHandle: "source-bottom-right", target: "t5", targetHandle: "target-top-left", type: "straight" },
 ];
 
+// ── Build initial BST from treeInitialNodes ───────────────────────────────────
 const buildTreeInitialBSTRoot = (): BSTNode => {
+    // t1=64 (root), t2=30, t3=70, t4=80, t5=90
     const insertOrder = [{ id: "t1", value: 64 }, { id: "t2", value: 30 }, { id: "t3", value: 70 }, { id: "t4", value: 80 }];
     let root: BSTNode | null = null;
     for (const { id, value } of insertOrder) root = insertBST(root, value, id);
     return root!;
 };
 
+// ── Build initial BT root (สำหรับ bt-inorder, bt-preorder, bt-postorder) ────
 const buildTreeInitialBTRoot = (): BTNode => {
     const insertOrder = [{ id: "t1", value: 64 }, { id: "t2", value: 30 }, { id: "t3", value: 70 }, { id: "t4", value: 80 }];
     let root: BTNode | null = null;
@@ -75,6 +80,7 @@ const buildTreeInitialBTRoot = (): BTNode => {
     return root!;
 };
 
+// ── Build initial AVL root ────────────────────────────────────────────────────
 const buildTreeInitialAVLRoot = (): AVLTreeNode => {
     const insertOrder = [{ id: "t1", value: 64 }, { id: "t2", value: 30 }, { id: "t3", value: 70 }, { id: "t4", value: 80 }];
     let root: AVLTreeNode | null = null;
@@ -82,6 +88,7 @@ const buildTreeInitialAVLRoot = (): AVLTreeNode => {
     return root!;
 };
 
+// ── Build initial Heap root (for min-heap / max-heap) ─────────────────────────
 const buildTreeInitialHeapRoot = (isMinHeap: boolean): HeapNode => {
     const insertOrder = [{ id: "t1", value: 64 }, { id: "t2", value: 30 }, { id: "t3", value: 70 }, { id: "t4", value: 80 }];
     let root: HeapNode | null = null;
@@ -111,10 +118,12 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
     const trashDeleteRef = useRef<((nodeId: string, value: number) => void) | null>(null);
     const autoInsertRef = useRef<((value: number) => void) | null>(null);
 
+    // Tutorial logic extracted to custom hook
     const tutorial = useTreeTutorial({
         nodes, flowToScreenPosition, setNodes, setEdges, isTree: true,
     });
 
+    // Node interaction (universal - works for all node types, only active when NOT in tutorial)
     const nodeInteraction = useNodeInteraction({
         nodes, edges, setNodes, setEdges, isTree: true, isGraph: false,
         isTutorialActive: tutorial.showTutorial,
@@ -131,26 +140,34 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
     );
 
     const onConnect: OnConnect = useCallback((connection) => {
+        // Intercept connections for algorithms to validate
         const isGenericBT = ['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm);
 
         if (isGenericBT && connection.source && connection.target) {
+            // Check how many children the parent already has
             const parentEdges = edges.filter(e => e.source === connection.source);
             if (parentEdges.length >= 2) {
                 console.warn("Parent already has 2 children. Auto-correcting placement...");
+
+                // Reject the edge! Find the target node value
                 const targetNode = nodes.find(n => n.id === connection.target);
                 const val = targetNode ? Number(targetNode.data.label) : NaN;
 
                 if (!isNaN(val)) {
+                    // Delete the manually placed floating node since the connection is invalid
                     setNodes(nds => nds.filter(n => n.id !== connection.target));
+                    
+                    // Auto-correct by properly inserting the value (which will find the next level-order gap)
                     if (autoInsertRef.current) {
                         setTimeout(() => autoInsertRef.current?.(val), 100);
                     }
                 }
-                return;
+                return; // abort connection
             }
         }
 
         setEdges((eds) => addEdge(connection, eds));
+        // If in tutorial step 3 (connect), advance to next step
         if (tutorial.showTutorial && tutorial.tutorialStep === 2) {
             tutorial.setTutorialStep(3);
         }
@@ -161,10 +178,12 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
+    // Edge click handler
     const handleEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
         nodeInteraction.handleEdgeClick(event, edge.id);
     }, [nodeInteraction]);
 
+    // Combined node click handler
     const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
         if (tutorial.showTutorial) {
             tutorial.handleNodeClick(event, node);
@@ -173,6 +192,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         }
     }, [tutorial, nodeInteraction]);
 
+    // Combined node drag handlers
     const handleNodeDragStart = useCallback((event: React.MouseEvent, node: Node) => {
         if (tutorial.showTutorial) return;
         nodeInteraction.handleNodeDragStart(event, node);
@@ -194,6 +214,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         }
     }, [tutorial, nodeInteraction]);
 
+    // Pane click to clear selection (universal)
     const handlePaneClick = useCallback(() => {
         if (!tutorial.showTutorial) {
             nodeInteraction.handlePaneClick();
@@ -245,6 +266,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                 <div>
                     <CodeAlgo tutorialMode={tutorial.showTutorial} />
                     <ExplainAlgo tutorialMode={tutorial.showTutorial} />
+                    {/* Display Data Input for Tree Algorithms */}
                     <Data_tree
                         tutorialMode={tutorial.showTutorial}
                         tutorialStep={tutorial.tutorialStep}
@@ -266,6 +288,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                 <div><PostTest_portal /></div>
             </SideTab>
 
+            {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
             <div className="absolute top-4 left-8 z-10 flex gap-2">
                 <GoToHome_Portal />
                 <button
@@ -276,8 +299,10 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                 <StatusNode />
             </div>
 
+            {/* Info Reading inside Playground */}
             <Reading_modal isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
+            {/* Tutorial overlay for tree */}
             {tutorial.showTutorial && (
                 <TutorialTree
                     onComplete={tutorial.handleTutorialComplete}
@@ -292,6 +317,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                 />
             )}
 
+            {/* Universal trash bin (non-tutorial mode) */}
             {!tutorial.showTutorial && (
                 <TreeTrashBin
                     show={nodeInteraction.showTrashBin}
@@ -300,6 +326,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                 />
             )}
 
+            {/* Completion modal for tree */}
             {tutorial.showCompletionModal && (
                 <Tutorial_modal
                     showModal={tutorial.showCompletionModal}

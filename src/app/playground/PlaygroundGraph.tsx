@@ -42,6 +42,7 @@ const edgeTypes = { tree: TreeEdge, floatingEdge: FloatingEdge };
 const fitViewOptions: FitViewOptions = { padding: 0.2 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: false };
 
+// Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
 const graphInitialNodes: Node[] = [
     { id: "g1", type: "custom", data: { label: "64", variant: "circle" }, position: { x: 50, y: 280 } },
     { id: "g2", type: "custom", data: { label: "39", variant: "circle" }, position: { x: 260, y: 120 } },
@@ -50,6 +51,7 @@ const graphInitialNodes: Node[] = [
     { id: "g5", type: "custom", data: { label: "70", variant: "circle" }, position: { x: 620, y: 320 } },
 ];
 
+// Initial edges for graph (directed with weights) - 69→39 is created during tutorial
 const graphInitialEdges: Edge[] = [
     { id: "eg-64-39", source: "g1", target: "g2", type: "floatingEdge", label: "4", data: { weight: 4 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
     { id: "eg-64-69", source: "g1", target: "g4", type: "floatingEdge", label: "1", data: { weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
@@ -58,21 +60,26 @@ const graphInitialEdges: Edge[] = [
 ];
 
 export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
+    // ── State Management ───────────────────────────────────────────────────────
     const [nodes, setNodes] = useState<Node[]>(graphInitialNodes);
     const [edges, setEdges] = useState<Edge[]>(graphInitialEdges);
     const [showInfo, setShowInfo] = useState(false);
-    
+
     const { flowToScreenPosition } = useReactFlow();
 
+    // ── Custom Hooks ───────────────────────────────────────────────────────────
+    // Graph Tutorial hook
     const graphTutorial = useGraphTutorial({
         nodes, edges, flowToScreenPosition, setNodes, setEdges, isGraph: true,
     });
 
+    // Node interaction (universal - works for graph interactions, active when NOT in tutorial)
     const nodeInteraction = useNodeInteraction({
         nodes, edges, setNodes, setEdges, isTree: false, isGraph: true,
         isTutorialActive: graphTutorial.showTutorial,
     });
 
+    // ── React Flow Event Handlers ──────────────────────────────────────────────
     const onNodesChange: OnNodesChange = useCallback(
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
         [setNodes]
@@ -92,6 +99,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
+    // ── Custom Interaction Handlers ────────────────────────────────────────────
+    // Edge click handler (for weight editing)
     const handleEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
         if (graphTutorial.showTutorial) {
             graphTutorial.handleWeightClick(edge.id);
@@ -100,6 +109,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         }
     }, [graphTutorial, nodeInteraction]);
 
+    // Combined node click handler
     const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
         if (graphTutorial.showTutorial) {
             graphTutorial.handleNodeClick(event, node);
@@ -108,6 +118,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         }
     }, [graphTutorial, nodeInteraction]);
 
+    // Combined node drag handlers
     const handleNodeDragStart = useCallback((event: React.MouseEvent, node: Node) => {
         if (graphTutorial.showTutorial) return;
         nodeInteraction.handleNodeDragStart(event, node);
@@ -129,6 +140,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         }
     }, [graphTutorial, nodeInteraction]);
 
+    // Pane click to clear selection (universal)
     const handlePaneClick = useCallback(() => {
         if (!graphTutorial.showTutorial) {
             nodeInteraction.handlePaneClick();
@@ -178,6 +190,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                 <div><PostTest_portal /></div>
             </SideTab>
 
+            {/* Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
             <div className="absolute top-4 left-8 z-10 flex gap-2">
                 <GoToHome_Portal />
                 <button
@@ -188,8 +201,10 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                 <StatusNode />
             </div>
 
+            {/* Info Reading inside Playground */}
             <Reading_modal isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
+            {/* Tutorial overlay for graph */}
             {graphTutorial.showTutorial && (
                 <TutorialGraph
                     onComplete={graphTutorial.handleTutorialComplete}
@@ -207,6 +222,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                 />
             )}
 
+            {/* Universal trash bin (non-tutorial mode) */}
             {!graphTutorial.showTutorial && (
                 <TreeTrashBin
                     show={nodeInteraction.showTrashBin}
@@ -215,6 +231,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                 />
             )}
 
+            {/* Edge Weight Edit Modal (non-tutorial mode, graph) */}
             {nodeInteraction.showWeightModal && (
                 <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/30">
                     <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200 min-w-70">
@@ -251,6 +268,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                 </div>
             )}
 
+            {/* Completion modal for graph tutorial */}
             {graphTutorial.showCompletionModal && (
                 <Tutorial_modal
                     showModal={graphTutorial.showCompletionModal}
