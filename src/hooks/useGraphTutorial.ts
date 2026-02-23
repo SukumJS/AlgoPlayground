@@ -15,8 +15,10 @@ interface UseGraphTutorialProps {
     setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
     setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
     isGraph: boolean;
-    /** true = directed/weighted (Dijkstra), false = undirected/unweighted (BFS/DFS) */
+    /** true = directed (Dijkstra), false = undirected */
     directed?: boolean;
+    /** true = weighted edges (Dijkstra, Prim, Kruskal), false = unweighted (BFS/DFS) */
+    weighted?: boolean;
 }
 
 /**
@@ -34,13 +36,22 @@ interface UseGraphTutorialProps {
  * 8: Hold and drag to trash bin
  * 9: Tutorial Completed!
  * 
- * UNDIRECTED mode (BFS/DFS) – 6 Steps:
+ * UNDIRECTED UNWEIGHTED mode (BFS/DFS) – 6 Steps:
  * 0: Tap node 69 to start (highlight)
  * 1: Tap node 70 to create link (undirected, no weight)
  * 2: Link Created! confirmation
  * 3: Click node 70 (highlight for delete)
  * 4: Hold and drag to trash bin
  * 5: Tutorial Completed!
+ * 
+ * UNDIRECTED WEIGHTED mode (Prim/Kruskal) – 7 Steps:
+ * 0: Tap node 69 to start (highlight)
+ * 1: Tap node 70 → open weight input
+ * 2: Type weight '2' for the new edge
+ * 3: Value Set! confirmation
+ * 4: Click node 70 (highlight for delete)
+ * 5: Hold and drag to trash bin
+ * 6: Tutorial Completed!
  */
 export function useGraphTutorial({
     nodes,
@@ -50,6 +61,7 @@ export function useGraphTutorial({
     setEdges,
     isGraph,
     directed = true,
+    weighted = directed,
 }: UseGraphTutorialProps) {
     // Tutorial state
     const [showTutorial, setShowTutorial] = useState(false);
@@ -243,6 +255,21 @@ export function useGraphTutorial({
                     setShowWeightInput(true);
                     setWeightInputValue('');
                     setTutorialStep(2);
+                } else if (weighted) {
+                    // Undirected + weighted mode: store pending edge → open weight input
+                    setPendingEdge({ source: selectedNodeId, target: node.id });
+                    setNodes(nds => nds.map(n => ({
+                        ...n,
+                        data: {
+                            ...n.data,
+                            isHighlighted: false,
+                            isGlowing: false,
+                        },
+                    })));
+                    setSelectedNodeId(null);
+                    setShowWeightInput(true);
+                    setWeightInputValue('');
+                    setTutorialStep(2);
                 } else {
                     // Undirected mode: create edge immediately (no weight)
                     const newEdge: Edge = {
@@ -284,7 +311,20 @@ export function useGraphTutorial({
                 })));
                 setTutorialStep(8);
             }
-        } else if (!directed && tutorialStep === 3) {
+        } else if (!directed && weighted && tutorialStep === 4) {
+            // Undirected+weighted step 4: Click node 70 (highlight for delete)
+            if (nodeLabel === '70') {
+                setNodes(nds => nds.map(n => ({
+                    ...n,
+                    data: {
+                        ...n.data,
+                        isHighlighted: n.id === node.id,
+                        isGlowing: n.id === node.id,
+                    },
+                })));
+                setTutorialStep(5);
+            }
+        } else if (!directed && !weighted && tutorialStep === 3) {
             // Undirected step 3: Click node 70 (highlight for delete)
             if (nodeLabel === '70') {
                 setNodes(nds => nds.map(n => ({
@@ -298,7 +338,7 @@ export function useGraphTutorial({
                 setTutorialStep(4);
             }
         }
-    }, [showTutorial, tutorialStep, selectedNodeId, directed, setNodes, setEdges]);
+    }, [showTutorial, tutorialStep, selectedNodeId, directed, weighted, setNodes, setEdges]);
 
     // Handle weight click for editing (Step 4)
     const handleWeightClick = useCallback((edgeId: string) => {
@@ -328,28 +368,51 @@ export function useGraphTutorial({
     // Handle weight confirmation
     const handleWeightConfirm = useCallback(() => {
         if (tutorialStep === 2 && pendingEdge) {
-            // Create new edge 69→70 with weight
             const weight = parseInt(weightInputValue) || 2;
-            const newEdge: Edge = {
-                id: `e-${pendingEdge.source}-${pendingEdge.target}`,
-                source: pendingEdge.source,
-                target: pendingEdge.target,
-                type: 'floatingEdge',
-                label: String(weight),
-                data: { weight },
-                style: { stroke: '#222121', strokeWidth: 1 },
-                markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' },
-            };
-            setEdges(eds => [...eds, newEdge]);
-            setPendingEdge(null);
-            setShowWeightInput(false);
-            setWeightInputValue('');
-            setTutorialStep(3);
+            if (directed) {
+                // Directed: create edge with arrow
+                const newEdge: Edge = {
+                    id: `e-${pendingEdge.source}-${pendingEdge.target}`,
+                    source: pendingEdge.source,
+                    target: pendingEdge.target,
+                    type: 'floatingEdge',
+                    label: String(weight),
+                    data: { weight },
+                    style: { stroke: '#222121', strokeWidth: 1 },
+                    markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' },
+                };
+                setEdges(eds => [...eds, newEdge]);
+                setPendingEdge(null);
+                setShowWeightInput(false);
+                setWeightInputValue('');
+                setTutorialStep(3);
 
-            // Auto-advance to step 4 after short delay
-            setTimeout(() => {
-                setTutorialStep(4);
-            }, 1500);
+                // Auto-advance to step 4 after short delay
+                setTimeout(() => {
+                    setTutorialStep(4);
+                }, 1500);
+            } else {
+                // Undirected + weighted: create edge WITHOUT arrow but WITH weight
+                const newEdge: Edge = {
+                    id: `e-${pendingEdge.source}-${pendingEdge.target}`,
+                    source: pendingEdge.source,
+                    target: pendingEdge.target,
+                    type: 'floatingEdge',
+                    label: String(weight),
+                    data: { directed: false, weight },
+                    style: { stroke: '#222121', strokeWidth: 1 },
+                };
+                setEdges(eds => [...eds, newEdge]);
+                setPendingEdge(null);
+                setShowWeightInput(false);
+                setWeightInputValue('');
+                setTutorialStep(3);
+
+                // Auto-advance to step 4 (delete highlight) after short delay
+                setTimeout(() => {
+                    setTutorialStep(4);
+                }, 1500);
+            }
         } else if (tutorialStep === 5 && editingEdgeId) {
             // Edit existing edge weight (64→39) - update BOTH label and data.weight
             const weight = parseInt(weightInputValue) || 5;
@@ -370,9 +433,10 @@ export function useGraphTutorial({
         }
     }, [tutorialStep, pendingEdge, editingEdgeId, weightInputValue, setEdges]);
 
-    // Handle node drag for trash bin glow effect (directed step 8 / undirected step 4)
-    const dragDeleteStep = directed ? 8 : 4;
-    const completedStep = directed ? 9 : 5;
+    // Handle node drag for trash bin glow effect
+    // directed: step 8, undirected+weighted: step 5, undirected+unweighted: step 4
+    const dragDeleteStep = directed ? 8 : (weighted ? 5 : 4);
+    const completedStep = directed ? 9 : (weighted ? 6 : 5);
 
     const onNodeDrag = useCallback((event: React.MouseEvent, node: Node) => {
         if (showTutorial && tutorialStep === dragDeleteStep) {
@@ -431,6 +495,7 @@ export function useGraphTutorial({
         weightInputValue,
         pendingEdge,
         directed,
+        weighted,
 
         // The tutorial step that requires dragging (for nodesDraggable check)
         dragDeleteStep,

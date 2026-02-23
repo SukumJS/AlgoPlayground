@@ -27,6 +27,17 @@ const UNDIRECTED_TUTORIAL_STEPS = [
     { id: 5, instruction: 'Tutorial Completed!', action: 'complete' },
 ];
 
+// Graph Tutorial Steps configuration — UNDIRECTED WEIGHTED mode (Prim/Kruskal)
+const UNDIRECTED_WEIGHTED_TUTORIAL_STEPS = [
+    { id: 0, instruction: 'Tap a node to start.', action: 'tap' },
+    { id: 1, instruction: 'Now, tap another node to create a link.', action: 'tap' },
+    { id: 2, instruction: "Type '2' to set the weight.", action: 'input' },
+    { id: 3, instruction: 'Value Set!', action: 'confirm' },
+    { id: 4, instruction: 'Tap to hold node 70.', action: 'tap' },
+    { id: 5, instruction: 'Drag it to the trash bin icon.', action: 'drag' },
+    { id: 6, instruction: 'Tutorial Completed!', action: 'complete' },
+];
+
 // Keep backward-compatible export
 const GRAPH_TUTORIAL_STEPS = DIRECTED_TUTORIAL_STEPS;
 
@@ -99,6 +110,8 @@ interface TutorialGraphProps {
     onWeightConfirm?: () => void;
     // Directed mode (default true for backward compat)
     directed?: boolean;
+    // Weighted mode (for undirected + weighted tutorials)
+    weighted?: boolean;
 }
 
 export default function TutorialGraph({
@@ -117,15 +130,20 @@ export default function TutorialGraph({
     onWeightInputChange,
     onWeightConfirm,
     directed = true,
+    weighted = directed,
 }: TutorialGraphProps) {
-    const steps = directed ? DIRECTED_TUTORIAL_STEPS : UNDIRECTED_TUTORIAL_STEPS;
+    const steps = directed
+        ? DIRECTED_TUTORIAL_STEPS
+        : weighted
+            ? UNDIRECTED_WEIGHTED_TUTORIAL_STEPS
+            : UNDIRECTED_TUTORIAL_STEPS;
     const stepData = steps[currentStep];
     if (!stepData) return null;
 
     // Step numbers that involve specific actions differ by mode
-    const deleteHighlightStep = directed ? 7 : 3;
-    const dragStep = directed ? 8 : 4;
-    const completeStep = directed ? 9 : 5;
+    const deleteHighlightStep = directed ? 7 : (weighted ? 4 : 3);
+    const dragStep = directed ? 8 : (weighted ? 5 : 4);
+    const completeStep = directed ? 9 : (weighted ? 6 : 5);
 
     return (
         <>
@@ -178,8 +196,13 @@ export default function TutorialGraph({
                     <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.5)" />
                 )}
 
-                {/* Undirected: Step 2 = "Link Created!" confirmation overlay */}
-                {!directed && currentStep === 2 && (
+                {/* Undirected+Weighted: Steps 2, 3: Full dark overlay (weight input / value set) */}
+                {!directed && weighted && (currentStep === 2 || currentStep === 3) && (
+                    <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.5)" />
+                )}
+
+                {/* Undirected+Unweighted: Step 2 = "Link Created!" confirmation overlay */}
+                {!directed && !weighted && currentStep === 2 && (
                     <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.5)" />
                 )}
             </svg>
@@ -254,6 +277,34 @@ export default function TutorialGraph({
                 </div>
             )}
 
+            {/* Undirected+Weighted Step 2: Weight Input Modal */}
+            {!directed && weighted && showWeightInput && currentStep === 2 && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200 min-w-[280px]">
+                        <p className="text-lg text-gray-800 font-medium mb-4 text-center">
+                            Type &apos;2&apos; to set the weight.
+                        </p>
+                        <input
+                            type="number"
+                            value={weightInputValue}
+                            onChange={(e) => onWeightInputChange?.(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') onWeightConfirm?.();
+                            }}
+                            className="w-full text-center text-3xl font-bold p-4 border-2 border-gray-300 rounded-xl focus:border-[#D9E363] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            placeholder="0"
+                            autoFocus
+                        />
+                        <button
+                            onClick={onWeightConfirm}
+                            className="w-full mt-4 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors"
+                        >
+                            Confirm
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Directed Step 3 & 6: Value Set! Confirmation */}
             {directed && (currentStep === 3 || currentStep === 6) && (
                 <>
@@ -269,8 +320,17 @@ export default function TutorialGraph({
                 </>
             )}
 
-            {/* Undirected Step 2: Link Created! Confirmation (auto-advances) */}
-            {!directed && currentStep === 2 && (
+            {/* Undirected+Weighted Step 3: Value Set! Confirmation (auto-advances) */}
+            {!directed && weighted && currentStep === 3 && (
+                <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl px-6 py-4 border border-gray-200">
+                    <p className="text-lg text-gray-800 font-bold text-center">
+                        Value Set!
+                    </p>
+                </div>
+            )}
+
+            {/* Undirected+Unweighted Step 2: Link Created! Confirmation (auto-advances) */}
+            {!directed && !weighted && currentStep === 2 && (
                 <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl px-6 py-4 border border-gray-200">
                     <p className="text-lg text-gray-800 font-bold text-center">
                         Link Created!
@@ -383,4 +443,4 @@ export default function TutorialGraph({
     );
 }
 
-export { GRAPH_TUTORIAL_STEPS, DIRECTED_TUTORIAL_STEPS, UNDIRECTED_TUTORIAL_STEPS };
+export { GRAPH_TUTORIAL_STEPS, DIRECTED_TUTORIAL_STEPS, UNDIRECTED_TUTORIAL_STEPS, UNDIRECTED_WEIGHTED_TUTORIAL_STEPS };
