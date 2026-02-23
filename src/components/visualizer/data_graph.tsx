@@ -11,7 +11,13 @@ import Data_sort from "./data_sort";
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-function Data_graph({ onSearch }: { onSearch?: (startVertex: string, endVertex: string) => void }) {
+function Data_graph({
+    onSearch,
+    mode = "search",
+}: {
+    onSearch?: (startVertex: string, endVertex: string) => void;
+    mode?: "search" | "mst-start" | "mst-auto";
+}) {
     const [isDataSortOpen, setIsDataSortOpen] = useState(false);
     const { onDragStart, isDragging } = useDnD();
     // The type of the node that is being dragged.
@@ -40,7 +46,7 @@ function Data_graph({ onSearch }: { onSearch?: (startVertex: string, endVertex: 
                 id: getId(),
                 type: "custom", // Changed node type to "custom"
                 position,
-                data: { label: Sample.toString() },
+                data: { label: Sample.toString(), variant: "circle"},
             };
 
 
@@ -122,6 +128,8 @@ function Data_graph({ onSearch }: { onSearch?: (startVertex: string, endVertex: 
             ))}
             </div>
             <div className="flex-col justify-center items-center text-center">
+            {/* Start Vertex: shown for "search" and "mst-start" modes */}
+            {mode !== "mst-auto" && (
             <div className="grid-cols-1 grid gap-2 text-start m-1">
                 <p className="font-bold text-md">Start Vertex</p>
                 <div className="flex gap-2">
@@ -133,6 +141,9 @@ function Data_graph({ onSearch }: { onSearch?: (startVertex: string, endVertex: 
                 />
                 </div>
             </div>
+            )}
+            {/* End Vertex: shown only for "search" mode */}
+            {mode === "search" && (
             <div className="grid-cols-1 grid gap-2 text-start m-1">
                 <p className="font-bold text-md">End Vertex</p>
                 <div className="flex gap-2">
@@ -144,13 +155,18 @@ function Data_graph({ onSearch }: { onSearch?: (startVertex: string, endVertex: 
                 />
                 </div>
             </div>
+            )}
             <div className="grid-cols-1 grid gap-2 text-start m-1">
                 <button
                     className="bg-[#222121] rounded-lg p-2 mt-2 text-white disabled:opacity-50"
                     onClick={() => onSearch?.(inputValue, searchValue)}
-                    disabled={!inputValue || !searchValue}
+                    disabled={
+                        mode === "search" ? !inputValue || !searchValue
+                        : mode === "mst-start" ? !inputValue
+                        : false
+                    }
                 >
-                    Search
+                    {mode === "search" ? "Search" : "Find MST"}
                 </button>
             </div>
             <RandomSize onReset={handleReset} />
@@ -175,7 +191,7 @@ export function DragGhost({ type, value }: DragGhostProps) { // Added value prop
 
     return (
         <div
-        className={`fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`} // Standardized classes
+        className={`fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`}
         style={{
             transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
         }}>
