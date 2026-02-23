@@ -29,7 +29,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import '@xyflow/react/dist/base.css';
 import Data_graph from "@/src/components/visualizer/data_graph";
-import CustomNode from "@/src/components/shared/customNode";
+import CustomNode from "@/src/components/shared/customNodeTreeandGraph";
 import TreeEdge from "@/src/components/shared/treeEdge";
 import FloatingEdge from "@/src/components/shared/FloatingEdge";
 import Reading_modal from "@/src/components/shared/reading_modal";

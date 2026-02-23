@@ -11,7 +11,7 @@ import {
     type NodeMouseHandler,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import CustomNode from "@/src/components/shared/customNode";
+import CustomNode from "@/src/components/shared/customNodeTreeandGraph";
 import TreeEdge from "@/src/components/shared/treeEdge";
 import FloatingEdge from "@/src/components/shared/FloatingEdge";
 import { OrderingCanvasData, OrderItem } from "@/src/app/types/posttest";
