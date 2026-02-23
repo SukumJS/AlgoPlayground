@@ -13,7 +13,7 @@ import {
     removeAVL,
     insertAVL,
     type AVLTreeNode,
-} from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+} from "@/src/components/visualizer/algorithmsTree/avlTree";
 import { type AnimationCallbacks } from "@/src/components/visualizer/animations/types";
 
 import { useAVLInsertHandler } from "@/src/hooks/AVLTree/useAVLInsertHandler";
@@ -25,21 +25,21 @@ import { useAVLRebalanceHandler } from "@/src/hooks/AVLTree/useAVLRebalanceHandl
 import { useBSTInsertHandler } from "@/src/hooks/BST/useBSTInsertHandler";
 import { useBSTSearchHandler } from "@/src/hooks/BST/useBSTSearchHandler";
 import { useBSTRemoveHandler } from "@/src/hooks/BST/useBSTRemoveHandler";
-import { insertBST, cloneBSTTree, type BSTNode, removeBST } from "@/src/components/visualizer/algorithmsTree/BST/bstTree";
+import { insertBST, cloneBSTTree, type BSTNode, removeBST } from "@/src/components/visualizer/algorithmsTree/bstTree";
 
 // Binary Tree (no BST constraint)
 import { useBTInsertHandler } from "@/src/hooks/BinaryTree/useBTInsertHandler";
 import { useBTSearchHandler } from "@/src/hooks/BinaryTree/useBTSearchHandler";
 import { useBTRemoveHandler } from "@/src/hooks/BinaryTree/useBTRemoveHandler";
 import { useBTTraversalHandler } from "@/src/hooks/BinaryTree/useBTTraversalHandler";
-import { insertBT, cloneBT, type BTNode, removeBT, rebuildBTFromReactFlow } from "@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree";
-import { calculateBTPositions, btToReactFlow } from "@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree";
+import { insertBT, cloneBT, type BTNode, removeBT, rebuildBTFromReactFlow } from "@/src/components/visualizer/algorithmsTree/binaryTree";
+import { calculateBTPositions, btToReactFlow } from "@/src/components/visualizer/algorithmsTree/binaryTree";
 
 // Heap
 import { useHeapInsertHandler } from "@/src/hooks/Heap/useHeapInsertHandler";
 import { useHeapSearchHandler } from "@/src/hooks/Heap/useHeapSearchHandler";
 import { useHeapRemoveHandler } from "@/src/hooks/Heap/useHeapRemoveHandler";
-import { removeHeap, insertHeap, cloneHeap, calculateHeapPositions, heapToReactFlow, type HeapNode } from "@/src/components/visualizer/algorithmsTree/Heap/heapTree";
+import { removeHeap, insertHeap, cloneHeap, calculateHeapPositions, heapToReactFlow, type HeapNode } from "@/src/components/visualizer/algorithmsTree/heapTree";
 
 import { resolveColor } from '@/src/components/visualizer/animations/highlightColors';
 

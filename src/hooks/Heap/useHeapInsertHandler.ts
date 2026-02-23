@@ -7,7 +7,7 @@ import {
     calculateHeapPositions,
     heapToReactFlow,
     type HeapNode,
-} from '@/src/components/visualizer/algorithmsTree/Heap/heapTree';
+} from '@/src/components/visualizer/algorithmsTree/heapTree';
 
 export function useHeapInsertHandler(params: {
     heapRoot: HeapNode | null;

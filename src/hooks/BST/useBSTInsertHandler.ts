@@ -9,7 +9,7 @@ import {
     bstToReactFlow,
     cloneBSTTree,
     type BSTNode,
-} from '@/src/components/visualizer/algorithmsTree/BST/bstTree';
+} from '@/src/components/visualizer/algorithmsTree/bstTree';
 
 interface UseBSTInsertHandlerProps {
     bstRoot: BSTNode | null;

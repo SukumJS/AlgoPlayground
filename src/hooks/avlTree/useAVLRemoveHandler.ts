@@ -9,7 +9,7 @@ import {
     avlTreeToReactFlow,
     getBalanceFactor,
     type AVLTreeNode,
-} from '@/src/components/visualizer/algorithmsTree/AVLtree/avlTree';
+} from '@/src/components/visualizer/algorithmsTree/avlTree';
 
 /** Collect balance factors for all nodes in an AVL tree */
 function collectBFs(node: AVLTreeNode | null, map: Map<string, number> = new Map()): Map<string, number> {

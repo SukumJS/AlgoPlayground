@@ -6,7 +6,7 @@ import {
     calculateHeapPositions,
     heapToReactFlow,
     type HeapNode,
-} from '@/src/components/visualizer/algorithmsTree/Heap/heapTree';
+} from '@/src/components/visualizer/algorithmsTree/heapTree';
 
 /**
  * Hook: Heap Search Handler

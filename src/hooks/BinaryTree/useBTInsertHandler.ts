@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 import { AnimationController } from '@/src/components/visualizer/animations/Tree/animationController';
 import type { AnimationCallbacks } from '@/src/components/visualizer/animations/types';
-import { insertBT, calculateBTPositions, btToReactFlow, type BTNode } from '@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree';
+import { insertBT, calculateBTPositions, btToReactFlow, type BTNode } from '@/src/components/visualizer/algorithmsTree/binaryTree';
 
 interface UseBTInsertHandlerProps {
   btRoot: BTNode | null;

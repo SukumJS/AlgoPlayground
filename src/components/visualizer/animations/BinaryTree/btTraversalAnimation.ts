@@ -1,7 +1,7 @@
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 import type { AnimationController } from '@/src/components/visualizer/animations/Tree/animationController';
 import type { AnimationCallbacks } from '@/src/components/visualizer/animations/types';
-import { calculateBTPositions, btToReactFlow, type BTNode } from '@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree';
+import { calculateBTPositions, btToReactFlow, type BTNode } from '@/src/components/visualizer/algorithmsTree/binaryTree';
 
 //  Collect traversal order 
 

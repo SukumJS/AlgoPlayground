@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 import { AnimationController } from '@/src/components/visualizer/animations/Tree/animationController';
 import type { AnimationCallbacks } from '@/src/components/visualizer/animations/types';
-import { removeBT, searchBT, calculateBTPositions, btToReactFlow, cloneBT, type BTNode } from '@/src/components/visualizer/algorithmsTree/BinaryTree/binaryTree';
+import { removeBT, searchBT, calculateBTPositions, btToReactFlow, cloneBT, type BTNode } from '@/src/components/visualizer/algorithmsTree/binaryTree';
 
 interface UseBTRemoveHandlerProps {
   btRoot: BTNode | null;

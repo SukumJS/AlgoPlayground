@@ -5,7 +5,7 @@ import {
     calculateTreePositions,
     avlTreeToReactFlow,
     type AVLTreeNode,
-} from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+} from "@/src/components/visualizer/algorithmsTree/avlTree";
 import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
 
 /**

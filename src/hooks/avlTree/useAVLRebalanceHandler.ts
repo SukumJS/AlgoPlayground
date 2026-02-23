@@ -1,7 +1,7 @@
 import { useCallback, MutableRefObject } from "react";
 import { AnimationCallbacks } from "@/src/components/visualizer/animations/types";
 import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
-import { AVLTreeNode, avlTreeToReactFlow, calculateTreePositions } from "@/src/components/visualizer/algorithmsTree/AVLtree/avlTree";
+import { AVLTreeNode, avlTreeToReactFlow, calculateTreePositions } from "@/src/components/visualizer/algorithmsTree/avlTree";
 import { useReactFlow } from "@xyflow/react";
 
 const INSTANT_SPEED = 1;

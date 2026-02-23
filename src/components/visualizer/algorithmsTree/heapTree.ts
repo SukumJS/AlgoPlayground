@@ -1,4 +1,4 @@
-import { type BTNode, type NodePosition, calculateBTPositions, btToReactFlow } from '../BinaryTree/binaryTree';
+import { type BTNode, type NodePosition, calculateBTPositions, btToReactFlow } from './binaryTree';
 
 export type HeapNode = BTNode;
 

@@ -10,7 +10,7 @@ import {
     cloneBSTTree,
     findBSTSuccessor,
     type BSTNode,
-} from '@/src/components/visualizer/algorithmsTree/BST/bstTree';
+} from '@/src/components/visualizer/algorithmsTree/bstTree';
 
 interface UseBSTRemoveHandlerProps {
     bstRoot: BSTNode | null;

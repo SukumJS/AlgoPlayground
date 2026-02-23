@@ -7,7 +7,7 @@ import {
     calculateBSTPositions,
     bstToReactFlow,
     type BSTNode,
-} from '@/src/components/visualizer/algorithmsTree/BST/bstTree';
+} from '@/src/components/visualizer/algorithmsTree/bstTree';
 
 interface UseBSTSearchHandlerProps {
     bstRoot: BSTNode | null;
