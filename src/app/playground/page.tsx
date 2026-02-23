@@ -16,7 +16,10 @@ function PlaygroundRouter() {
         return <PlaygroundTree algorithm={algorithm} />;
     } else if (algoType === "graph") {
         return <PlaygroundGraph algorithm={algorithm} />;
-    } else {
+    } else if (algoType === "sort") {
+        return <PlaygroundSort algorithm={algorithm} />;
+    }
+    else {
         return <PlaygroundSort algorithm={algorithm} />;
     }
 }
