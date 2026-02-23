@@ -1,10 +1,8 @@
-// import { useGraphEngine } from "@/src/hooks/useGraphEngine";
-// import { useTreeEngine } from "@/src/hooks/useTreeEngine";
 import { AlgoController } from "@/types/AlgoController";
 import { useStepSortEngine } from "@/src/hooks/sort/useStepSortEngine";
 
 type Params = {
-  algoType: string | null;
+  algoType: string | null; // เอาไว้รับค่าเช่น 'bubble', 'insertion'
   nodes: any;
   setNodes: any;
   positionFromIndex: any;
@@ -13,7 +11,7 @@ type Params = {
   speed: any;
 };
 
-export function useAlgoController({
+export function useSortController({
   algoType,
   nodes,
   setNodes,
@@ -23,6 +21,7 @@ export function useAlgoController({
   speed,
 }: Params): AlgoController {
 
+  // เรียกใช้ Engine ของ Sort 
   const engine = useStepSortEngine({
     algoType,
     nodes,

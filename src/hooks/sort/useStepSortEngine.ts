@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import type { Node } from "@xyflow/react";
 import type { SortNodeData } from "@/src/components/shared/sortNode";
 import { generateStepsByType } from "@/src/components/visualizer/algorithmsSort/generateSteps";
-import { useAlgoController } from "@/src/hooks/useAlgoController";
 type Params = {
     algoType: string | null;
     nodes: Node<SortNodeData>[];

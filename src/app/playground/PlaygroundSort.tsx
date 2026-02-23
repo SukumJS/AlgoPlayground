@@ -28,7 +28,7 @@ import '@xyflow/react/dist/base.css';
 import SortNode, { type SortNodeData } from "@/src/components/shared/sortNode"; 
 import { useSortableDrag } from "@/src/hooks/sort/useSortableDrag";
 import { useExecutionSpeed } from "@/src/hooks/useExecutionSpeed";
-import { useAlgoController } from "@/src/hooks/useAlgoController";
+import { useSortController } from "@/src/hooks/useSortController";
 import Reading_modal from "@/src/components/shared/reading_modal";
 import { Info } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
@@ -91,7 +91,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
     /* Hook สำหรับ drag แล้ว swap node */
     const { onNodeDrag, onNodeDragStop } = useSortableDrag(setNodes, positionFromIndex);
     
-    const controller = useAlgoController({
+    const controller = useSortController({
         algoType: "sort", 
         nodes,
         setNodes,
