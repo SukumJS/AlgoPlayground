@@ -1,174 +1,530 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useReactFlow, XYPosition } from "@xyflow/react";
+import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
 import { Plus, Search, Trash } from "lucide-react";
+import { GLOW_ZONE } from "./tutorial_tree";
+import {
+    rebuildAVLTreeFromNodes,
+    removeAVL,
+    insertAVL,
+    type AVLTreeNode,
+} from "@/src/components/visualizer/algorithmsTree/avlTree";
+import { type AnimationCallbacks } from "@/src/components/visualizer/animations/types";
 
-let id = 0;
-const getId = () => `dndnode_${id++}`;
+import { useAVLInsertHandler } from "@/src/hooks/avlTree/useAVLInsertHandler";
+import { useAVLSearchHandler } from "@/src/hooks/avlTree/useAVLSearchHandler";
+import { useAVLRemoveHandler } from "@/src/hooks/avlTree/useAVLRemoveHandler";
+import { useAVLRebalanceHandler } from "@/src/hooks/avlTree/useAVLRebalanceHandler";
 
-function Data_tree() {
-    const [isDataSortOpen, setIsDataSortOpen] = useState(false);
+// BST
+import { useBSTInsertHandler } from "@/src/hooks/BST/useBSTInsertHandler";
+import { useBSTSearchHandler } from "@/src/hooks/BST/useBSTSearchHandler";
+import { useBSTRemoveHandler } from "@/src/hooks/BST/useBSTRemoveHandler";
+import { insertBST, cloneBSTTree, type BSTNode, removeBST } from "@/src/components/visualizer/algorithmsTree/bstTree";
+
+// Binary Tree (no BST constraint)
+import { useBTInsertHandler } from "@/src/hooks/BinaryTree/useBTInsertHandler";
+import { useBTSearchHandler } from "@/src/hooks/BinaryTree/useBTSearchHandler";
+import { useBTRemoveHandler } from "@/src/hooks/BinaryTree/useBTRemoveHandler";
+import { useBTTraversalHandler } from "@/src/hooks/BinaryTree/useBTTraversalHandler";
+import { insertBT, cloneBT, type BTNode, removeBT, rebuildBTFromReactFlow } from "@/src/components/visualizer/algorithmsTree/binaryTree";
+import { calculateBTPositions, btToReactFlow } from "@/src/components/visualizer/algorithmsTree/binaryTree";
+
+// Heap
+import { useHeapInsertHandler } from "@/src/hooks/Heap/useHeapInsertHandler";
+import { useHeapSearchHandler } from "@/src/hooks/Heap/useHeapSearchHandler";
+import { useHeapRemoveHandler } from "@/src/hooks/Heap/useHeapRemoveHandler";
+import { removeHeap, insertHeap, cloneHeap, calculateHeapPositions, heapToReactFlow, type HeapNode } from "@/src/components/visualizer/algorithmsTree/heapTree";
+
+import { resolveColor } from '@/src/components/visualizer/animations/highlightColors';
+
+// let id = 0;
+const getId = () => `dndnode_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+const BST_ALGORITHMS = ['binary-search-tree'];
+const BT_ALGORITHMS = ['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'];
+
+interface Data_treeProps {
+    tutorialMode?: boolean;
+    tutorialStep?: number;
+    onTutorialDropSuccess?: () => void;
+    currentNodes?: Array<{ id: string; data: { label: string } }>;
+    currentEdges?: Array<{ source: string, target: string, sourceHandle?: string | null }>;
+    algorithm?: string;
+    onRebalanceReady?: (fn: () => void) => void;
+    initialBSTRoot?: BSTNode | null;
+    initialBTRoot?: BTNode | null;
+    initialHeapRoot?: HeapNode | null;
+    initialAVLRoot?: AVLTreeNode | null;
+    onBTRebalanceReady?: (fn: () => void) => void;
+    onHeapRebalanceReady?: (fn: () => void) => void;
+    onTrashDeleteReady?: (fn: (nodeId: string, value: number) => void) => void;
+    onAutoInsertReady?: (fn: (value: number) => void) => void;
+}
+
+function Data_tree({
+    tutorialMode = false,
+    tutorialStep = 0,
+    onTutorialDropSuccess,
+    currentNodes = [],
+    currentEdges = [],
+    algorithm,
+    onRebalanceReady,
+    onBTRebalanceReady,
+    initialBSTRoot = null,
+    initialBTRoot = null,
+    initialHeapRoot = null,
+    initialAVLRoot = null,
+    onTrashDeleteReady,
+    onHeapRebalanceReady,
+    onAutoInsertReady,
+}: Data_treeProps) {
+    const [isDataSortOpen, setIsDataSortOpen] = useState(true);
     const { onDragStart, isDragging } = useDnD();
-    // The type of the node that is being dragged.
     const [type, setType] = useState<string | null>(null);
-    const { setNodes } = useReactFlow();
+    const rf = useReactFlow();
+    const { setNodes, setEdges } = rf;
+
     const [inputValue, setInputValue] = useState<string>("");
     const [searchValue, setSearchValue] = useState<string>("");
     const [removeValue, setRemoveValue] = useState<string>("");
-    const [nodeInput, setNodeInput] = useState<string>("");
-    const [draggedValue, setDraggedValue] = useState<number | null>(null); // Added draggedValue state
+    const [draggedValue, setDraggedValue] = useState<number | null>(null);
+    const [nodeIdCounter, setNodeIdCounter] = useState(5);
 
-    const Sample = [
-        { number: "1" },
-        { number: "2" },
-        { number: "3" },
-        { number: "4" },
-        { number: "5" },
-    ];
+    // Animation states
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [animationSpeed] = useState(500);
+    const [, setAnimationDescription] = useState<string>("");
+    const isPausedRef = useRef<boolean>(false);
 
-    const createAddNewNode = useCallback(
-        (Sample: number): OnDropAction => {
-        return ({ position }: { position: XYPosition }) => {
-            // Here, we create a new node and add it to the flow.
-            // You can customize the behavior of what happens when a node is dropped on the flow here.
-            const newNode = {
-                id: getId(),
-                type: "custom", // Changed node type to "custom"
-                position,
-                data: { label: Sample.toString() },
+    // Tree roots
+    const [bstRoot, setBSTRoot] = useState<BSTNode | null>(initialBSTRoot);
+    const [btRoot, setBTRoot] = useState<BTNode | null>(initialBTRoot);
+
+    const isBST = BST_ALGORITHMS.includes(algorithm ?? '');
+    const isBT = BT_ALGORITHMS.includes(algorithm ?? '');
+    const isAVL = algorithm === 'avl-tree';
+    const isHeap = algorithm === 'min-heap' || algorithm === 'max-heap';
+    const isMinHeap = algorithm === 'min-heap';
+    const hasTraversal = isBT;
+    const traversalType = isBT ? algorithm : null;
+
+    // sync initial roots
+    const bstInitRef = useRef(false);
+    const btInitRef = useRef(false);
+    const avlInitRef = useRef(false);
+    useEffect(() => {
+        if (!bstInitRef.current && initialBSTRoot) { setBSTRoot(initialBSTRoot); bstInitRef.current = true; }
+    }, [initialBSTRoot]);
+
+    useEffect(() => {
+        if (!avlInitRef.current && initialAVLRoot) { setAVLRoot(initialAVLRoot); avlInitRef.current = true; }
+    }, [initialAVLRoot]);
+
+    // For generic Binary Trees, we rebuild the root continuously from React Flow nodes and edges
+    // to support freeform drawing without strict balancing.
+    const nodesStr = JSON.stringify(currentNodes);
+    const edgesStr = JSON.stringify(currentEdges);
+
+    useEffect(() => {
+        if (isBT && !isAnimating) {
+            // Parse the strings to avoid reference equality triggering infinite loops
+            setBTRoot(rebuildBTFromReactFlow(JSON.parse(nodesStr), JSON.parse(edgesStr)));
+        }
+    }, [isBT, isAnimating, nodesStr, edgesStr]);
+
+    const heapInitRef = useRef(false);
+    useEffect(() => {
+        if (!heapInitRef.current && initialHeapRoot && isHeap) {
+            setHeapRoot(initialHeapRoot);
+            heapInitRef.current = true;
+        }
+    }, [initialHeapRoot, isHeap]);
+
+    // reset on clear
+    const prevLenRef = useRef(currentNodes.length);
+    useEffect(() => {
+        const prev = prevLenRef.current;
+        prevLenRef.current = currentNodes.length;
+        if (prev > 0 && currentNodes.length === 0) {
+            setBSTRoot(null);
+            setBTRoot(null);
+            setAVLRoot(null);
+            setHeapRoot(null);
+        }
+    });
+
+    const Sample = [{ number: "3" }, { number: "67" }, { number: "46" }];
+
+    // Heap root — persistent state
+    const [heapRoot, setHeapRoot] = useState<HeapNode | null>(initialHeapRoot);
+
+    // AVL root — persistent state (like bstRoot/btRoot)
+    const [avlRoot, setAVLRoot] = useState<AVLTreeNode | null>(() => {
+        if (initialAVLRoot) return initialAVLRoot;
+        if (currentNodes.length === 0) return null;
+        const numericNodes = currentNodes.filter(n => !isNaN(parseInt(n.data.label)));
+        if (numericNodes.length === 0) return null;
+        return rebuildAVLTreeFromNodes(numericNodes);
+    });
+
+    // Animation callbacks
+    const animationCallbacks: AnimationCallbacks = useMemo(() => ({
+        setNodes,
+        setEdges,
+        setDescription: setAnimationDescription,
+        applyHighlighting: (
+            nodes: RFNode[], edges: RFEdge[],
+            highlightedNodeIds: Set<string>, highlightedEdgeIds: Set<string>,
+            color: string,
+            edgeColor?: string
+        ) => {
+            const resolvedColor = resolveColor(color); // '#62A2F7', '#F7AD45', etc.
+            const resolvedEdgeColor = edgeColor ? resolveColor(edgeColor) : resolvedColor;
+
+            return {
+                highlightedNodes: nodes.map((n: RFNode) => ({
+                    ...n,
+                    data: {
+                        ...n.data,
+                        isHighlighted: highlightedNodeIds.has(n.id),
+                        // ส่ง hex ตรงๆ ให้ custom node component
+                        highlightColor: highlightedNodeIds.has(n.id) ? resolvedColor : undefined,
+                    },
+                })),
+                highlightedEdges: edges.map((e: RFEdge) => {
+                    // If explicit edge IDs are provided, use them
+                    // Otherwise, auto-highlight edges connected to highlighted nodes
+                    const isEdgeHighlighted = highlightedEdgeIds.size > 0
+                        ? highlightedEdgeIds.has(e.id)
+                        : edgeColor && (highlightedNodeIds.has(e.source) || highlightedNodeIds.has(e.target));
+                    return {
+                        ...e,
+                        style: isEdgeHighlighted
+                            ? { stroke: resolvedEdgeColor, strokeWidth: 3 }
+                            : { stroke: '#999', strokeWidth: 2 },
+                    };
+                }),
             };
-
-
-            setNodes((nds) => nds.concat(newNode));
-            setType(null);
-        };
         },
-        [setNodes, setType],
+    }), [setNodes, setEdges]);
+
+    // AVL Handlers
+    const handleAVLInsert = useAVLInsertHandler({ avlRoot, setAVLRoot, nodeIdCounter, animationSpeed, rf, animationCallbacks, isPausedRef, setIsAnimating, setAnimationDescription, setNodeIdCounter });
+    const handleAVLSearch = useAVLSearchHandler({ avlRoot, animationSpeed, rf, animationCallbacks, isPausedRef, setIsAnimating, setSearchValue });
+    const handleAVLRemove = useAVLRemoveHandler({ avlRoot, setAVLRoot, animationSpeed, rf, animationCallbacks, isPausedRef, setIsAnimating, setRemoveValue });
+    const handleAVLRebalance = useAVLRebalanceHandler({ avlRoot, setAVLRoot, rf, animationCallbacks, isPausedRef, setIsAnimating });
+
+    // BST Handlers
+    const { handleInsert: bstInsert } = useBSTInsertHandler({ bstRoot, setBSTRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
+    const { handleSearch: bstSearch } = useBSTSearchHandler({ bstRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
+    const { handleRemove: bstRemove } = useBSTRemoveHandler({ bstRoot, setBSTRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
+
+    // BT Handlers
+    const { handleInsert: btInsert } = useBTInsertHandler({ btRoot, setBTRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
+    const { handleSearch: btSearch } = useBTSearchHandler({ btRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
+    const { handleRemove: btRemove } = useBTRemoveHandler({ btRoot, setBTRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef });
+    const { handleInorder, handlePreorder, handlePostorder } = useBTTraversalHandler({ btRoot, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, applyHighlighting: animationCallbacks.applyHighlighting, animationSpeed, isPausedRef, setIsAnimating });
+
+    // Heap Handlers
+    const { handleInsert: heapInsert } = useHeapInsertHandler({ heapRoot, setHeapRoot, isMinHeap, nodes: rf.getNodes(), edges: rf.getEdges(), setNodes, setEdges, setDescription: setAnimationDescription, animationSpeed, isPausedRef, setIsAnimating });
+    const { handleSearch: heapSearch } = useHeapSearchHandler({ heapRoot, setNodes, setEdges, setDescription: setAnimationDescription, animationSpeed, isPausedRef, setIsAnimating });
+    const { handleRemove: heapRemove } = useHeapRemoveHandler({ heapRoot, setHeapRoot, isMinHeap, setNodes, setEdges, setDescription: setAnimationDescription, animationSpeed, isPausedRef, setIsAnimating });
+
+    useEffect(() => { onRebalanceReady?.(handleAVLRebalance); }, [handleAVLRebalance, onRebalanceReady]);
+
+    // Drag & Drop
+    const createAddNewNode = useCallback(
+        (sampleValue: number): OnDropAction => {
+            return ({ position }: { position: XYPosition }) => {
+                if (tutorialMode && tutorialStep === 0) {
+                    const dx = position.x - GLOW_ZONE.x;
+                    const dy = position.y - GLOW_ZONE.y;
+                    if (Math.sqrt(dx * dx + dy * dy) > GLOW_ZONE.radius) return;
+                }
+                const newNode = {
+                    id: getId(), type: "custom", position,
+                    data: { label: sampleValue.toString(), variant: "circle" },
+                    zIndex: tutorialMode ? 100 : undefined,
+                };
+                setNodes(nds => nds.concat(newNode));
+                setType(null);
+
+                if (isBST) setBSTRoot(prev => insertBST(cloneBSTTree(prev), sampleValue, newNode.id));
+                // For generic BT, we do NOT auto-insert on drag drop. The user will manually connect it, or we will auto-correct on invalid connect.
+                // if (isBT) setBTRoot(prev => insertBT(cloneBT(prev), sampleValue, newNode.id));
+                if (isAVL) setAVLRoot(prev => insertAVL(prev, sampleValue, newNode.id));
+                if (isHeap) setHeapRoot(prev => {
+                    const result = insertHeap(cloneHeap(prev), sampleValue, newNode.id, isMinHeap);
+                    return result.root;
+                });
+
+                if (tutorialMode && tutorialStep === 0) onTutorialDropSuccess?.();
+            };
+        },
+        [setNodes, tutorialMode, tutorialStep, onTutorialDropSuccess, isBST, isBT, isAVL, isHeap, isMinHeap]
     );
 
-    //random number in insert tree data
-    const handleInsert = () => {
-        const randomNum = Math.floor(Math.random() * 100) + 1;
-        setInputValue(randomNum.toString());
-    };
+    // Handle insert operation
+    const handleInsert = useCallback(() => {
+        if (tutorialMode || isAnimating) return;
+        const v = inputValue ? parseInt(inputValue) : Math.floor(Math.random() * 100) + 1;
+        if (isNaN(v)) return;
+        if (algorithm === 'avl-tree') handleAVLInsert(v);
+        else if (isBST) bstInsert(v);
+        else if (isBT) btInsert(v);
+        else if (isHeap) heapInsert(v);
+        else console.warn(`Insert not implemented for ${algorithm}`);
+        setInputValue('');
+    }, [tutorialMode, isAnimating, inputValue, algorithm, isBST, isBT, isHeap, handleAVLInsert, bstInsert, btInsert, heapInsert]);
 
-    //reset all of value in input data
-    const handleReset = () => {
-        setInputValue("");
-        setSearchValue("");
-        setRemoveValue("");
-    };
+    // Handle search operation
+    const handleSearch = useCallback(() => {
+        if (tutorialMode || isAnimating) return;
+        const v = searchValue ? parseInt(searchValue) : NaN;
+        if (isNaN(v)) return;
+        if (algorithm === 'avl-tree') handleAVLSearch(v);
+        else if (isBST) bstSearch(v);
+        else if (isBT) btSearch(v);
+        else if (isHeap) heapSearch(v);
+        else console.warn(`Search not implemented for ${algorithm}`);
+        setSearchValue('');
+    }, [tutorialMode, isAnimating, searchValue, algorithm, isBST, isBT, isHeap, handleAVLSearch, bstSearch, btSearch, heapSearch]);
+
+    // Handle remove operation
+    const handleRemove = useCallback(() => {
+        if (tutorialMode || isAnimating) return;
+        const v = removeValue ? parseInt(removeValue) : NaN;
+        if (isNaN(v)) return;
+        if (isAVL) handleAVLRemove(v);
+        else if (isBST) bstRemove(v);
+        else if (isBT) btRemove(v);
+        else if (isHeap) heapRemove(v);
+        else console.warn(`Remove not implemented for ${algorithm}`);
+        setRemoveValue('');
+    }, [tutorialMode, isAnimating, removeValue, algorithm, isBST, isBT, isHeap, handleAVLRemove, bstRemove, btRemove, heapRemove]);
+
+    // Handle rebalance operation
+    const handleBTRebalance = useCallback(() => {
+        const root = btRoot;
+        if (!root) return;
+
+        setEdges([]);
+
+        setTimeout(() => {
+            const positions = calculateBTPositions(root);
+            const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(root, [], [], positions);
+            setNodes(rfNodes as RFNode[]);
+            setEdges(rfEdges as RFEdge[]);
+        }, 0);
+    }, [btRoot, setNodes, setEdges]);
+
+    useEffect(() => { onRebalanceReady?.(handleAVLRebalance); }, [handleAVLRebalance, onRebalanceReady]);
+    useEffect(() => { onBTRebalanceReady?.(handleBTRebalance); }, [handleBTRebalance, onBTRebalanceReady]);
+    useEffect(() => { onAutoInsertReady?.(btInsert); }, [btInsert, onAutoInsertReady]);
+
+    // Handle heap rebalance (reposition heap nodes from heapRoot after tutorial)
+    const handleHeapRebalance = useCallback(() => {
+        const root = heapRoot;
+        if (!root) return;
+
+        setEdges([]);
+
+        setTimeout(() => {
+            const positions = calculateHeapPositions(root);
+            const { nodes: rfNodes, edges: rfEdges } = heapToReactFlow(root, [], [], positions, 'heap-edge');
+            setNodes(rfNodes as RFNode[]);
+            setEdges(rfEdges as RFEdge[]);
+        }, 0);
+    }, [heapRoot, setNodes, setEdges]);
+
+    useEffect(() => { onHeapRebalanceReady?.(handleHeapRebalance); }, [handleHeapRebalance, onHeapRebalanceReady]);
+
+    // Handle trash-bin deletion: sync internal tree roots
+    const handleTrashDelete = useCallback((nodeId: string, value: number) => {
+        if (isBST) {
+            setBSTRoot(prev => prev ? removeBST(prev, value) : null);
+        }
+        if (isBT) {
+            setBTRoot(prev => prev ? removeBT(prev, value).newRoot : null);
+        }
+        if (isAVL) {
+            setAVLRoot(prev => prev ? removeAVL(prev, value) : null);
+        }
+        if (isHeap) {
+            setHeapRoot(prev => prev ? removeHeap(prev, value, isMinHeap).root : null);
+        }
+    }, [isBST, isBT, isAVL, isHeap, isMinHeap]);
+
+    useEffect(() => { onTrashDeleteReady?.(handleTrashDelete); }, [handleTrashDelete, onTrashDeleteReady]);
+
+    // Handle reset operation
+    const handleReset = useCallback(() => {
+        if (tutorialMode) return;
+        setInputValue(''); setSearchValue(''); setRemoveValue('');
+        setBSTRoot(null); setBTRoot(null); setAVLRoot(null); setHeapRoot(null);
+    }, [tutorialMode]);
+
+    // Toggle expand/collapse
+    const handleToggle = useCallback(() => {
+        if (tutorialMode) return;
+        setIsDataSortOpen(prev => !prev);
+    }, [tutorialMode]);
 
     return (
         <>
-        {/* The ghost node will be rendered at pointer position when dragging. */}
-        {isDragging && <DragGhost type={type} value={draggedValue} />} {/* Pass draggedValue */}
-        <button
-            className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"}`}
-            onClick={() => setIsDataSortOpen(!isDataSortOpen)}
-        >
-            <div className="flex items-center">
-            <div
-                className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? "" : "hidden opacity-100"}`}
-            ></div>
-            <div className={`flex text-lg p-2`}>Data Tree</div>
-            </div>
-            <div className="mr-2 flex justify-end">
-            {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
-            </div>
-        </button>
+            {/* Ghost node when dragging */}
+            {isDragging && <DragGhost type={type} value={draggedValue} />}
 
-        {/* map drag and drop data */}
-        <div
-            className={`flex-col ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}
-        >
-            <div
-            className={`transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2`}
+            {/* Header button */}
+            <button
+                className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"
+                    } ${tutorialMode ? "cursor-default" : ""}`}
+                onClick={handleToggle}
             >
-            <div
-                className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-16 h-16 rounded-full cursor-grab"
-                onPointerDown={(event) => {
-                    setType("custom"); // Changed drag ghost type to "custom"
-                    setDraggedValue(parseInt(nodeInput) || 0); // Set dragged value
-                    onDragStart(event, createAddNewNode(parseInt(nodeInput) || 0));
-                }}
-            >
-                <input
-                type="number"
-                placeholder="0"
-                className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={nodeInput}
-                onChange={(e) => setNodeInput(e.target.value)}
-                onPointerDown={(e) => e.stopPropagation()}
-                />
-            </div>
-            {Sample.map((item, index) => (
-                <div
-                key={index}
-                className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363]"
-                onPointerDown={(event) => {
-                    setType("custom"); // Changed drag ghost type to "custom"
-                    setDraggedValue(parseInt(item.number)); // Set dragged value
-                    onDragStart(event, createAddNewNode(parseInt(item.number)));
-                }}
-                >
-                {item.number}
+                <div className="flex items-center">
+                    <div
+                        className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? "" : "hidden opacity-100"
+                            }`}
+                    ></div>
+                    <div className="flex text-lg p-2">Data</div>
                 </div>
-            ))}
-            </div>
-            <div className="flex-col justify-center items-center text-center">
-            <div className="grid-cols-1 grid gap-2 text-start m-1">
-                <p className="font-bold text-md">Insert</p>
-                <div className="flex gap-2">
-                <input
-                    type="number"
-                    className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                />
-                <button
-                    className="bg-[#222121] rounded-lg p-2"
-                    onClick={handleInsert}
-                >
-                    <Plus color="white" />
-                </button>
+                <div className="mr-2 flex justify-end">
+                    {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
+                </div>
+            </button>
+
+            {/* Content area */}
+            <div className={`flex-col ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}>
+                {/* Draggable sample nodes */}
+                <div className="transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2 p-2">
+                    {Sample.map((item, index) => (
+                        <div
+                            key={index}
+                            className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] cursor-grab bg-[#D9E363]"
+                            data-tutorial-target={item.number === "3" ? "sidebar-node-3" : undefined}
+                            onPointerDown={(event) => {
+                                setType("custom");
+                                setDraggedValue(parseInt(item.number));
+                                onDragStart(event, createAddNewNode(parseInt(item.number)));
+                            }}
+                        >
+                            {item.number}
+                        </div>
+                    ))}
+                </div>
+
+                <div className={`flex-col justify-center items-center text-center ${tutorialMode ? "pointer-events-none opacity-60" : ""}`}>
+
+                    {/* Traversal Buttons (เฉพาะ bt-* algorithms) */}
+                    {hasTraversal && (
+                        <div className="grid-cols-1 grid gap-2 text-start m-1">
+                            <p className="font-bold text-md">Traversal</p>
+                            <div className="flex gap-2">
+                                {traversalType === 'binary-tree-inorder' && (
+                                    <button
+                                        className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 transition-colors"
+                                        onClick={handleInorder}
+                                        disabled={isAnimating}
+                                        title="Left → Root → Right"
+                                    >
+                                        Traversal Inorder
+                                    </button>
+                                )}
+                                {traversalType === 'binary-tree-preorder' && (
+                                    <button
+                                        className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 transition-colors"
+                                        onClick={handlePreorder}
+                                        disabled={isAnimating}
+                                        title="Root → Left → Right"
+                                    >
+                                        Traversal Preorder
+                                    </button>
+                                )}
+                                {traversalType === 'binary-tree-postorder' && (
+                                    <button
+                                        className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 transition-colors"
+                                        onClick={handlePostorder}
+                                        disabled={isAnimating}
+                                        title="Left → Right → Root"
+                                    >
+                                        Traversal Postorder
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    {/* Insert */}
+                    <div className="grid-cols-1 grid gap-2 text-start m-1">
+                        <p className="font-bold text-md">Insert</p>
+                        <div className="flex gap-2">
+                            <input
+                                type="number"
+                                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                disabled={isAnimating}
+                            />
+                            <button
+                                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
+                                onClick={handleInsert}
+                                disabled={isAnimating}
+                            >
+                                <Plus color="white" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Search */}
+                    <div className="grid-cols-1 grid gap-2 text-start m-1">
+                        <p className="font-bold text-md">Search</p>
+                        <div className="flex gap-2">
+                            <input
+                                type="number"
+                                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
+                                disabled={isAnimating}
+                            />
+                            <button
+                                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
+                                onClick={handleSearch}
+                                disabled={isAnimating}
+                            >
+                                <Search color="white" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Remove */}
+                    <div className="grid-cols-1 grid gap-2 text-start m-1">
+                        <p className="font-bold text-md">Remove</p>
+                        <div className="flex gap-2">
+                            <input
+                                type="number"
+                                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                value={removeValue}
+                                onChange={(e) => setRemoveValue(e.target.value)}
+                                disabled={isAnimating}
+                            />
+                            <button
+                                className="bg-[#E82B2B] rounded-lg p-2 disabled:opacity-50"
+                                onClick={handleRemove}
+                                disabled={isAnimating}
+                            >
+                                <Trash color="white" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <RandomSize onReset={handleReset} />
                 </div>
             </div>
-            <div className="grid-cols-1 grid gap-2 text-start m-1">
-                <p className="font-bold text-md">Search</p>
-                <div className="flex gap-2">
-                <input
-                    type="number"
-                    className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                />
-                <button className="bg-[#222121] rounded-lg p-2">
-                    <Search color="white" />
-                </button>
-                </div>
-            </div>
-            <div className="grid-cols-1 grid gap-2 text-start m-1">
-                <p className="font-bold text-md">Remove</p>
-                <div className="flex gap-2">
-                <input
-                    type="number"
-                    className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    value={removeValue}
-                    onChange={(e) => setRemoveValue(e.target.value)}
-                />
-                <button className="bg-[#E82B2B] rounded-lg p-2">
-                    <Trash color="white" />
-                </button>
-                </div>
-            </div>
-            <RandomSize onReset={handleReset} />
-            </div>
-        </div>
         </>
     );
 }
@@ -177,22 +533,22 @@ export default Data_tree;
 
 interface DragGhostProps {
     type: string | null;
-    value: number | null; // Added value prop
+    value: number | null;
 }
 
-// The DragGhost component is used to display a ghost node when dragging a node into the flow.
-export function DragGhost({ type, value }: DragGhostProps) { // Added value prop
+export function DragGhost({ type, value }: DragGhostProps) {
     const { position } = useDnDPosition();
 
-    if (!position || !type) return null; // Added !type check
+    if (!position || !type) return null;
 
     return (
         <div
-        className={`fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`} // Standardized classes
-        style={{
-            transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
-        }}>
-        {value} {/* Display value */}
+            className="fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg"
+            style={{
+                transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
+            }}
+        >
+            {value}
         </div>
     );
 }

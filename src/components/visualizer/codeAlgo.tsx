@@ -8,14 +8,16 @@ interface CodeBlockProps {
   title?: string;
   code?: string;
   language?: string;
+  tutorialMode?: boolean;
 }
 
 export default function CodeAlgo({
   title = "Code",
   code = "",
   language = "python", // ไม่เป็นปัญหากับ Pseudo Code เอาแค่สีกับ format มา
+  tutorialMode = false
 }: CodeBlockProps) {
-  const [isCodeOpen, setIsCodeOpen] = useState<boolean>(true);
+  const [isCodeOpen, setIsCodeOpen] = useState<boolean>(false);
   const [currentStepIdx, setCurrentStepIdx] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
@@ -90,13 +92,22 @@ print("In-order traversal:", inorder_traversal(root))`;
     return () => clearInterval(interval);
   }, [isPlaying, executionPath]);
 
+  const handleClick = () => {
+        if (!tutorialMode) {
+            setIsCodeOpen(!isCodeOpen);
+        }
+    };
+
   return (
     <div className="border-b ">
      <button
-        className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${
+       
+            className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${
           isCodeOpen ? "bg-gray-200 h-12" : "bg-white"
         }`}
-        onClick={() => setIsCodeOpen(!isCodeOpen)}
+       
+            onClick={handleClick}
+        
       >
         <div className="flex items-center">
           <div

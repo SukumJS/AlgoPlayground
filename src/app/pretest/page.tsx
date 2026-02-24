@@ -7,7 +7,7 @@ import ChoiceCard from "@/src/components/pretest/ChoiceCard";
 import NavigationButtons from "@/src/components/pretest/NavigationButtons";
 import ResultPage from "@/src/app/result/page";
 import { QuizData, UserAnswer } from "../types/quiz";
-import { sampleQuizData } from "../data/quizData";
+import { sampleQuizData } from "../../data/pretestData";
 
 type PretestPageProps = {
   quizData?: QuizData;
@@ -92,7 +92,7 @@ function PretestPage({
   // Show Quiz Page
   return (
     <div className="bg-white min-h-screen w-full">
-      <div className="max-w-[1440px] mx-auto sm:px-8 sm:py-8">
+      <div className="max-w-360 mx-auto sm:px-8 sm:py-8">
         {/* Progress Navbar */}
         <TrackProgress
           current={currentQuestionIndex + 1}

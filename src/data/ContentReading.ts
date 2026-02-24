@@ -2,7 +2,7 @@ export type AlgoSection = {
   heading: string;
   content?: string[];
   list?: string[];
-  image?: string[]; 
+  image?: string[];
   code?: {
     language?: string;
     value: string;
@@ -132,41 +132,41 @@ arr = []
     ],
   },
   {
-  id: "doubly-linked-list",
-  type: "structure",
-  title: "DOUBLY LINKED LIST",
-  sections: [
-    {
-      heading: "WHAT IS DOUBLY LINKED LIST?",
-      content: [
-        "A doubly linked list is a more complex data structure than a singly linked list, but it offers several advantages. The main advantage of a doubly linked list is that it allows for efficient traversal of the list in both directions. This is because each node in the list contains a pointer to the previous node and a pointer to the next node. This allows for quick and easy insertion and deletion of nodes from the list, as well as efficient traversal of the list in both directions.",
-      ],
-      image: [
-        "https://media.geeksforgeeks.org/wp-content/uploads/20250827100441798494/11.webp",
-      ],
-    },
-    {
-      heading: "REPRESENTATION OF DOUBLY LINKED LIST",
-      content: [
-        "In a data structure, a doubly linked list is represented using nodes that have three fields: data, a pointer to the next node, and a pointer to the previous node.",
-      ],
-      list: [
-        "Data",
-        "A pointer to the next node (next)",
-        "A pointer to the previous node (prev)",
-      ],
-      image: [
-        "https://media.geeksforgeeks.org/wp-content/uploads/20250827100603409157/22.webp",
-      ],
-    },
-    {
-      heading: "NODE DEFINITION",
-      content: [
-        "Each node in a Doubly Linked List contains the data it holds, a pointer to the next node in the list, and a pointer to the previous node in the list. By linking these nodes together through the next and prev pointers, we can traverse the list in both directions (forward and backward), which is a key feature of a Doubly Linked List.",
-      ],
-      code: {
-        language: "python",
-        value: `
+    id: "doubly-linked-list",
+    type: "structure",
+    title: "DOUBLY LINKED LIST",
+    sections: [
+      {
+        heading: "WHAT IS DOUBLY LINKED LIST?",
+        content: [
+          "A doubly linked list is a more complex data structure than a singly linked list, but it offers several advantages. The main advantage of a doubly linked list is that it allows for efficient traversal of the list in both directions. This is because each node in the list contains a pointer to the previous node and a pointer to the next node. This allows for quick and easy insertion and deletion of nodes from the list, as well as efficient traversal of the list in both directions.",
+        ],
+        image: [
+          "https://media.geeksforgeeks.org/wp-content/uploads/20250827100441798494/11.webp",
+        ],
+      },
+      {
+        heading: "REPRESENTATION OF DOUBLY LINKED LIST",
+        content: [
+          "In a data structure, a doubly linked list is represented using nodes that have three fields: data, a pointer to the next node, and a pointer to the previous node.",
+        ],
+        list: [
+          "Data",
+          "A pointer to the next node (next)",
+          "A pointer to the previous node (prev)",
+        ],
+        image: [
+          "https://media.geeksforgeeks.org/wp-content/uploads/20250827100603409157/22.webp",
+        ],
+      },
+      {
+        heading: "NODE DEFINITION",
+        content: [
+          "Each node in a Doubly Linked List contains the data it holds, a pointer to the next node in the list, and a pointer to the previous node in the list. By linking these nodes together through the next and prev pointers, we can traverse the list in both directions (forward and backward), which is a key feature of a Doubly Linked List.",
+        ],
+        code: {
+          language: "python",
+          value: `
 class Node:
     def __init__(self, data):
         # To store the value or data.
@@ -178,9 +178,9 @@ class Node:
         # Reference to the next node
         self.next = None
         `.trim(),
+        },
       },
-    },
-    {
+      {
         heading: "CREATING A DOUBLY LINKED LIST",
         content: [
           "To create a doubly linked list with multiple nodes, start by creating the head node and then link each new node by updating both the next and prev pointers. The last node must have its next pointer set to null or None. Keeping track of the head (and optionally the tail) allows easy traversal and insertion.",
@@ -421,7 +421,7 @@ class Node:
     ],
   },
   {
-    id: "inorder-traversal",
+    id: "binary-tree-inorder",
     type: "algorithm",
     title: "INORDER TRAVERSAL",
     sections: [
@@ -519,7 +519,7 @@ class Node:
     ],
   },
   {
-    id: "preorder-traversal",
+    id: "binary-tree-preorder",
     type: "algorithm",
     title: "PREORDER TRAVERSAL",
     sections: [
@@ -615,7 +615,7 @@ class Node:
     ],
   },
   {
-    id: "postorder-traversal",
+    id: "binary-tree-postorder",
     type: "algorithm",
     title: "POSTORDER TRAVERSAL",
     sections: [
@@ -709,6 +709,74 @@ class Node:
         ],
       },
     ],
+  },
+  {
+    id: "binary-search-tree",
+    type: "structure",
+    title: "Binary Search Tree",
+    sections: [
+      {
+        heading: "Binary Search Tree (BST)",
+        content: [
+          "A Binary Search Tree (BST) is a hierarchical binary tree data structure in which each node stores a unique key and satisfies a strict ordering rule. For any given node, all values in its left subtree are strictly less than the node’s value, and all values in its right subtree are strictly greater.",
+          "This ordering property allows BSTs to perform search, insertion, and deletion efficiently by eliminating half of the remaining tree at each step, similar to binary search on sorted arrays. When the tree is balanced, these operations take O(log n) time.",
+          "BSTs are widely used in database indexing, symbol tables, range queries, and are the conceptual foundation for self-balancing trees such as AVL Trees and Red-Black Trees. They are also useful in problems that require maintaining a dynamically sorted set of data."
+        ],
+        image: [
+          "https://media.geeksforgeeks.org/wp-content/uploads/20250904151404492797/bst1.webp",
+          "https://media.geeksforgeeks.org/wp-content/uploads/20250904151404252799/bst2.webp"
+        ],
+        list: [
+          "Left subtree values < node value",
+          "Right subtree values > node value",
+          "In-order traversal produces sorted sequence",
+          "Search/insert/delete: O(log n) when balanced",
+          "Worst case: O(n) when tree becomes skewed",
+          "Self-balancing BSTs (AVL, Red-Black) guarantee O(log n)"
+        ]
+      },
+
+      {
+        heading: "How BST Operations Work",
+        content: [
+          "BST operations rely on comparing the target value with the current node and moving either left or right based on the ordering rule. This makes traversal decisions deterministic and efficient.",
+          "For example, to search for a value, we start at the root. If the target is smaller, we move to the left child; if larger, we move to the right child. This continues until the value is found or a null pointer is reached."
+        ],
+        list: [
+          "Search: Compare and move left/right until found or null",
+          "Insertion: Find correct leaf position preserving order",
+          "Deletion: Remove node and reorganize children to keep BST property"
+        ]
+      },
+
+      {
+        heading: "Balanced vs Unbalanced BST",
+        content: [
+          "The efficiency of a BST depends heavily on its height. In a balanced BST, the height is approximately log₂(n), which keeps operations fast. However, inserting sorted data (e.g., 1,2,3,4,5) can create a skewed tree that behaves like a linked list.",
+          "Self-balancing trees such as AVL and Red-Black Trees automatically restructure themselves after updates to maintain near-optimal height and guarantee O(log n) performance."
+        ],
+        list: [
+          "Balanced BST height ≈ log₂(n)",
+          "Skewed BST height ≈ n",
+          "Skewed tree behaves like linked list",
+          "Self-balancing BST fixes height automatically"
+        ]
+      },
+
+      {
+        heading: "BST Applications",
+        content: [
+          "BSTs are used in systems that require dynamic ordered data with fast lookup. Because they maintain sorted order while allowing efficient updates, they are fundamental in many algorithms and data systems."
+        ],
+        list: [
+          "Database and file system indexing",
+          "Ordered sets and maps",
+          "Range queries (values between A and B)",
+          "Auto-complete and search suggestions",
+          "Foundation for AVL and Red-Black Trees"
+        ]
+      }
+    ]
   },
   {
     id: "avl-tree",
@@ -1356,7 +1424,7 @@ class Node:
     ]
   },
   {
-    id: "dijkstra-algorithm",
+    id: "dijkstra",
     type: "algorithm",
     title: "Dijkstra’s Algorithm",
     sections: [
@@ -1496,7 +1564,7 @@ class Node:
     ]
   },
   {
-    id: "bellman-ford-algorithm",
+    id: "bellman-ford",
     type: "algorithm",
     title: "Bellman–Ford Algorithm",
     sections: [
@@ -1628,7 +1696,7 @@ class Node:
     ]
   },
   {
-    id: "prims-mst",
+    id: "prims",
     type: "algorithm",
     title: "PRIM’S ALGORITHM",
     sections: [
@@ -1828,7 +1896,7 @@ class Node:
     ],
   },
   {
-    id: "kruskal-mst",
+    id: "kruskals",
     type: "algorithm",
     title: "KRUSKAL’S ALGORITHM",
     sections: [
@@ -2583,7 +2651,7 @@ int main() {
       {
         heading: "WHAT IS BINARY SEARCH?",
         content: [
-          "Binary Search is an efficient searching algorithm that works on sorted arrays.",
+          "Binary Search Tree is an efficient searching algorithm that works on sorted arrays.",
           "It repeatedly divides the search space into two halves, reducing the search time to O(log N)."
         ],
         image: [

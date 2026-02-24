@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type NavigationButtonsProps = {
   onBack: () => void;
@@ -16,7 +17,6 @@ function NavigationButtons({
   onNext,
   isFirstQuestion,
   isLastQuestion,
-  hasSelectedAnswer,
   className = "",
 }: NavigationButtonsProps) {
   return (
@@ -26,8 +26,8 @@ function NavigationButtons({
         onClick={onBack}
         disabled={isFirstQuestion}
         className={`
-          flex items-center justify-center px-3 py-2 rounded-lg border-1 border-[#222121]
-          font-medium text-base transition-all duration-200 wx-[24px] h-[38px]
+          flex items-center justify-center px-3 py-2 rounded-lg border border-[#222121]
+          font-medium text-base transition-all duration-200 wx-[24px] h-11
           ${
             isFirstQuestion
               ? "opacity-30 cursor-not-allowed"
@@ -35,31 +35,28 @@ function NavigationButtons({
           }
         `}
       >
-        <svg
-          className="w-5 h-5 text-[#222121]"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-        <span className="font-medium text-[#222121] text-lg">Back</span>
+        <div className="flex items-center gap-1">
+          <ChevronLeft className="w-5 h-7" />
+            <span className="text-lg h-7 flex items-center">Back</span>
+        </div>
       </button>
 
       {/* Next / Submit Button - Blue solid style */}
       <button
         onClick={onNext}
-        // disabled={!hasSelectedAnswer}
         className="
-          flex items-center justify-center px-6 py-2 rounded-lg
-          font-medium text-base transition-all duration-200
+          flex items-center justify-center px-4 py-2 rounded-lg
+          font-medium text-base transition-all duration-200 
           bg-[#0066cc] text-white hover:bg-[#0052a3] cursor-pointer">
-        {isLastQuestion ? "Submit" : "Next"}
+        {isLastQuestion ? 
+          <span className="text-lg h-7">Submit</span> : 
+          (
+          <div className="flex items-center gap-1">
+              <span className="text-lg h-7 flex items-center">Next</span>
+            <ChevronRight className="w-5 h-7" />
+          </div>
+          )
+        }  
       </button>
     </div>
   );
