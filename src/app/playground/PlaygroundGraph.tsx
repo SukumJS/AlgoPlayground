@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, DragEvent } from "react";
+import React, { useState, useCallback, useMemo, DragEvent } from "react";
 import ControlPanel from "../../components/shared/controlPanel";
 import SideTab from "../../components/shared/sideTab";
 import ExplainAlgo from "../../components/visualizer/explainAlgo";
@@ -37,6 +37,11 @@ import { Info } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 
+// ── Graph Algorithm imports ──────────────────────────────────────────
+import { getAlgorithmRunner } from "@/src/components/visualizer/algorithmGraph";
+import { useAlgorithmAnimation } from "@/src/hooks/graph/useAlgorithmAnimation";
+import { useGraphController } from "@/src/hooks/useGraphController";
+
 const nodeTypes = { custom: CustomNode };
 const edgeTypes = { tree: TreeEdge, floatingEdge: FloatingEdge };
 const fitViewOptions: FitViewOptions = { padding: 0.2 };
@@ -52,31 +57,78 @@ const graphInitialNodes: Node[] = [
 ];
 
 // Initial edges for graph (directed with weights) - 69→39 is created during tutorial
-const graphInitialEdges: Edge[] = [
+const graphDirectedInitialEdges: Edge[] = [
     { id: "eg-64-39", source: "g1", target: "g2", type: "floatingEdge", label: "4", data: { weight: 4 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
     { id: "eg-64-69", source: "g1", target: "g4", type: "floatingEdge", label: "1", data: { weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
     { id: "eg-39-97", source: "g2", target: "g3", type: "floatingEdge", label: "3", data: { weight: 3 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
     { id: "eg-97-70", source: "g3", target: "g5", type: "floatingEdge", label: "1", data: { weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 }, markerEnd: { type: 'arrowclosed' as const, width: 25, height: 25, color: '#222121' } },
 ];
 
+// Initial edges for graph (undirected, no weights) — used by BFS/DFS
+const graphUndirectedInitialEdges: Edge[] = [
+    { id: "eg-64-39", source: "g1", target: "g2", type: "floatingEdge", data: { directed: false }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-64-69", source: "g1", target: "g4", type: "floatingEdge", data: { directed: false }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-39-97", source: "g2", target: "g3", type: "floatingEdge", data: { directed: false }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-97-70", source: "g3", target: "g5", type: "floatingEdge", data: { directed: false }, style: { stroke: '#222121', strokeWidth: 1 } },
+];
+
+// Initial edges for graph (undirected WITH weights) — used by Prim's/Kruskal's
+const graphUndirectedWeightedInitialEdges: Edge[] = [
+    { id: "eg-64-39", source: "g1", target: "g2", type: "floatingEdge", label: "4", data: { directed: false, weight: 4 }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-64-69", source: "g1", target: "g4", type: "floatingEdge", label: "1", data: { directed: false, weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-39-97", source: "g2", target: "g3", type: "floatingEdge", label: "3", data: { directed: false, weight: 3 }, style: { stroke: '#222121', strokeWidth: 1 } },
+    { id: "eg-97-70", source: "g3", target: "g5", type: "floatingEdge", label: "1", data: { directed: false, weight: 1 }, style: { stroke: '#222121', strokeWidth: 1 } },
+];
+
 export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
+    // ── Determine graph mode ───────────────────────────────────────────────────
+    // Directed: only Dijkstra uses directed (weighted) edges
+    const isDirectedGraph = algorithm === "dijkstra";
+    // Weighted: Dijkstra, Prim's, Kruskal's use weighted edges
+    const isWeightedGraph = ["dijkstra", "prims", "kruskals"].includes(algorithm);
+
+    // Choose correct initial edges based on algorithm type
+    const initialEdges = useMemo(() => {
+        if (isDirectedGraph) return graphDirectedInitialEdges;
+        if (isWeightedGraph) return graphUndirectedWeightedInitialEdges;
+        return graphUndirectedInitialEdges;
+    }, [isDirectedGraph, isWeightedGraph]);
+
     // ── State Management ───────────────────────────────────────────────────────
     const [nodes, setNodes] = useState<Node[]>(graphInitialNodes);
-    const [edges, setEdges] = useState<Edge[]>(graphInitialEdges);
+    const [edges, setEdges] = useState<Edge[]>(initialEdges);
     const [showInfo, setShowInfo] = useState(false);
 
     const { flowToScreenPosition } = useReactFlow();
+
+    // ── Algorithm Animation Pipeline ────────────────────────────────────────────
+    const runner = useMemo(() => getAlgorithmRunner(algorithm), [algorithm]);
+    const animation = useAlgorithmAnimation(runner, nodes, edges, setNodes, setEdges);
+    const controller = useGraphController(animation);
+
+    // Callback from Data_graph "Search" button
+    const handleAlgorithmSearch = useCallback(
+        (startLabel: string, endLabel: string) => {
+            animation.reset();
+            animation.start(startLabel, endLabel);
+        },
+        [animation],
+    );
 
     // ── Custom Hooks ───────────────────────────────────────────────────────────
     // Graph Tutorial hook
     const graphTutorial = useGraphTutorial({
         nodes, edges, flowToScreenPosition, setNodes, setEdges, isGraph: true,
+        directed: isDirectedGraph,
+        weighted: isWeightedGraph,
     });
 
     // Node interaction (universal - works for graph interactions, active when NOT in tutorial)
     const nodeInteraction = useNodeInteraction({
         nodes, edges, setNodes, setEdges, isTree: false, isGraph: true,
         isTutorialActive: graphTutorial.showTutorial,
+        directed: isDirectedGraph,
+        weighted: isWeightedGraph,
     });
 
     // ── React Flow Event Handlers ──────────────────────────────────────────────
@@ -166,7 +218,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                 zoomOnScroll={!graphTutorial.showTutorial}
                 zoomOnPinch={!graphTutorial.showTutorial}
                 zoomOnDoubleClick={!graphTutorial.showTutorial}
-                nodesDraggable={!graphTutorial.showTutorial || (graphTutorial.showTutorial && graphTutorial.tutorialStep === 8)}
+                nodesDraggable={!graphTutorial.showTutorial || (graphTutorial.showTutorial && graphTutorial.tutorialStep === graphTutorial.dragDeleteStep)}
                 onNodeDrag={handleNodeDrag}
                 onNodeDragStop={handleNodeDragStop}
                 fitView
@@ -178,14 +230,18 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
             </ReactFlow>
 
             <div className="absolute bottom-4 w-full z-10">
-                <ControlPanel />
+                <ControlPanel controller={controller} />
             </div>
 
             <SideTab title="Graph Algorithms">
                 <div>
                     <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
                     <ExplainAlgo tutorialMode={graphTutorial.showTutorial} />
-                    <Data_graph />
+                    <Data_graph
+                        algorithm={algorithm}
+                        onSearch={handleAlgorithmSearch}
+                        tutorialMode={graphTutorial.showTutorial}
+                    />
                 </div>
                 <div><PostTest_portal /></div>
             </SideTab>
@@ -210,6 +266,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                     onComplete={graphTutorial.handleTutorialComplete}
                     currentStep={graphTutorial.tutorialStep}
                     setCurrentStep={graphTutorial.setTutorialStep}
+                    directed={graphTutorial.directed}
+                    weighted={graphTutorial.weighted}
                     node69ScreenPos={graphTutorial.node69ScreenPos}
                     node70ScreenPos={graphTutorial.node70ScreenPos}
                     edge64to39WeightPos={graphTutorial.edge64to39WeightPos}
