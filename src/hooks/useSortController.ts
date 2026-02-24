@@ -9,6 +9,8 @@ type Params = {
   delayRef: any;
   setSpeed: any;
   speed: any;
+  // callback to update explanation text
+  setExplanation?: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export function useSortController({
@@ -19,6 +21,7 @@ export function useSortController({
   delayRef,
   setSpeed,
   speed,
+  setExplanation,
 }: Params): AlgoController {
 
   // เรียกใช้ Engine ของ Sort 
@@ -28,6 +31,7 @@ export function useSortController({
     setNodes,
     positionFromIndex,
     delayRef,
+    setExplanation,
   });
 
   return {

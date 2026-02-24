@@ -265,7 +265,11 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
             <SideTab title="Tree Algorithms">
                 <div>
                     <CodeAlgo tutorialMode={tutorial.showTutorial} />
-                    <ExplainAlgo tutorialMode={tutorial.showTutorial} />
+                    <ExplainAlgo 
+                        tutorialMode={tutorial.showTutorial}
+                        algoType={algorithm}
+                        algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
+                    />
                     {/* Display Data Input for Tree Algorithms */}
                     <Data_tree
                         tutorialMode={tutorial.showTutorial}

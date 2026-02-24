@@ -8,9 +8,19 @@ interface ExplainAlgoProps {
     isOpen?: boolean;
     onToggle?: () => void;
     explanation?: string;
+    /** optional values that describe the current algorithm so the explanation can be contextualized */
+    algoType?: string;
+    algoName?: string;
 }
 
-export default function ExplainAlgo({ isOpen = true, onToggle, explanation = "", tutorialMode = false }: ExplainAlgoProps) {
+export default function ExplainAlgo({
+    isOpen = true,
+    onToggle,
+    explanation = "",
+    tutorialMode = false,
+    algoType,
+    algoName,
+}: ExplainAlgoProps) {
     const [isExplain, setIsExplain] = useState(isOpen);
     const [displayedExplanation, setDisplayedExplanation] = useState(explanation);
     const [isFading, setIsFading] = useState(false);
@@ -75,7 +85,10 @@ export default function ExplainAlgo({ isOpen = true, onToggle, explanation = "",
                         className={`text-lg text-gray-700 transition-opacity duration-150 ${
                             isFading ? "opacity-0" : "opacity-100"
                         }`}
-                    >{displayedExplanation}</p>
+                    >{
+                        // if parent provided algoName we can prefix it for clarity
+                        algoName ? `${algoName}: ${displayedExplanation}` : displayedExplanation
+                    }</p>
                 </div>
             </div>
         </>
