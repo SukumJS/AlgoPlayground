@@ -140,3 +140,4 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
         </div>
     );
 }
+
