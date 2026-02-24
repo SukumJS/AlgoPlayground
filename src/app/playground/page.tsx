@@ -6,6 +6,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import PlaygroundTree from "./PlaygroundTree";
 import PlaygroundGraph from "./PlaygroundGraph";
 import PlaygroundSort from "./PlaygroundSort";
+import PlaygroundSearch from "./PlaygroundSearch"; 
 
 function PlaygroundRouter() {
     const searchParams = useSearchParams();
@@ -18,9 +19,9 @@ function PlaygroundRouter() {
         return <PlaygroundGraph algorithm={algorithm} />;
     } else if (algoType === "sort") {
         return <PlaygroundSort algorithm={algorithm} />;
-    }
-    else {
-        return <PlaygroundSort algorithm={algorithm} />;
+    } else if (algoType === "search") {
+        // 🌟 เพิ่มหน้านี้เข้ามา (เดี๋ยวเราจะไปสร้างไฟล์นี้กัน)
+        return <PlaygroundSearch algorithm={algorithm} />; 
     }
 }
 

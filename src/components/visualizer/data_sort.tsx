@@ -11,14 +11,18 @@ let id = 0;
 const getId = () => `dndnode_${id++}`;
 
 type nodeProps = {
-    nodeInput: number;
+    nodeInput: number | string;
     /* `setNodeInput: React.Dispatch<React.SetStateAction<number>>;` is a prop declaration in the
     `nodeProps` interface. It defines a function that can be used to update the state of `nodeInput`
     in a React component. */
-    setNodeInput: React.Dispatch<React.SetStateAction<number>>;
+    setNodeInput: (val: number | string) => void;
+
+    // เพิ่ม Props สำหรับ Target Value (ใส่ ? เพื่อให้หน้า Sort ไม่ต้องส่งมาก็ได้)
+    targetValue?: number | string;
+    setTargetValue?: (val: number | string) => void;
 };
 
-function Data_sort({ nodeInput, setNodeInput }: nodeProps) {
+function Data_sort({ nodeInput, setNodeInput, targetValue, setTargetValue }: nodeProps) {
     const [isDataSortOpen, setIsDataSortOpen] = useState(false);
     const { setNodes } = useReactFlow();
     const { onDragStart, isDragging } = useDnD();
@@ -75,7 +79,7 @@ function Data_sort({ nodeInput, setNodeInput }: nodeProps) {
                         className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? "" : "hidden opacity-0"
                             }`}
                     ></div>
-                    <div className={`flex text-lg p-2`}>Data Sort</div>
+                    <div className={`flex text-lg p-2`}>Data</div>
                 </div>
                 <div className="mr-2 flex justify-end">
                     {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
@@ -91,7 +95,7 @@ function Data_sort({ nodeInput, setNodeInput }: nodeProps) {
                     <div
                         className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg cursor-grab"
                         onPointerDown={(event) => {
-                            const value = nodeInput || 0;
+                            const value = Number(nodeInput) || 0;
                             setType("input");
                             setDraggedValue(value);
                             onDragStart(event, createAddNewNode(value));
@@ -102,7 +106,7 @@ function Data_sort({ nodeInput, setNodeInput }: nodeProps) {
                             placeholder="0"
                             className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             value={nodeInput}
-                            onChange={(e) => setNodeInput(parseInt(e.target.value) || 0)}
+                            onChange={(e) => setNodeInput(e.target.value === "" ? "" : Number(e.target.value))}
                             onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
                         />
                     </div>
@@ -127,6 +131,21 @@ function Data_sort({ nodeInput, setNodeInput }: nodeProps) {
                 <div className="flex justify-center items-center text-center p-2">
                     <RandomSize />
                 </div>
+
+                {/*แสดงช่องใส่ Target Value  (สำหรับหน้า Search) */}
+                {targetValue !== undefined && setTargetValue && (
+                    <div className="p-3 border-t border-gray-300 ">
+                        <label className=" font-bold text-md mb-2 text-start m-1 gap-2">
+                            Target Value
+                        </label>
+                        <input
+                            type="number"
+                            value={targetValue}
+                            onChange={(e) => setTargetValue(e.target.value === "" ? "" : Number(e.target.value))}
+                            className="w-full p-2 mt-2 border-2 border-[#5D5D5D] rounded-lg text-center text-xl font-bold focus:border-[#D9E363] focus:outline-none transition-colors"
+                        />
+                    </div>
+                )}
             </div>
         </>
     );
@@ -146,7 +165,7 @@ export function DragGhost({ type, value }: DragGhostProps) {
 
     return (
         <div
-            className={`fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`}
+            className={`fixed top-0 left-0 pointer-events-none z-[1000] flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`}
             style={{
                 transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
             }}>

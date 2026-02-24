@@ -24,11 +24,14 @@ import {
 import "@xyflow/react/dist/style.css";
 import '@xyflow/react/dist/base.css';
 
-// นำเข้า SortNode และ Type ที่เราแยกไว้
+// นำเข้า SortNode และ Type ที่เราแยกไว้ (ใช้ตัวเดียวกันเลย!)
 import SortNode, { type SortNodeData } from "@/src/components/shared/sortNode";
 import { useSortableDrag } from "@/src/hooks/sort/useSortableDrag";
 import { useExecutionSpeed } from "@/src/hooks/useExecutionSpeed";
-import { useSortController } from "@/src/hooks/useSortController";
+
+// 🌟 นำเข้า Engine ของ Search ที่เราเพิ่งสร้าง
+import { useStepSearchEngine } from "@/src/hooks/search/useStepSearchEngine";
+
 import Reading_modal from "@/src/components/shared/reading_modal";
 import { Info } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
@@ -60,12 +63,15 @@ const fitViewOptions: FitViewOptions = { padding: 0.2 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: true };
 
 // รับค่า algorithm มาจาก page.tsx 
-export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
-    // state สำหรับ input ใน sorting
+export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
     const [nodes, setNodes] = useState<Node<SortNodeData>[]>(initialNodes);
-    const [nodeInput, setNodeInput] = useState<number | string>("");
     const [edges, setEdges] = useState<Edge[]>(initialEdges);
     const [showInfo, setShowInfo] = useState(false);
+
+    const [nodeInput, setNodeInput] = useState<number | string>("");
+
+    // State สำหรับเก็บค่าตัวเลขที่ต้องการค้นหา (Target Value) เริ่มที่หาเลข 3
+    const [targetValue, setTargetValue] = useState<number | string>("");
 
     const onNodesChange: OnNodesChange = useCallback(
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds) as Node<SortNodeData>[]),
@@ -88,18 +94,24 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
     /* Hook สำหรับควบคุมความเร็ว animation */
     const { delayRef, setSpeed, speed } = useExecutionSpeed();
 
-    /* Hook สำหรับ drag แล้ว swap node */
+    /* Hook สำหรับ drag แล้ว swap node (ทำให้ Search สามารถลากสลับกล่องก่อนหาได้ด้วย!) */
     const { onNodeDrag, onNodeDragStop } = useSortableDrag(setNodes, positionFromIndex);
 
-    const controller = useSortController({
+    // เรียกใช้ Engine ของ Search 
+    const engine = useStepSearchEngine({
         algoType: algorithm,
         nodes,
         setNodes,
-        positionFromIndex,
+        target: Number(targetValue) || 0,
         delayRef,
+    });
+
+    // ประกอบร่าง Controller ส่งให้ ControlPanel
+    const controller = {
+        ...engine,
         setSpeed,
         speed,
-    });
+    };
 
     return (
         <div className="w-screen h-screen">
@@ -127,13 +139,19 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
                 <ControlPanel controller={controller} />
             </div>
 
-            <SideTab title="Sorting Algorithms">
+            <SideTab title="Searching Algorithms">
                 <div>
                     <CodeAlgo />
                     <ExplainAlgo />
+
                     <Data_sort
                         nodeInput={nodeInput}
                         setNodeInput={setNodeInput}
+                        targetValue={targetValue}
+                        setTargetValue={(val) => {
+                            engine.stop(); // หยุดแอนิเมชันตอนพิมพ์
+                            setTargetValue(val); // ส่งค่าอัปเดตตรงๆ ได้เลย
+                        }}
                     />
                 </div>
                 <div>
