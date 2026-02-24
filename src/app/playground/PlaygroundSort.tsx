@@ -25,7 +25,7 @@ import "@xyflow/react/dist/style.css";
 import '@xyflow/react/dist/base.css';
 
 // นำเข้า SortNode และ Type ที่เราแยกไว้
-import SortNode, { type SortNodeData } from "@/src/components/shared/sortNode"; 
+import SortNode, { type SortNodeData } from "@/src/components/shared/sortNode";
 import { useSortableDrag } from "@/src/hooks/sort/useSortableDrag";
 import { useExecutionSpeed } from "@/src/hooks/useExecutionSpeed";
 import { useSortController } from "@/src/hooks/useSortController";
@@ -90,9 +90,9 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
 
     /* Hook สำหรับ drag แล้ว swap node */
     const { onNodeDrag, onNodeDragStop } = useSortableDrag(setNodes, positionFromIndex);
-    
+
     const controller = useSortController({
-        algoType: "sort", 
+        algoType: algorithm,
         nodes,
         setNodes,
         positionFromIndex,
@@ -103,7 +103,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
 
     return (
         <div className="w-screen h-screen">
-            <ReactFlow 
+            <ReactFlow
                 className={controller.isRunning ? "sorting" : ""}
                 nodes={nodes}
                 edges={edges}
