@@ -5,16 +5,13 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface ExplainAlgoProps {
     tutorialMode?: boolean;
+    isOpen?: boolean;
+    onToggle?: () => void;
+    explanation?: string;
 }
 
-type ExplainAlgoPropsWithContent = {
-    isOpen: boolean;
-    onToggle: () => void;
-    explanation: string;
-};
-
-export default function ExplainAlgo({ isOpen, onToggle, explanation }: ExplainAlgoPropsWithContent, { tutorialMode = false }: ExplainAlgoProps) {
-    const[isExplain, setIsExplain] = useState(isOpen);
+export default function ExplainAlgo({ isOpen = true, onToggle, explanation = "", tutorialMode = false }: ExplainAlgoProps) {
+    const [isExplain, setIsExplain] = useState(isOpen);
     const [displayedExplanation, setDisplayedExplanation] = useState(explanation);
     const [isFading, setIsFading] = useState(false);
     const isInitialMount = useRef(true);

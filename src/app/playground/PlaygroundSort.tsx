@@ -130,7 +130,11 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
             <SideTab title="Sorting Algorithms">
                 <div>
                     <CodeAlgo />
-                    <ExplainAlgo />
+                    <ExplainAlgo 
+                        isOpen={true}
+                        onToggle={() => { } } 
+                        explanation={""}
+                    />
                     <Data_sort
                         nodeInput={nodeInput}
                         setNodeInput={setNodeInput}
