@@ -81,6 +81,7 @@ export function useGraphTutorial({
     const [node70ScreenPos, setNode70ScreenPos] = useState<ScreenPosition | null>(null);
     const [edge64to39WeightPos, setEdge64to39WeightPos] = useState<ScreenPosition | null>(null);
     const [trashBinPos, setTrashBinPos] = useState<ScreenPosition | null>(null);
+    const [nodeScreenRadius, setNodeScreenRadius] = useState(32);
     const [isTrashActive, setIsTrashActive] = useState(false);
 
     // Track first selected node for linking
@@ -98,6 +99,12 @@ export function useGraphTutorial({
                 y: node69.position.y + 28,
             });
             setNode69ScreenPos(screenPos);
+
+            // Compute screen-space radius: convert node width (56px flow) to screen pixels
+            const topLeft = flowToScreenPosition({ x: node69.position.x, y: node69.position.y });
+            const topRight = flowToScreenPosition({ x: node69.position.x + 56, y: node69.position.y });
+            const screenDiameter = topRight.x - topLeft.x;
+            setNodeScreenRadius(screenDiameter / 2);
         }
 
         // Find node 70
@@ -110,7 +117,7 @@ export function useGraphTutorial({
             setNode70ScreenPos(screenPos);
         }
 
-        // Find edge 64→39 weight position (midpoint of edge)
+        // Find edge 64→39 weight position — read from actual DOM label for precision
         const edge64to39 = edges.find(e => {
             const sourceNode = nodes.find(n => n.id === e.source);
             const targetNode = nodes.find(n => n.id === e.target);
@@ -118,13 +125,24 @@ export function useGraphTutorial({
         });
 
         if (edge64to39) {
-            const sourceNode = nodes.find(n => n.id === edge64to39.source);
-            const targetNode = nodes.find(n => n.id === edge64to39.target);
-            if (sourceNode && targetNode) {
-                const midX = (sourceNode.position.x + targetNode.position.x) / 2 + 28;
-                const midY = (sourceNode.position.y + targetNode.position.y) / 2 + 28;
-                const screenPos = flowToScreenPosition({ x: midX, y: midY });
-                setEdge64to39WeightPos(screenPos);
+            // Try DOM query first for pixel-perfect position
+            const labelEl = document.querySelector(`[data-edge-id="${edge64to39.id}"]`) as HTMLElement | null;
+            if (labelEl) {
+                const rect = labelEl.getBoundingClientRect();
+                setEdge64to39WeightPos({
+                    x: rect.left + rect.width / 2,
+                    y: rect.top + rect.height / 2,
+                });
+            } else {
+                // Fallback to flow-coordinate calculation
+                const sourceNode = nodes.find(n => n.id === edge64to39.source);
+                const targetNode = nodes.find(n => n.id === edge64to39.target);
+                if (sourceNode && targetNode) {
+                    const midX = (sourceNode.position.x + targetNode.position.x) / 2 + 28;
+                    const midY = (sourceNode.position.y + targetNode.position.y) / 2 + 28;
+                    const screenPos = flowToScreenPosition({ x: midX, y: midY });
+                    setEdge64to39WeightPos(screenPos);
+                }
             }
         }
 
@@ -442,6 +460,7 @@ export function useGraphTutorial({
         node70ScreenPos,
         edge64to39WeightPos,
         trashBinPos,
+        nodeScreenRadius,
 
         // Setters
         setShowTutorial,

@@ -106,6 +106,9 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     const animation = useAlgorithmAnimation(runner, nodes, edges, setNodes, setEdges);
     const controller = useGraphController(animation);
 
+    // True when the animation pipeline has generated steps (playing, paused, or finished)
+    const isAnimationActive = animation.totalSteps > 0;
+
     // Callback from Data_graph "Search" button
     const handleAlgorithmSearch = useCallback(
         (startLabel: string, endLabel: string) => {
@@ -147,34 +150,38 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     }, [setEdges]);
 
     const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
+        if (isAnimationActive) return; // lock during animation
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
-    }, []);
+    }, [isAnimationActive]);
 
     // ── Custom Interaction Handlers ────────────────────────────────────────────
     // Edge click handler (for weight editing)
     const handleEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+        if (isAnimationActive) return; // lock during animation
         if (graphTutorial.showTutorial) {
             graphTutorial.handleWeightClick(edge.id);
         } else {
             nodeInteraction.handleEdgeClick(event, edge.id);
         }
-    }, [graphTutorial, nodeInteraction]);
+    }, [isAnimationActive, graphTutorial, nodeInteraction]);
 
     // Combined node click handler
     const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+        if (isAnimationActive) return; // lock during animation
         if (graphTutorial.showTutorial) {
             graphTutorial.handleNodeClick(event, node);
         } else {
             nodeInteraction.handleNodeClick(event, node);
         }
-    }, [graphTutorial, nodeInteraction]);
+    }, [isAnimationActive, graphTutorial, nodeInteraction]);
 
     // Combined node drag handlers
     const handleNodeDragStart = useCallback((event: React.MouseEvent, node: Node) => {
+        if (isAnimationActive) return; // lock during animation
         if (graphTutorial.showTutorial) return;
         nodeInteraction.handleNodeDragStart(event, node);
-    }, [graphTutorial.showTutorial, nodeInteraction]);
+    }, [isAnimationActive, graphTutorial.showTutorial, nodeInteraction]);
 
     const handleNodeDrag = useCallback((event: React.MouseEvent, node: Node) => {
         if (graphTutorial.showTutorial) {
@@ -204,9 +211,9 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
-                onNodesChange={graphTutorial.showTutorial ? undefined : onNodesChange}
-                onEdgesChange={graphTutorial.showTutorial ? undefined : onEdgesChange}
-                onConnect={onConnect}
+                onNodesChange={graphTutorial.showTutorial || isAnimationActive ? undefined : onNodesChange}
+                onEdgesChange={graphTutorial.showTutorial || isAnimationActive ? undefined : onEdgesChange}
+                onConnect={isAnimationActive ? undefined : onConnect}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
                 onDragOver={onDragOver}
@@ -218,7 +225,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                 zoomOnScroll={!graphTutorial.showTutorial}
                 zoomOnPinch={!graphTutorial.showTutorial}
                 zoomOnDoubleClick={!graphTutorial.showTutorial}
-                nodesDraggable={!graphTutorial.showTutorial || (graphTutorial.showTutorial && graphTutorial.tutorialStep === graphTutorial.dragDeleteStep)}
+                nodesDraggable={!isAnimationActive && (!graphTutorial.showTutorial || (graphTutorial.showTutorial && graphTutorial.tutorialStep === graphTutorial.dragDeleteStep))}
                 onNodeDrag={handleNodeDrag}
                 onNodeDragStop={handleNodeDragStop}
                 fitView
@@ -273,6 +280,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                     edge64to39WeightPos={graphTutorial.edge64to39WeightPos}
                     trashBinPos={graphTutorial.trashBinPos}
                     isTrashActive={graphTutorial.isTrashActive}
+                    nodeScreenRadius={graphTutorial.nodeScreenRadius}
                     showWeightInput={graphTutorial.showWeightInput}
                     weightInputValue={graphTutorial.weightInputValue}
                     onWeightInputChange={graphTutorial.handleWeightInputChange}

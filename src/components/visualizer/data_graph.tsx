@@ -83,7 +83,8 @@ function Data_graph({ onSearch, algorithm = "", tutorialMode = false }: DataGrap
     };
 
     const handleSearch = () => {
-        if (!inputValue) return;
+        // Kruskal's doesn't need any vertex input; Prim's only needs start
+        if (needsStartVertex && !inputValue) return;
         onSearch?.(inputValue, searchValue);
     };
 
@@ -111,7 +112,7 @@ function Data_graph({ onSearch, algorithm = "", tutorialMode = false }: DataGrap
             className={`flex-col ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}
         >
             <div
-            className={`transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2`}
+            className={`transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2 px-2 py-2`}
             >
             <div
                 className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-16 h-16 rounded-full cursor-grab"
@@ -144,46 +145,40 @@ function Data_graph({ onSearch, algorithm = "", tutorialMode = false }: DataGrap
                 </div>
             ))}
             </div>
-            <div className="flex-col justify-center items-center text-center">
+            <div className="flex flex-col gap-2 px-2">
             {needsStartVertex && (
-            <div className="grid-cols-1 grid gap-2 text-start m-1">
+            <div className="flex flex-col gap-1 text-start">
                 <p className="font-bold text-md">Start Vertex</p>
-                <div className="flex gap-2">
                 <input
                     type="number"
-                    className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="border border-gray-200 p-2 rounded-lg w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                 />
-                </div>
             </div>
             )}
             {needsEndVertex && (
-                <div className="grid-cols-1 grid gap-2 text-start m-1">
+                <div className="flex flex-col gap-1 text-start">
                     <p className="font-bold text-md">End Vertex</p>
-                    <div className="flex gap-2">
                     <input
                         type="number"
-                        className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="border border-gray-200 p-2 rounded-lg w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={searchValue}
                         onChange={(e) => setSearchValue(e.target.value)}
                     />
-                    </div>
                 </div>
             )}
-            <div className="grid-cols-1 grid gap-2 text-start m-1">
-                <button
-                    className="bg-[#222121] rounded-lg p-2 mt-2 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handleSearch}
-                    disabled={
-                        needsEndVertex ? !inputValue || !searchValue
-                        : needsStartVertex ? !inputValue
-                        : false
-                    }
-                >
-                    {isMST ? "Find MST" : "Search"}
-                </button>
-            </div>
+            <button
+                className="bg-[#222121] rounded-lg p-2 mt-1 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleSearch}
+                disabled={
+                    needsEndVertex ? !inputValue || !searchValue
+                    : needsStartVertex ? !inputValue
+                    : false
+                }
+            >
+                {isMST ? "Find MST" : "Search"}
+            </button>
             <RandomSize onReset={handleReset} />
             </div>
         </div>

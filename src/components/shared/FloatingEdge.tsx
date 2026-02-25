@@ -108,13 +108,14 @@ export default function FloatingEdge({
                                 pointerEvents: 'all',
                                 fontSize: '12px',
                                 fontWeight: 500,
-                                color: '#222121',
+                                color: strokeColor,
                                 background: 'transparent',
                                 padding: '4px 8px',
                                 cursor: 'pointer',
                                 zIndex: 1000,
                             }}
                             className="nodrag nopan edge-weight-label"
+                            data-edge-id={id}
                         >
                             {label}
                         </div>
@@ -200,13 +201,14 @@ export default function FloatingEdge({
                             pointerEvents: 'all',
                             fontSize: '12px',
                             fontWeight: 500,
-                            color: '#222121',
+                            color: strokeColor,
                             background: 'transparent',
                             padding: '4px 8px',
                             cursor: 'pointer',
                             zIndex: 1000,
                         }}
                         className="nodrag nopan edge-weight-label"
+                        data-edge-id={id}
                     >
                         {label}
                     </div>

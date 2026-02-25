@@ -103,6 +103,8 @@ interface TutorialGraphProps {
     edge64to39WeightPos?: { x: number; y: number } | null;
     trashBinPos?: { x: number; y: number } | null;
     isTrashActive?: boolean;
+    /** Computed screen-space radius of a graph node (accounts for zoom) */
+    nodeScreenRadius?: number;
     // Weight input
     showWeightInput?: boolean;
     weightInputValue?: string;
@@ -121,6 +123,7 @@ export default function TutorialGraph({
     edge64to39WeightPos,
     trashBinPos,
     isTrashActive = false,
+    nodeScreenRadius = 32,
     showWeightInput = false,
     weightInputValue = '',
     onWeightInputChange,
@@ -153,25 +156,25 @@ export default function TutorialGraph({
 
                         {/* Step 0: Spotlight on node 69 */}
                         {currentStep === 0 && node69ScreenPos && (
-                            <circle cx={node69ScreenPos.x} cy={node69ScreenPos.y} r="45" fill="black" />
+                            <circle cx={node69ScreenPos.x} cy={node69ScreenPos.y} r={nodeScreenRadius} fill="black" />
                         )}
 
                         {/* Step 1: Dual spotlight - node 69 and node 70 */}
                         {currentStep === 1 && node69ScreenPos && (
-                            <circle cx={node69ScreenPos.x} cy={node69ScreenPos.y} r="45" fill="black" />
+                            <circle cx={node69ScreenPos.x} cy={node69ScreenPos.y} r={nodeScreenRadius} fill="black" />
                         )}
                         {currentStep === 1 && node70ScreenPos && (
-                            <circle cx={node70ScreenPos.x} cy={node70ScreenPos.y} r="45" fill="black" />
+                            <circle cx={node70ScreenPos.x} cy={node70ScreenPos.y} r={nodeScreenRadius} fill="black" />
                         )}
 
                         {/* Step 4 (directed only): Spotlight on edge 64→39 weight */}
                         {directed && currentStep === 4 && edge64to39WeightPos && (
-                            <circle cx={edge64to39WeightPos.x} cy={edge64to39WeightPos.y} r="30" fill="black" />
+                            <circle cx={edge64to39WeightPos.x} cy={edge64to39WeightPos.y} r="20" fill="black" />
                         )}
 
                         {/* Delete highlight & drag step: Spotlight on node 70 */}
                         {(currentStep === deleteHighlightStep || currentStep === dragStep) && node70ScreenPos && (
-                            <circle cx={node70ScreenPos.x} cy={node70ScreenPos.y} r="45" fill="black" />
+                            <circle cx={node70ScreenPos.x} cy={node70ScreenPos.y} r={nodeScreenRadius} fill="black" />
                         )}
                     </mask>
                 </defs>
