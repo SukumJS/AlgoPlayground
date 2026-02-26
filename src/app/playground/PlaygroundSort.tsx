@@ -162,7 +162,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         if (tutorial.showTutorial) {
             tutorial.onNodeDragStart(event, node as Node<SortNodeData>);
         }
-    }, [tutorial, onNodeDragStart]);
+    }, [tutorial]);
 
     const handleNodeDrag = useCallback((event: React.MouseEvent, node: Node, allNodes: Node[]) => {
         //เรียกใช้ของเดิม เพื่อให้มันเกิด Live-swap ดันกล่องอื่นสลับที่
@@ -208,8 +208,9 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
                 <PostTest_portal />
             </div>
         </SideTab>
-    ), [nodeInput, setNodeInput, explanation, algorithm, prettyName, tutorial.showTutorial, tutorial.handleTutorialDropSuccess]);
 
+    ), [nodeInput, setNodeInput, explanation, algorithm, prettyName, tutorial.showTutorial, tutorial.handleTutorialDropSuccess]);
+        
     return (
         <div className="w-screen h-screen">
             <ReactFlow
