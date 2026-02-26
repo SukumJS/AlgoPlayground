@@ -1,6 +1,5 @@
 import type { Node } from "@xyflow/react";
 import type { SortNodeData } from "@/src/components/shared/sortNode";
-import { swapByIndex } from "./swap";
 
 export const generateInsertionSteps = (
     nodes: Node<SortNodeData>[],
@@ -30,109 +29,87 @@ export const generateInsertionSteps = (
             }))
         );
     };
-    pushStep(); // initial
+    pushStep(); // Initial state
 
     const n = arr.length;
 
     for (let i = 1; i < n; i++) {
         let j = i;
+        const targetNodeId = arr[i].id;
+        const targetValue = arr[i].data.value;
 
-        while (j > 0 && arr[j - 1].data.value > arr[j].data.value) {
-            const left = arr[j - 1];
-            const right = arr[j];
+        // 1️⃣ Lift: ยกตัวที่จะแทรกขึ้นมาพักไว้
+        arr = arr.map((node) =>
+            node.id === targetNodeId
+                ? {
+                      ...node,
+                      data: { ...node.data, status: "compare" as const },
+                      position: {
+                          x: node.position.x,
+                          y: BASE_Y - LIFT_OFFSET,
+                      },
+                  }
+                : node
+        );
+        pushStep();
 
-            // 1️⃣ Compare
+        while (j > 0 && arr[j - 1].data.value > targetValue) {
+            const shiftNodeId = arr[j - 1].id;
+
+            // 2️⃣ Compare: ไฮไลท์ตัวที่จะเทียบด้วย (ตัวซ้ายมือ)
             arr = arr.map((node) =>
-                node.id === left.id || node.id === right.id
+                node.id === shiftNodeId
                     ? { ...node, data: { ...node.data, status: "compare" as const } }
                     : node
             );
             pushStep();
 
-            // 2️⃣ Lift
+            // 3️⃣ Shift: เลื่อนตัวที่มากกว่าไปทางขวา 1 ช่อง และเลื่อนตัวที่ลอยอยู่ไปทางซ้ายบน
             arr = arr.map((node) => {
-                if (node.id === left.id) {
+                if (node.id === shiftNodeId) {
                     return {
                         ...node,
-                        data: { ...node.data, status: "swap" as const },
+                        data: { ...node.data, index: j, status: "idle" as const }, // อัปเดต index และเคลียร์ status
+                        position: positionFromIndex(j), // สไลด์ไปทางขวา
+                    };
+                }
+                if (node.id === targetNodeId) {
+                    return {
+                        ...node,
+                        data: { ...node.data, index: j - 1 }, // อัปเดต index ของตัวที่ลอยอยู่
                         position: {
-                            x: node.position.x,
+                            x: positionFromIndex(j - 1).x, // สไลด์ตามไปรอด้านบนของช่องว่าง
                             y: BASE_Y - LIFT_OFFSET,
                         },
                     };
                 }
-                if (node.id === right.id) {
-                    return {
-                        ...node,
-                        data: { ...node.data, status: "swap" as const },
-                        position: {
-                            x: node.position.x,
-                            y: BASE_Y + LIFT_OFFSET,
-                        },
-                    };
-                }
                 return node;
             });
+
+            // สลับตำแหน่งใน Array จริงๆ เพื่อให้ลูปทำงานต่อไปได้ถูกต้อง
+            const temp = arr[j];
+            arr[j] = arr[j - 1];
+            arr[j - 1] = temp;
+
             pushStep();
-
-            // 3️⃣ Horizontal Slide
-            arr = arr.map((node) => {
-                if (node.id === left.id) {
-                    return {
-                        ...node,
-                        position: {
-                            x: positionFromIndex(j).x,
-                            y: BASE_Y - LIFT_OFFSET,
-                        },
-                    };
-                }
-                if (node.id === right.id) {
-                    return {
-                        ...node,
-                        position: {
-                            x: positionFromIndex(j - 1).x,
-                            y: BASE_Y + LIFT_OFFSET,
-                        },
-                    };
-                }
-                return node;
-            });
-            pushStep();
-
-            // 4️⃣ Drop
-            arr = arr.map((node) => {
-                if (node.id === left.id) {
-                    return {
-                        ...node,
-                        position: positionFromIndex(j),
-                    };
-                }
-                if (node.id === right.id) {
-                    return {
-                        ...node,
-                        position: positionFromIndex(j - 1),
-                    };
-                }
-                return node;
-            });
-            pushStep();
-
-            // Commit swap in data order
-            arr = swapByIndex(arr, j - 1, j, positionFromIndex);
-
-            // 5️⃣ Reset
-            arr = arr.map((node) =>
-                node.id === left.id || node.id === right.id
-                    ? { ...node, data: { ...node.data, status: "idle" as const } }
-                    : node
-            );
-            pushStep();
-
             j--;
         }
+
+        // 4️⃣ Drop: วางตัวที่ยกไว้ลงในช่องว่างที่ถูกต้อง
+        arr = arr.map((node) => {
+            if (node.id === targetNodeId) {
+                return {
+                    ...node,
+                    data: { ...node.data, status: "idle" as const },
+                    position: positionFromIndex(j), // ตกลงมาที่ Base Y
+                };
+            }
+            return node;
+        });
+        pushStep();
     }
 
-    // Mark sorted
+    // Mark sorted: เมื่อทำครบทุกตัว ถือว่าจัดเรียงเสร็จสิ้น
     arr = arr.map((node) => ({
         ...node,
         data: { ...node.data, status: "sorted" as const },
