@@ -65,6 +65,21 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
     const [nodes, setNodes] = useState<Node<SortNodeData>[]>(initialNodes);
     const [nodeInput, setNodeInput] = useState<number>(0);
     const [edges, setEdges] = useState<Edge[]>(initialEdges);
+    const [explanation, setExplanation] = useState<string>(
+        "This section will explain the algorithm's steps. Click 'Run' to start."
+    );
+
+    // helper for user‑friendly name
+    const prettyName = algorithm
+        ? algorithm[0].toUpperCase() + algorithm.slice(1) + " sort"
+        : "";
+
+    // reset default explanation when the algorithm changes
+    React.useEffect(() => {
+        if (algorithm) {
+            setExplanation(`This section will explain ${prettyName}. Click 'Run' to start.`);
+        }
+    }, [algorithm, prettyName]);
     const [showInfo, setShowInfo] = useState(false);
 
     const onNodesChange: OnNodesChange = useCallback(
@@ -99,6 +114,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         delayRef,
         setSpeed,
         speed,
+        setExplanation,
     });
 
     // สร้างตัวแปรแช่แข็ง SideTab ด้วย useMemo
@@ -106,7 +122,13 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         <SideTab title="Sorting Algorithms">
             <div>
                 <CodeAlgo />
-                <ExplainAlgo />
+                <ExplainAlgo 
+                    isOpen={true}
+                    onToggle={() => { }}
+                    explanation={explanation}
+                    algoType={algorithm}
+                    algoName={prettyName}
+                />
                 <Data_sort
                     nodeInput={nodeInput}
                     setNodeInput={setNodeInput}
@@ -116,7 +138,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
                 <PostTest_portal />
             </div>
         </SideTab>
-    ), [nodeInput]);
+    ), [nodeInput, setNodeInput, explanation, algorithm, prettyName]);
 
     return (
         <div className="w-screen h-screen">

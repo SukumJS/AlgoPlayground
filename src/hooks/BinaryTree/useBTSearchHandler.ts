@@ -26,6 +26,7 @@ export function useBTSearchHandler({
   setNodes,
   setEdges,
   setDescription,
+  applyHighlighting,
   animationSpeed,
   isPausedRef,
 }: UseBTSearchHandlerProps) {
@@ -46,6 +47,7 @@ export function useBTSearchHandler({
       const positions = calculateBTPositions(root);
 
       // Animate BFS traversal — only current node highlighted, edges accumulated
+      let globalOffset = 0;
       path.forEach((id, idx) => {
         controller.scheduleStep(() => {
           const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(root, [], [], positions);
@@ -69,12 +71,19 @@ export function useBTSearchHandler({
               : { stroke: '#999', strokeWidth: 2 },
           }));
 
+          const currentNode = (rfNodes as RFNode[]).find(n => n.id === id);
+
           setNodes(highlighted);
           setEdges(highlightedEdges);
-          setDescription(`🔍 Searching for ${value}... (step ${idx + 1}/${path.length})`);
-        }, animationSpeed * (idx + 1));
+          setDescription(`Searching for ${value}. Now checking node ${currentNode?.data.label}.`);
+        }, animationSpeed * (globalOffset + 1));
+        globalOffset++; // Increment offset for the pause after description
+        controller.scheduleStep(() => {
+          // Keep description visible for a short duration
+          // No visual change, just a pause
+        }, animationSpeed * (globalOffset + 1));
+        globalOffset++;
       });
-
       // Show result
       controller.scheduleStep(() => {
         const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(root, [], [], positions);
@@ -88,10 +97,10 @@ export function useBTSearchHandler({
             },
           }));
           setNodes(highlighted);
-          setDescription(`✓ Found ${value}!`);
+          setDescription(`Found ${value}!`);
         } else {
           setNodes(rfNodes as RFNode[]);
-          setDescription(`✗ ${value} not found`);
+          setDescription(`${value} was not found in the tree.`);
         }
         setEdges(rfEdges as RFEdge[]);
 
@@ -100,7 +109,7 @@ export function useBTSearchHandler({
           setNodes(clean as RFNode[]);
           setEdges(cleanE as RFEdge[]);
           setDescription('');
-        }, animationSpeed * 2);
+        }, animationSpeed * 4); // Longer delay for final state
       }, animationSpeed * (path.length + 1));
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

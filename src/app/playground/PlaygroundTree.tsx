@@ -109,10 +109,22 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
     const [nodes, setNodes] = useState<Node[]>(treeInitialNodes);
     const [edges, setEdges] = useState<Edge[]>(treeInitialEdges);
     const [showInfo, setShowInfo] = useState(false);
-    
+    const [explanation, setExplanation] = useState<string>(
+        "This section will explain the tree algorithm's steps. Perform an operation to begin."
+    );
     const { flowToScreenPosition } = useReactFlow();
     
     const rebalanceRef = useRef<(() => void) | null>(null);
+
+    // reset explanation when the selected algorithm changes
+    const prettyName = algorithm
+        ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g, ' ')
+        : "";
+    React.useEffect(() => {
+        if (algorithm) {
+            setExplanation(`This section will explain ${prettyName}. Perform an operation to begin.`);
+        }
+    }, [algorithm, prettyName]);
     const btRebalanceRef = useRef<(() => void) | null>(null);
     const heapRebalanceRef = useRef<(() => void) | null>(null);
     const trashDeleteRef = useRef<((nodeId: string, value: number) => void) | null>(null);
@@ -244,7 +256,12 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         <SideTab title="Tree Algorithms">
             <div>
                 <CodeAlgo tutorialMode={tutorial.showTutorial} />
-                <ExplainAlgo tutorialMode={tutorial.showTutorial} />
+                <ExplainAlgo 
+                    tutorialMode={tutorial.showTutorial}
+                    explanation={explanation}
+                    algoType={algorithm}
+                    algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
+                />
                 {/* Display Data Input for Tree Algorithms */}
                 <Data_tree
                     tutorialMode={tutorial.showTutorial}
@@ -262,6 +279,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                     initialAVLRoot={algorithm === 'avl-tree' ? treeInitialAVLRoot : null}
                     onTrashDeleteReady={(fn) => { trashDeleteRef.current = fn; }}
                     onAutoInsertReady={(fn) => { autoInsertRef.current = fn; }}
+                    setExplanation={setExplanation}
                 />
             </div>
             <div><PostTest_portal /></div>
@@ -272,7 +290,9 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         tutorial.handleTutorialDropSuccess,
         treeNodes, 
         edges, 
-        algorithm
+        algorithm,
+        explanation,
+        setExplanation
     ]);
 
     return (
@@ -308,7 +328,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
             <div className="absolute bottom-4 w-full z-10">
                 <ControlPanel />
             </div>
-            
+
             {sideTabMemo}
 
             {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}

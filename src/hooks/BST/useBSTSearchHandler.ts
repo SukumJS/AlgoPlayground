@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 import { AnimationController } from '@/src/components/visualizer/animations/Tree/animationController';
 import type { AnimationCallbacks } from '@/src/components/visualizer/animations/types';
@@ -11,42 +11,45 @@ import {
 
 interface UseBSTSearchHandlerProps {
     bstRoot: BSTNode | null;
-    nodes: RFNode[];
-    edges: RFEdge[];
     setNodes: (nodes: any) => void;
     setEdges: (edges: any) => void;
     setDescription: (desc: string) => void;
-    applyHighlighting: AnimationCallbacks['applyHighlighting'];
     animationSpeed: number;
     isPausedRef: React.MutableRefObject<boolean>;
 }
 
 export function useBSTSearchHandler({
     bstRoot,
-    nodes,
-    edges,
     setNodes,
     setEdges,
     setDescription,
-    applyHighlighting,
     animationSpeed,
     isPausedRef,
 }: UseBSTSearchHandlerProps) {
+    const controllerRef = useRef<AnimationController | null>(null);
+    const bstRootRef = useRef<BSTNode | null>(bstRoot);
+    bstRootRef.current = bstRoot;
+
     const handleSearch = useCallback(
         (value: number) => {
+            controllerRef.current?.clearAll();
             const controller = new AnimationController(isPausedRef);
+            controllerRef.current = controller;
 
-            if (!bstRoot) {
+            const root = bstRootRef.current;
+            if (!root) {
                 setDescription('Tree is empty');
-                return;
+                controller.scheduleStep(() => setDescription(''), animationSpeed * 2); // Keep for 2 seconds
             }
 
             // Pre-compute
-            const { found, nodeId, path } = searchBST(bstRoot, value);
-            const positions = calculateBSTPositions(bstRoot);
-            const rfData = bstToReactFlow(bstRoot, [], [], positions);
+            const { found, nodeId, path } = searchBST(root, value);
+            const positions = calculateBSTPositions(root);
+            const rfData = bstToReactFlow(root, [], [], positions);
             const rfNodes = rfData.nodes as RFNode[];
             const rfEdges = rfData.edges as RFEdge[];
+
+            let globalOffset = 0;
 
             // Step 1: Animate traversal
             path.forEach((id, idx) => {
@@ -71,10 +74,16 @@ export function useBSTSearchHandler({
                     });
                     setNodes(highlighted);
                     setEdges(highlightedEdges);
-                    setDescription(`Searching for ${value}...`);
-                }, animationSpeed * (idx + 1));
-            });
+                    const currentNode = rfNodes.find(n => n.id === id); // Find current node for description
+                    setDescription(`Searching for ${value}. Comparing with node ${currentNode?.data.label}.`);
+                }, animationSpeed * globalOffset);
 
+                globalOffset++; // Increment offset for the pause after description
+                controller.scheduleStep(() => {
+                    // Keep description visible for a short duration
+                    // No visual change, just a pause
+                }, animationSpeed * globalOffset);
+            });
             // Step 2: Show result
             controller.scheduleStep(() => {
                 if (found && nodeId) {
@@ -87,25 +96,29 @@ export function useBSTSearchHandler({
                         },
                     }));
                     setNodes(highlighted);
-                    setDescription(`✓ Found ${value}!`);
+                    setDescription(`Found ${value}!`);
                 } else {
                     setNodes(rfNodes);
-                    setDescription(`✗ ${value} not found`);
+                    setDescription(`${value} was not found in the tree.`);
                 }
                 setEdges(rfEdges);
 
                 // Step 3: Clean up
+                // Keep the result visible for a moment before clearing highlights and text.
                 controller.scheduleStep(() => {
                     setNodes(rfNodes);
                     setEdges(rfEdges);
                     setDescription('');
-                }, animationSpeed * 2);
-            }, animationSpeed * (path.length + 1));
+                }, animationSpeed * 4);
+            }, animationSpeed * (globalOffset + 1));
         },
-        [bstRoot, nodes, animationSpeed, isPausedRef, setNodes, setEdges, setDescription, applyHighlighting]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [animationSpeed, isPausedRef, setNodes, setEdges, setDescription]
     );
 
-    const cancelAnimation = useCallback(() => { }, []);
+    const cancelAnimation = useCallback(() => {
+        controllerRef.current?.clearAll();
+    }, []);
 
     return { handleSearch, cancelAnimation };
 }

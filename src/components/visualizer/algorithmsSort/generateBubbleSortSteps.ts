@@ -69,6 +69,16 @@ export const generateBubbleSortSteps = (
 
             pushStep();
         }
+
+        // Mark the last element of the unsorted part as sorted
+        const sortedNodeIndex = n - i - 1;
+        const sortedNodeId = arr[sortedNodeIndex].id;
+        arr = arr.map((node) =>
+            node.id === sortedNodeId
+                ? { ...node, data: { ...node.data, status: "sorted" as const } }
+                : node
+        );
+        pushStep();
     }
 
     return steps;

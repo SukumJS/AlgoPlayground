@@ -52,7 +52,7 @@ export function useAVLRemoveHandler(params: {
         if (!avlRoot) {
             animationCallbacks.setDescription('Tree is empty');
             setIsAnimating(false);
-            setRemoveValue('');
+            controller.scheduleStep(() => animationCallbacks.setDescription(''), animationSpeed * 2); // Keep for 2 seconds
             return;
         }
 
@@ -67,6 +67,7 @@ export function useAVLRemoveHandler(params: {
 
         // Step 1: Traverse search path
         path.forEach((id, idx) => {
+            offset++; // Increment offset for each node visit
             controller.scheduleStep(() => {
                 const hl = rfNodes.map((n: RFNode) => ({
                     ...n,
@@ -78,7 +79,8 @@ export function useAVLRemoveHandler(params: {
                 }));
                 animationCallbacks.setNodes(hl);
                 animationCallbacks.setEdges(rfEdges);
-                animationCallbacks.setDescription(`🔍 Searching for ${value}...`);
+                const currentNode = rfNodes.find(n => n.id === id);
+                animationCallbacks.setDescription(`Searching for node ${value} to remove. Comparing with ${currentNode?.data.label}.`);
             }, animationSpeed * (idx + 1));
             offset = idx + 1;
         });
@@ -89,7 +91,7 @@ export function useAVLRemoveHandler(params: {
             controller.scheduleStep(() => {
                 animationCallbacks.setNodes(rfNodes);
                 animationCallbacks.setEdges(rfEdges);
-                animationCallbacks.setDescription(`✗ ${value} not found`);
+                animationCallbacks.setDescription(`${value} was not found in the tree.`);
                 controller.scheduleStep(() => {
                     animationCallbacks.setDescription('');
                     setIsAnimating(false);
@@ -111,9 +113,11 @@ export function useAVLRemoveHandler(params: {
                 },
             }));
             animationCallbacks.setNodes(hl);
-            animationCallbacks.setEdges(rfEdges);
-            animationCallbacks.setDescription(`❌ Found ${value}! Removing...`);
+            animationCallbacks.setEdges(rfEdges); // Ensure edges are reset to original state
+            animationCallbacks.setDescription(`Found ${value}! Preparing for removal...`);
         }, animationSpeed * offset);
+        offset++; // Pause after description
+        controller.scheduleStep(() => {}, animationSpeed * offset);
 
         // Pre-compute removal steps
         const { successorId, afterRemove, rotationType, rotationNodeId, afterRebalance } =
@@ -132,10 +136,12 @@ export function useAVLRemoveHandler(params: {
                             : n.id === nodeId ? '#EF4444' : undefined,
                     },
                 }));
-                animationCallbacks.setNodes(hl);
-                animationCallbacks.setEdges(rfEdges);
-                animationCallbacks.setDescription(`🔄 Found inorder successor — will replace deleted node`);
+                animationCallbacks.setNodes(hl); // Update nodes with highlighting
+                animationCallbacks.setEdges(rfEdges); // Ensure edges are reset to original state
+                animationCallbacks.setDescription(`Node has two children. Finding its inorder successor to take its place.`);
             }, animationSpeed * offset);
+            offset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * offset);
         }
 
         // Step 4: Show tree after deletion (before rebalance)
@@ -147,8 +153,11 @@ export function useAVLRemoveHandler(params: {
             controller.scheduleStep(() => {
                 animationCallbacks.setNodes(removedRF.nodes as RFNode[]);
                 animationCallbacks.setEdges(removedRF.edges as RFEdge[]);
-                animationCallbacks.setDescription(`🗑️ Node removed. Checking balance...`);
+                animationCallbacks.setDescription(`Node removed. Now, walking back up to check balance factors.`); // Description for deletion
             }, animationSpeed * offset);
+
+            offset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * offset);
 
             // Step 5: Check balance going back up with BF badges
             const bfMap = collectBFs(afterRemove);
@@ -170,11 +179,15 @@ export function useAVLRemoveHandler(params: {
                     animationCallbacks.setNodes(hl);
                     const bf = bfMap.get(id) ?? 0;
                     if (id === rotationNodeId) {
-                        animationCallbacks.setDescription(`⚠️ Balance Factor = ${bf} — Imbalanced! Need ${rotationType}`);
+                        const nodeLabel = (removedRF.nodes as RFNode[]).find(n => n.id === id)?.data.label;
+                        animationCallbacks.setDescription(`Balance Factor = ${bf} — Imbalanced! Need ${rotationType}.`); // Description for imbalance
                     } else {
-                        animationCallbacks.setDescription(`⚖️ Balance Factor = ${bf} — Balanced ✓`);
+                        const nodeLabel = (removedRF.nodes as RFNode[]).find(n => n.id === id)?.data.label;
+                        animationCallbacks.setDescription(`Balance Factor = ${bf} — Balanced. Continuing up...`); // Description for balanced node
                     }
                 }, animationSpeed * offset);
+                offset++; // Pause after description
+                controller.scheduleStep(() => {}, animationSpeed * offset);
             });
         }
 
@@ -216,8 +229,11 @@ export function useAVLRemoveHandler(params: {
                 }));
                 animationCallbacks.setNodes(hl);
                 animationCallbacks.setEdges(hlEdges);
-                animationCallbacks.setDescription(`🔄 Imbalance detected! Need ${rotationType}`);
+                const nodeLabel = (removedRF.nodes as RFNode[]).find(n => n.id === rotationNodeId)?.data.label;
+                animationCallbacks.setDescription(`Imbalance at node ${nodeLabel}. Performing ${rotationType}...`); // Description for rotation start
             }, animationSpeed * offset);
+            offset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * offset);
 
             // Step 6b: Reassign Edges (Topology Update)
             offset++;
@@ -246,8 +262,11 @@ export function useAVLRemoveHandler(params: {
 
                 animationCallbacks.setNodes(tangledNodes);
                 animationCallbacks.setEdges(hlEdges);
-                animationCallbacks.setDescription(`🔗 Disconnecting & Reassigning Child Nodes...`);
+                animationCallbacks.setDescription(`Disconnecting & Reassigning Child Nodes...`); // Description for topology change
             }, animationSpeed * offset);
+
+            offset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * offset);
 
             // Step 6c: Interpolation frames (Geometry Update)
             const INTERP_FRAMES = 15;
@@ -285,19 +304,22 @@ export function useAVLRemoveHandler(params: {
 
                     animationCallbacks.setNodes(interpolated);
                     animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
-                    animationCallbacks.setDescription(`✨ Untangling tree structure...`);
+                    animationCallbacks.setDescription(`Re-arranging nodes to the new structure...`); // Description for geometry change
                 }, animationSpeed * fractionOffset);
             }
             // Advance integer offset past the fractional frames
             offset++;
+            // No explicit pause needed here, as the next step is the final rotation result.
 
             // Step 6d: Final rotation result
             offset++;
             controller.scheduleStep(() => {
                 animationCallbacks.setNodes(finalRF.nodes as RFNode[]);
                 animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
-                animationCallbacks.setDescription(`✅ ${rotationType} — Tree rebalanced!`);
+                animationCallbacks.setDescription(`${rotationType} complete. The tree is now balanced.`);
             }, animationSpeed * offset);
+            offset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * offset);
         } else {
             offset++;
             controller.scheduleStep(() => {
@@ -310,8 +332,10 @@ export function useAVLRemoveHandler(params: {
                     animationCallbacks.setNodes([]);
                     animationCallbacks.setEdges([]);
                 }
-                animationCallbacks.setDescription(`✅ Removed ${value}. Tree is balanced.`);
+                animationCallbacks.setDescription(`Removed ${value}. The tree remains balanced.`);
             }, animationSpeed * offset);
+            offset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * offset);
         }
 
         // Step 7: Clean up
