@@ -105,6 +105,17 @@ const treeInitialAVLRoot = buildTreeInitialAVLRoot();
 const treeInitialMinHeapRoot = buildTreeInitialHeapRoot(true);
 const treeInitialMaxHeapRoot = buildTreeInitialHeapRoot(false);
 
+// สร้าง Object ไว้แปลงชื่อ Tree Algorithm 
+const algorithmNames: Record<string, string> = {
+    "binary-search-tree": "Binary Search Tree",
+    "avl-tree": "AVL Tree",
+    "binary-tree-inorder": "Binary Tree (Inorder)",
+    "binary-tree-preorder": "Binary Tree (Preorder)",
+    "binary-tree-postorder": "Binary Tree (Postorder)",
+    "min-heap": "Min-Heap",
+    "max-heap": "Max-Heap",
+};
+
 export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
     const [nodes, setNodes] = useState<Node[]>(treeInitialNodes);
     const [edges, setEdges] = useState<Edge[]>(treeInitialEdges);
@@ -116,15 +127,18 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
     
     const rebalanceRef = useRef<(() => void) | null>(null);
 
-    // reset explanation when the selected algorithm changes
+    // 2️⃣ ดึงชื่อที่สวยงามจาก Mapping (ถ้าไม่เจอให้ใช้ค่า Default)
     const prettyName = algorithm
-        ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g, ' ')
-        : "";
+        ? algorithmNames[algorithm] || "Tree Algorithms"
+        : "Tree Algorithms";
+
+    // reset explanation when the selected algorithm changes
     React.useEffect(() => {
         if (algorithm) {
             setExplanation(`This section will explain ${prettyName}. Perform an operation to begin.`);
         }
     }, [algorithm, prettyName]);
+    
     const btRebalanceRef = useRef<(() => void) | null>(null);
     const heapRebalanceRef = useRef<(() => void) | null>(null);
     const trashDeleteRef = useRef<((nodeId: string, value: number) => void) | null>(null);
@@ -235,7 +249,6 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
 
 
     // สร้าง String ตัวแทนข้อมูล (เอาแค่ ID และ Label)
-    // การทำแบบนี้ String จะไม่เปลี่ยนแม้ว่าจะลากโหนด (พิกัด X, Y เปลี่ยน)
     const nodeDataString = nodes
         .filter(n => n.type === "custom")
         .map(n => `${n.id}-${(n.data as Record<string, unknown>)?.label}`)
@@ -253,14 +266,15 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
 
     // แช่แข็ง SideTab ทั้งก้อน!
     const sideTabMemo = useMemo(() => (
-        <SideTab title="Tree Algorithms">
+        // เปลี่ยน title ตรงนี้ให้ใช้ prettyName
+        <SideTab title={prettyName}>
             <div>
                 <CodeAlgo tutorialMode={tutorial.showTutorial} />
                 <ExplainAlgo 
                     tutorialMode={tutorial.showTutorial}
                     explanation={explanation}
                     algoType={algorithm}
-                    algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
+                    algoName={prettyName} 
                 />
                 {/* Display Data Input for Tree Algorithms */}
                 <Data_tree
@@ -292,7 +306,8 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         edges, 
         algorithm,
         explanation,
-        setExplanation
+        setExplanation,
+        prettyName // อย่าลืมเพิ่มเป็น dependency ของ useMemo
     ]);
 
     return (
@@ -376,7 +391,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                     onClose={() => tutorial.setShowCompletionModal(false)}
                     tutorialContent={[{
                         title: "Tutorial Complete!",
-                        description: "You are now ready to explore Binary Search Tree."
+                        description: `You are now ready to explore ${prettyName}.`
                     }]}
                     onLetsPlay={
                         algorithm === "avl-tree" ? () => rebalanceRef.current?.()

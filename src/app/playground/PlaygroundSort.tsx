@@ -64,6 +64,14 @@ const initialEdges: Edge[] = [];
 const fitViewOptions: FitViewOptions = { padding: 0.2 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: true };
 
+// 1️⃣ สร้าง Object ไว้แปลงชื่อ Algorithm
+const algorithmNames: Record<string, string> = {
+    "bubble-sort": "Bubble Sort",
+    "selection-sort": "Selection Sort",
+    "insertion-sort": "Insertion Sort",
+    "merge-sort": "Merge Sort",
+};
+
 export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
     const [nodes, setNodes] = useState<Node<SortNodeData>[]>(initialNodes);
     const [nodeInput, setNodeInput] = useState<number | string>(11);
@@ -72,10 +80,10 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         "This section will explain the algorithm's steps. Click 'Run' to start."
     );
 
-    // helper for user‑friendly name
+    // ดึงชื่อจาก Mapping (ถ้าไม่ตรงให้ใช้ชื่อเดิม หรือค่า Default)
     const prettyName = algorithm
-        ? algorithm[0].toUpperCase() + algorithm.slice(1) + " sort"
-        : "";
+        ? algorithmNames[algorithm] || "Sorting Algorithms"
+        : "Sorting Algorithms";
 
     // reset default explanation when the algorithm changes
     React.useEffect(() => {
@@ -154,7 +162,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         if (tutorial.showTutorial) {
             tutorial.onNodeDragStart(event, node as Node<SortNodeData>);
         }
-    }, [tutorial]);
+    }, [tutorial, onNodeDragStart]);
 
     const handleNodeDrag = useCallback((event: React.MouseEvent, node: Node, allNodes: Node[]) => {
         //เรียกใช้ของเดิม เพื่อให้มันเกิด Live-swap ดันกล่องอื่นสลับที่
@@ -175,7 +183,8 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
     }, [onNodeDragStop, tutorial]);
 
     const sideTabMemo = useMemo(() => (
-        <SideTab title="Sorting Algorithms">
+        // 3️⃣ เปลี่ยน title ตรงนี้ให้ใช้ prettyName
+        <SideTab title={prettyName}>
             <div>
                 <CodeAlgo />
                 <ExplainAlgo 
