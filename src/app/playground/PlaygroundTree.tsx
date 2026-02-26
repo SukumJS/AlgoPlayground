@@ -256,7 +256,12 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         <SideTab title="Tree Algorithms">
             <div>
                 <CodeAlgo tutorialMode={tutorial.showTutorial} />
-                <ExplainAlgo tutorialMode={tutorial.showTutorial} />
+                <ExplainAlgo 
+                    tutorialMode={tutorial.showTutorial}
+                    explanation={explanation}
+                    algoType={algorithm}
+                    algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
+                />
                 {/* Display Data Input for Tree Algorithms */}
                 <Data_tree
                     tutorialMode={tutorial.showTutorial}
@@ -274,6 +279,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                     initialAVLRoot={algorithm === 'avl-tree' ? treeInitialAVLRoot : null}
                     onTrashDeleteReady={(fn) => { trashDeleteRef.current = fn; }}
                     onAutoInsertReady={(fn) => { autoInsertRef.current = fn; }}
+                    setExplanation={setExplanation}
                 />
             </div>
             <div><PostTest_portal /></div>
@@ -284,7 +290,9 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         tutorial.handleTutorialDropSuccess,
         treeNodes, 
         edges, 
-        algorithm
+        algorithm,
+        explanation,
+        setExplanation
     ]);
 
     return (
@@ -321,37 +329,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                 <ControlPanel />
             </div>
 
-            <SideTab title="Tree Algorithms">
-                <div>
-                    <CodeAlgo tutorialMode={tutorial.showTutorial} />
-                    <ExplainAlgo 
-                        tutorialMode={tutorial.showTutorial}
-                        explanation={explanation}
-                        algoType={algorithm}
-                        algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
-                    />
-                    {/* Display Data Input for Tree Algorithms */}
-                    <Data_tree
-                        setExplanation={setExplanation}
-                        tutorialMode={tutorial.showTutorial}
-                        tutorialStep={tutorial.tutorialStep}
-                        onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
-                        currentNodes={treeNodes}
-                        currentEdges={edges}
-                        algorithm={algorithm}
-                        onRebalanceReady={(fn) => { rebalanceRef.current = fn; }}
-                        onBTRebalanceReady={(fn) => { btRebalanceRef.current = fn; }}
-                        onHeapRebalanceReady={(fn) => { heapRebalanceRef.current = fn; }}
-                        initialBSTRoot={["binary-search-tree", "avl-tree"].includes(algorithm) ? treeInitialBSTRoot : null}
-                        initialBTRoot={['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm) ? treeInitialBTRoot : null}
-                        initialHeapRoot={algorithm === 'min-heap' ? treeInitialMinHeapRoot : algorithm === 'max-heap' ? treeInitialMaxHeapRoot : null}
-                        initialAVLRoot={algorithm === 'avl-tree' ? treeInitialAVLRoot : null}
-                        onTrashDeleteReady={(fn) => { trashDeleteRef.current = fn; }}
-                        onAutoInsertReady={(fn) => { autoInsertRef.current = fn; }}
-                    />
-                </div>
-                <div><PostTest_portal /></div>
-            </SideTab>
+            {sideTabMemo}
 
             {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
             <div className="absolute top-4 left-8 z-10 flex gap-2">

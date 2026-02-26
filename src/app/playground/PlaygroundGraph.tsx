@@ -152,7 +152,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         <SideTab title="Graph Algorithms">
             <div>
                 <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
-                <ExplainAlgo tutorialMode={graphTutorial.showTutorial} />
+                <ExplainAlgo 
+                    tutorialMode={graphTutorial.showTutorial}
+                    algoType={algorithm}
+                    algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
+                />
                 <Data_graph />
             </div>
             <div><PostTest_portal /></div>

@@ -87,7 +87,7 @@ export function useBSTInsertHandler({
                         setNodes(highlighted);
                         setEdges(highlightedEdges);
                         const currentNode = (oldRF.nodes as RFNode[]).find(n => n.id === nodeId); // Find current node for description
-                        setDescription(`🔍 Finding insertion spot for ${value}. Comparing with node ${currentNode?.data.label}.`);
+                        setDescription(`Finding insertion spot for ${value}. Comparing with node ${currentNode?.data.label}.`);
                     }, animationSpeed * (idx * 2 + 1));
 
                     controller.scheduleStep(() => { // Pause step
@@ -111,7 +111,7 @@ export function useBSTInsertHandler({
                 }));
                 setNodes(highlighted);
                 setEdges(newRF.edges as RFEdge[]);
-                setDescription(`✅ Inserted ${value}!`);
+                setDescription(`Inserted ${value}!`);
             }, animationSpeed * globalOffset);
 
             // Step 3: Final clean state

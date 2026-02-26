@@ -122,7 +122,13 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         <SideTab title="Sorting Algorithms">
             <div>
                 <CodeAlgo />
-                <ExplainAlgo />
+                <ExplainAlgo 
+                    isOpen={true}
+                    onToggle={() => { }}
+                    explanation={explanation}
+                    algoType={algorithm}
+                    algoName={prettyName}
+                />
                 <Data_sort
                     nodeInput={nodeInput}
                     setNodeInput={setNodeInput}
@@ -132,7 +138,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
                 <PostTest_portal />
             </div>
         </SideTab>
-    ), [nodeInput]);
+    ), [nodeInput, setNodeInput, explanation, algorithm, prettyName]);
 
     return (
         <div className="w-screen h-screen">
@@ -160,25 +166,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
                 <ControlPanel controller={controller} />
             </div>
 
-            <SideTab title="Sorting Algorithms">
-                <div>
-                    <CodeAlgo />
-                    <ExplainAlgo 
-                        isOpen={true}
-                        onToggle={() => { }}
-                        explanation={explanation}
-                        algoType={algorithm}
-                        algoName={prettyName}
-                    />
-                    <Data_sort
-                        nodeInput={nodeInput}
-                        setNodeInput={setNodeInput}
-                    />
-                </div>
-                <div>
-                    <PostTest_portal />
-                </div>
-            </SideTab>
+            {sideTabMemo}
 
             <div className="absolute top-4 left-8 z-10 flex gap-2">
                 <GoToHome_Portal />
