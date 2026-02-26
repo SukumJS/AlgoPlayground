@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useReactFlow, XYPosition, Node } from "@xyflow/react";
 // Ensure these custom hooks/components are correctly exported from your files
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
@@ -11,15 +11,26 @@ let id = 0;
 const getId = () => `dndnode_${id++}`;
 
 type nodeProps = {
-    nodeInput: number;
-    /* `setNodeInput: React.Dispatch<React.SetStateAction<number>>;` is a prop declaration in the
-    `nodeProps` interface. It defines a function that can be used to update the state of `nodeInput`
-    in a React component. */
-    setNodeInput: React.Dispatch<React.SetStateAction<number>>;
+    // 🌟 เปลี่ยนเป็น number | string เพื่อให้ลบเลข 0 ออกจากช่องได้
+    nodeInput: number | string;
+    setNodeInput: React.Dispatch<React.SetStateAction<number | string>> | ((val: number | string) => void);
+    
+    // 🌟 เพิ่ม Props สำหรับรับโหมด Tutorial
+    tutorialMode?: boolean;
+    onTutorialDropSuccess?: () => void;
 };
 
-function Data_sort({ nodeInput, setNodeInput }: nodeProps) {
-    const [isDataSortOpen, setIsDataSortOpen] = useState(false);
+function Data_sort({ nodeInput, setNodeInput, tutorialMode, onTutorialDropSuccess }: nodeProps) {
+    // 🌟 ตั้งค่าเริ่มต้นให้เปิดแท็บอัตโนมัติถ้าเป็น Tutorial
+    const [isDataSortOpen, setIsDataSortOpen] = useState(tutorialMode ? true : false);
+
+    // 🌟 ดักจับเผื่อค่า tutorialMode โหลดตามมาทีหลัง
+    useEffect(() => {
+        if (tutorialMode) {
+            setIsDataSortOpen(true);
+        }
+    }, [tutorialMode]);
+
     const { setNodes } = useReactFlow();
     const { onDragStart, isDragging } = useDnD();
     const [type, setType] = useState<string | null>(null);
@@ -47,9 +58,14 @@ function Data_sort({ nodeInput, setNodeInput }: nodeProps) {
 
                 setType(null);
                 setDraggedValue(null);
+
+                // 🌟 เมื่อลากกล่องลงจอสำเร็จ ให้ส่งสัญญาณบอก Tutorial ให้ไปสเต็ปถัดไป
+                if (onTutorialDropSuccess) {
+                    onTutorialDropSuccess();
+                }
             };
         },
-        [setNodes],
+        [setNodes, onTutorialDropSuccess], // 🌟 เพิ่ม dependencies
     );
 
     const Sample = [
@@ -89,9 +105,11 @@ function Data_sort({ nodeInput, setNodeInput }: nodeProps) {
                 <div className="overflow-x-auto flex gap-2 mb-2 p-2">
                     {/* Input Node Item */}
                     <div
+                        // 🌟 ติดป้ายชื่อตรงนี้! เพื่อให้ไฟ Spotlight หาตำแหน่งกล่องเลข 11 เจอ
+                        data-tutorial-target="sidebar-sort-node"
                         className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg cursor-grab"
                         onPointerDown={(event) => {
-                            const value = nodeInput || 0;
+                            const value = Number(nodeInput) || 0; // แปลงเป็นเลข
                             setType("input");
                             setDraggedValue(value);
                             onDragStart(event, createAddNewNode(value));
@@ -102,7 +120,11 @@ function Data_sort({ nodeInput, setNodeInput }: nodeProps) {
                             placeholder="0"
                             className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             value={nodeInput}
-                            onChange={(e) => setNodeInput(parseInt(e.target.value) || 0)}
+                            onChange={(e) => {
+                                if (typeof setNodeInput === 'function') {
+                                    setNodeInput(e.target.value === "" ? "" : Number(e.target.value));
+                                }
+                            }}
                             onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
                         />
                     </div>
@@ -146,7 +168,7 @@ export function DragGhost({ type, value }: DragGhostProps) {
 
     return (
         <div
-            className={`fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`}
+            className={`fixed top-0 left-0 pointer-events-none z-[1000] flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`}
             style={{
                 transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
             }}>
