@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Node } from '@xyflow/react';
-import type { SortNodeData } from "@/src/components/shared/sortNode"; 
+import type { SortNodeData } from "@/src/components/shared/sortNode";
 
 interface ScreenPosition {
     x: number;
@@ -33,14 +33,25 @@ export function useSortTutorial({
     const [isTrashActive, setIsTrashActive] = useState(false);
     const [dropZoneScreenPos, setDropZoneScreenPos] = useState<ScreenPosition | null>(null);
 
+    // 🌟 เพิ่ม State เก็บขนาดกล่องแบบไดนามิก
+    const [nodeMaskSize, setNodeMaskSize] = useState<number>(85);
+
     const updateTutorialPositions = useCallback(() => {
         if (!showTutorial) return;
 
-        // 🌟 ปรับ offset ให้ดึงจุดกึ่งกลางได้แม่นยำขึ้นสำหรับกล่องขนาด 62-64px
-        const offset = 32;
+        // 🌟 คำนวณขนาดซูม (Zoom Scale) ของ React Flow ณ ตอนนั้น
+        // โดยการวัดระยะห่างบนหน้าจอระหว่างจุด 0 และจุด 56 (ขนาดฐานของกล่อง)
+        const p1 = flowToScreenPosition({ x: 0, y: 0 });
+        const p2 = flowToScreenPosition({ x: 56, y: 0 }); // กล่องกว้าง 56px (w-14)
+        const actualNodeSizeOnScreen = Math.abs(p2.x - p1.x);
+
+        // บวกพื้นที่ขอบ (Padding) เข้าไปอีก 20px ให้เห็นเงาสวยๆ
+        setNodeMaskSize(actualNodeSizeOnScreen + 20);
+
+        const offset = 28;
 
         const node34 = nodes.find(n => String(n.data.value) === '34');
-        if (node34) setNode34ScreenPos(flowToScreenPosition({ x: node34.position.x + offset, y: node34.position.y + offset })); 
+        if (node34) setNode34ScreenPos(flowToScreenPosition({ x: node34.position.x + offset, y: node34.position.y + offset }));
 
         const node64 = nodes.find(n => String(n.data.value) === '64');
         if (node64) setNode64ScreenPos(flowToScreenPosition({ x: node64.position.x + offset, y: node64.position.y + offset }));
@@ -50,9 +61,10 @@ export function useSortTutorial({
 
         const node25 = nodes.find(n => String(n.data.value) === '25');
         if (node25) {
-            setDropZoneScreenPos(flowToScreenPosition({ 
-                x: node25.position.x + 65 + offset, 
-                y: node25.position.y + offset 
+            // ช่องถัดไปขยับไป 65px (ระยะห่างระหว่าง node)
+            setDropZoneScreenPos(flowToScreenPosition({
+                x: node25.position.x + 65 + offset,
+                y: node25.position.y + offset
             }));
         }
 
@@ -65,12 +77,9 @@ export function useSortTutorial({
                 const rect = targetSidebarNode.getBoundingClientRect();
                 setSidebarNodePos({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
             }
-        }, 100); 
+        }, 100);
 
-        setTrashBinPos({
-            x: window.innerWidth / 2,
-            y: window.innerHeight - 140
-        });
+        setTrashBinPos({ x: window.innerWidth / 2, y: window.innerHeight - 140 });
 
     }, [nodes, showTutorial, flowToScreenPosition]);
 
@@ -91,9 +100,7 @@ export function useSortTutorial({
 
     useEffect(() => {
         if (tutorialStep === 2) {
-            const timer = setTimeout(() => {
-                setTutorialStep(3);
-            }, 1500);
+            const timer = setTimeout(() => { setTutorialStep(3); }, 1500);
             return () => clearTimeout(timer);
         }
     }, [tutorialStep]);
@@ -104,18 +111,12 @@ export function useSortTutorial({
     }, []);
 
     const handleTutorialDropSuccess = useCallback(() => {
-        if (showTutorial && tutorialStep === 0) {
-            // 🌟 ลบการเปลี่ยน status เป็น "compare" ออกไป กล่องจะสีปกติ (เหลือง) สวยๆ แน่นอน
-            setTutorialStep(1);
-        }
+        if (showTutorial && tutorialStep === 0) { setTutorialStep(1); }
     }, [showTutorial, tutorialStep]);
 
     const onNodeDragStart = useCallback((event: React.MouseEvent, node: Node<SortNodeData>) => {
         if (showTutorial && tutorialStep === 3) {
-            if (String(node.data.value) === '3') {
-                // 🌟 ลบการเปลี่ยน status ออกเช่นกัน
-                setTutorialStep(4);
-            }
+            if (String(node.data.value) === '3') { setTutorialStep(4); }
         }
     }, [showTutorial, tutorialStep]);
 
@@ -133,23 +134,7 @@ export function useSortTutorial({
 
         if (tutorialStep === 1) {
             if (String(node.data.value) === '34') {
-                setNodes(nds => {
-                    const newNodes = [...nds];
-                    const idx34 = newNodes.findIndex(n => String(n.data.value) === '34');
-                    const idx64 = newNodes.findIndex(n => String(n.data.value) === '64');
-                    
-                    if (idx34 !== -1 && idx64 !== -1) {
-                        const tempPos = { ...newNodes[idx34].position };
-                        newNodes[idx34].position.x = newNodes[idx64].position.x;
-                        newNodes[idx64].position.x = tempPos.x;
-                        
-                        const tempIdx = newNodes[idx34].data.index;
-                        newNodes[idx34].data.index = newNodes[idx64].data.index;
-                        newNodes[idx64].data.index = tempIdx;
-                    }
-                    return newNodes;
-                });
-                setTutorialStep(2); 
+                setTutorialStep(2);
             }
         }
 
@@ -157,16 +142,32 @@ export function useSortTutorial({
             const trashX = window.innerWidth / 2;
             const trashY = window.innerHeight - 140;
             if (Math.sqrt(Math.pow(event.clientX - trashX, 2) + Math.pow(event.clientY - trashY, 2)) < 60) {
-                setNodes(nds => nds.filter(n => n.id !== node.id));
+                //  ลงถังขยะ ให้ลบทิ้ง พร้อมจัดแถวกล่องที่เหลือใหม่ให้ชิดกัน!
+                setNodes(nds => {
+                    // 1. คัดเอาตัวที่ถูกลบออกไป
+                    const remainingNodes = nds.filter(n => n.id !== node.id);
+
+                    // 2. เรียงลำดับกล่องตาม index เดิม เพื่อรักษาลำดับที่มันสลับกันไว้แล้ว
+                    remainingNodes.sort((a, b) => a.data.index - b.data.index);
+
+                    // 3. รัน Index ใหม่ให้ต่อเนื่อง (0, 1, 2...) และอัปเดตพิกัด X ให้เข้าแถวชิดกัน (index * 65)
+                    return remainingNodes.map((n, i) => ({
+                        ...n,
+                        data: { ...n.data, index: i },
+                        position: { x: i * 65, y: 5 } 
+                    }));
+                });
+
                 setIsTrashActive(false);
                 handleTutorialComplete();
             }
+            
         }
     }, [showTutorial, tutorialStep, setNodes, handleTutorialComplete]);
-
     return {
         showTutorial, tutorialStep, showCompletionModal, isTrashActive,
         droppedNodeScreenPos, node34ScreenPos, node64ScreenPos, node3ScreenPos, sidebarNodePos, trashBinPos, dropZoneScreenPos,
+        nodeMaskSize, 
         setShowTutorial, setTutorialStep, setShowCompletionModal, handleTutorialComplete, handleTutorialDropSuccess,
         onNodeDragStart, onNodeDrag, onNodeDragStop,
     };
