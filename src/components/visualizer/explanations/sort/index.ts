@@ -12,9 +12,9 @@ export type ExplanationFn = (
 
 const explanationMap: Record<string, ExplanationFn> = {
     "bubble-sort": explainBubbleSort,
-    "selection": explainSelectionSort,
-    "insertion": explainInsertionSort,
-    "merge": explainMergeSort,
+    "selection-sort": explainSelectionSort,
+    "insertion-sort": explainInsertionSort,
+    "merge-sort": explainMergeSort,
 };
 
 /**
