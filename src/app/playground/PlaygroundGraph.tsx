@@ -152,7 +152,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         <SideTab title="Graph Algorithms">
             <div>
                 <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
-                <ExplainAlgo tutorialMode={graphTutorial.showTutorial} />
+                <ExplainAlgo 
+                    tutorialMode={graphTutorial.showTutorial}
+                    algoType={algorithm}
+                    algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
+                />
                 <Data_graph />
             </div>
             <div><PostTest_portal /></div>
@@ -192,7 +196,18 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                 <ControlPanel />
             </div>
 
-            {sideTabMemo}
+            <SideTab title="Graph Algorithms">
+                <div>
+                    <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
+                    <ExplainAlgo 
+                        tutorialMode={graphTutorial.showTutorial}
+                        algoType={algorithm}
+                        algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
+                    />
+                    <Data_graph />
+                </div>
+                <div><PostTest_portal /></div>
+            </SideTab>
 
             {/* Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
             <div className="absolute top-4 left-8 z-10 flex gap-2">

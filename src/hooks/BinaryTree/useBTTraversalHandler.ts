@@ -57,7 +57,7 @@ export function useBTTraversalHandler({
       else if (type === 'preorder') animateBTPreorder(root, animationSpeed, controller, callbacks, done);
       else animateBTPostorder(root, animationSpeed, controller, callbacks, done);
     },
-    [animationSpeed, isPausedRef, setNodes, setEdges, setDescription, applyHighlighting, setIsAnimating]
+    [animationSpeed, isPausedRef, setNodes, setEdges, setDescription, setIsAnimating, applyHighlighting, btRootRef]
   );
 
   const handleInorder = useCallback(() => runTraversal('inorder'), [runTraversal]);

@@ -61,7 +61,7 @@ export function useAVLInsertHandler(params: {
         const insertionPos = findInsertionPosition(latestRoot, valueToInsert);
         if (latestRoot && insertionPos.parentId === null && latestRoot.value === valueToInsert) {
             setIsAnimating(false);
-            setAnimationDescription(`⚠️ Value ${valueToInsert} already exists!`);
+            setAnimationDescription(`Value ${valueToInsert} already exists!`);
             setTimeout(() => setAnimationDescription(""), 2000);
             return;
         }
@@ -115,7 +115,8 @@ export function useAVLInsertHandler(params: {
 
                     animationCallbacks.setNodes(hl);
                     animationCallbacks.setEdges(hlEdges);
-                    setAnimationDescription(`🔍 Traversing — comparing with node ${latestRoot ? (latestRoot as any).value : ''}`);
+                    const currentNode = (oldRF.nodes as RFNode[]).find(n => n.id === nodeId);
+                    setAnimationDescription(`Finding insertion spot for ${valueToInsert}. Comparing with ${currentNode?.data.label}.`);
                 }, animationSpeed * (idx + 1));
                 offset = idx + 1;
             });
@@ -135,9 +136,11 @@ export function useAVLInsertHandler(params: {
                 }));
                 animationCallbacks.setNodes(hl);
                 setAnimationDescription(
-                    `📍 Found parent ${parentValue} — inserting ${valueToInsert} as ${position}`
+                    `Found insertion spot. Inserting ${valueToInsert} as the ${position} child of node ${parentValue}.`
                 );
             }, animationSpeed * offset);
+            offset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * offset);
         }
 
         // ── Step 3: Show tree after BST insert (before rebalance) ──
@@ -153,8 +156,10 @@ export function useAVLInsertHandler(params: {
             }));
             animationCallbacks.setNodes(hl);
             animationCallbacks.setEdges(insertedRF.edges as RFEdge[]);
-            setAnimationDescription(`✅ Inserted ${valueToInsert}. Checking balance...`);
+            setAnimationDescription(`Inserted ${valueToInsert}. Now, walking back up to check balance factors.`);
         }, animationSpeed * offset);
+        offset++; // Pause after description
+        controller.scheduleStep(() => {}, animationSpeed * offset);
 
         // ── Step 4: Check balance — highlight path back up with BF badges ──
         const bfMap = collectBFs(afterInsert);
@@ -176,9 +181,11 @@ export function useAVLInsertHandler(params: {
                 animationCallbacks.setNodes(hl);
                 const bf = bfMap.get(nodeId) ?? 0;
                 if (nodeId === rotationNodeId) {
-                    setAnimationDescription(`⚠️ Balance Factor = ${bf} — Imbalanced! Need ${rotationType}`);
+                    const nodeLabel = hl.find(n => n.id === nodeId)?.data.label;
+                    setAnimationDescription(`Balance Factor = ${bf} — Imbalanced! Need ${rotationType}.`);
                 } else {
-                    setAnimationDescription(`⚖️ Balance Factor = ${bf} — Balanced ✓`);
+                    const nodeLabel = hl.find(n => n.id === nodeId)?.data.label;
+                    setAnimationDescription(`Balance Factor = ${bf} — Balanced . Continuing up...`);
                 }
             }, animationSpeed * offset);
         });
@@ -215,8 +222,11 @@ export function useAVLInsertHandler(params: {
                 }));
                 animationCallbacks.setNodes(hl);
                 animationCallbacks.setEdges(hlEdges);
-                setAnimationDescription(`🔄 Imbalance detected! Need ${rotationType}`);
+                const nodeLabel = insertedRF.nodes.find(n => n.id === rotationNodeId)?.data.label;
+                setAnimationDescription(`Imbalance at node ${nodeLabel}. Performing ${rotationType}...`);
             }, animationSpeed * offset);
+            offset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * offset);
 
             // Step 5b: Reassign Edges (Topology Update)
             offset++;
@@ -245,8 +255,11 @@ export function useAVLInsertHandler(params: {
 
                 animationCallbacks.setNodes(tangledNodes);
                 animationCallbacks.setEdges(hlEdges);
-                setAnimationDescription(`🔗 Disconnecting & Reassigning Child Nodes...`);
+                setAnimationDescription(`Disconnecting & Reassigning Child Nodes...`);
             }, animationSpeed * offset);
+
+            offset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * offset);
 
             // Step 5c: Interpolation frames (Geometry Update)
             const INTERP_FRAMES = 15;
@@ -283,26 +296,31 @@ export function useAVLInsertHandler(params: {
                     });
                     animationCallbacks.setNodes(interpolated);
                     animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
-                    setAnimationDescription(`✨ Untangling tree structure...`);
+                    setAnimationDescription(`Re-arranging nodes to the new structure...`);
                 }, animationSpeed * fractionOffset);
             }
             // Advance integer offset past the fractional frames
             offset++;
+            // No explicit pause needed here, as the next step is the final rotation result.
 
             // Step 5d: Final rotation result
             offset++;
             controller.scheduleStep(() => {
                 animationCallbacks.setNodes(finalRF.nodes as RFNode[]);
                 animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
-                setAnimationDescription(`✅ ${rotationType} — Tree rebalanced!`);
+                setAnimationDescription(`${rotationType} complete. The tree is now balanced.`);
             }, animationSpeed * offset);
+            offset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * offset);
         } else {
             offset++;
             controller.scheduleStep(() => {
                 animationCallbacks.setNodes(finalRF.nodes as RFNode[]);
                 animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
-                setAnimationDescription(`✅ Tree is balanced. No rotation needed.`);
+                setAnimationDescription(`All nodes are balanced. No rotation was needed.`);
             }, animationSpeed * offset);
+            offset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * offset);
         }
 
         // ── Step 6: Final clean state ──
