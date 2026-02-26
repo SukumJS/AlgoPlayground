@@ -39,7 +39,7 @@ export default function TutorialSort({
 
     if (currentStep >= 5) return null;
 
-    const nodeBoxSize = 110;
+    const nodeBoxSize = 105;
     const nodeHalfBox = nodeBoxSize / 2;
     const nodeRadius = "12";
 
