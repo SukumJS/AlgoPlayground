@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, useRef, DragEvent } from "react";
+import React, { useState, useCallback, useRef, DragEvent, useMemo } from "react";
 import ControlPanel from "../../components/shared/controlPanel";
 import SideTab from "../../components/shared/sideTab";
 import ExplainAlgo from "../../components/visualizer/explainAlgo";
@@ -221,12 +221,59 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         }
     }, [tutorial.showTutorial, nodeInteraction]);
 
-    const treeNodes = nodes
-        .filter(node => node.type === "custom" && typeof node.data === 'object' && 'label' in node.data)
-        .map(node => ({
-            id: node.id,
-            data: { label: (node.data as Record<string, unknown>).label as string }
-        }));
+
+    // สร้าง String ตัวแทนข้อมูล (เอาแค่ ID และ Label)
+    // การทำแบบนี้ String จะไม่เปลี่ยนแม้ว่าจะลากโหนด (พิกัด X, Y เปลี่ยน)
+    const nodeDataString = nodes
+        .filter(n => n.type === "custom")
+        .map(n => `${n.id}-${(n.data as Record<string, unknown>)?.label}`)
+        .join('|');
+
+    // แช่แข็ง treeNodes ให้ประมวลผลใหม่เฉพาะตอนที่มีการเพิ่ม/ลดโหนด หรือแก้ค่าตัวเลขเท่านั้น
+    const treeNodes = useMemo(() => {
+        return nodes
+            .filter(node => node.type === "custom" && typeof node.data === 'object' && 'label' in node.data)
+            .map(node => ({
+                id: node.id,
+                data: { label: (node.data as Record<string, unknown>).label as string }
+            }));
+    }, [nodeDataString]);
+
+    // แช่แข็ง SideTab ทั้งก้อน!
+    const sideTabMemo = useMemo(() => (
+        <SideTab title="Tree Algorithms">
+            <div>
+                <CodeAlgo tutorialMode={tutorial.showTutorial} />
+                <ExplainAlgo tutorialMode={tutorial.showTutorial} />
+                {/* Display Data Input for Tree Algorithms */}
+                <Data_tree
+                    tutorialMode={tutorial.showTutorial}
+                    tutorialStep={tutorial.tutorialStep}
+                    onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
+                    currentNodes={treeNodes}
+                    currentEdges={edges}
+                    algorithm={algorithm}
+                    onRebalanceReady={(fn) => { rebalanceRef.current = fn; }}
+                    onBTRebalanceReady={(fn) => { btRebalanceRef.current = fn; }}
+                    onHeapRebalanceReady={(fn) => { heapRebalanceRef.current = fn; }}
+                    initialBSTRoot={["binary-search-tree", "avl-tree"].includes(algorithm) ? treeInitialBSTRoot : null}
+                    initialBTRoot={['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm) ? treeInitialBTRoot : null}
+                    initialHeapRoot={algorithm === 'min-heap' ? treeInitialMinHeapRoot : algorithm === 'max-heap' ? treeInitialMaxHeapRoot : null}
+                    initialAVLRoot={algorithm === 'avl-tree' ? treeInitialAVLRoot : null}
+                    onTrashDeleteReady={(fn) => { trashDeleteRef.current = fn; }}
+                    onAutoInsertReady={(fn) => { autoInsertRef.current = fn; }}
+                />
+            </div>
+            <div><PostTest_portal /></div>
+        </SideTab>
+    ), [
+        tutorial.showTutorial,
+        tutorial.tutorialStep,
+        tutorial.handleTutorialDropSuccess,
+        treeNodes, 
+        edges, 
+        algorithm
+    ]);
 
     return (
         <div className="w-screen h-screen">
@@ -261,32 +308,8 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
             <div className="absolute bottom-4 w-full z-10">
                 <ControlPanel />
             </div>
-
-            <SideTab title="Tree Algorithms">
-                <div>
-                    <CodeAlgo tutorialMode={tutorial.showTutorial} />
-                    <ExplainAlgo tutorialMode={tutorial.showTutorial} />
-                    {/* Display Data Input for Tree Algorithms */}
-                    <Data_tree
-                        tutorialMode={tutorial.showTutorial}
-                        tutorialStep={tutorial.tutorialStep}
-                        onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
-                        currentNodes={treeNodes}
-                        currentEdges={edges}
-                        algorithm={algorithm}
-                        onRebalanceReady={(fn) => { rebalanceRef.current = fn; }}
-                        onBTRebalanceReady={(fn) => { btRebalanceRef.current = fn; }}
-                        onHeapRebalanceReady={(fn) => { heapRebalanceRef.current = fn; }}
-                        initialBSTRoot={["binary-search-tree", "avl-tree"].includes(algorithm) ? treeInitialBSTRoot : null}
-                        initialBTRoot={['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm) ? treeInitialBTRoot : null}
-                        initialHeapRoot={algorithm === 'min-heap' ? treeInitialMinHeapRoot : algorithm === 'max-heap' ? treeInitialMaxHeapRoot : null}
-                        initialAVLRoot={algorithm === 'avl-tree' ? treeInitialAVLRoot : null}
-                        onTrashDeleteReady={(fn) => { trashDeleteRef.current = fn; }}
-                        onAutoInsertReady={(fn) => { autoInsertRef.current = fn; }}
-                    />
-                </div>
-                <div><PostTest_portal /></div>
-            </SideTab>
+            
+            {sideTabMemo}
 
             {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
             <div className="absolute top-4 left-8 z-10 flex gap-2">
