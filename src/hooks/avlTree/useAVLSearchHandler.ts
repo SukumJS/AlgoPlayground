@@ -38,7 +38,7 @@ export function useAVLSearchHandler(params: {
         if (!avlRoot) {
             animationCallbacks.setDescription('Tree is empty');
             setIsAnimating(false);
-            return;
+            controller.scheduleStep(() => animationCallbacks.setDescription(''), animationSpeed * 2); // Keep for 2 seconds
         }
 
         const { found, nodeId, path } = searchAVL(avlRoot, value);
@@ -49,6 +49,7 @@ export function useAVLSearchHandler(params: {
 
         // Step 1: Animate traversal — only current node highlighted, edges accumulated
         path.forEach((id, idx) => {
+            let globalOffset = idx; // Use idx as base offset for traversal steps
             controller.scheduleStep(() => {
                 // Node: highlight ONLY current node
                 const highlighted = rfNodes.map((n: RFNode) => ({
@@ -69,7 +70,8 @@ export function useAVLSearchHandler(params: {
                 }));
                 animationCallbacks.setNodes(highlighted);
                 animationCallbacks.setEdges(highlightedEdges);
-                animationCallbacks.setDescription(`🔍 Searching for ${value}... (step ${idx + 1}/${path.length})`);
+                const currentNode = rfNodes.find(n => n.id === id);
+                animationCallbacks.setDescription(`Searching for ${value}. Comparing with ${currentNode?.data.label}.`);
             }, animationSpeed * (idx + 1));
         });
 
@@ -85,10 +87,10 @@ export function useAVLSearchHandler(params: {
                     },
                 }));
                 animationCallbacks.setNodes(highlighted);
-                animationCallbacks.setDescription(`✓ Found ${value}!`);
+                animationCallbacks.setDescription(`Found ${value}!`);
             } else {
                 animationCallbacks.setNodes(rfNodes);
-                animationCallbacks.setDescription(`✗ ${value} not found`);
+                animationCallbacks.setDescription(`${value} not found`);
             }
             animationCallbacks.setEdges(rfEdges);
 
@@ -99,7 +101,7 @@ export function useAVLSearchHandler(params: {
                 animationCallbacks.setDescription('');
                 setIsAnimating(false);
                 setSearchValue('');
-            }, animationSpeed * 2);
+            }, animationSpeed * 4); // Longer delay for final state
         }, animationSpeed * (path.length + 1));
 
     }, [avlRoot, animationSpeed, animationCallbacks, isPausedRef, setIsAnimating, setSearchValue]);

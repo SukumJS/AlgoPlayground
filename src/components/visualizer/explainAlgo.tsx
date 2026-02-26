@@ -87,7 +87,7 @@ export default function ExplainAlgo({
                         }`}
                     >{
                         // if parent provided algoName we can prefix it for clarity
-                        algoName ? `${algoName}: ${displayedExplanation}` : displayedExplanation
+                        algoName ? `${displayedExplanation}` : displayedExplanation
                     }</p>
                 </div>
             </div>

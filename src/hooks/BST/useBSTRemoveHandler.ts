@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
 import { AnimationController } from '@/src/components/visualizer/animations/Tree/animationController';
 import type { AnimationCallbacks } from '@/src/components/visualizer/animations/types';
@@ -15,12 +15,9 @@ import {
 interface UseBSTRemoveHandlerProps {
     bstRoot: BSTNode | null;
     setBSTRoot: (root: BSTNode | null) => void;
-    nodes: RFNode[];
-    edges: RFEdge[];
     setNodes: (nodes: any) => void;
     setEdges: (edges: any) => void;
     setDescription: (desc: string) => void;
-    applyHighlighting: AnimationCallbacks['applyHighlighting'];
     animationSpeed: number;
     isPausedRef: React.MutableRefObject<boolean>;
 }
@@ -28,30 +25,34 @@ interface UseBSTRemoveHandlerProps {
 export function useBSTRemoveHandler({
     bstRoot,
     setBSTRoot,
-    nodes,
-    edges,
     setNodes,
     setEdges,
     setDescription,
-    applyHighlighting,
     animationSpeed,
     isPausedRef,
 }: UseBSTRemoveHandlerProps) {
+    const controllerRef = useRef<AnimationController | null>(null);
+    const bstRootRef = useRef<BSTNode | null>(bstRoot);
+    bstRootRef.current = bstRoot;
+
     const handleRemove = useCallback(
         (value: number) => {
+            controllerRef.current?.clearAll();
             const controller = new AnimationController(isPausedRef);
+            controllerRef.current = controller;
 
-            if (!bstRoot) {
+            const root = bstRootRef.current;
+            if (!root) {
                 setDescription('Tree is empty');
-                return;
+                controller.scheduleStep(() => setDescription(''), animationSpeed * 2); // Keep for 2 seconds
             }
 
             // Pre-compute search path and tree states
-            const { found, nodeId, path } = searchBST(bstRoot, value);
-            const { successorId } = findBSTSuccessor(bstRoot, value);
+            const { found, nodeId, path } = searchBST(root, value);
+            const { successorId } = findBSTSuccessor(root, value);
 
-            const positions = calculateBSTPositions(bstRoot);
-            const rfData = bstToReactFlow(bstRoot, [], [], positions);
+            const positions = calculateBSTPositions(root);
+            const rfData = bstToReactFlow(root, [], [], positions);
             const rfNodes = rfData.nodes as RFNode[];
             const rfEdges = rfData.edges as RFEdge[];
 
@@ -59,7 +60,7 @@ export function useBSTRemoveHandler({
 
             // Step 1: Animate search traversal
             path.forEach((id, idx) => {
-                controller.scheduleStep(() => {
+                controller.scheduleStep(() => { // Description step
                     const highlighted = rfNodes.map((n: RFNode) => ({
                         ...n,
                         data: {
@@ -80,19 +81,25 @@ export function useBSTRemoveHandler({
                     });
                     setNodes(highlighted);
                     setEdges(highlightedEdges);
-                    setDescription(`Searching for ${value}...`);
-                }, animationSpeed * (idx + 1));
-                globalOffset = idx + 1;
+                    const currentNode = rfNodes.find(n => n.id === id);
+                    setDescription(`Searching for node ${value} to remove. Comparing with ${currentNode?.data.label}.`);
+                }, animationSpeed * (idx * 2 + 1));
+
+                controller.scheduleStep(() => { // Pause step
+                    // Keep description visible for a short duration
+                    // No visual change, just a pause
+                }, animationSpeed * (idx * 2 + 2));
             });
+            globalOffset = path.length * 2;
 
             // Step 2: Not found
             if (!found) {
                 globalOffset++;
                 controller.scheduleStep(() => {
-                    setNodes(rfNodes);
-                    setEdges(rfEdges);
-                    setDescription(`✗ ${value} not found`);
-                    controller.scheduleStep(() => setDescription(''), animationSpeed * 2);
+                    setNodes(rfNodes); // Ensure nodes are reset to original state
+                    setEdges(rfEdges); // Ensure edges are reset to original state
+                    setDescription(`❌ ${value} was not found in the tree.`);
+                    controller.scheduleStep(() => setDescription(''), animationSpeed * 4); // Longer delay for final state
                 }, animationSpeed * globalOffset);
                 return;
             }
@@ -110,8 +117,10 @@ export function useBSTRemoveHandler({
                 }));
                 setNodes(highlighted);
                 setEdges(rfEdges);
-                setDescription(`❌ Found ${value}! Removing...`);
+                setDescription(`Found ${value}! Preparing for removal...`);
             }, animationSpeed * globalOffset);
+            globalOffset++; // Pause after description
+            controller.scheduleStep(() => {}, animationSpeed * globalOffset);
 
             // Step 4: Highlight inorder successor if it exists
             if (successorId) {
@@ -127,12 +136,14 @@ export function useBSTRemoveHandler({
                     }));
                     setNodes(highlighted);
                     setEdges(rfEdges);
-                    setDescription(`🔄 Found inorder successor — will replace deleted node`);
+                    setDescription(`Node has two children. Finding its inorder successor to take its place.`);
                 }, animationSpeed * globalOffset);
+                globalOffset++; // Pause after description
+                controller.scheduleStep(() => {}, animationSpeed * globalOffset);
             }
 
             // Step 5: Perform Removal and Animate Structural Shift
-            const rootCopy = cloneBSTTree(bstRoot);
+            const rootCopy = cloneBSTTree(root);
             const newRoot = removeBST(rootCopy, value);
 
             if (newRoot) {
@@ -179,8 +190,11 @@ export function useBSTRemoveHandler({
 
                     setNodes(tangledNodes);
                     setEdges(hlEdges);
-                    setDescription('🔗 Re-wiring tree structure...');
+                    setDescription('Re-wiring connections to remove the node...'); // Description for topology change
                 }, animationSpeed * globalOffset);
+
+                globalOffset++; // Pause after description
+                controller.scheduleStep(() => {}, animationSpeed * globalOffset);
 
                 // Step 5b: Geometry Untangle (15 frames)
                 const INTERP_FRAMES = 15;
@@ -215,21 +229,25 @@ export function useBSTRemoveHandler({
 
                         setNodes(interpolated);
                         setEdges(finalRF.edges as RFEdge[]);
-                        setDescription('✨ Structuring tree layout...');
+                        setDescription('Re-arranging nodes to the new structure...'); // Description for geometry change
                     }, animationSpeed * fractionOffset);
                 }
                 globalOffset++;
+                // No explicit pause needed here, as the next step is the final state update.
 
                 // Step 5c: Final State Update
                 globalOffset++;
                 controller.scheduleStep(() => {
-                    setBSTRoot(newRoot);
-                    setNodes(finalRF.nodes as RFNode[]);
-                    setEdges(finalRF.edges as RFEdge[]);
-                    setDescription(`✅ Removed ${value}.`);
-                    controller.scheduleStep(() => setDescription(''), animationSpeed * 2);
+                    // The nodes are already in their final highlighted state from the interpolation.
+                    // We just update the description and schedule the final cleanup.
+                    setDescription(`Removed ${value}.`);
+                    controller.scheduleStep(() => {
+                        setBSTRoot(newRoot);
+                        setNodes(finalRF.nodes as RFNode[]);
+                        setEdges(finalRF.edges as RFEdge[]);
+                        setDescription(''); // Clear final description
+                    }, animationSpeed * 4);
                 }, animationSpeed * globalOffset);
-
             } else {
                 // Tree is completely empty
                 globalOffset++;
@@ -237,15 +255,18 @@ export function useBSTRemoveHandler({
                     setBSTRoot(null);
                     setNodes([]);
                     setEdges([]);
-                    setDescription(`✅ Removed ${value}. Tree is empty.`);
-                    controller.scheduleStep(() => setDescription(''), animationSpeed * 2);
+                    setDescription(`Removed ${value}. The tree is now empty.`);
+                    controller.scheduleStep(() => setDescription(''), animationSpeed * 4);
                 }, animationSpeed * globalOffset);
             }
         },
-        [bstRoot, setBSTRoot, nodes, animationSpeed, isPausedRef, setNodes, setEdges, setDescription, applyHighlighting]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [setBSTRoot, animationSpeed, isPausedRef, setNodes, setEdges, setDescription]
     );
 
-    const cancelAnimation = useCallback(() => { }, []);
+    const cancelAnimation = useCallback(() => {
+        controllerRef.current?.clearAll();
+    }, []);
 
     return { handleRemove, cancelAnimation };
 }

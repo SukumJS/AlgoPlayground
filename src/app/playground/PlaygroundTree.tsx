@@ -109,10 +109,22 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
     const [nodes, setNodes] = useState<Node[]>(treeInitialNodes);
     const [edges, setEdges] = useState<Edge[]>(treeInitialEdges);
     const [showInfo, setShowInfo] = useState(false);
-    
+    const [explanation, setExplanation] = useState<string>(
+        "This section will explain the tree algorithm's steps. Perform an operation to begin."
+    );
     const { flowToScreenPosition } = useReactFlow();
     
     const rebalanceRef = useRef<(() => void) | null>(null);
+
+    // reset explanation when the selected algorithm changes
+    const prettyName = algorithm
+        ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g, ' ')
+        : "";
+    React.useEffect(() => {
+        if (algorithm) {
+            setExplanation(`This section will explain ${prettyName}. Perform an operation to begin.`);
+        }
+    }, [algorithm, prettyName]);
     const btRebalanceRef = useRef<(() => void) | null>(null);
     const heapRebalanceRef = useRef<(() => void) | null>(null);
     const trashDeleteRef = useRef<((nodeId: string, value: number) => void) | null>(null);
@@ -267,11 +279,13 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                     <CodeAlgo tutorialMode={tutorial.showTutorial} />
                     <ExplainAlgo 
                         tutorialMode={tutorial.showTutorial}
+                        explanation={explanation}
                         algoType={algorithm}
                         algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
                     />
                     {/* Display Data Input for Tree Algorithms */}
                     <Data_tree
+                        setExplanation={setExplanation}
                         tutorialMode={tutorial.showTutorial}
                         tutorialStep={tutorial.tutorialStep}
                         onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}

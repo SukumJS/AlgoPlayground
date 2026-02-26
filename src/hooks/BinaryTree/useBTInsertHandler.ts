@@ -23,6 +23,7 @@ export function useBTInsertHandler({
   setNodes,
   setEdges,
   setDescription,
+  applyHighlighting,
   animationSpeed,
   isPausedRef,
 }: UseBTInsertHandlerProps) {
@@ -89,7 +90,8 @@ export function useBTInsertHandler({
 
             setNodes(highlightedNodes);
             setEdges(highlightedEdges);
-            setDescription(`Traversing... checking node ${id}`);
+            const currentNode = (rfNodes as RFNode[]).find(n => n.id === id);
+            setDescription(`Finding an empty spot... checking node ${currentNode?.data.label}.`);
           }, animationSpeed * (idx + 1));
           globalOffset = idx + 1;
         });
@@ -112,8 +114,11 @@ export function useBTInsertHandler({
           }));
           setNodes(highlightedNodes);
           setEdges(rfEdges as RFEdge[]);
-          setDescription(`Found empty ${parentDir} child of node ${parentId}`);
+          const parentNode = (rfNodes as RFNode[]).find(n => n.id === parentId); // Find parent node for description
+          setDescription(`Found an empty spot as the ${parentDir} child of node ${parentNode?.data.label}.`);
         }, animationSpeed * globalOffset);
+        globalOffset++; // Pause after description
+        controller.scheduleStep(() => {}, animationSpeed * globalOffset);
       }
 
       // Step 3: Insert & return to green
@@ -137,7 +142,7 @@ export function useBTInsertHandler({
 
         setNodes(highlightedNodes);
         setEdges(rfEdges as RFEdge[]);
-        setDescription(`Inserted ${value} at next available position`);
+        setDescription(`Inserted ${value} into the next available spot.`);
 
         // clear highlight
         controller.scheduleStep(() => {
@@ -146,7 +151,7 @@ export function useBTInsertHandler({
           setNodes(finalNodes as RFNode[]);
           setEdges(finalEdges as RFEdge[]);
           setDescription('');
-        }, animationSpeed * 2);
+        }, animationSpeed * 4); // Longer delay for final state
       }, animationSpeed * globalOffset);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
