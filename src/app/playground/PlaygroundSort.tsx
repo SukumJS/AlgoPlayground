@@ -13,7 +13,7 @@ import {
     applyNodeChanges,
     applyEdgeChanges,
     Controls,
-    useReactFlow, // 🌟 เพิ่มสำหรับหาพิกัดให้ Tutorial
+    useReactFlow,
     type Node,
     type Edge,
     type FitViewOptions,
@@ -31,11 +31,9 @@ import { useSortableDrag } from "@/src/hooks/sort/useSortableDrag";
 import { useExecutionSpeed } from "@/src/hooks/useExecutionSpeed";
 import { useSortController } from "@/src/hooks/useSortController";
 import Reading_modal from "@/src/components/shared/reading_modal";
-import { Info } from "lucide-react";
+import { Info, Trash2 } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
-
-// 🌟 นำเข้า Tutorial Components
 import { useSortTutorial } from "@/src/hooks/useSortTutorial";
 import TutorialSort from "@/src/components/visualizer/tutorial_sort";
 import Tutorial_modal from "@/src/components/shared/tutorial_modal";
@@ -53,7 +51,6 @@ const positionFromIndex = (index: number) => ({
     y: 5,
 });
 
-// 🌟 เปลี่ยนชุดข้อมูลตั้งต้นให้ตรงกับในรูป Tutorial (3, 34, 64, 12, 22, 25)
 const initialNodes: Node<SortNodeData>[] = [
     { id: "1", type: "custom", position: positionFromIndex(0), data: { value: 3, index: 0, status: "idle" } },
     { id: "2", type: "custom", position: positionFromIndex(1), data: { value: 34, index: 1, status: "idle" } },
@@ -67,24 +64,19 @@ const initialEdges: Edge[] = [];
 const fitViewOptions: FitViewOptions = { padding: 0.2 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: true };
 
-// รับค่า algorithm มาจาก page.tsx 
 export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
-    // state สำหรับ input ใน sorting
     const [nodes, setNodes] = useState<Node<SortNodeData>[]>(initialNodes);
-    // 🌟 ใส่เลข 11 รอไว้ในช่อง Input เพื่อให้ตรงกับรูป Tutorial
-    const [nodeInput, setNodeInput] = useState<number | string>(11); 
+    const [nodeInput, setNodeInput] = useState<number | string>(11);
     const [edges, setEdges] = useState<Edge[]>(initialEdges);
     const [showInfo, setShowInfo] = useState(false);
 
-    // 🌟 เอาไว้หาพิกัดสำหรับวงกลมเจาะรู (Spotlight)
     const { flowToScreenPosition } = useReactFlow();
 
-    // 🌟 เรียกใช้งาน Hook ของ Tutorial
     const tutorial = useSortTutorial({
         nodes,
         flowToScreenPosition,
         setNodes,
-        isSort: true, // กำหนดให้แสดง Tutorial ทันที
+        isSort: true,
     });
 
     const onNodesChange: OnNodesChange = useCallback(
@@ -105,11 +97,8 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
-    /* Hook สำหรับควบคุมความเร็ว animation */
     const { delayRef, setSpeed, speed } = useExecutionSpeed();
-
-    /* Hook สำหรับ drag แล้ว swap node ของเดิมที่คุณใช้งานอยู่ */
-    const { onNodeDrag, onNodeDragStop } = useSortableDrag(setNodes, positionFromIndex);
+    const { onNodeDragStart, onNodeDrag, onNodeDragStop, isDraggingNode, isTrashActive } = useSortableDrag(setNodes, positionFromIndex);
 
     const controller = useSortController({
         algoType: algorithm,
@@ -121,33 +110,54 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         speed,
     });
 
-    // 🌟 สร้างระบบ "สับราง" สำหรับเช็คว่าตอนนี้อยู่โหมดไหน (ถ้า Tutorial รัน Tutorial ถ้าปกติ รันโค้ดเก่าคุณ)
+    //แมปข้อมูลเพื่อ "สตาฟ" กล่องที่ไม่เกี่ยวข้อง
+    const displayNodes = useMemo(() => {
+        return nodes.map((node) => {
+            let canDrag = !controller.isRunning;
+
+            if (tutorial.showTutorial) {
+                canDrag = false;
+
+                const val = String(node.data.value);
+                if (tutorial.tutorialStep === 1 && val === '34') {
+                    canDrag = true;
+                }
+                if ((tutorial.tutorialStep === 3 || tutorial.tutorialStep === 4) && val === '3') {
+                    canDrag = true;
+                }
+            }
+
+            return { ...node, draggable: canDrag };
+        });
+    }, [nodes, controller.isRunning, tutorial.showTutorial, tutorial.tutorialStep]);
+
+
     const handleNodeDragStart = useCallback((event: React.MouseEvent, node: Node, allNodes: Node[]) => {
+
+        onNodeDragStart(event, node, allNodes);
         if (tutorial.showTutorial) {
             tutorial.onNodeDragStart(event, node as Node<SortNodeData>);
         }
     }, [tutorial]);
 
     const handleNodeDrag = useCallback((event: React.MouseEvent, node: Node, allNodes: Node[]) => {
+        //เรียกใช้ของเดิม เพื่อให้มันเกิด Live-swap ดันกล่องอื่นสลับที่
+        onNodeDrag(event, node, allNodes);
+
         if (tutorial.showTutorial) {
             tutorial.onNodeDrag(event, node as Node<SortNodeData>);
-        } else {
-            // โยนกลับไปให้ useSortableDrag ทำงานเหมือนเดิม 100%
-            onNodeDrag(event, node, allNodes); 
         }
-    }, [tutorial, onNodeDrag]);
+    }, [onNodeDrag, tutorial]);
 
     const handleNodeDragStop = useCallback((event: React.MouseEvent, node: Node, allNodes: Node[]) => {
+        // เรียกใช้ของเดิม เพื่อให้มัน Snap เข้า Grid 
+        onNodeDragStop(event, node, allNodes);
+
         if (tutorial.showTutorial) {
             tutorial.onNodeDragStop(event, node as Node<SortNodeData>);
-        } else {
-            // โยนกลับไปให้ useSortableDrag ทำงานเหมือนเดิม 100%
-            onNodeDragStop(event, node, allNodes); 
         }
-    }, [tutorial, onNodeDragStop]);
+    }, [onNodeDragStop, tutorial]);
 
-
-    // สร้างตัวแปรแช่แข็ง SideTab ด้วย useMemo
     const sideTabMemo = useMemo(() => (
         <SideTab title="Sorting Algorithms">
             <div>
@@ -156,9 +166,11 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
                 <Data_sort
                     nodeInput={nodeInput}
                     setNodeInput={setNodeInput}
-                    // 🌟 ส่ง Props ไปที่ Data_sort เพื่อให้มันเปิดแท็บอัตโนมัติ และรู้ว่าลากกล่องลงจอสำเร็จหรือยัง
                     tutorialMode={tutorial.showTutorial}
-                    onTutorialDropSuccess={tutorial.handleTutorialDropSuccess}
+                    onTutorialDropSuccess={() => {
+                        tutorial.handleTutorialDropSuccess();
+                        setNodeInput("");
+                    }}
                 />
             </div>
             <div>
@@ -171,26 +183,29 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         <div className="w-screen h-screen">
             <ReactFlow
                 className={controller.isRunning ? "sorting" : ""}
-                nodes={nodes}
+                nodes={displayNodes}
                 edges={edges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
                 nodeTypes={nodeTypes}
                 onDragOver={onDragOver}
-                
-                // 🌟 ผูกฟังก์ชันสับรางที่เราสร้างใหม่เข้าไปแทนของเดิม
+
                 onNodeDragStart={handleNodeDragStart}
                 onNodeDrag={handleNodeDrag}
                 onNodeDragStop={handleNodeDragStop}
-                
-                nodesDraggable={!controller.isRunning}
+
+                panOnDrag={!tutorial.showTutorial}
+                zoomOnScroll={!tutorial.showTutorial}
+                zoomOnPinch={!tutorial.showTutorial}
+                zoomOnDoubleClick={!tutorial.showTutorial}
+
                 fitView
                 fitViewOptions={fitViewOptions}
                 defaultEdgeOptions={defaultEdgeOptions}
             >
                 <Background />
-                <Controls />
+                {!tutorial.showTutorial && <Controls />}
             </ReactFlow>
 
             <div className="absolute bottom-4 w-full z-10">
@@ -212,10 +227,20 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
                 </button>
                 <StatusNode />
             </div>
+            {!tutorial.showTutorial && isDraggingNode && (
+                <div
+                    className={`fixed z-[65] flex items-center justify-center w-16 h-16 rounded-full bg-[#E53E3E] shadow-lg border-2 border-[#5D5D5D] transition-transform duration-200 ${isTrashActive ? 'scale-125' : ''}`}
+                    style={{
+                        bottom: '140px', left: '50%', transform: 'translateX(-50%)',
+                        boxShadow: isTrashActive ? '0 0 30px 10px rgba(229, 62, 62, 0.8)' : '0 10px 15px -3px rgba(0, 0, 0, 0.2)',
+                    }}
+                >
+                    <Trash2 color="white" size={32} />
+                </div>
+            )}
 
             <Reading_modal isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
-            // 🌟 แสดงหน้าตา (UI) ของ Tutorial ถ้าระบบบอกให้เปิด
             {tutorial.showTutorial && (
                 <TutorialSort
                     onComplete={tutorial.handleTutorialComplete}
@@ -229,10 +254,10 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
                     dropZoneScreenPos={tutorial.dropZoneScreenPos}
                     isTrashActive={tutorial.isTrashActive}
                     trashBinPos={tutorial.trashBinPos}
+                    nodeMaskSize={tutorial.nodeMaskSize}
                 />
             )}
 
-            // 🌟 หน้าต่างตอนทำ Tutorial จบ
             {tutorial.showCompletionModal && (
                 <Tutorial_modal
                     showModal={tutorial.showCompletionModal}

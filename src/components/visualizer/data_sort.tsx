@@ -11,20 +11,19 @@ let id = 0;
 const getId = () => `dndnode_${id++}`;
 
 type nodeProps = {
-    // 🌟 เปลี่ยนเป็น number | string เพื่อให้ลบเลข 0 ออกจากช่องได้
     nodeInput: number | string;
     setNodeInput: React.Dispatch<React.SetStateAction<number | string>> | ((val: number | string) => void);
-    
-    // 🌟 เพิ่ม Props สำหรับรับโหมด Tutorial
+
+    //เพิ่ม Props สำหรับรับโหมด Tutorial
     tutorialMode?: boolean;
     onTutorialDropSuccess?: () => void;
 };
 
 function Data_sort({ nodeInput, setNodeInput, tutorialMode, onTutorialDropSuccess }: nodeProps) {
-    // 🌟 ตั้งค่าเริ่มต้นให้เปิดแท็บอัตโนมัติถ้าเป็น Tutorial
+    // ตั้งค่าเริ่มต้นให้เปิดแท็บอัตโนมัติถ้าเป็น Tutorial
     const [isDataSortOpen, setIsDataSortOpen] = useState(tutorialMode ? true : false);
 
-    // 🌟 ดักจับเผื่อค่า tutorialMode โหลดตามมาทีหลัง
+    // ดักจับเผื่อค่า tutorialMode โหลดตามมาทีหลัง
     useEffect(() => {
         if (tutorialMode) {
             setIsDataSortOpen(true);
@@ -45,7 +44,7 @@ function Data_sort({ nodeInput, setNodeInput, tutorialMode, onTutorialDropSucces
                     const newNode: Node = {
                         id: getId(),
                         type: "custom",
-                        position, // ตำแหน่งเมาส์ตอนวาง 
+                        position: { x: currentIndex * 65, y: 5 },
                         data: {
                             value: sampleValue,
                             status: "idle",
@@ -59,14 +58,68 @@ function Data_sort({ nodeInput, setNodeInput, tutorialMode, onTutorialDropSucces
                 setType(null);
                 setDraggedValue(null);
 
-                // 🌟 เมื่อลากกล่องลงจอสำเร็จ ให้ส่งสัญญาณบอก Tutorial ให้ไปสเต็ปถัดไป
+                //  เมื่อลากกล่องลงจอสำเร็จ ให้ส่งสัญญาณบอก Tutorial ให้ไปสเต็ปถัดไป
                 if (onTutorialDropSuccess) {
                     onTutorialDropSuccess();
                 }
             };
         },
-        [setNodes, onTutorialDropSuccess], // 🌟 เพิ่ม dependencies
+        [setNodes, onTutorialDropSuccess],
     );
+    const generateDiverseArray = (count: number) => {
+        const scenario = Math.floor(Math.random() * 4); // สุ่ม 0-3 เพื่อเลือกรูปแบบ
+        let arr: number[] = [];
+
+        switch (scenario) {
+            case 0: // 1. Reversed: เรียงจากมากไปน้อย (Worst Case)
+                arr = Array.from({ length: count }, (_, i) => Math.floor(((count - i) / count) * 90) + 10);
+                break;
+
+            case 1: // 2. Nearly Sorted: เรียงเกือบเป๊ะ (สลับแค่บางตัว)
+                arr = Array.from({ length: count }, (_, i) => Math.floor((i / count) * 90) + 10);
+                for (let i = 0; i < Math.max(1, count * 0.2); i++) { // สลับตำแหน่ง 20%
+                    const idx1 = Math.floor(Math.random() * count);
+                    const idx2 = Math.floor(Math.random() * count);
+                    [arr[idx1], arr[idx2]] = [arr[idx2], arr[idx1]];
+                }
+                break;
+
+            case 2: // 3. Few Unique: มีตัวเลขซ้ำกันเยอะๆ
+                const uniquePool = [10, 40, 70, 90];
+                arr = Array.from({ length: count }, () => uniquePool[Math.floor(Math.random() * uniquePool.length)]);
+                break;
+
+            default: // 4. Random: สุ่มมั่วกระจายตัวปกติ
+                arr = Array.from({ length: count }, () => Math.floor(Math.random() * 95) + 5);
+                break;
+        }
+        return arr;
+    };
+    // ฟังก์ชันสำหรับ Generate โหนดแบบสุ่มลงบน Canvas
+    const handleGenerateRandomNodes = useCallback((count: number) => {
+        if (count <= 0) return;
+
+        // สุ่มรูปแบบข้อมูลก่อน
+        const randomNumbers = generateDiverseArray(count);
+
+        const newNodes: Node[] = randomNumbers.map((num, i) => ({
+            id: getId(),
+            type: "custom",
+            position: { x: i * 65, y: 5 },
+            data: {
+                value: num,
+                status: "idle",
+                index: i,
+            },
+        }));
+
+        setNodes(newNodes);
+    }, [setNodes]);
+
+    // ฟังก์ชัน Reset ลบโหนดทั้งหมด
+    const handleResetNodes = useCallback(() => {
+        setNodes([]);
+    }, [setNodes]);
 
     const Sample = [
         { number: "1" },
@@ -105,7 +158,6 @@ function Data_sort({ nodeInput, setNodeInput, tutorialMode, onTutorialDropSucces
                 <div className="overflow-x-auto flex gap-2 mb-2 p-2">
                     {/* Input Node Item */}
                     <div
-                        // 🌟 ติดป้ายชื่อตรงนี้! เพื่อให้ไฟ Spotlight หาตำแหน่งกล่องเลข 11 เจอ
                         data-tutorial-target="sidebar-sort-node"
                         className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg cursor-grab"
                         onPointerDown={(event) => {
@@ -146,8 +198,12 @@ function Data_sort({ nodeInput, setNodeInput, tutorialMode, onTutorialDropSucces
                     ))}
                 </div>
 
-                <div className="flex justify-center items-center text-center p-2">
-                    <RandomSize />
+                <div className="flex justify-center items-center text-center p-2 w-full">
+                    {/* ส่ง Props ไปให้ RandomSize เพื่อให้มันทำงานได้จริง */}
+                    <RandomSize
+                        onAdd={handleGenerateRandomNodes}
+                        onReset={handleResetNodes}
+                    />
                 </div>
             </div>
         </>
