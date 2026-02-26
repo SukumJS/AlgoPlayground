@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, DragEvent } from "react";
+import React, { useState, useCallback, DragEvent, useMemo } from "react";
 import ControlPanel from "../../components/shared/controlPanel";
 import SideTab from "../../components/shared/sideTab";
 import ExplainAlgo from "../../components/visualizer/explainAlgo";
@@ -116,6 +116,23 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         speed,
         setExplanation,
     });
+
+    // สร้างตัวแปรแช่แข็ง SideTab ด้วย useMemo
+    const sideTabMemo = useMemo(() => (
+        <SideTab title="Sorting Algorithms">
+            <div>
+                <CodeAlgo />
+                <ExplainAlgo />
+                <Data_sort
+                    nodeInput={nodeInput}
+                    setNodeInput={setNodeInput}
+                />
+            </div>
+            <div>
+                <PostTest_portal />
+            </div>
+        </SideTab>
+    ), [nodeInput]);
 
     return (
         <div className="w-screen h-screen">
