@@ -6,7 +6,7 @@ export const generateInsertionSteps = (
     positionFromIndex: (index: number) => { x: number; y: number }
 ) => {
     const BASE_Y = 5;
-    const LIFT_OFFSET = 40;
+    const LIFT_OFFSET = 60;
     let arr: Node<SortNodeData>[] = [...nodes]
         .map((node): Node<SortNodeData> => ({
             ...node,
@@ -38,7 +38,7 @@ export const generateInsertionSteps = (
         const targetNodeId = arr[i].id;
         const targetValue = arr[i].data.value;
 
-        // 1️⃣ Lift: ยกตัวที่จะแทรกขึ้นมาพักไว้
+        // Lift: ยกตัวที่จะแทรกขึ้นมา และเปลี่ยนสีเป็นกำลังทำงาน (compare)
         arr = arr.map((node) =>
             node.id === targetNodeId
                 ? {
@@ -56,29 +56,29 @@ export const generateInsertionSteps = (
         while (j > 0 && arr[j - 1].data.value > targetValue) {
             const shiftNodeId = arr[j - 1].id;
 
-            // 2️⃣ Compare: ไฮไลท์ตัวที่จะเทียบด้วย (ตัวซ้ายมือ)
+            // Compare: เปลี่ยนสีตัวซ้ายมือให้เป็นสีเปรียบเทียบ (compare)
             arr = arr.map((node) =>
-                node.id === shiftNodeId
+                node.id === shiftNodeId || node.id === targetNodeId
                     ? { ...node, data: { ...node.data, status: "compare" as const } }
                     : node
             );
             pushStep();
 
-            // 3️⃣ Shift: เลื่อนตัวที่มากกว่าไปทางขวา 1 ช่อง และเลื่อนตัวที่ลอยอยู่ไปทางซ้ายบน
+            // Shift (Swap Phase): เปลี่ยนสีเป็น "swap" ตอนกำลังเลื่อนผ่านกัน
             arr = arr.map((node) => {
                 if (node.id === shiftNodeId) {
                     return {
                         ...node,
-                        data: { ...node.data, index: j, status: "idle" as const }, // อัปเดต index และเคลียร์ status
+                        data: { ...node.data, index: j, status: "swap" as const }, // เปลี่ยนเป็นสี swap
                         position: positionFromIndex(j), // สไลด์ไปทางขวา
                     };
                 }
                 if (node.id === targetNodeId) {
                     return {
                         ...node,
-                        data: { ...node.data, index: j - 1 }, // อัปเดต index ของตัวที่ลอยอยู่
+                        data: { ...node.data, index: j - 1, status: "swap" as const }, // เปลี่ยนเป็นสี swap
                         position: {
-                            x: positionFromIndex(j - 1).x, // สไลด์ตามไปรอด้านบนของช่องว่าง
+                            x: positionFromIndex(j - 1).x, // สไลด์ไปรอข้างบน
                             y: BASE_Y - LIFT_OFFSET,
                         },
                     };
@@ -86,22 +86,37 @@ export const generateInsertionSteps = (
                 return node;
             });
 
-            // สลับตำแหน่งใน Array จริงๆ เพื่อให้ลูปทำงานต่อไปได้ถูกต้อง
+            // สลับตำแหน่งใน Array จริงๆ เพื่อให้ลูปทำงานต่อไปได้
             const temp = arr[j];
             arr[j] = arr[j - 1];
             arr[j - 1] = temp;
 
             pushStep();
+
+            //  Reset Shifted Node: คืนค่าสีตัวที่เลื่อนไปแล้วให้กลับเป็นปกติ (idle)
+            arr = arr.map((node) =>
+                node.id === shiftNodeId
+                    ? { ...node, data: { ...node.data, status: "idle" as const } }
+                    : node
+            );
+            // โครงค้างตัว targetNodeId ไว้เป็นสี compare หรือ swap เพื่อให้รู้ว่ายังถือลอยอยู่
+            arr = arr.map((node) =>
+                node.id === targetNodeId
+                    ? { ...node, data: { ...node.data, status: "compare" as const } }
+                    : node
+            );
+            pushStep();
+
             j--;
         }
 
-        // 4️⃣ Drop: วางตัวที่ยกไว้ลงในช่องว่างที่ถูกต้อง
+        //  Drop: วางตัวที่ยกลงในช่องว่าง และคืนสีเป็นปกติ (idle)
         arr = arr.map((node) => {
             if (node.id === targetNodeId) {
                 return {
                     ...node,
                     data: { ...node.data, status: "idle" as const },
-                    position: positionFromIndex(j), // ตกลงมาที่ Base Y
+                    position: positionFromIndex(j),
                 };
             }
             return node;
@@ -109,7 +124,7 @@ export const generateInsertionSteps = (
         pushStep();
     }
 
-    // Mark sorted: เมื่อทำครบทุกตัว ถือว่าจัดเรียงเสร็จสิ้น
+    // Mark sorted: เมื่อทำครบทุกตัว ถือว่าจัดเรียงเสร็จสิ้น เปลี่ยนทุกตัวเป็นสี sorted
     arr = arr.map((node) => ({
         ...node,
         data: { ...node.data, status: "sorted" as const },
