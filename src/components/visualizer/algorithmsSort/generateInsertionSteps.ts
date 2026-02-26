@@ -115,8 +115,8 @@ export const generateInsertionSteps = (
             if (node.id === targetNodeId) {
                 return {
                     ...node,
-                    data: { ...node.data, status: "idle" as const },
-                    position: positionFromIndex(j),
+                    data: { ...node.data, status: "idle" as const, index: j },
+                    position: positionFromIndex(j), // สไลด์ลงมาที่ตำแหน่งใหม่
                 };
             }
             return node;
