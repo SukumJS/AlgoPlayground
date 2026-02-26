@@ -10,13 +10,13 @@ export function generateStepsByType(
   positionFromIndex: (index: number) => { x: number; y: number }
 ) {
   switch (algoType) {
-    case "bubble":
+    case "bubble-sort":
       return generateBubbleSortSteps(nodes, positionFromIndex);
-    case "insertion":
+    case "insertion-sort":
       return generateInsertionSteps(nodes, positionFromIndex);
-    case "selection":
+    case "selection-sort":
       return generateSelectionSteps(nodes, positionFromIndex);
-    case "merge":
+    case "merge-sort":
       return generateMergeSteps(nodes, positionFromIndex);
     default:
       return generateBubbleSortSteps(nodes, positionFromIndex);
