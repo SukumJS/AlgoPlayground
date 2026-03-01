@@ -25,30 +25,32 @@ function cloneAVL(node: AVLTreeNode | null): AVLTreeNode | null {
     return JSON.parse(JSON.stringify(node));
 }
 
-export function useAVLInsertHandler(params: {
+interface UseAVLInsertHandlerProps {
     avlRoot: AVLTreeNode | null;
     setAVLRoot: (root: AVLTreeNode | null) => void;
     nodeIdCounter: number;
     animationSpeed: number;
-    rf: any;
+    rf: any; // ReactFlow instance
     animationCallbacks: AnimationCallbacks;
     isPausedRef: MutableRefObject<boolean>;
     setIsAnimating: (v: boolean) => void;
     setAnimationDescription: (desc: string) => void;
-    setNodeIdCounter: (v: number) => void;
-}) {
-    const {
-        avlRoot,
-        setAVLRoot,
-        nodeIdCounter,
-        animationSpeed,
-        animationCallbacks,
-        isPausedRef,
-        setIsAnimating,
-        setAnimationDescription,
-        setNodeIdCounter,
-    } = params;
+    setNodeIdCounter: (v: number | ((prev: number) => number)) => void;
+    showAVLBalance?: boolean;
+}
 
+export function useAVLInsertHandler({
+    avlRoot,
+    setAVLRoot,
+    nodeIdCounter,
+    animationSpeed,
+    animationCallbacks,
+    isPausedRef,
+    setIsAnimating,
+    setAnimationDescription,
+    setNodeIdCounter,
+    showAVLBalance = true,
+}: UseAVLInsertHandlerProps) {
     const counterRef = useRef(0);
 
     const handleAVLInsert = useCallback((valueToInsert: number) => {
@@ -79,14 +81,14 @@ export function useAVLInsertHandler(params: {
         // --- Build ReactFlow for each state ---
         const oldPositions = calculateTreePositions(latestRoot);
         const oldRF = latestRoot
-            ? avlTreeToReactFlow(latestRoot, [], [], oldPositions)
+            ? avlTreeToReactFlow(latestRoot, [], [], oldPositions, showAVLBalance)
             : { nodes: [], edges: [] };
 
         const insertedPositions = calculateTreePositions(afterInsert);
-        const insertedRF = avlTreeToReactFlow(afterInsert, [], [], insertedPositions);
+        const insertedRF = avlTreeToReactFlow(afterInsert, [], [], insertedPositions, showAVLBalance);
 
         const finalPositions = calculateTreePositions(afterRebalance);
-        const finalRF = avlTreeToReactFlow(afterRebalance, [], [], finalPositions);
+        const finalRF = avlTreeToReactFlow(afterRebalance, [], [], finalPositions, showAVLBalance);
 
         let offset = 0;
 
@@ -140,7 +142,7 @@ export function useAVLInsertHandler(params: {
                 );
             }, animationSpeed * offset);
             offset++; // Pause after description
-            controller.scheduleStep(() => {}, animationSpeed * offset);
+            controller.scheduleStep(() => { }, animationSpeed * offset);
         }
 
         // ── Step 3: Show tree after BST insert (before rebalance) ──
@@ -159,7 +161,7 @@ export function useAVLInsertHandler(params: {
             setAnimationDescription(`Inserted ${valueToInsert}. Now, walking back up to check balance factors.`);
         }, animationSpeed * offset);
         offset++; // Pause after description
-        controller.scheduleStep(() => {}, animationSpeed * offset);
+        controller.scheduleStep(() => { }, animationSpeed * offset);
 
         // ── Step 4: Check balance — highlight path back up with BF badges ──
         const bfMap = collectBFs(afterInsert);
@@ -173,7 +175,7 @@ export function useAVLInsertHandler(params: {
                         ...n.data,
                         isHighlighted: n.id === nodeId,
                         highlightColor: n.id === nodeId
-                            ? (nodeId === rotationNodeId ? '#EF4444' : '#9B59B6')
+                            ? (nodeId === rotationNodeId ? '#EF4444' : '#F7AD45')
                             : (n.id === newNodeId ? '#4CAF7D' : undefined),
                         balanceFactor: bfMap.get(n.id),
                     },
@@ -181,10 +183,10 @@ export function useAVLInsertHandler(params: {
                 animationCallbacks.setNodes(hl);
                 const bf = bfMap.get(nodeId) ?? 0;
                 if (nodeId === rotationNodeId) {
-                    const nodeLabel = hl.find(n => n.id === nodeId)?.data.label;
+                    const nodeLabel = (hl.find(n => n.id === nodeId)?.data as any)?.label;
                     setAnimationDescription(`Balance Factor = ${bf} — Imbalanced! Need ${rotationType}.`);
                 } else {
-                    const nodeLabel = hl.find(n => n.id === nodeId)?.data.label;
+                    const nodeLabel = (hl.find(n => n.id === nodeId)?.data as any)?.label;
                     setAnimationDescription(`Balance Factor = ${bf} — Balanced . Continuing up...`);
                 }
             }, animationSpeed * offset);
@@ -226,7 +228,7 @@ export function useAVLInsertHandler(params: {
                 setAnimationDescription(`Imbalance at node ${nodeLabel}. Performing ${rotationType}...`);
             }, animationSpeed * offset);
             offset++; // Pause after description
-            controller.scheduleStep(() => {}, animationSpeed * offset);
+            controller.scheduleStep(() => { }, animationSpeed * offset);
 
             // Step 5b: Reassign Edges (Topology Update)
             offset++;
@@ -259,7 +261,7 @@ export function useAVLInsertHandler(params: {
             }, animationSpeed * offset);
 
             offset++; // Pause after description
-            controller.scheduleStep(() => {}, animationSpeed * offset);
+            controller.scheduleStep(() => { }, animationSpeed * offset);
 
             // Step 5c: Interpolation frames (Geometry Update)
             const INTERP_FRAMES = 15;
@@ -311,7 +313,7 @@ export function useAVLInsertHandler(params: {
                 setAnimationDescription(`${rotationType} complete. The tree is now balanced.`);
             }, animationSpeed * offset);
             offset++; // Pause after description
-            controller.scheduleStep(() => {}, animationSpeed * offset);
+            controller.scheduleStep(() => { }, animationSpeed * offset);
         } else {
             offset++;
             controller.scheduleStep(() => {
@@ -320,7 +322,7 @@ export function useAVLInsertHandler(params: {
                 setAnimationDescription(`All nodes are balanced. No rotation was needed.`);
             }, animationSpeed * offset);
             offset++; // Pause after description
-            controller.scheduleStep(() => {}, animationSpeed * offset);
+            controller.scheduleStep(() => { }, animationSpeed * offset);
         }
 
         // ── Step 6: Final clean state ──

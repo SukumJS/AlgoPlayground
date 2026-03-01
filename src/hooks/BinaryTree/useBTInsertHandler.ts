@@ -26,6 +26,7 @@ export function useBTInsertHandler({
   applyHighlighting,
   animationSpeed,
   isPausedRef,
+  nodes,
 }: UseBTInsertHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
@@ -77,6 +78,9 @@ export function useBTInsertHandler({
                 highlightColor: n.id === id ? '#62A2F7' : undefined,
               },
             }));
+            const connectedIds = new Set((rfNodes as any[]).map((n: any) => n.id));
+            const floatingNodes = nodes.filter(n => !connectedIds.has(n.id));
+            const allNodes = [...highlightedNodes, ...floatingNodes];
 
             const highlightedEdges = (rfEdges as RFEdge[]).map((e: RFEdge) => {
               const isHighlightedEdge = edgePath.slice(0, idx).includes(e.id);
@@ -88,7 +92,7 @@ export function useBTInsertHandler({
               };
             });
 
-            setNodes(highlightedNodes);
+            setNodes(allNodes);
             setEdges(highlightedEdges);
             const currentNode = (rfNodes as RFNode[]).find(n => n.id === id);
             setDescription(`Finding an empty spot... checking node ${currentNode?.data.label}.`);
@@ -112,13 +116,16 @@ export function useBTInsertHandler({
               highlightColor: n.id === parentId ? '#F7AD45' : undefined,
             },
           }));
-          setNodes(highlightedNodes);
+          const connectedIds = new Set((rfNodes as any[]).map((n: any) => n.id));
+          const floatingNodes = nodes.filter(n => !connectedIds.has(n.id));
+          const allNodes = [...highlightedNodes, ...floatingNodes];
+          setNodes(allNodes);
           setEdges(rfEdges as RFEdge[]);
           const parentNode = (rfNodes as RFNode[]).find(n => n.id === parentId); // Find parent node for description
           setDescription(`Found an empty spot as the ${parentDir} child of node ${parentNode?.data.label}.`);
         }, animationSpeed * globalOffset);
         globalOffset++; // Pause after description
-        controller.scheduleStep(() => {}, animationSpeed * globalOffset);
+        controller.scheduleStep(() => { }, animationSpeed * globalOffset);
       }
 
       // Step 3: Insert & return to green
@@ -140,7 +147,11 @@ export function useBTInsertHandler({
           },
         }));
 
-        setNodes(highlightedNodes);
+        const connectedIds = new Set((rfNodes as any[]).map((n: any) => n.id));
+        const floatingNodes = nodes.filter(n => !connectedIds.has(n.id) && n.id !== newNodeId); // Ensure we don't duplicate the new node if it was dragged before
+        const allNodes = [...highlightedNodes, ...floatingNodes];
+
+        setNodes(allNodes);
         setEdges(rfEdges as RFEdge[]);
         setDescription(`Inserted ${value} into the next available spot.`);
 
@@ -148,14 +159,16 @@ export function useBTInsertHandler({
         controller.scheduleStep(() => {
           const finalPositions = calculateBTPositions(newRoot);
           const { nodes: finalNodes, edges: finalEdges } = btToReactFlow(newRoot, [], [], finalPositions, 'bt-edge');
-          setNodes(finalNodes as RFNode[]);
+          const connectedIdsFinal = new Set((finalNodes as RFNode[]).map((n: any) => n.id));
+          const floatingNodesFinal = nodes.filter(n => !connectedIdsFinal.has(n.id) && n.id !== newNodeId);
+          setNodes([...(finalNodes as RFNode[]), ...floatingNodesFinal]);
           setEdges(finalEdges as RFEdge[]);
           setDescription('');
         }, animationSpeed * 4); // Longer delay for final state
       }, animationSpeed * globalOffset);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [animationSpeed, isPausedRef, setBTRoot, setNodes, setEdges, setDescription]
+    [animationSpeed, isPausedRef, setBTRoot, setNodes, setEdges, setDescription, nodes]
   );
 
   const cancelAnimation = useCallback(() => {

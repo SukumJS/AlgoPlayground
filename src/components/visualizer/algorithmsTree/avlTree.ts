@@ -202,15 +202,15 @@ export function insertAVL(
 
 /**
  * Search for a value in the AVL tree.
- * Returns an object with found:boolean, nodeId (if found) and path (ids traversed)
+ * Returns an object with found:boolean, node (if found) and path (ids traversed)
  */
-export function searchAVL(root: AVLTreeNode | null, value: number): { found: boolean; nodeId?: string; path: string[] } {
+export function searchAVL(root: AVLTreeNode | null, value: number): { found: boolean; node?: AVLTreeNode; nodeId?: string; path: string[] } {
     const path: string[] = [];
     let cur = root;
     while (cur) {
         path.push(cur.id);
         if (value === cur.value) {
-            return { found: true, nodeId: cur.id, path };
+            return { found: true, node: cur, nodeId: cur.id, path };
         }
         cur = value < cur.value ? cur.left : cur.right;
     }
@@ -491,7 +491,11 @@ export function calculateTreePositions(
 interface ReactFlowNode {
     id: string;
     type: string;
-    data: { label: string; variant: string };
+    data: {
+        label: string;
+        variant: string;
+        balanceFactor?: number;
+    };
     position: NodePosition;
 }
 
@@ -514,7 +518,8 @@ export function avlTreeToReactFlow(
     root: AVLTreeNode | null,
     nodes: ReactFlowNode[] = [],
     edges: ReactFlowEdge[] = [],
-    positions: Map<string, NodePosition> = new Map()
+    positions: Map<string, NodePosition> = new Map(),
+    showAVLBalance: boolean = true
 ): { nodes: ReactFlowNode[]; edges: ReactFlowEdge[] } {
     if (root === null) return { nodes, edges };
 
@@ -524,7 +529,11 @@ export function avlTreeToReactFlow(
     nodes.push({
         id: root.id,
         type: "custom",
-        data: { label: root.value.toString(), variant: "circle" },
+        data: {
+            label: root.value.toString(),
+            variant: "circle",
+            balanceFactor: showAVLBalance ? getBalanceFactor(root) : undefined
+        },
         position,
     });
 
@@ -540,7 +549,7 @@ export function avlTreeToReactFlow(
                 targetHandle: "target-top-right",
                 type: "straight",
             });
-            avlTreeToReactFlow(root.left, nodes, edges, positions);
+            avlTreeToReactFlow(root.left, nodes, edges, positions, showAVLBalance);
         }
     }
 
@@ -556,7 +565,7 @@ export function avlTreeToReactFlow(
                 targetHandle: "target-top-left",
                 type: "straight",
             });
-            avlTreeToReactFlow(root.right, nodes, edges, positions);
+            avlTreeToReactFlow(root.right, nodes, edges, positions, showAVLBalance);
         }
     }
 

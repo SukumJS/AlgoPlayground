@@ -28,6 +28,7 @@ export function useTreeTutorial({
 
     // Dynamic screen positions for tutorial spotlight/tooltips
     const [droppedNodeScreenPos, setDroppedNodeScreenPos] = useState<ScreenPosition | null>(null);
+    const [glowZoneScreenPos, setGlowZoneScreenPos] = useState<ScreenPosition | null>(null);
     const [node30ScreenPos, setNode30ScreenPos] = useState<ScreenPosition | null>(null);
     const [node90ScreenPos, setNode90ScreenPos] = useState<ScreenPosition | null>(null);
     const [sidebarNode3Pos, setSidebarNode3Pos] = useState<ScreenPosition | null>(null);
@@ -50,6 +51,12 @@ export function useTreeTutorial({
             });
             setDroppedNodeScreenPos(screenPos);
         }
+
+        // Drop Zone Position (Step 1)
+        // 5 and 285 correspond to GLOW_ZONE.x and GLOW_ZONE.y imported from tutorial_tree later,
+        // we'll just hardcode them right here for projection to avoid circular imports.
+        const glowPos = flowToScreenPosition({ x: 5 + 28, y: 285 + 28 });
+        setGlowZoneScreenPos(glowPos);
 
         // Find node 30 (label === "30")
         const node30 = nodes.find(n => n.data?.label === '30' || n.data?.label === 30);
@@ -236,6 +243,7 @@ export function useTreeTutorial({
         isTrashActive,
 
         // Screen positions
+        glowZoneScreenPos,
         droppedNodeScreenPos,
         node30ScreenPos,
         node90ScreenPos,

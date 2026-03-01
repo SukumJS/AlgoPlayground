@@ -29,6 +29,7 @@ export function useBTSearchHandler({
   applyHighlighting,
   animationSpeed,
   isPausedRef,
+  nodes,
 }: UseBTSearchHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
@@ -61,6 +62,9 @@ export function useBTSearchHandler({
               highlightColor: n.id === id ? '#62A2F7' : undefined,
             },
           }));
+          const connectedIds = new Set((rfNodes as any[]).map((n: any) => n.id));
+          const floatingNodes = nodes.filter(n => !connectedIds.has(n.id));
+          const allNodes = [...highlighted, ...floatingNodes];
 
           // Edges: accumulate highlighted path
           const visitedIds = new Set(path.slice(0, idx + 1));
@@ -73,7 +77,7 @@ export function useBTSearchHandler({
 
           const currentNode = (rfNodes as RFNode[]).find(n => n.id === id);
 
-          setNodes(highlighted);
+          setNodes(allNodes);
           setEdges(highlightedEdges);
           setDescription(`Searching for ${value}. Now checking node ${currentNode?.data.label}.`);
         }, animationSpeed * (globalOffset + 1));
@@ -87,6 +91,9 @@ export function useBTSearchHandler({
       // Show result
       controller.scheduleStep(() => {
         const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(root, [], [], positions);
+        const connectedIds = new Set((rfNodes as any[]).map((n: any) => n.id));
+        const floatingNodes = nodes.filter(n => !connectedIds.has(n.id));
+
         if (found && nodeId) {
           const highlighted = (rfNodes as RFNode[]).map((n: RFNode) => ({
             ...n,
@@ -96,24 +103,26 @@ export function useBTSearchHandler({
               highlightColor: n.id === nodeId ? '#4CAF7D' : undefined,
             },
           }));
-          setNodes(highlighted);
+          setNodes([...highlighted, ...floatingNodes]);
           setDescription(`Found ${value}!`);
         } else {
-          setNodes(rfNodes as RFNode[]);
+          setNodes([...(rfNodes as RFNode[]), ...floatingNodes]);
           setDescription(`${value} was not found in the tree.`);
         }
         setEdges(rfEdges as RFEdge[]);
 
         controller.scheduleStep(() => {
           const { nodes: clean, edges: cleanE } = btToReactFlow(root, [], [], positions);
-          setNodes(clean as RFNode[]);
+          const connectedIdsClean = new Set((clean as RFNode[]).map((n: any) => n.id));
+          const floatingNodesClean = nodes.filter(n => !connectedIdsClean.has(n.id));
+          setNodes([...(clean as RFNode[]), ...floatingNodesClean]);
           setEdges(cleanE as RFEdge[]);
           setDescription('');
         }, animationSpeed * 4); // Longer delay for final state
       }, animationSpeed * (path.length + 1));
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [animationSpeed, isPausedRef, setNodes, setEdges, setDescription]
+    [animationSpeed, isPausedRef, setNodes, setEdges, setDescription, nodes]
   );
 
   const cancelAnimation = useCallback(() => {

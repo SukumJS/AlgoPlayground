@@ -66,7 +66,6 @@ export function removeBT(root: BTNode | null, value: number): { newRoot: BTNode 
     // Only swap if they aren't the exact same node (e.g. deleting the deepest node itself)
     if (targetNode !== deepestNode) {
       targetNode.value = deepestNode.value;
-      targetNode.id = deepestNode.id;
     }
 
     // Detach deepest node from its parent

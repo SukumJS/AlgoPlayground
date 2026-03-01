@@ -37,7 +37,7 @@ import { insertBT, type BTNode } from "@/src/components/visualizer/algorithmsTre
 import { insertHeap, type HeapNode } from "@/src/components/visualizer/algorithmsTree/heapTree";
 import { insertAVL, type AVLTreeNode } from "@/src/components/visualizer/algorithmsTree/avlTree";
 import Reading_modal from "@/src/components/shared/reading_modal";
-import { Info } from "lucide-react";
+import { Info, Scale } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 
@@ -113,7 +113,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         "This section will explain the tree algorithm's steps. Perform an operation to begin."
     );
     const { flowToScreenPosition } = useReactFlow();
-    
+
     const rebalanceRef = useRef<(() => void) | null>(null);
 
     // reset explanation when the selected algorithm changes
@@ -140,6 +140,8 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         nodes, edges, setNodes, setEdges, isTree: true, isGraph: false,
         isTutorialActive: tutorial.showTutorial,
     });
+
+    const [showAVLBalance, setShowAVLBalance] = useState(true);
 
     const onNodesChange: OnNodesChange = useCallback(
         (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -168,7 +170,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                 if (!isNaN(val)) {
                     // Delete the manually placed floating node since the connection is invalid
                     setNodes(nds => nds.filter(n => n.id !== connection.target));
-                    
+
                     // Auto-correct by properly inserting the value (which will find the next level-order gap)
                     if (autoInsertRef.current) {
                         setTimeout(() => autoInsertRef.current?.(val), 100);
@@ -256,11 +258,11 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         <SideTab title="Tree Algorithms">
             <div>
                 <CodeAlgo tutorialMode={tutorial.showTutorial} />
-                <ExplainAlgo 
+                <ExplainAlgo
                     tutorialMode={tutorial.showTutorial}
                     explanation={explanation}
                     algoType={algorithm}
-                    algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
+                    algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g, ' ') : ''}
                 />
                 {/* Display Data Input for Tree Algorithms */}
                 <Data_tree
@@ -280,6 +282,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                     onTrashDeleteReady={(fn) => { trashDeleteRef.current = fn; }}
                     onAutoInsertReady={(fn) => { autoInsertRef.current = fn; }}
                     setExplanation={setExplanation}
+                    showAVLBalance={showAVLBalance}
                 />
             </div>
             <div><PostTest_portal /></div>
@@ -288,11 +291,12 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         tutorial.showTutorial,
         tutorial.tutorialStep,
         tutorial.handleTutorialDropSuccess,
-        treeNodes, 
-        edges, 
+        treeNodes,
+        edges,
         algorithm,
         explanation,
-        setExplanation
+        setExplanation,
+        showAVLBalance
     ]);
 
     return (
@@ -322,7 +326,11 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                 defaultEdgeOptions={defaultEdgeOptions}
             >
                 <Background />
-                {!tutorial.showTutorial && <Controls />}
+                {!tutorial.showTutorial && (
+                    <div suppressHydrationWarning>
+                        <Controls />
+                    </div>
+                )}
             </ReactFlow>
 
             <div className="absolute bottom-4 w-full z-10">
@@ -331,14 +339,24 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
 
             {sideTabMemo}
 
-            {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
+            {/* Info button and Node Status indicators */}
             <div className="absolute top-4 left-8 z-10 flex gap-2">
                 <GoToHome_Portal />
                 <button
+                    suppressHydrationWarning
                     onClick={(e) => { e.stopPropagation(); setShowInfo(true) }}
                     className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer">
                     <Info color='#000000' />
                 </button>
+                {algorithm === 'avl-tree' && (
+                    <button
+                        title="Toggle Balance Factors"
+                        onClick={() => setShowAVLBalance(prev => !prev)}
+                        className={`rounded-full p-2 border shadow-lg hover:shadow-lg transition cursor-pointer ${showAVLBalance ? "bg-blue-100 border-blue-400" : "bg-white border-gray-200 hover:bg-gray-100"}`}
+                    >
+                        <Scale color={showAVLBalance ? '#2563EB' : '#000000'} />
+                    </button>
+                )}
                 <StatusNode />
             </div>
 
@@ -351,6 +369,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                     onComplete={tutorial.handleTutorialComplete}
                     currentStep={tutorial.tutorialStep}
                     setCurrentStep={tutorial.setTutorialStep}
+                    glowZoneScreenPos={tutorial.glowZoneScreenPos}
                     droppedNodeScreenPos={tutorial.droppedNodeScreenPos}
                     node30ScreenPos={tutorial.node30ScreenPos}
                     node90ScreenPos={tutorial.node90ScreenPos}
@@ -380,9 +399,9 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                     }]}
                     onLetsPlay={
                         algorithm === "avl-tree" ? () => rebalanceRef.current?.()
-                        : ['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm) ? () => btRebalanceRef.current?.()
-                        : ['min-heap', 'max-heap'].includes(algorithm) ? () => heapRebalanceRef.current?.()
-                        : undefined
+                            : ['binary-tree-inorder', 'binary-tree-preorder', 'binary-tree-postorder'].includes(algorithm) ? () => btRebalanceRef.current?.()
+                                : ['min-heap', 'max-heap'].includes(algorithm) ? () => heapRebalanceRef.current?.()
+                                    : undefined
                     }
                 />
             )}

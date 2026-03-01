@@ -193,13 +193,14 @@ export function removeHeap(
     let siftPath: string[] = [];
     if (targetNode.id !== last.node.id) {
         targetNode.value = last.node.value;
-        targetNode.id = last.node.id;
+        // Removed targetNode.id = last.node.id; to keep consistent react flow target edges!
 
         // Sift down from target position
         siftPath = siftDown(root, targetNode.id, isMinHeap);
-        // Also try sift up in case replacement is smaller (min-heap) or larger (max-heap) than parent
-        const upPath = siftUp(root, targetNode.id, isMinHeap);
-        if (upPath.length > 0) siftPath = upPath;
+        // If siftDown didn't do anything, try siftUp
+        if (siftPath.length === 0) {
+            siftPath = siftUp(root, targetNode.id, isMinHeap);
+        }
     }
 
     return { root, siftPath, lastNodeId, removedId };

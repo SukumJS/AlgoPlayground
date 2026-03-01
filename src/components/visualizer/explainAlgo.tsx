@@ -30,6 +30,7 @@ export default function ExplainAlgo({
         // Don't animate on initial mount
         if (isInitialMount.current) {
             isInitialMount.current = false;
+            setDisplayedExplanation(explanation);
             return;
         }
 
@@ -69,9 +70,8 @@ export default function ExplainAlgo({
                 </div>
                 <div className="mr-2 flex justify-end">
                     <ChevronDown
-                        className={`transform transition-transform duration-300 ease-in-out ${
-                            isExplain ? "rotate-180" : ""
-                        }`}
+                        className={`transform transition-transform duration-300 ease-in-out ${isExplain ? "rotate-180" : ""
+                            }`}
                     />
                 </div>
             </button>
@@ -82,13 +82,12 @@ export default function ExplainAlgo({
             >
                 <div ref={contentRef} className="p-4 min-h-15">
                     <p
-                        className={`text-lg text-gray-700 transition-opacity duration-150 ${
-                            isFading ? "opacity-0" : "opacity-100"
-                        }`}
+                        className={`text-lg text-gray-700 transition-opacity duration-150 ${isFading ? "opacity-0" : "opacity-100"
+                            }`}
                     >{
-                        // if parent provided algoName we can prefix it for clarity
-                        algoName ? `${displayedExplanation}` : displayedExplanation
-                    }</p>
+                            // if parent provided algoName we can prefix it for clarity
+                            algoName ? `${displayedExplanation}` : displayedExplanation
+                        }</p>
                 </div>
             </div>
         </>

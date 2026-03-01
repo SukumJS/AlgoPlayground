@@ -26,6 +26,7 @@ export function useBTRemoveHandler({
   applyHighlighting,
   animationSpeed,
   isPausedRef,
+  nodes,
 }: UseBTRemoveHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
@@ -36,16 +37,16 @@ export function useBTRemoveHandler({
       const root = btRootRef.current;
       if (!root) { setDescription('Tree is empty'); return; }
 
+      controllerRef.current?.clearAll();
+      const controller = new AnimationController(isPausedRef);
+      controllerRef.current = controller;
+
       const { found, nodeId, path } = searchBT(root, value);
       if (!found) {
         setDescription(`❌ Value ${value} not found`);
         controller.scheduleStep(() => setDescription(''), animationSpeed * 4); // Longer delay for final state
         return;
       }
-
-      controllerRef.current?.clearAll();
-      const controller = new AnimationController(isPausedRef);
-      controllerRef.current = controller;
 
       // animate: BFS path
       const positions = calculateBTPositions(root);
@@ -80,7 +81,11 @@ export function useBTRemoveHandler({
               };
             });
 
-            setNodes(highlightedNodes);
+            const connectedIds = new Set((rfNodes as any[]).map((n: any) => n.id));
+            const floatingNodes = nodes.filter(n => !connectedIds.has(n.id));
+            const allNodes = [...highlightedNodes, ...floatingNodes];
+
+            setNodes(allNodes);
             setEdges(highlightedEdges);
             const currentNode = rfNodes.find(n => n.id === id); // Find current node for description
             setDescription(`Searching for node ${value} to remove. Visiting node ${currentNode?.data.label}.`);
@@ -105,12 +110,14 @@ export function useBTRemoveHandler({
             highlightColor: n.id === nodeId ? '#EF4444' : undefined,
           },
         }));
-        setNodes(highlighted);
+        const connectedIds = new Set((rfNodes as any[]).map((n: any) => n.id));
+        const floatingNodes = nodes.filter(n => !connectedIds.has(n.id));
+        setNodes([...highlighted, ...floatingNodes]);
         setEdges(rfEdges); // Ensure edges are reset to original state
         setDescription(`Found ${value}! Preparing for removal...`);
       }, animationSpeed * globalOffset);
       globalOffset++; // Pause after description
-      controller.scheduleStep(() => {}, animationSpeed * globalOffset);
+      controller.scheduleStep(() => { }, animationSpeed * globalOffset);
 
       // --- Pre-compute removal and new state ---
       const rootCopy = cloneBT(root);
@@ -128,7 +135,9 @@ export function useBTRemoveHandler({
               highlightColor: n.id === nodeId ? '#EF4444' : (n.id === deepestId ? '#F7AD45' : undefined),
             },
           }));
-          setNodes(highlighted);
+          const connectedIds = new Set((rfNodes as any[]).map((n: any) => n.id));
+          const floatingNodes = nodes.filter(n => !connectedIds.has(n.id));
+          setNodes([...highlighted, ...floatingNodes]);
           setEdges(rfEdges);
           const deepestNode = rfNodes.find(n => n.id === deepestId);
           setDescription(`Replacing node ${value} with the deepest, rightmost node (${deepestNode?.data.label}).`);
@@ -177,7 +186,9 @@ export function useBTRemoveHandler({
               : { stroke: '#999', strokeWidth: 2 },
           }));
 
-          setNodes(tangledNodes);
+          const connectedIds = new Set((tangledNodes as any[]).map((n: any) => n.id));
+          const floatingNodes = nodes.filter(n => !connectedIds.has(n.id));
+          setNodes([...tangledNodes, ...floatingNodes]);
           setEdges(hlEdges);
           setDescription('Re-wiring connections to remove the node...');
         }, animationSpeed * globalOffset);
@@ -215,7 +226,9 @@ export function useBTRemoveHandler({
               };
             });
 
-            setNodes(interpolated);
+            const connectedIds = new Set((interpolated as any[]).map((n: any) => n.id));
+            const floatingNodes = nodes.filter(n => !connectedIds.has(n.id));
+            setNodes([...interpolated, ...floatingNodes]);
             setEdges(finalRF.edges as RFEdge[]);
             setDescription('Re-arranging nodes to the new structure...'); // Description for geometry change
           }, animationSpeed * fractionOffset);
@@ -226,7 +239,9 @@ export function useBTRemoveHandler({
         globalOffset++;
         controller.scheduleStep(() => { // This step is for the final description and cleanup
           setBTRoot(newRoot);
-          setNodes(finalRF.nodes as RFNode[]);
+          const connectedIdsFinal = new Set((finalRF.nodes as any[]).map((n: any) => n.id));
+          const floatingNodesFinal = nodes.filter(n => !connectedIdsFinal.has(n.id));
+          setNodes([...(finalRF.nodes as RFNode[]), ...floatingNodesFinal]);
           setEdges(finalRF.edges as RFEdge[]);
           setDescription(`Successfully removed ${value}.`);
           controller.scheduleStep(() => setDescription(''), animationSpeed * 2);
@@ -237,7 +252,9 @@ export function useBTRemoveHandler({
         globalOffset++;
         controller.scheduleStep(() => {
           setBTRoot(null);
-          setNodes([]);
+          const connectedIdsEmpty = new Set();
+          const floatingNodesEmpty = nodes.filter(n => !connectedIdsEmpty.has(n.id));
+          setNodes(floatingNodesEmpty);
           setEdges([]);
           setDescription(`Removed ${value}. The tree is now empty.`);
           controller.scheduleStep(() => setDescription(''), animationSpeed * 4); // Longer delay for final state
@@ -245,7 +262,7 @@ export function useBTRemoveHandler({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [animationSpeed, isPausedRef, setBTRoot, setNodes, setEdges, setDescription]
+    [animationSpeed, isPausedRef, setBTRoot, setNodes, setEdges, setDescription, nodes]
   );
 
   const cancelAnimation = useCallback(() => {

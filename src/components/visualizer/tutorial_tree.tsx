@@ -65,6 +65,7 @@ interface TutorialProps {
     setCurrentStep: (step: number) => void;
     onNodeDropped?: () => void;
     // Dynamic screen positions for spotlight
+    glowZoneScreenPos?: { x: number; y: number } | null;
     droppedNodeScreenPos?: { x: number; y: number } | null;
     node30ScreenPos?: { x: number; y: number } | null;
     node90ScreenPos?: { x: number; y: number } | null;
@@ -104,7 +105,7 @@ const DashedArrow = ({ className, style, width = 50, color = "#333" }: { classNa
     </svg>
 );
 
-export default function TutorialTree({ onComplete, currentStep, setCurrentStep, onNodeDropped, droppedNodeScreenPos, node30ScreenPos, node90ScreenPos, sidebarNode3Pos, isTrashActive, trashBinPos }: TutorialProps) {
+export default function TutorialTree({ onComplete, currentStep, setCurrentStep, onNodeDropped, glowZoneScreenPos, droppedNodeScreenPos, node30ScreenPos, node90ScreenPos, sidebarNode3Pos, isTrashActive, trashBinPos }: TutorialProps) {
     const [steps, setSteps] = useState<TutorialStep[]>(TREE_TUTORIAL_STEPS);
 
     const handleStepComplete = useCallback(() => {
@@ -271,8 +272,8 @@ export default function TutorialTree({ onComplete, currentStep, setCurrentStep, 
                 <div
                     className="fixed z-50 pointer-events-none"
                     style={{
-                        left: '300px',
-                        top: '500px',
+                        left: glowZoneScreenPos ? `${glowZoneScreenPos.x - 50}px` : '300px',
+                        top: glowZoneScreenPos ? `${glowZoneScreenPos.y - 50}px` : '500px',
                         width: '100px',
                         height: '100px',
                         borderRadius: '50%',
@@ -301,15 +302,15 @@ export default function TutorialTree({ onComplete, currentStep, setCurrentStep, 
                         </p>
                         {/* Arrow pointing RIGHT to node 90 */}
                         <DashedArrow
-                        width={60}
-                        className="absolute pointer-events-none"
-                        style={{
-                            left: '100%',
-                            top: '50%',
-                            marginTop: '-12px',
-                            marginLeft: '10px',
-                            transform: 'rotate(180deg)', // Point Right
-                        }}
+                            width={60}
+                            className="absolute pointer-events-none"
+                            style={{
+                                left: '100%',
+                                top: '50%',
+                                marginTop: '-12px',
+                                marginLeft: '10px',
+                                transform: 'rotate(180deg)', // Point Right
+                            }}
                         />
                     </div>
                     <div

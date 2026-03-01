@@ -24,6 +24,7 @@ export function useAVLRebalanceHandler(params: {
     animationCallbacks: any;
     isPausedRef: MutableRefObject<boolean>;
     setIsAnimating: (v: boolean) => void;
+    showAVLBalance?: boolean;
 }) {
     const {
         avlRoot,
@@ -32,6 +33,7 @@ export function useAVLRebalanceHandler(params: {
         animationCallbacks,
         isPausedRef,
         setIsAnimating,
+        showAVLBalance = true,
     } = params;
 
     const handleAVLRebalance = useCallback(() => {
@@ -50,7 +52,7 @@ export function useAVLRebalanceHandler(params: {
         animationCallbacks.setDescription("Rebalancing tree...");
 
         const positions = calculateTreePositions(latestRoot);
-        const { nodes, edges } = avlTreeToReactFlow(latestRoot, [], [], positions);
+        const { nodes, edges } = avlTreeToReactFlow(latestRoot, [], [], positions, showAVLBalance);
 
         controller.scheduleStep(() => {
             animationCallbacks.setNodes(nodes);

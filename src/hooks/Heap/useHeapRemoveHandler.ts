@@ -117,7 +117,7 @@ export function useHeapRemoveHandler(params: {
         const targetOrigPos = positions.get(removedId)!;
         const lastOrigPos = positions.get(lastNodeId)!;
 
-        // Step 3: Highlight last node (Purple)
+        // Step 3: Highlight last node (Yellow)
         globalOffset++;
         controller.scheduleStep(() => {
             const extNodes = (rfNodes as RFNode[]).map(n => ({
@@ -125,7 +125,7 @@ export function useHeapRemoveHandler(params: {
                 data: {
                     ...n.data,
                     isHighlighted: n.id === removedId || n.id === lastNodeId,
-                    highlightColor: n.id === removedId ? '#EF4444' : n.id === lastNodeId ? '#A855F7' : undefined,
+                    highlightColor: n.id === removedId ? '#EF4444' : n.id === lastNodeId ? '#F7AD45' : undefined,
                 }
             }));
             setNodes(extNodes);
@@ -150,7 +150,7 @@ export function useHeapRemoveHandler(params: {
                             return {
                                 ...n,
                                 position: { x: currentX, y: currentY },
-                                data: { ...n.data, isHighlighted: true, highlightColor: '#A855F7' },
+                                data: { ...n.data, isHighlighted: true, highlightColor: '#F7AD45' },
                             };
                         }
                         return n;
@@ -204,7 +204,7 @@ export function useHeapRemoveHandler(params: {
             const { nodes: sn, edges: se } = heapToReactFlow(simTree, [], [], simPos, 'heap-edge');
             const snHigh = (sn as RFNode[]).map(n => ({
                 ...n,
-                data: { ...n.data, isHighlighted: n.id === lastNodeId, highlightColor: n.id === lastNodeId ? '#A855F7' : undefined }
+                data: { ...n.data, isHighlighted: n.id === lastNodeId, highlightColor: n.id === lastNodeId ? '#F7AD45' : undefined }
             }));
             setNodes(snHigh);
             setEdges(se as RFEdge[]);

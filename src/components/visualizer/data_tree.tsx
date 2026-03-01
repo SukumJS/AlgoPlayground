@@ -13,6 +13,8 @@ import {
     removeAVL,
     insertAVL,
     type AVLTreeNode,
+    searchAVL,
+    getBalanceFactor,
 } from "@/src/components/visualizer/algorithmsTree/avlTree";
 import { type AnimationCallbacks } from "@/src/components/visualizer/animations/types";
 
@@ -65,6 +67,7 @@ interface Data_treeProps {
     onHeapRebalanceReady?: (fn: () => void) => void;
     onTrashDeleteReady?: (fn: (nodeId: string, value: number) => void) => void;
     onAutoInsertReady?: (fn: (value: number) => void) => void;
+    showAVLBalance?: boolean;
     // explanation callback lifted from PlaygroundTree
     setExplanation?: React.Dispatch<React.SetStateAction<string>>;
 }
@@ -85,6 +88,7 @@ function Data_tree({
     onTrashDeleteReady,
     onHeapRebalanceReady,
     onAutoInsertReady,
+    showAVLBalance = true,
     setExplanation,
 }: Data_treeProps) {
     const [isDataSortOpen, setIsDataSortOpen] = useState(true);
@@ -99,6 +103,10 @@ function Data_tree({
     const [removeValue, setRemoveValue] = useState<string>("");
     const [draggedValue, setDraggedValue] = useState<number | null>(null);
     const [nodeIdCounter, setNodeIdCounter] = useState(5);
+
+    // Draggable Sidebar Node State
+    const [randomNodes, setRandomNodes] = useState<number[]>([]);
+    const [draggableInputValue, setDraggableInputValue] = useState<number | ''>('');
 
     // Animation states
     const [isAnimating, setIsAnimating] = useState(false);
@@ -125,18 +133,6 @@ function Data_tree({
     const hasTraversal = isBT;
     const traversalType = isBT ? algorithm : null;
 
-    // Set initial explanation when a tree algorithm is selected
-    useEffect(() => {
-        if (setExplanation) {
-            if (isBST || isBT || isAVL || isHeap) {
-                setExplanation("Use the controls to insert, search, or remove nodes, or drag new nodes from the panel above.");
-            } else {
-                // Clear explanation if it's not a tree algorithm
-                setExplanation("");
-            }
-        }
-    }, [algorithm, isBST, isBT, isAVL, isHeap, setExplanation]);
-
     // sync initial roots
     const bstInitRef = useRef(false);
     const avlInitRef = useRef(false);
@@ -157,6 +153,28 @@ function Data_tree({
             }, 0);
         }
     }, [initialAVLRoot]);
+
+    // Auto-rebalance AVL tree whenever the showAVLBalance flag toggles so nodes re-render with the new label geometry
+    useEffect(() => {
+        if (isAVL && avlRoot) {
+            // Force re-render the balance factors immediately, without waiting for the slow animation controller
+            setNodes(nds => nds.map(node => {
+                let balanceFactor;
+                if (showAVLBalance) {
+                    const treeNode = searchAVL(avlRoot, parseInt(node.data.label as string)).node;
+                    if (treeNode) balanceFactor = getBalanceFactor(treeNode);
+                }
+
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        balanceFactor
+                    }
+                };
+            }));
+        }
+    }, [showAVLBalance, isAVL, avlRoot, setNodes]);
 
     // For generic Binary Trees, we rebuild the root continuously from React Flow nodes and edges
     // to support freeform drawing without strict balancing.
@@ -197,9 +215,65 @@ function Data_tree({
         }
     }, [currentNodes.length, setAVLRoot, setHeapRoot, startTransition]);
 
-    const Sample = [{ number: "3" }, { number: "67" }, { number: "46" }];
+    // remove broken explanation logic
 
-    // Animation callbacks
+    // initialize BST from empty
+    const isInitialLoadDone = useRef(false);
+    useEffect(() => {
+        // Only trigger initialization if NOT in tutorial mode and currently empty.
+        // During tutorial, the parent (PlaygroundTree -> useTreeTutorial) handles initialization.
+        if (isBST && bstRoot === null && currentNodes.length === 0 && !tutorialMode && !isInitialLoadDone.current) {
+            const arr = [6, 3, 11, 2, 5, 8, 14, 1, 4, 10, 15];
+
+            // Rebuild tree logically with sequential delays off
+            // ...
+        }
+    }, [currentNodes]);
+
+    // Generate random un-used nodes for the sidebar (Limit to 10 max)
+    const generateRandomNodes = useCallback((count: number) => {
+        const existingValues = new Set([
+            ...currentNodes.map(n => parseInt(n.data.label)).filter(v => !isNaN(v)),
+            ...randomNodes
+        ]);
+
+        const newNodes: number[] = [];
+        let attempts = 0;
+
+        while (newNodes.length < count && attempts < 1000) {
+            const val = Math.floor(Math.random() * 99) + 1; // 1 to 99
+            if (!existingValues.has(val)) {
+                newNodes.push(val);
+                existingValues.add(val);
+            }
+            attempts++;
+        }
+
+        if (newNodes.length > 0) {
+            setRandomNodes(prev => {
+                const updated = [...prev, ...newNodes];
+                return updated.slice(0, 10); // Enforce max 10
+            });
+        }
+    }, [currentNodes, randomNodes]);
+
+    // Initialize random nodes on mount or when empty
+    useEffect(() => {
+        if (randomNodes.length < 10 && !tutorialMode) {
+            generateRandomNodes(10 - randomNodes.length);
+        }
+    }, [randomNodes.length, generateRandomNodes, tutorialMode]);
+
+    // Handle Infinite Scroll for Draggable Nodes (Disabled to force exact 10 size constraint)
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        // Disabled intentional logic: We are keeping it exactly 10 nodes constantly based on removal trigger.
+    };
+
+    // Remove node from sidebar when dropped and immediately generate a replacement
+    const removeRandomNode = useCallback((valueToRemove: number) => {
+        setRandomNodes(prev => prev.filter(v => v !== valueToRemove));
+        setTimeout(() => generateRandomNodes(1), 0);
+    }, [generateRandomNodes]);
     const animationCallbacks: AnimationCallbacks = useMemo(() => ({
         setNodes: (nodes: RFNode[]) => {
             setNodes(nodes);
@@ -209,7 +283,12 @@ function Data_tree({
         },
         setDescription: (desc: string) => {
             if (setExplanation) {
-                setExplanation(desc);
+                if (desc === "") {
+                    const prettyName = algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g, ' ') : '';
+                    setExplanation(`This section will explain ${prettyName}. Perform an operation to begin.`);
+                } else {
+                    setExplanation(desc);
+                }
             }
         },
         applyHighlighting: (
@@ -252,10 +331,11 @@ function Data_tree({
     const handleAVLInsert = useAVLInsertHandler({
         avlRoot, setAVLRoot, nodeIdCounter, animationSpeed, rf, animationCallbacks, isPausedRef, setIsAnimating, setNodeIdCounter,
         setAnimationDescription: animationCallbacks.setDescription,
+        showAVLBalance,
     });
     const handleAVLSearch = useAVLSearchHandler({ avlRoot, animationSpeed, rf, animationCallbacks, isPausedRef, setIsAnimating, setSearchValue });
-    const handleAVLRemove = useAVLRemoveHandler({ avlRoot, setAVLRoot, animationSpeed, rf, animationCallbacks, isPausedRef, setIsAnimating, setRemoveValue });
-    const handleAVLRebalance = useAVLRebalanceHandler({ avlRoot, setAVLRoot, rf, animationCallbacks, isPausedRef, setIsAnimating });
+    const handleAVLRemove = useAVLRemoveHandler({ avlRoot, setAVLRoot, animationSpeed, rf, animationCallbacks, isPausedRef, setIsAnimating, setRemoveValue, showAVLBalance });
+    const handleAVLRebalance = useAVLRebalanceHandler({ avlRoot, setAVLRoot, rf, animationCallbacks, isPausedRef, setIsAnimating, showAVLBalance });
 
     // BST Handlers
     const { handleInsert: bstInsert } = useBSTInsertHandler({ bstRoot, setBSTRoot, setNodes, setEdges, setDescription: animationCallbacks.setDescription, animationSpeed, isPausedRef });
@@ -279,18 +359,38 @@ function Data_tree({
     const createAddNewNode = useCallback(
         (sampleValue: number): OnDropAction => {
             return ({ position }: { position: XYPosition }) => {
+                const nodeCenterCanvasX = position.x;
+                const nodeCenterCanvasY = position.y;
+
+                // For a 56x56 node, top-left is offset by -28
+                const topLeftX = position.x - 28;
+                const topLeftY = position.y - 28;
+
                 if (tutorialMode && tutorialStep === 0) {
-                    const dx = position.x - GLOW_ZONE.x;
-                    const dy = position.y - GLOW_ZONE.y;
-                    if (Math.sqrt(dx * dx + dy * dy) > GLOW_ZONE.radius) return;
+                    const targetCenterX = GLOW_ZONE.x + 28;
+                    const targetCenterY = GLOW_ZONE.y + 28;
+                    const dx = nodeCenterCanvasX - targetCenterX;
+                    const dy = nodeCenterCanvasY - targetCenterY;
+
+                    // Huge forgiving drop zone (80px radius instead of strict GLOW_ZONE.radius)
+                    if (Math.sqrt(dx * dx + dy * dy) > 80) return;
                 }
+                const finalPosition = (tutorialMode && tutorialStep === 0)
+                    ? { x: GLOW_ZONE.x, y: GLOW_ZONE.y }
+                    : { x: topLeftX, y: topLeftY };
+
                 const newNode = {
-                    id: getId(), type: "custom", position,
+                    id: getId(), type: "custom", position: finalPosition,
                     data: { label: sampleValue.toString(), variant: "circle" },
                     zIndex: tutorialMode ? 100 : undefined,
                 };
                 setNodes(nds => nds.concat(newNode));
                 setType(null);
+                if (sampleValue !== draggableInputValue) {
+                    removeRandomNode(sampleValue);
+                } else {
+                    setDraggableInputValue('');
+                }
 
                 if (isBST) setBSTRoot(prev => insertBST(cloneBSTTree(prev), sampleValue, newNode.id));
                 // For generic BT, we do NOT auto-insert on drag drop. The user will manually connect it, or we will auto-correct on invalid connect.
@@ -420,6 +520,7 @@ function Data_tree({
 
             {/* Header button */}
             <button
+                suppressHydrationWarning
                 className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"
                     } ${tutorialMode ? "cursor-default" : ""}`}
                 onClick={handleToggle}
@@ -439,21 +540,63 @@ function Data_tree({
             {/* Content area */}
             <div className={`flex-col ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}>
                 {/* Draggable sample nodes */}
-                <div className="transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2 p-2">
-                    {Sample.map((item, index) => (
-                        <div
-                            key={index}
-                            className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] cursor-grab bg-[#D9E363]"
-                            data-tutorial-target={item.number === "3" ? "sidebar-node-3" : undefined}
-                            onPointerDown={(event) => {
-                                setType("custom");
-                                setDraggedValue(parseInt(item.number));
-                                onDragStart(event, createAddNewNode(parseInt(item.number)));
-                            }}
-                        >
-                            {item.number}
-                        </div>
-                    ))}
+                <div
+                    className="transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2 p-2"
+                    onScroll={handleScroll}
+                >
+                    {/* Input Node Item (Always First) */}
+                    <div
+                        className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-16 h-16 rounded-full cursor-grab"
+                        onPointerDown={(event) => {
+                            const value = typeof draggableInputValue === 'number' ? draggableInputValue : 0;
+                            setType("input");
+                            setDraggedValue(value);
+                            onDragStart(event, createAddNewNode(value));
+                        }}
+                    >
+                        <input
+                            suppressHydrationWarning
+                            type="number"
+                            placeholder="0"
+                            className="w-12 h-full rounded-full bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none p-0 m-0"
+                            value={draggableInputValue}
+                            onChange={(e) => setDraggableInputValue(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
+                            onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
+                        />
+                    </div>
+
+                    {/* Dynamic Random Node Items */}
+                    {tutorialMode ? (
+                        // Mock up the original 3, 67, 46 for tutorial
+                        [{ number: 3 }, { number: 67 }, { number: 46 }].map((item, index) => (
+                            <div
+                                key={`tut-${index}`}
+                                className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] cursor-grab bg-[#D9E363]"
+                                data-tutorial-target={item.number === 3 ? "sidebar-node-3" : undefined}
+                                onPointerDown={(event) => {
+                                    setType("custom");
+                                    setDraggedValue(item.number);
+                                    onDragStart(event, createAddNewNode(item.number));
+                                }}
+                            >
+                                {item.number}
+                            </div>
+                        ))
+                    ) : (
+                        randomNodes.map((value, index) => (
+                            <div
+                                key={value}
+                                className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] cursor-grab bg-[#D9E363]"
+                                onPointerDown={(event) => {
+                                    setType("custom");
+                                    setDraggedValue(value);
+                                    onDragStart(event, createAddNewNode(value));
+                                }}
+                            >
+                                {value}
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 <div className={`flex-col justify-center items-center text-center ${tutorialMode ? "pointer-events-none opacity-60" : ""}`}>
@@ -501,6 +644,7 @@ function Data_tree({
                         <p className="font-bold text-md">Insert</p>
                         <div className="flex gap-2">
                             <input
+                                suppressHydrationWarning
                                 type="number"
                                 className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 value={inputValue}
@@ -508,6 +652,7 @@ function Data_tree({
                                 disabled={isAnimating}
                             />
                             <button
+                                suppressHydrationWarning
                                 className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
                                 onClick={handleInsert}
                                 disabled={isAnimating}
@@ -522,6 +667,7 @@ function Data_tree({
                         <p className="font-bold text-md">Search</p>
                         <div className="flex gap-2">
                             <input
+                                suppressHydrationWarning
                                 type="number"
                                 className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 value={searchValue}
@@ -529,6 +675,7 @@ function Data_tree({
                                 disabled={isAnimating}
                             />
                             <button
+                                suppressHydrationWarning
                                 className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
                                 onClick={handleSearch}
                                 disabled={isAnimating}
@@ -543,6 +690,7 @@ function Data_tree({
                         <p className="font-bold text-md">Remove</p>
                         <div className="flex gap-2">
                             <input
+                                suppressHydrationWarning
                                 type="number"
                                 className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 value={removeValue}
@@ -550,6 +698,7 @@ function Data_tree({
                                 disabled={isAnimating}
                             />
                             <button
+                                suppressHydrationWarning
                                 className="bg-[#E82B2B] rounded-lg p-2 disabled:opacity-50"
                                 onClick={handleRemove}
                                 disabled={isAnimating}
