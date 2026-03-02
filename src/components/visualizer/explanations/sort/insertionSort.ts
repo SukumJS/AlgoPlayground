@@ -1,36 +1,46 @@
 import type { ExplanationContext } from "../explanationUtils";
 import type { SortNodeData } from "@/src/components/shared/sortNode";
 
-export function explainInsertionSort(ctx: ExplanationContext<SortNodeData>): string | undefined {
-    const {
-        newlyComparing,
-        newlySwapping,
-        justResetToIdle,
-        prevNodes,
-    } = ctx;
+export const explainInsertionSort = (
+    ctx: ExplanationContext<SortNodeData>
+): string | undefined => {
+    // หาโหนดที่มีสถานะต่างๆ ใน step ปัจจุบัน
+    const compareNodes = ctx.currentNodes.filter((n) => n.data.status === "compare");
+    const swapNodes = ctx.currentNodes.filter((n) => n.data.status === "swap");
 
-    if (newlyComparing.length === 2) {
-        const [a, b] = newlyComparing.sort(
-            (n1, n2) => n1.data.index - n2.data.index
-        );
-        return `Taking element ${b.data.value} and finding its correct position in the sorted part by comparing with ${a.data.value}.`;
+    // จังหวะ Lift (ยกขึ้น): มีโหนดเดียวที่เป็นสถานะ compare (กำลังถูกหยิบ)
+    if (compareNodes.length === 1 && swapNodes.length === 0) {
+        const target = compareNodes[0];
+        return `Lifting ${target.data.value} to find its correct position.`;
     }
 
-    if (newlySwapping.length === 2) {
-        const nodeToInsert = newlySwapping.find(
-            n => n.position.y !== prevNodes.find(pn => pn.id === n.id)?.position.y
-        );
-        if (nodeToInsert) {
-            return `Element ${nodeToInsert.data.value} is smaller. Preparing to shift elements to the right.`;
-        }
+    // 2จังหวะ Compare (เทียบค่า): มีโหนดสองตัวกำลังเทียบกัน
+    if (compareNodes.length === 2) {
+        // หาตัวที่กำลังลอยอยู่ (y น้อยกว่า) และตัวที่อยู่บนพื้น
+        const target = compareNodes.find((n) => n.position.y < 0) || compareNodes[1];
+        const floorNode = compareNodes.find((n) => n.id !== target.id)!;
+        return `Comparing: is ${target.data.value} less than ${floorNode.data.value}?`;
     }
 
-    if (
-        justResetToIdle.length === 2 &&
-        prevNodes.filter(n => n.data.status === 'swap').length === 2
-    ) {
-        return `Element has been inserted into its correct position.`;
+    // จังหวะ Shift (เลื่อน): โหนดเปลี่ยนเป็นสถานะ swap
+    if (swapNodes.length === 2) {
+        // หาตัวที่อยู่บนพื้น (กำลังถูกเลื่อนไปทางขวา)
+        const shiftNode = swapNodes.find((n) => n.position.y >= 0) || swapNodes[0];
+        return `Since it is greater, shifting ${shiftNode.data.value} to the right to make space.`;
     }
 
-    return undefined;
-}
+    // จังหวะ Drop (วางลง): เช็คว่าตัวที่เคยลอยอยู่ (compare) กลายเป็น (idle) หรือไม่
+    const prevCompare = ctx.prevNodes.find(
+        (n) => n.data.status === "compare" && n.position.y < 0
+    );
+    const currIdle = ctx.currentNodes.find(
+        (n) => n.id === prevCompare?.id && n.data.status === "idle"
+    );
+
+    if (prevCompare && currIdle) {
+        return `Found the correct position. Dropping ${currIdle.data.value} into the slot.`;
+    }
+
+    // Default fallback ในกรณีที่กำลังเปลี่ยนผ่าน state
+    return "Sorting the array...";
+};

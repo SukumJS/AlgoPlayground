@@ -9,7 +9,7 @@ export const generateSelectionSteps = (
   const BASE_Y = 5;
   const LIFT_OFFSET = 40;
 
-  // 🔥 reset + sort by index
+  // reset + sort by index
     let arr: Node<SortNodeData>[] = [...nodes]
         .map((node): Node<SortNodeData> => ({
             ...node,
@@ -23,7 +23,7 @@ export const generateSelectionSteps = (
 
   const steps: Node<SortNodeData>[][] = [];
 
-  // 🔥 deep clone ทุก step
+  // deep clone ทุก step
   const pushStep = () => {
     steps.push(
       arr.map((node) => ({
