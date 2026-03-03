@@ -95,6 +95,10 @@ export function useGraphTutorial({
   const [nodeScreenRadius, setNodeScreenRadius] = useState(32);
   const [isTrashActive, setIsTrashActive] = useState(false);
 
+  // Prevents the spotlight overlay from rendering before positions are stable
+  // (avoids a flash at the wrong position while ReactFlow's fitView settles)
+  const [positionsReady, setPositionsReady] = useState(false);
+
   // Track first selected node for linking
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
@@ -187,12 +191,14 @@ export function useGraphTutorial({
     };
   }, [updateTutorialPositions]);
 
-  // Trigger position update when tutorial becomes active
+  // Trigger position update when tutorial becomes active.
+  // Wait for ReactFlow's fitView to settle before marking positions as ready.
   useEffect(() => {
     if (showTutorial) {
       const timer = setTimeout(() => {
         updateTutorialPositions();
-      }, 500);
+        setPositionsReady(true);
+      }, 600);
       return () => clearTimeout(timer);
     }
   }, [showTutorial, updateTutorialPositions]);
@@ -463,6 +469,13 @@ export function useGraphTutorial({
 
         setIsTrashActive(dist < dropTargetRadius);
 
+        // Keep spotlight in sync with the dragged node so it follows smoothly
+        const screenPos = flowToScreenPosition({
+          x: node.position.x + 28,
+          y: node.position.y + 28,
+        });
+        setNode70ScreenPos(screenPos);
+
         // Update node danger state
         setNodes((nds) =>
           nds.map((n) => ({
@@ -475,7 +488,13 @@ export function useGraphTutorial({
         );
       }
     },
-    [showTutorial, tutorialStep, dragDeleteStep, setNodes],
+    [
+      showTutorial,
+      tutorialStep,
+      dragDeleteStep,
+      setNodes,
+      flowToScreenPosition,
+    ],
   );
 
   // Handle node drag stop for trash bin deletion (drag step)
@@ -541,6 +560,9 @@ export function useGraphTutorial({
     // Dynamic step references
     dragDeleteStep,
     completedStep,
+
+    // True once positions have been computed after fitView settles
+    positionsReady,
 
     // Screen positions
     node69ScreenPos,

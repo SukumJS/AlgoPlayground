@@ -437,9 +437,13 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         nodes={nodes}
         edges={edges}
         onNodesChange={
-          graphTutorial.showTutorial || isAnimationActive
+          isAnimationActive
             ? undefined
-            : onNodesChange
+            : graphTutorial.showTutorial
+              ? graphTutorial.tutorialStep === graphTutorial.dragDeleteStep
+                ? onNodesChange
+                : undefined
+              : onNodesChange
         }
         onEdgesChange={
           graphTutorial.showTutorial || isAnimationActive
@@ -498,8 +502,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       {/* Info Reading inside Playground */}
       <Reading_modal isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
-      {/* Tutorial overlay for graph */}
-      {graphTutorial.showTutorial && (
+      {/* Tutorial overlay for graph — only render after positions are stable */}
+      {graphTutorial.showTutorial && graphTutorial.positionsReady && (
         <TutorialGraph
           onComplete={graphTutorial.handleTutorialComplete}
           currentStep={graphTutorial.tutorialStep}
