@@ -1,7 +1,11 @@
 import type { Node, Edge } from "@xyflow/react";
 
 // ── Animation states ──────────────────────────────────────────────
-export type NodeAnimationState = "default" | "visiting" | "visited" | "target-found";
+export type NodeAnimationState =
+  | "default"
+  | "visiting"
+  | "visited"
+  | "target-found";
 export type EdgeAnimationState = "default" | "traversing" | "traversed";
 
 // ── Single animation step ─────────────────────────────────────────

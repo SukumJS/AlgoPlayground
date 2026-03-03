@@ -16,14 +16,20 @@ interface AdjEntry {
 /**
  * Build an **undirected weighted** adjacency list — every edge appears in both directions.
  */
-function buildUndirectedWeightedAdjList(edges: Edge[]): Map<string, AdjEntry[]> {
+function buildUndirectedWeightedAdjList(
+  edges: Edge[],
+): Map<string, AdjEntry[]> {
   const adj = new Map<string, AdjEntry[]>();
   for (const edge of edges) {
     const weight = Number(edge.data?.weight ?? edge.label ?? 1);
     if (!adj.has(edge.source)) adj.set(edge.source, []);
     if (!adj.has(edge.target)) adj.set(edge.target, []);
-    adj.get(edge.source)!.push({ targetId: edge.target, weight, edgeId: edge.id });
-    adj.get(edge.target)!.push({ targetId: edge.source, weight, edgeId: edge.id });
+    adj
+      .get(edge.source)!
+      .push({ targetId: edge.target, weight, edgeId: edge.id });
+    adj
+      .get(edge.target)!
+      .push({ targetId: edge.source, weight, edgeId: edge.id });
   }
   return adj;
 }
@@ -41,7 +47,10 @@ function snap(
   edgeOverrides: Record<string, EdgeAnimationState>,
   prevNodeStates: Record<string, NodeAnimationState>,
   prevEdgeStates: Record<string, EdgeAnimationState>,
-): { nodeStates: Record<string, NodeAnimationState>; edgeStates: Record<string, EdgeAnimationState> } {
+): {
+  nodeStates: Record<string, NodeAnimationState>;
+  edgeStates: Record<string, EdgeAnimationState>;
+} {
   const nodeStates: Record<string, NodeAnimationState> = {};
   for (const id of allNodeIds) {
     nodeStates[id] = nodeOverrides[id] ?? prevNodeStates[id] ?? "default";
@@ -82,7 +91,9 @@ export const primsRunner: AlgorithmRunner = {
     // Step 0 – highlight start node
     {
       inMST.add(startNode.id);
-      const nOver: Record<string, NodeAnimationState> = { [startNode.id]: "visiting" };
+      const nOver: Record<string, NodeAnimationState> = {
+        [startNode.id]: "visiting",
+      };
       const s = snap(allNodeIds, allEdgeIds, nOver, {}, prevNode, prevEdge);
       steps.push({ ...s, description: `Start MST from node ${startLabel}` });
       prevNode = s.nodeStates;
@@ -111,14 +122,27 @@ export const primsRunner: AlgorithmRunner = {
 
       if (!bestEdgeId || !bestTargetId || !bestSourceId) break; // No more reachable nodes
 
-      const sourceLabel = nodes.find((n) => n.id === bestSourceId)?.data?.label ?? bestSourceId;
-      const targetLabel = nodes.find((n) => n.id === bestTargetId)?.data?.label ?? bestTargetId;
+      const sourceLabel =
+        nodes.find((n) => n.id === bestSourceId)?.data?.label ?? bestSourceId;
+      const targetLabel =
+        nodes.find((n) => n.id === bestTargetId)?.data?.label ?? bestTargetId;
 
       // Show edge being considered
       {
-        const eOver: Record<string, EdgeAnimationState> = { [bestEdgeId]: "traversing" };
-        const nOver: Record<string, NodeAnimationState> = { [bestTargetId]: "visiting" };
-        const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
+        const eOver: Record<string, EdgeAnimationState> = {
+          [bestEdgeId]: "traversing",
+        };
+        const nOver: Record<string, NodeAnimationState> = {
+          [bestTargetId]: "visiting",
+        };
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
         steps.push({
           ...s,
           description: `Consider edge ${sourceLabel} — ${targetLabel} (weight ${bestWeight})`,
@@ -133,9 +157,20 @@ export const primsRunner: AlgorithmRunner = {
       totalWeight += bestWeight;
 
       {
-        const eOver: Record<string, EdgeAnimationState> = { [bestEdgeId]: "traversed" };
-        const nOver: Record<string, NodeAnimationState> = { [bestTargetId]: "visited" };
-        const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
+        const eOver: Record<string, EdgeAnimationState> = {
+          [bestEdgeId]: "traversed",
+        };
+        const nOver: Record<string, NodeAnimationState> = {
+          [bestTargetId]: "visited",
+        };
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
         steps.push({
           ...s,
           description: `Add edge ${sourceLabel} — ${targetLabel} to MST (total weight: ${totalWeight})`,

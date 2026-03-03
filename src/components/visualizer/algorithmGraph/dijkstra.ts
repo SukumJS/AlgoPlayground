@@ -40,7 +40,10 @@ function snap(
   edgeOverrides: Record<string, EdgeAnimationState>,
   prevNodeStates: Record<string, NodeAnimationState>,
   prevEdgeStates: Record<string, EdgeAnimationState>,
-): { nodeStates: Record<string, NodeAnimationState>; edgeStates: Record<string, EdgeAnimationState> } {
+): {
+  nodeStates: Record<string, NodeAnimationState>;
+  edgeStates: Record<string, EdgeAnimationState>;
+} {
   const nodeStates: Record<string, NodeAnimationState> = {};
   for (const id of allNodeIds) {
     nodeStates[id] = nodeOverrides[id] ?? prevNodeStates[id] ?? "default";
@@ -87,9 +90,14 @@ export const dijkstraRunner: AlgorithmRunner = {
 
     // Step 0 – highlight start node
     {
-      const nOver: Record<string, NodeAnimationState> = { [startNode.id]: "visiting" };
+      const nOver: Record<string, NodeAnimationState> = {
+        [startNode.id]: "visiting",
+      };
       const s = snap(allNodeIds, allEdgeIds, nOver, {}, prevNode, prevEdge);
-      steps.push({ ...s, description: `Start at node ${startLabel} (distance = 0)` });
+      steps.push({
+        ...s,
+        description: `Start at node ${startLabel} (distance = 0)`,
+      });
       prevNode = s.nodeStates;
       prevEdge = s.edgeStates;
     }
@@ -112,15 +120,25 @@ export const dijkstraRunner: AlgorithmRunner = {
 
       // Mark current node as visited (blue)
       if (currentId !== startNode.id) {
-        const currentLabel = nodes.find((n) => n.id === currentId)?.data?.label ?? currentId;
-        const nOver: Record<string, NodeAnimationState> = { [currentId]: "visited" };
+        const currentLabel =
+          nodes.find((n) => n.id === currentId)?.data?.label ?? currentId;
+        const nOver: Record<string, NodeAnimationState> = {
+          [currentId]: "visited",
+        };
         // Also mark the edge that led here as traversed
         const eOver: Record<string, EdgeAnimationState> = {};
         const predecessor = prev.get(currentId);
         if (predecessor) {
           eOver[predecessor.edgeId] = "traversed";
         }
-        const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
         steps.push({
           ...s,
           description: `Visit node ${currentLabel} (distance = ${currentDist})`,
@@ -151,7 +169,14 @@ export const dijkstraRunner: AlgorithmRunner = {
         const eOver: Record<string, EdgeAnimationState> = {};
         for (const id of pathEdgeIds) eOver[id] = "traversed";
 
-        const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
         steps.push({
           ...s,
           description: `Target found! Shortest path to ${endLabel} has distance ${currentDist}`,
@@ -167,18 +192,29 @@ export const dijkstraRunner: AlgorithmRunner = {
         if (visited.has(targetId)) continue;
 
         const newDist = currentDist + weight;
-        const targetLabel = nodes.find((n) => n.id === targetId)?.data?.label ?? targetId;
-        const currentLabel = nodes.find((n) => n.id === currentId)?.data?.label ?? currentId;
+        const targetLabel =
+          nodes.find((n) => n.id === targetId)?.data?.label ?? targetId;
+        const currentLabel =
+          nodes.find((n) => n.id === currentId)?.data?.label ?? currentId;
 
         // Show edge being explored
-        const eOver: Record<string, EdgeAnimationState> = { [edgeId]: "traversing" };
+        const eOver: Record<string, EdgeAnimationState> = {
+          [edgeId]: "traversing",
+        };
         const nOver: Record<string, NodeAnimationState> = {};
 
         if (newDist < dist.get(targetId)!) {
           dist.set(targetId, newDist);
           prev.set(targetId, { nodeId: currentId, edgeId });
           nOver[targetId] = "visiting";
-          const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
+          const s = snap(
+            allNodeIds,
+            allEdgeIds,
+            nOver,
+            eOver,
+            prevNode,
+            prevEdge,
+          );
           steps.push({
             ...s,
             description: `Relax edge ${currentLabel} → ${targetLabel}: distance updated to ${newDist}`,
@@ -186,7 +222,14 @@ export const dijkstraRunner: AlgorithmRunner = {
           prevNode = s.nodeStates;
           prevEdge = s.edgeStates;
         } else {
-          const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
+          const s = snap(
+            allNodeIds,
+            allEdgeIds,
+            nOver,
+            eOver,
+            prevNode,
+            prevEdge,
+          );
           steps.push({
             ...s,
             description: `Edge ${currentLabel} → ${targetLabel}: no improvement (${newDist} ≥ ${dist.get(targetId)!})`,

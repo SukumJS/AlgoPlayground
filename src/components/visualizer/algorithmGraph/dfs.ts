@@ -113,7 +113,14 @@ export const dfsRunner: AlgorithmRunner = {
         if (parentEdgeId) {
           eOver[parentEdgeId] = "traversed";
         }
-        const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
         steps.push({
           ...s,
           description: `Pop and visit node ${currentLabel}`,
@@ -144,7 +151,14 @@ export const dfsRunner: AlgorithmRunner = {
         const eOver: Record<string, EdgeAnimationState> = {};
         for (const id of pathEdgeIds) eOver[id] = "traversed";
 
-        const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
         steps.push({
           ...s,
           description: `Target node ${endLabel} found!`,
@@ -176,7 +190,14 @@ export const dfsRunner: AlgorithmRunner = {
         const nOver: Record<string, NodeAnimationState> = {
           [targetId]: "visiting",
         };
-        const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
         steps.push({
           ...s,
           description: `Explore edge ${currentLabel} — ${targetLabel}: push node ${targetLabel}`,

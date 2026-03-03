@@ -16,7 +16,10 @@ function snap(
   edgeOverrides: Record<string, EdgeAnimationState>,
   prevNodeStates: Record<string, NodeAnimationState>,
   prevEdgeStates: Record<string, EdgeAnimationState>,
-): { nodeStates: Record<string, NodeAnimationState>; edgeStates: Record<string, EdgeAnimationState> } {
+): {
+  nodeStates: Record<string, NodeAnimationState>;
+  edgeStates: Record<string, EdgeAnimationState>;
+} {
   const nodeStates: Record<string, NodeAnimationState> = {};
   for (const id of allNodeIds) {
     nodeStates[id] = nodeOverrides[id] ?? prevNodeStates[id] ?? "default";
@@ -103,8 +106,10 @@ export const kruskalsRunner: AlgorithmRunner = {
       const s = snap(allNodeIds, allEdgeIds, {}, {}, prevNode, prevEdge);
       const edgeList = sortedEdges
         .map((e) => {
-          const sLabel = nodes.find((n) => n.id === e.source)?.data?.label ?? e.source;
-          const tLabel = nodes.find((n) => n.id === e.target)?.data?.label ?? e.target;
+          const sLabel =
+            nodes.find((n) => n.id === e.source)?.data?.label ?? e.source;
+          const tLabel =
+            nodes.find((n) => n.id === e.target)?.data?.label ?? e.target;
           return `${sLabel}–${tLabel}(${e.weight})`;
         })
         .join(", ");
@@ -123,17 +128,30 @@ export const kruskalsRunner: AlgorithmRunner = {
 
     // Process each edge in order
     for (const edge of sortedEdges) {
-      const sourceLabel = nodes.find((n) => n.id === edge.source)?.data?.label ?? edge.source;
-      const targetLabel = nodes.find((n) => n.id === edge.target)?.data?.label ?? edge.target;
+      const sourceLabel =
+        nodes.find((n) => n.id === edge.source)?.data?.label ?? edge.source;
+      const targetLabel =
+        nodes.find((n) => n.id === edge.target)?.data?.label ?? edge.target;
 
       // Show edge being considered
       {
-        const eOver: Record<string, EdgeAnimationState> = { [edge.id]: "traversing" };
-        const nOver: Record<string, NodeAnimationState> = {
-          [edge.source]: prevNode[edge.source] === "visited" ? "visited" : "visiting",
-          [edge.target]: prevNode[edge.target] === "visited" ? "visited" : "visiting",
+        const eOver: Record<string, EdgeAnimationState> = {
+          [edge.id]: "traversing",
         };
-        const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
+        const nOver: Record<string, NodeAnimationState> = {
+          [edge.source]:
+            prevNode[edge.source] === "visited" ? "visited" : "visiting",
+          [edge.target]:
+            prevNode[edge.target] === "visited" ? "visited" : "visiting",
+        };
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
         steps.push({
           ...s,
           description: `Consider edge ${sourceLabel} — ${targetLabel} (weight ${edge.weight})`,
@@ -149,12 +167,21 @@ export const kruskalsRunner: AlgorithmRunner = {
         mstNodeIds.add(edge.target);
         totalWeight += edge.weight;
 
-        const eOver: Record<string, EdgeAnimationState> = { [edge.id]: "traversed" };
+        const eOver: Record<string, EdgeAnimationState> = {
+          [edge.id]: "traversed",
+        };
         const nOver: Record<string, NodeAnimationState> = {
           [edge.source]: "visited",
           [edge.target]: "visited",
         };
-        const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
         steps.push({
           ...s,
           description: `Accept edge ${sourceLabel} — ${targetLabel} (total weight: ${totalWeight})`,
@@ -167,7 +194,9 @@ export const kruskalsRunner: AlgorithmRunner = {
       } else {
         // Edge rejected — would create cycle
         // Reset edge back to default (don't keep it highlighted)
-        const eOver: Record<string, EdgeAnimationState> = { [edge.id]: "default" };
+        const eOver: Record<string, EdgeAnimationState> = {
+          [edge.id]: "default",
+        };
         const s = snap(allNodeIds, allEdgeIds, {}, eOver, prevNode, prevEdge);
         steps.push({
           ...s,

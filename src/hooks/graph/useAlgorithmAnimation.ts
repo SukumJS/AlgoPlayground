@@ -66,15 +66,24 @@ export function useAlgorithmAnimation(
   const isPlayingRef = useRef(isPlaying);
   const speedRef = useRef(speed);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Store the original (pre-animation) nodes & edges so we can restore them
   const originalNodesRef = useRef<Node[]>([]);
   const originalEdgesRef = useRef<Edge[]>([]);
 
-  useEffect(() => { stepsRef.current = steps; }, [steps]);
-  useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
-  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
-  useEffect(() => { speedRef.current = speed; }, [speed]);
+  useEffect(() => {
+    stepsRef.current = steps;
+  }, [steps]);
+  useEffect(() => {
+    currentStepRef.current = currentStep;
+  }, [currentStep]);
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+  useEffect(() => {
+    speedRef.current = speed;
+  }, [speed]);
 
   // ── Apply a specific step to the ReactFlow nodes/edges ─────────
   const applyStep = useCallback(
@@ -138,6 +147,13 @@ export function useAlgorithmAnimation(
   }, [setNodes, setEdges]);
 
   // ── Auto-play timer ────────────────────────────────────────────
+  const clearAutoResetTimer = useCallback(() => {
+    if (autoResetTimerRef.current) {
+      clearTimeout(autoResetTimerRef.current);
+      autoResetTimerRef.current = null;
+    }
+  }, []);
+
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -154,28 +170,46 @@ export function useAlgorithmAnimation(
       const next = currentStepRef.current + 1;
       if (next >= stepsRef.current.length) {
         setIsPlaying(false);
+        // Auto-reset after a delay so the user can see the final result
+        // then return to the original state for continued interaction
+        clearAutoResetTimer();
+        autoResetTimerRef.current = setTimeout(() => {
+          restoreOriginal();
+          setCurrentStep(-1);
+          setSteps([]);
+          stepsRef.current = [];
+          currentStepRef.current = -1;
+        }, 2000);
         return;
       }
       setCurrentStep(next);
       applyStep(next);
       scheduleNextRef.current();
     }, SPEED_MS[speedRef.current] ?? 1000);
-  }, [clearTimer, applyStep]);
+  }, [clearTimer, applyStep, clearAutoResetTimer, restoreOriginal]);
 
-  useEffect(() => { scheduleNextRef.current = scheduleNext; }, [scheduleNext]);
+  useEffect(() => {
+    scheduleNextRef.current = scheduleNext;
+  }, [scheduleNext]);
 
   // ── Public API ─────────────────────────────────────────────────
   const start = useCallback(
     (startLabel: string, endLabel: string) => {
       if (!runner) return;
       clearTimer();
+      clearAutoResetTimer();
       setIsPlaying(false);
 
       // Snapshot originals
       originalNodesRef.current = nodes;
       originalEdgesRef.current = edges;
 
-      const generated = runner.generateSteps(nodes, edges, startLabel, endLabel);
+      const generated = runner.generateSteps(
+        nodes,
+        edges,
+        startLabel,
+        endLabel,
+      );
       setSteps(generated);
       stepsRef.current = generated;
 
@@ -190,17 +224,26 @@ export function useAlgorithmAnimation(
           setNodes((prev) =>
             prev.map((node) => ({
               ...node,
-              data: { ...node.data, animationState: step.nodeStates[node.id] ?? "default" },
+              data: {
+                ...node.data,
+                animationState: step.nodeStates[node.id] ?? "default",
+              },
             })),
           );
           setEdges((prev) =>
             prev.map((edge) => ({
               ...edge,
-              data: { ...edge.data, animationState: step.edgeStates[edge.id] ?? "default" },
+              data: {
+                ...edge.data,
+                animationState: step.edgeStates[edge.id] ?? "default",
+              },
               style: {
                 ...edge.style,
                 stroke: EDGE_STROKE[step.edgeStates[edge.id] ?? "default"],
-                strokeWidth: (step.edgeStates[edge.id] ?? "default") !== "default" ? 2.5 : 1,
+                strokeWidth:
+                  (step.edgeStates[edge.id] ?? "default") !== "default"
+                    ? 2.5
+                    : 1,
               },
             })),
           );
@@ -214,19 +257,22 @@ export function useAlgorithmAnimation(
         }, 0);
       }
     },
-    [runner, nodes, edges, setNodes, setEdges, clearTimer],
+    [runner, nodes, edges, setNodes, setEdges, clearTimer, clearAutoResetTimer],
   );
 
   const reset = useCallback(() => {
     clearTimer();
+    clearAutoResetTimer();
     setIsPlaying(false);
     setCurrentStep(-1);
     setSteps([]);
     restoreOriginal();
-  }, [clearTimer, restoreOriginal]);
+  }, [clearTimer, clearAutoResetTimer, restoreOriginal]);
 
   const play = useCallback(() => {
     if (stepsRef.current.length === 0) return;
+    // Cancel any pending auto-reset when user resumes playback
+    clearAutoResetTimer();
     // If at the end, restart
     if (currentStepRef.current >= stepsRef.current.length - 1) {
       setCurrentStep(0);
@@ -236,41 +282,49 @@ export function useAlgorithmAnimation(
     setIsPlaying(true);
     isPlayingRef.current = true;
     scheduleNext();
-  }, [applyStep, scheduleNext]);
+  }, [applyStep, scheduleNext, clearAutoResetTimer]);
 
   const pause = useCallback(() => {
     clearTimer();
+    clearAutoResetTimer();
     setIsPlaying(false);
-  }, [clearTimer]);
+  }, [clearTimer, clearAutoResetTimer]);
 
   const nextStep = useCallback(() => {
+    clearAutoResetTimer();
     const next = currentStepRef.current + 1;
     if (next >= stepsRef.current.length) return;
     setCurrentStep(next);
     applyStep(next);
-  }, [applyStep]);
+  }, [applyStep, clearAutoResetTimer]);
 
   const prevStep = useCallback(() => {
+    clearAutoResetTimer();
     const prev = currentStepRef.current - 1;
     if (prev < 0) return;
     setCurrentStep(prev);
     applyStep(prev);
-  }, [applyStep]);
+  }, [applyStep, clearAutoResetTimer]);
 
   const skipToStart = useCallback(() => {
+    clearAutoResetTimer();
     if (stepsRef.current.length === 0) return;
     setCurrentStep(0);
     applyStep(0);
-  }, [applyStep]);
+  }, [applyStep, clearAutoResetTimer]);
 
   const skipToEnd = useCallback(() => {
+    clearAutoResetTimer();
     if (stepsRef.current.length === 0) return;
     const last = stepsRef.current.length - 1;
     setCurrentStep(last);
     applyStep(last);
-  }, [applyStep]);
+  }, [applyStep, clearAutoResetTimer]);
 
-  const description = currentStep >= 0 && currentStep < steps.length ? steps[currentStep].description : "";
+  const description =
+    currentStep >= 0 && currentStep < steps.length
+      ? steps[currentStep].description
+      : "";
 
   return {
     currentStep,

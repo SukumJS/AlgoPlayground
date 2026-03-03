@@ -1,5 +1,12 @@
 "use client";
-import React, { useState, useCallback, DragEvent, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  DragEvent,
+  useMemo,
+} from "react";
 import ControlPanel from "../../components/shared/controlPanel";
 import SideTab from "../../components/shared/sideTab";
 import ExplainAlgo from "../../components/visualizer/explainAlgo";
@@ -256,13 +263,19 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   // True when the animation pipeline has generated steps (playing, paused, or finished)
   const isAnimationActive = animation.totalSteps > 0;
 
-  // Callback from Data_graph "Search" button
+  // Keep a ref to animation so the search callback has a stable identity
+  const animationRef = useRef(animation);
+  useEffect(() => {
+    animationRef.current = animation;
+  }, [animation]);
+
+  // Callback from Data_graph "Search" button — stable identity via ref
   const handleAlgorithmSearch = useCallback(
     (startLabel: string, endLabel: string) => {
-      animation.reset();
-      animation.start(startLabel, endLabel);
+      animationRef.current.reset();
+      animationRef.current.start(startLabel, endLabel);
     },
-    [animation],
+    [],
   );
 
   // ── Custom Hooks ───────────────────────────────────────────────────────────
@@ -384,7 +397,6 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     }
   }, [graphTutorial.showTutorial, nodeInteraction]);
 
-  // สร้างตัวแปรแช่แข็ง SideTab ด้วย useMemo
   const sideTabMemo = useMemo(
     () => (
       <SideTab title="Graph Algorithms">
@@ -400,15 +412,20 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                 : ""
             }
           />
-          <Data_graph />
+          <Data_graph
+            onSearch={handleAlgorithmSearch}
+            algorithm={algorithm}
+            tutorialMode={graphTutorial.showTutorial}
+          />
         </div>
         <div>
           <PostTest_portal />
         </div>
       </SideTab>
     ),
-    [graphTutorial.showTutorial],
+    [graphTutorial.showTutorial, algorithm, handleAlgorithmSearch],
   );
+
   return (
     <div className="w-screen h-screen">
       <ReactFlow
@@ -456,25 +473,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         <ControlPanel controller={controller} />
       </div>
 
-      <SideTab title="Graph Algorithms">
-        <div>
-          <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
-          <ExplainAlgo
-            tutorialMode={graphTutorial.showTutorial}
-            algoType={algorithm}
-            algoName={
-              algorithm
-                ? algorithm[0].toUpperCase() +
-                  algorithm.slice(1).replace(/-/g, " ")
-                : ""
-            }
-          />
-          <Data_graph />
-        </div>
-        <div>
-          <PostTest_portal />
-        </div>
-      </SideTab>
+      {sideTabMemo}
 
       {/* Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
       <div className="absolute top-4 left-8 z-10 flex gap-2">
