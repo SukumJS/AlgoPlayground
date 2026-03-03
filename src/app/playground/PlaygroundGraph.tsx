@@ -230,10 +230,15 @@ const graphUndirectedWeightedInitialEdges: Edge[] = [
 
 export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   // ── Determine graph mode ───────────────────────────────────────────────────
-  // Directed: only Dijkstra uses directed (weighted) edges
-  const isDirectedGraph = algorithm === "dijkstra";
-  // Weighted: Dijkstra, Prim's, Kruskal's use weighted edges
-  const isWeightedGraph = ["dijkstra", "prims", "kruskals"].includes(algorithm);
+  // Directed: Dijkstra and Bellman-Ford use directed (weighted) edges
+  const isDirectedGraph = ["dijkstra", "bellman-ford"].includes(algorithm);
+  // Weighted: Dijkstra, Bellman-Ford, Prim's, Kruskal's use weighted edges
+  const isWeightedGraph = [
+    "dijkstra",
+    "bellman-ford",
+    "prims",
+    "kruskals",
+  ].includes(algorithm);
 
   // Choose correct initial edges based on algorithm type
   const initialEdges = useMemo(() => {

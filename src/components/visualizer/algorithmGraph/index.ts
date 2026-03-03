@@ -1,5 +1,6 @@
 import type { AlgorithmRunner } from "../types/algorithm";
 import { dijkstraRunner } from "./dijkstra";
+import { bellmanFordRunner } from "./bellmanFord";
 import { bfsRunner } from "./bfs";
 import { dfsRunner } from "./dfs";
 import { primsRunner } from "./prims";
@@ -11,6 +12,7 @@ import { kruskalsRunner } from "./kruskals";
  */
 const algorithmRegistry: Record<string, AlgorithmRunner> = {
   dijkstra: dijkstraRunner,
+  "bellman-ford": bellmanFordRunner,
   "breadth-first-search": bfsRunner,
   "depth-first-search": dfsRunner,
   prims: primsRunner,
