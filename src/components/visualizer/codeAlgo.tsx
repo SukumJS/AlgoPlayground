@@ -1,6 +1,14 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { ChevronDown, ChevronUp, Play, Pause, SkipBack, SkipForward, RotateCcw } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  RotateCcw,
+} from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
@@ -15,7 +23,7 @@ export default function CodeAlgo({
   title = "Code",
   code = "",
   language = "python", // ไม่เป็นปัญหากับ Pseudo Code เอาแค่สีกับ format มา
-  tutorialMode = false
+  tutorialMode = false,
 }: CodeBlockProps) {
   const [isCodeOpen, setIsCodeOpen] = useState<boolean>(false);
   const [currentStepIdx, setCurrentStepIdx] = useState<number>(0);
@@ -73,13 +81,15 @@ print("In-order traversal:", inorder_traversal(root))`;
     return path;
   }, [displayCode]);
 
-  useEffect(() => {
+  const [prevDisplayCode, setPrevDisplayCode] = useState(displayCode);
+  if (displayCode !== prevDisplayCode) {
+    setPrevDisplayCode(displayCode);
     setCurrentStepIdx(0);
     setIsPlaying(false);
-  }, [displayCode]);
+  }
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isPlaying && executionPath.length > 0) {
       interval = setInterval(() => {
         setCurrentStepIdx((prev) => {
@@ -93,21 +103,18 @@ print("In-order traversal:", inorder_traversal(root))`;
   }, [isPlaying, executionPath]);
 
   const handleClick = () => {
-        if (!tutorialMode) {
-            setIsCodeOpen(!isCodeOpen);
-        }
-    };
+    if (!tutorialMode) {
+      setIsCodeOpen(!isCodeOpen);
+    }
+  };
 
   return (
     <div className="border-b ">
-     <button
-       
-            className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${
+      <button
+        className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${
           isCodeOpen ? "bg-gray-200 h-12" : "bg-white"
         }`}
-       
-            onClick={handleClick}
-        
+        onClick={handleClick}
       >
         <div className="flex items-center">
           <div
@@ -124,18 +131,51 @@ print("In-order traversal:", inorder_traversal(root))`;
 
       <div
         className={`grid transition-all duration-300 ease-in-out ${
-          isCodeOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          isCodeOpen
+            ? "grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0"
         }`}
       >
         <div className="overflow-hidden bg-[#0d1117] flex flex-col">
           <div className="flex items-center gap-1 px-4 py-1 bg-[#161b22] border-b border-gray-800">
             <div className="flex items-center gap-1">
-              <button onClick={() => { setCurrentStepIdx(0); setIsPlaying(false); }} className="p-1 text-gray-400 hover:text-white transition"><RotateCcw size={14} /></button>
-              <button onClick={() => setCurrentStepIdx(Math.max(0, currentStepIdx - 1))} className="p-1 text-gray-400 hover:text-white transition"><SkipBack size={14} /></button>
-              <button onClick={() => setIsPlaying(!isPlaying)} className="p-1 bg-blue-600/20 text-blue-400 rounded hover:bg-blue-600/40 transition">
-                {isPlaying ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
+              <button
+                onClick={() => {
+                  setCurrentStepIdx(0);
+                  setIsPlaying(false);
+                }}
+                className="p-1 text-gray-400 hover:text-white transition"
+              >
+                <RotateCcw size={14} />
               </button>
-              <button onClick={() => setCurrentStepIdx(Math.min(executionPath.length - 1, currentStepIdx + 1))} className="p-1 text-gray-400 hover:text-white transition"><SkipForward size={14} /></button>
+              <button
+                onClick={() =>
+                  setCurrentStepIdx(Math.max(0, currentStepIdx - 1))
+                }
+                className="p-1 text-gray-400 hover:text-white transition"
+              >
+                <SkipBack size={14} />
+              </button>
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="p-1 bg-blue-600/20 text-blue-400 rounded hover:bg-blue-600/40 transition"
+              >
+                {isPlaying ? (
+                  <Pause size={14} />
+                ) : (
+                  <Play size={14} fill="currentColor" />
+                )}
+              </button>
+              <button
+                onClick={() =>
+                  setCurrentStepIdx(
+                    Math.min(executionPath.length - 1, currentStepIdx + 1),
+                  )
+                }
+                className="p-1 text-gray-400 hover:text-white transition"
+              >
+                <SkipForward size={14} />
+              </button>
             </div>
             <div className="h-4 w-[1px] bg-gray-700 mx-2"></div>
             <span className="text-[10px] font-mono text-gray-400">
@@ -152,43 +192,46 @@ print("In-order traversal:", inorder_traversal(root))`;
               showLineNumbers={true}
               useInlineStyles={true}
               lineNumberStyle={{
-                minWidth: '2.2em',
-                paddingRight: '0.6em',
-                textAlign: 'right',
-                color: '#4b5563',
-                fontSize: '0.75rem',
-                userSelect: 'none',
-                verticalAlign: 'top',
-                paddingTop: '4px',
-                display: 'table-cell',
+                minWidth: "2.2em",
+                paddingRight: "0.6em",
+                textAlign: "right",
+                color: "#4b5563",
+                fontSize: "0.75rem",
+                userSelect: "none",
+                verticalAlign: "top",
+                paddingTop: "4px",
+                display: "table-cell",
               }}
               lineProps={(lineNumber: number) => {
                 const activeLine = executionPath[currentStepIdx];
                 return {
                   style: {
                     display: "table-row",
-                    backgroundColor: lineNumber === activeLine ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                    backgroundColor:
+                      lineNumber === activeLine
+                        ? "rgba(59, 130, 246, 0.2)"
+                        : "transparent",
                   },
                 };
               }}
               customStyle={{
                 margin: 0,
-                padding: '8px 0',
-                fontSize: '0.85rem',
-                lineHeight: '1.5',
-                background: 'transparent',
-                display: 'table',
-                minWidth: '100%',
+                padding: "8px 0",
+                fontSize: "0.85rem",
+                lineHeight: "1.5",
+                background: "transparent",
+                display: "table",
+                minWidth: "100%",
               }}
               codeTagProps={{
                 style: {
-                  display: 'table-cell',
-                  width: '100%',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-all',
-                  paddingTop: '4px',
-                  paddingLeft: '0.5rem',
-                }
+                  display: "table-cell",
+                  width: "100%",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-all",
+                  paddingTop: "4px",
+                  paddingLeft: "0.5rem",
+                },
               }}
             >
               {displayCode}

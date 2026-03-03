@@ -4,33 +4,35 @@ import { swapByIndex } from "./swap";
 
 export const generateSelectionSteps = (
   nodes: Node<SortNodeData>[],
-  positionFromIndex: (index: number) => { x: number; y: number }
+  positionFromIndex: (index: number) => { x: number; y: number },
 ) => {
   const BASE_Y = 5;
   const LIFT_OFFSET = 40;
 
-  // 🔥 reset + sort by index
-    let arr: Node<SortNodeData>[] = [...nodes]
-        .map((node): Node<SortNodeData> => ({
-            ...node,
-            position: positionFromIndex(node.data.index),
-            data: {
-                ...node.data,
-                status: "idle",
-            },
-        }))
-        .sort((a, b) => a.data.index - b.data.index);
+  // reset + sort by index
+  let arr: Node<SortNodeData>[] = [...nodes]
+    .map(
+      (node): Node<SortNodeData> => ({
+        ...node,
+        position: positionFromIndex(node.data.index),
+        data: {
+          ...node.data,
+          status: "idle",
+        },
+      }),
+    )
+    .sort((a, b) => a.data.index - b.data.index);
 
   const steps: Node<SortNodeData>[][] = [];
 
-  // 🔥 deep clone ทุก step
+  // deep clone ทุก step
   const pushStep = () => {
     steps.push(
       arr.map((node) => ({
         ...node,
         position: { ...node.position },
         data: { ...node.data },
-      }))
+      })),
     );
   };
 
@@ -41,7 +43,6 @@ export const generateSelectionSteps = (
   for (let i = 0; i < n; i++) {
     let minIndex = i;
 
-
     //Find minimum
     for (let j = i + 1; j < n; j++) {
       const nodeJ = arr[j];
@@ -51,7 +52,7 @@ export const generateSelectionSteps = (
       arr = arr.map((node) =>
         node.id === nodeJ.id || node.id === nodeMin.id
           ? { ...node, data: { ...node.data, status: "compare" } }
-          : node
+          : node,
       );
       pushStep();
 
@@ -63,7 +64,7 @@ export const generateSelectionSteps = (
       arr = arr.map((node) =>
         node.id === nodeJ.id || node.id === nodeMin.id
           ? { ...node, data: { ...node.data, status: "idle" } }
-          : node
+          : node,
       );
       pushStep();
     }
@@ -151,7 +152,7 @@ export const generateSelectionSteps = (
       arr = arr.map((node) =>
         node.id === swappedA.id || node.id === swappedB.id
           ? { ...node, data: { ...node.data, status: "idle" } }
-          : node
+          : node,
       );
       pushStep();
     }
@@ -160,7 +161,7 @@ export const generateSelectionSteps = (
     arr = arr.map((node) =>
       node.data.index === i
         ? { ...node, data: { ...node.data, status: "sorted" } }
-        : node
+        : node,
     );
     pushStep();
   }

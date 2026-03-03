@@ -1,7 +1,7 @@
 export type Difficulty = "Easy" | "Medium" | "Hard";
 
 export type TipSection = {
-  label: string;     // เช่น "Pseudo Code", "Key Idea"
+  label: string; // เช่น "Pseudo Code", "Key Idea"
   content: string;
 };
 

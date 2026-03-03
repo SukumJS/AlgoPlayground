@@ -7,16 +7,16 @@ import { generateMergeSteps } from "./generateMergeSteps";
 export function generateStepsByType(
   algoType: string | null,
   nodes: Node<SortNodeData>[],
-  positionFromIndex: (index: number) => { x: number; y: number }
+  positionFromIndex: (index: number) => { x: number; y: number },
 ) {
   switch (algoType) {
-    case "bubble":
+    case "bubble-sort":
       return generateBubbleSortSteps(nodes, positionFromIndex);
-    case "insertion":
+    case "insertion-sort":
       return generateInsertionSteps(nodes, positionFromIndex);
-    case "selection":
+    case "selection-sort":
       return generateSelectionSteps(nodes, positionFromIndex);
-    case "merge":
+    case "merge-sort":
       return generateMergeSteps(nodes, positionFromIndex);
     default:
       return generateBubbleSortSteps(nodes, positionFromIndex);

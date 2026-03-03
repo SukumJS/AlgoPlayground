@@ -1,13 +1,13 @@
-import { useCallback, useRef } from 'react';
-import type { Node as RFNode, Edge as RFEdge } from '@xyflow/react';
-import { AnimationController } from '@/src/components/visualizer/animations/Tree/animationController';
-import type { AnimationCallbacks } from '@/src/components/visualizer/animations/types';
-import { type BTNode } from '@/src/components/visualizer/algorithmsTree/binaryTree';
+import { useCallback, useRef, useEffect } from "react";
+import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
+import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
+import type { AnimationCallbacks } from "@/src/components/visualizer/animations/types";
+import { type BTNode } from "@/src/components/visualizer/algorithmsTree/binaryTree";
 import {
   animateBTInorder,
   animateBTPreorder,
   animateBTPostorder,
-} from '@/src/components/visualizer/animations/BinaryTree/btTraversalAnimation';
+} from "@/src/components/visualizer/animations/BinaryTree/btTraversalAnimation";
 
 interface UseBTTraversalHandlerProps {
   btRoot: BTNode | null;
@@ -16,7 +16,7 @@ interface UseBTTraversalHandlerProps {
   setNodes: (nodes: RFNode[] | ((prev: RFNode[]) => RFNode[])) => void;
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
-  applyHighlighting: AnimationCallbacks['applyHighlighting'];
+  applyHighlighting: AnimationCallbacks["applyHighlighting"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (val: boolean) => void;
@@ -34,10 +34,12 @@ export function useBTTraversalHandler({
 }: UseBTTraversalHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
-  btRootRef.current = btRoot;
+  useEffect(() => {
+    btRootRef.current = btRoot;
+  }, [btRoot]);
 
   const runTraversal = useCallback(
-    (type: 'inorder' | 'preorder' | 'postorder') => {
+    (type: "inorder" | "preorder" | "postorder") => {
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
@@ -53,16 +55,37 @@ export function useBTTraversalHandler({
       const root = btRootRef.current;
       const done = () => setIsAnimating(false);
 
-      if (type === 'inorder') animateBTInorder(root, animationSpeed, controller, callbacks, done);
-      else if (type === 'preorder') animateBTPreorder(root, animationSpeed, controller, callbacks, done);
-      else animateBTPostorder(root, animationSpeed, controller, callbacks, done);
+      if (type === "inorder")
+        animateBTInorder(root, animationSpeed, controller, callbacks, done);
+      else if (type === "preorder")
+        animateBTPreorder(root, animationSpeed, controller, callbacks, done);
+      else
+        animateBTPostorder(root, animationSpeed, controller, callbacks, done);
     },
-    [animationSpeed, isPausedRef, setNodes, setEdges, setDescription, applyHighlighting, setIsAnimating]
+    [
+      animationSpeed,
+      isPausedRef,
+      setNodes,
+      setEdges,
+      setDescription,
+      setIsAnimating,
+      applyHighlighting,
+      btRootRef,
+    ],
   );
 
-  const handleInorder = useCallback(() => runTraversal('inorder'), [runTraversal]);
-  const handlePreorder = useCallback(() => runTraversal('preorder'), [runTraversal]);
-  const handlePostorder = useCallback(() => runTraversal('postorder'), [runTraversal]);
+  const handleInorder = useCallback(
+    () => runTraversal("inorder"),
+    [runTraversal],
+  );
+  const handlePreorder = useCallback(
+    () => runTraversal("preorder"),
+    [runTraversal],
+  );
+  const handlePostorder = useCallback(
+    () => runTraversal("postorder"),
+    [runTraversal],
+  );
   const cancelAnimation = useCallback(() => {
     controllerRef.current?.clearAll();
     setIsAnimating(false);

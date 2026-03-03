@@ -6,21 +6,29 @@ export interface BSTNode {
 }
 
 export interface BSTAnimationRecorder {
-  recordTraverse?: (nodeId: string, value: number, direction: 'left' | 'right' | 'here') => void;
-  recordFoundParent?: (parentId: string, value: number, direction: 'left' | 'right') => void;
+  recordTraverse?: (
+    nodeId: string,
+    value: number,
+    direction: "left" | "right" | "here",
+  ) => void;
+  recordFoundParent?: (
+    parentId: string,
+    value: number,
+    direction: "left" | "right",
+  ) => void;
   recordInsert?: (nodeId: string, value: number) => void;
   recordRemove?: (nodeId: string, value: number) => void;
   recordComplete?: (value: number) => void;
 }
 
-//  Core BST Operations 
+//  Core BST Operations
 function insertBSTInternal(
   root: BSTNode | null,
   value: number,
   nodeId: string,
   recorder?: BSTAnimationRecorder,
   parent?: BSTNode | null,
-  parentDir?: 'left' | 'right'
+  parentDir?: "left" | "right",
 ): BSTNode {
   if (root === null) {
     if (parent && parentDir) {
@@ -31,11 +39,25 @@ function insertBSTInternal(
   }
 
   if (value < root.value) {
-    recorder?.recordTraverse?.(root.id, value, 'left');
-    root.left = insertBSTInternal(root.left, value, nodeId, recorder, root, 'left');
+    recorder?.recordTraverse?.(root.id, value, "left");
+    root.left = insertBSTInternal(
+      root.left,
+      value,
+      nodeId,
+      recorder,
+      root,
+      "left",
+    );
   } else if (value > root.value) {
-    recorder?.recordTraverse?.(root.id, value, 'right');
-    root.right = insertBSTInternal(root.right, value, nodeId, recorder, root, 'right');
+    recorder?.recordTraverse?.(root.id, value, "right");
+    root.right = insertBSTInternal(
+      root.right,
+      value,
+      nodeId,
+      recorder,
+      root,
+      "right",
+    );
   }
   return root;
 }
@@ -43,7 +65,7 @@ function insertBSTInternal(
 export function insertBST(
   root: BSTNode | null,
   value: number,
-  nodeId: string
+  nodeId: string,
 ): BSTNode {
   return insertBSTInternal(root, value, nodeId);
 }
@@ -52,7 +74,7 @@ export function insertBSTWithAnimation(
   root: BSTNode | null,
   value: number,
   nodeId: string,
-  recorder?: BSTAnimationRecorder
+  recorder?: BSTAnimationRecorder,
 ): BSTNode {
   return insertBSTInternal(root, value, nodeId, recorder);
 }
@@ -64,7 +86,10 @@ function getMinNode(node: BSTNode): BSTNode {
 }
 
 /** Find inorder successor of a node to be deleted (node must have right child) */
-export function findBSTSuccessor(root: BSTNode | null, value: number): { successorId: string | null; successorValue: number | null } {
+export function findBSTSuccessor(
+  root: BSTNode | null,
+  value: number,
+): { successorId: string | null; successorValue: number | null } {
   if (!root) return { successorId: null, successorValue: null };
   let cur = root;
   // Find the node
@@ -83,15 +108,15 @@ export function findBSTSuccessor(root: BSTNode | null, value: number): { success
 function removeBSTInternal(
   root: BSTNode | null,
   value: number,
-  recorder?: BSTAnimationRecorder
+  recorder?: BSTAnimationRecorder,
 ): BSTNode | null {
   if (!root) return null;
 
   if (value < root.value) {
-    recorder?.recordTraverse?.(root.id, value, 'left');
+    recorder?.recordTraverse?.(root.id, value, "left");
     root.left = removeBSTInternal(root.left, value, recorder);
   } else if (value > root.value) {
-    recorder?.recordTraverse?.(root.id, value, 'right');
+    recorder?.recordTraverse?.(root.id, value, "right");
     root.right = removeBSTInternal(root.right, value, recorder);
   } else {
     recorder?.recordRemove?.(root.id, root.value);
@@ -108,24 +133,21 @@ function removeBSTInternal(
   return root;
 }
 
-export function removeBST(
-  root: BSTNode | null,
-  value: number
-): BSTNode | null {
+export function removeBST(root: BSTNode | null, value: number): BSTNode | null {
   return removeBSTInternal(root, value);
 }
 
 export function removeBSTWithAnimation(
   root: BSTNode | null,
   value: number,
-  recorder?: BSTAnimationRecorder
+  recorder?: BSTAnimationRecorder,
 ): BSTNode | null {
   return removeBSTInternal(root, value, recorder);
 }
 
 export function searchBST(
   root: BSTNode | null,
-  value: number
+  value: number,
 ): { found: boolean; nodeId?: string; path: string[] } {
   const path: string[] = [];
   let cur = root;
@@ -139,7 +161,7 @@ export function searchBST(
 
 export interface BSTInsertionPosition {
   parentId: string | null;
-  position: 'left' | 'right';
+  position: "left" | "right";
   parentValue: number | null;
   path: string[];
 }
@@ -147,30 +169,46 @@ export interface BSTInsertionPosition {
 export function findBSTInsertionPosition(
   root: BSTNode | null,
   value: number,
-  path: string[] = []
+  path: string[] = [],
 ): BSTInsertionPosition {
-  if (!root) return { parentId: null, position: 'left', parentValue: null, path };
+  if (!root)
+    return { parentId: null, position: "left", parentValue: null, path };
 
   if (value < root.value) {
-    if (!root.left) return { parentId: root.id, position: 'left', parentValue: root.value, path: [...path, root.id] };
+    if (!root.left)
+      return {
+        parentId: root.id,
+        position: "left",
+        parentValue: root.value,
+        path: [...path, root.id],
+      };
     return findBSTInsertionPosition(root.left, value, [...path, root.id]);
   }
   if (value > root.value) {
-    if (!root.right) return { parentId: root.id, position: 'right', parentValue: root.value, path: [...path, root.id] };
+    if (!root.right)
+      return {
+        parentId: root.id,
+        position: "right",
+        parentValue: root.value,
+        path: [...path, root.id],
+      };
     return findBSTInsertionPosition(root.right, value, [...path, root.id]);
   }
 
-  return { parentId: null, position: 'left', parentValue: null, path };
+  return { parentId: null, position: "left", parentValue: null, path };
 }
 
-//  Position & ReactFlow 
+//  Position & ReactFlow
 
 export interface NodePosition {
   x: number;
   y: number;
 }
 
-function getTreeNodesArray(root: BSTNode | null, result: BSTNode[] = []): BSTNode[] {
+function getTreeNodesArray(
+  root: BSTNode | null,
+  result: BSTNode[] = [],
+): BSTNode[] {
   if (!root) return result;
   getTreeNodesArray(root.left, result);
   result.push(root);
@@ -180,7 +218,7 @@ function getTreeNodesArray(root: BSTNode | null, result: BSTNode[] = []): BSTNod
 
 export function calculateBSTPositions(
   root: BSTNode | null,
-  positions: Map<string, NodePosition> = new Map()
+  positions: Map<string, NodePosition> = new Map(),
 ): Map<string, NodePosition> {
   if (!root) return positions;
 
@@ -203,18 +241,18 @@ export function calculateBSTPositions(
 
 export function bstToReactFlow(
   root: BSTNode | null,
-  nodes: any[] = [],
-  edges: any[] = [],
-  positions: Map<string, NodePosition> = new Map()
-): { nodes: any[]; edges: any[] } {
+  nodes: Record<string, unknown>[] = [],
+  edges: Record<string, unknown>[] = [],
+  positions: Map<string, NodePosition> = new Map(),
+): { nodes: Record<string, unknown>[]; edges: Record<string, unknown>[] } {
   if (!root) return { nodes, edges };
 
   const position = positions.get(root.id) || { x: 0, y: 0 };
 
   nodes.push({
     id: root.id,
-    type: 'custom',
-    data: { label: root.value.toString(), variant: 'circle' },
+    type: "custom",
+    data: { label: root.value.toString(), variant: "circle" },
     position,
   });
 
@@ -222,10 +260,10 @@ export function bstToReactFlow(
     edges.push({
       id: `edge-${root.id}-${root.left.id}`,
       source: root.id,
-      sourceHandle: 'source-bottom-left',
+      sourceHandle: "source-bottom-left",
       target: root.left.id,
-      targetHandle: 'target-top-right',
-      type: 'straight',
+      targetHandle: "target-top-right",
+      type: "straight",
     });
     bstToReactFlow(root.left, nodes, edges, positions);
   }
@@ -234,10 +272,10 @@ export function bstToReactFlow(
     edges.push({
       id: `edge-${root.id}-${root.right.id}`,
       source: root.id,
-      sourceHandle: 'source-bottom-right',
+      sourceHandle: "source-bottom-right",
       target: root.right.id,
-      targetHandle: 'target-top-left',
-      type: 'straight',
+      targetHandle: "target-top-left",
+      type: "straight",
     });
     bstToReactFlow(root.right, nodes, edges, positions);
   }
@@ -245,7 +283,7 @@ export function bstToReactFlow(
   return { nodes, edges };
 }
 
-//  Serialize / Deserialize 
+//  Serialize / Deserialize
 export function serializeBST(root: BSTNode | null): BSTNode | null {
   if (!root) return null;
   return JSON.parse(JSON.stringify(root));
@@ -262,13 +300,13 @@ export function cloneBSTTree(root: BSTNode | null): BSTNode | null {
 }
 
 export function rebuildBSTFromNodes(
-  nodes: Array<{ id: string; data: { label: string } }>
+  nodes: Array<{ id: string; data: { label: string } }>,
 ): BSTNode | null {
   let root: BSTNode | null = null;
 
   const values = nodes
-    .map(n => ({ value: parseInt(n.data.label), id: n.id }))
-    .filter(n => !isNaN(n.value));
+    .map((n) => ({ value: parseInt(n.data.label), id: n.id }))
+    .filter((n) => !isNaN(n.value));
 
   if (values.length === 0) return null;
 

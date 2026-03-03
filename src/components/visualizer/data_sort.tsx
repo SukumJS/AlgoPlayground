@@ -11,146 +11,259 @@ let id = 0;
 const getId = () => `dndnode_${id++}`;
 
 type nodeProps = {
-    nodeInput: number;
-    /* `setNodeInput: React.Dispatch<React.SetStateAction<number>>;` is a prop declaration in the
-    `nodeProps` interface. It defines a function that can be used to update the state of `nodeInput`
-    in a React component. */
-    setNodeInput: React.Dispatch<React.SetStateAction<number>>;
+  nodeInput: number | string;
+  setNodeInput:
+    | React.Dispatch<React.SetStateAction<number | string>>
+    | ((val: number | string) => void);
+
+  //เพิ่ม Props สำหรับรับโหมด Tutorial
+  tutorialMode?: boolean;
+  onTutorialDropSuccess?: () => void;
 };
 
-function Data_sort({ nodeInput, setNodeInput }: nodeProps) {
-    const [isDataSortOpen, setIsDataSortOpen] = useState(false);
-    const { setNodes } = useReactFlow();
-    const { onDragStart, isDragging } = useDnD();
-    const [type, setType] = useState<string | null>(null);
-    const [draggedValue, setDraggedValue] = useState<number | null>(null);
+function Data_sort({
+  nodeInput,
+  setNodeInput,
+  tutorialMode,
+  onTutorialDropSuccess,
+}: nodeProps) {
+  // ตั้งค่าเริ่มต้นให้เปิดแท็บอัตโนมัติถ้าเป็น Tutorial
+  const [isDataSortOpen, setIsDataSortOpen] = useState(
+    tutorialMode ? true : false,
+  );
+  const [prevTutorialMode, setPrevTutorialMode] = useState(tutorialMode);
 
-    const createAddNewNode = useCallback(
-        (sampleValue: number): OnDropAction => {
-            return ({ position }: { position: XYPosition }) => {
-                setNodes((prev) => {
-                    const currentIndex = prev.length; // index ใหม่ = ต่อท้าย
+  // ดักจับเผื่อค่า tutorialMode โหลดตามมาทีหลัง (render-time adjustment)
+  if (tutorialMode !== prevTutorialMode) {
+    setPrevTutorialMode(tutorialMode);
+    if (tutorialMode) {
+      setIsDataSortOpen(true);
+    }
+  }
 
-                    const newNode: Node = {
-                        id: getId(),
-                        type: "custom",
-                        position, // ตำแหน่งเมาส์ตอนวาง 
-                        data: {
-                            value: sampleValue,
-                            status: "idle",
-                            index: currentIndex,
-                        },
-                    };
+  const { setNodes } = useReactFlow();
+  const { onDragStart, isDragging } = useDnD();
+  const [type, setType] = useState<string | null>(null);
+  const [draggedValue, setDraggedValue] = useState<number | null>(null);
 
-                    return prev.concat(newNode);
-                });
+  const createAddNewNode = useCallback(
+    (sampleValue: number): OnDropAction => {
+      return ({ position }: { position: XYPosition }) => {
+        setNodes((prev) => {
+          const currentIndex = prev.length; // index ใหม่ = ต่อท้าย
 
-                setType(null);
-                setDraggedValue(null);
-            };
+          const newNode: Node = {
+            id: getId(),
+            type: "custom",
+            position: { x: currentIndex * 65, y: 5 },
+            data: {
+              value: sampleValue,
+              status: "idle",
+              index: currentIndex,
+            },
+          };
+
+          return prev.concat(newNode);
+        });
+
+        setType(null);
+        setDraggedValue(null);
+
+        //  เมื่อลากกล่องลงจอสำเร็จ ให้ส่งสัญญาณบอก Tutorial ให้ไปสเต็ปถัดไป
+        if (onTutorialDropSuccess) {
+          onTutorialDropSuccess();
+        }
+      };
+    },
+    [setNodes, onTutorialDropSuccess],
+  );
+  const generateDiverseArray = (count: number) => {
+    const scenario = Math.floor(Math.random() * 4); // สุ่ม 0-3 เพื่อเลือกรูปแบบ
+    let arr: number[] = [];
+
+    switch (scenario) {
+      case 0: // 1. Reversed: เรียงจากมากไปน้อย (Worst Case)
+        arr = Array.from(
+          { length: count },
+          (_, i) => Math.floor(((count - i) / count) * 90) + 10,
+        );
+        break;
+
+      case 1: // 2. Nearly Sorted: เรียงเกือบเป๊ะ (สลับแค่บางตัว)
+        arr = Array.from(
+          { length: count },
+          (_, i) => Math.floor((i / count) * 90) + 10,
+        );
+        for (let i = 0; i < Math.max(1, count * 0.2); i++) {
+          // สลับตำแหน่ง 20%
+          const idx1 = Math.floor(Math.random() * count);
+          const idx2 = Math.floor(Math.random() * count);
+          [arr[idx1], arr[idx2]] = [arr[idx2], arr[idx1]];
+        }
+        break;
+
+      case 2: // 3. Few Unique: มีตัวเลขซ้ำกันเยอะๆ
+        const uniquePool = [10, 40, 70, 90];
+        arr = Array.from(
+          { length: count },
+          () => uniquePool[Math.floor(Math.random() * uniquePool.length)],
+        );
+        break;
+
+      default: // 4. Random: สุ่มมั่วกระจายตัวปกติ
+        arr = Array.from(
+          { length: count },
+          () => Math.floor(Math.random() * 95) + 5,
+        );
+        break;
+    }
+    return arr;
+  };
+  // ฟังก์ชันสำหรับ Generate โหนดแบบสุ่มลงบน Canvas
+  const handleGenerateRandomNodes = useCallback(
+    (count: number) => {
+      if (count <= 0) return;
+
+      // สุ่มรูปแบบข้อมูลก่อน
+      const randomNumbers = generateDiverseArray(count);
+
+      const newNodes: Node[] = randomNumbers.map((num, i) => ({
+        id: getId(),
+        type: "custom",
+        position: { x: i * 65, y: 5 },
+        data: {
+          value: num,
+          status: "idle",
+          index: i,
         },
-        [setNodes],
-    );
+      }));
 
-    const Sample = [
-        { number: "1" },
-        { number: "2" },
-        { number: "3" },
-        { number: "4" },
-        { number: "5" },
-    ];
+      setNodes(newNodes);
+    },
+    [setNodes],
+  );
 
-    return (
-        <>
-            {/* Ghost node following the pointer */}
-            {isDragging && <DragGhost type={type} value={draggedValue} />}
+  // ฟังก์ชัน Reset ลบโหนดทั้งหมด
+  const handleResetNodes = useCallback(() => {
+    setNodes([]);
+  }, [setNodes]);
 
-            <button
-                className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"
-                    }`}
-                onClick={() => setIsDataSortOpen(!isDataSortOpen)}
-            >
-                <div className="flex items-center">
-                    <div
-                        className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${isDataSortOpen ? "" : "hidden opacity-0"
-                            }`}
-                    ></div>
-                    <div className={`flex text-lg p-2`}>Data Sort</div>
-                </div>
-                <div className="mr-2 flex justify-end">
-                    {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
-                </div>
-            </button>
+  const Sample = [
+    { number: "1" },
+    { number: "2" },
+    { number: "3" },
+    { number: "4" },
+    { number: "5" },
+  ];
 
+  return (
+    <>
+      {/* Ghost node following the pointer */}
+      {isDragging && <DragGhost type={type} value={draggedValue} />}
+
+      <button
+        className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${
+          isDataSortOpen ? "bg-gray-200 h-12" : "bg-white"
+        }`}
+        onClick={() => setIsDataSortOpen(!isDataSortOpen)}
+      >
+        <div className="flex items-center">
+          <div
+            className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${
+              isDataSortOpen ? "" : "hidden opacity-0"
+            }`}
+          ></div>
+          <div className={`flex text-lg p-2`}>Data Sort</div>
+        </div>
+        <div className="mr-2 flex justify-end">
+          {isDataSortOpen ? <ChevronUp /> : <ChevronDown />}
+        </div>
+      </button>
+
+      <div
+        className={`flex-col transition-opacity duration-300 ${
+          isDataSortOpen
+            ? "opacity-100 h-auto"
+            : "opacity-0 h-0 overflow-hidden"
+        }`}
+      >
+        <div className="overflow-x-auto flex gap-2 mb-2 p-2">
+          {/* Input Node Item */}
+          <div
+            data-tutorial-target="sidebar-sort-node"
+            className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg cursor-grab"
+            onPointerDown={(event) => {
+              const value = Number(nodeInput) || 0; // แปลงเป็นเลข
+              setType("input");
+              setDraggedValue(value);
+              onDragStart(event, createAddNewNode(value));
+            }}
+          >
+            <input
+              type="number"
+              placeholder="0"
+              className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={nodeInput}
+              onChange={(e) => {
+                if (typeof setNodeInput === "function") {
+                  setNodeInput(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  );
+                }
+              }}
+              onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
+            />
+          </div>
+
+          {/* Sample Node Items */}
+          {Sample.map((item, index) => (
             <div
-                className={`flex-col transition-opacity duration-300 ${isDataSortOpen ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"
-                    }`}
+              key={index}
+              className="shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] cursor-grab"
+              onPointerDown={(event) => {
+                const value = parseInt(item.number);
+                setType("custom"); // Changed drag ghost type to "custom"
+                setDraggedValue(value);
+                onDragStart(event, createAddNewNode(value));
+              }}
             >
-                <div className="overflow-x-auto flex gap-2 mb-2 p-2">
-                    {/* Input Node Item */}
-                    <div
-                        className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg cursor-grab"
-                        onPointerDown={(event) => {
-                            const value = nodeInput || 0;
-                            setType("input");
-                            setDraggedValue(value);
-                            onDragStart(event, createAddNewNode(value));
-                        }}
-                    >
-                        <input
-                            type="number"
-                            placeholder="0"
-                            className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            value={nodeInput}
-                            onChange={(e) => setNodeInput(parseInt(e.target.value) || 0)}
-                            onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
-                        />
-                    </div>
-
-                    {/* Sample Node Items */}
-                    {Sample.map((item, index) => (
-                        <div
-                            key={index}
-                            className="shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] cursor-grab"
-                            onPointerDown={(event) => {
-                                const value = parseInt(item.number);
-                                setType("custom"); // Changed drag ghost type to "custom"
-                                setDraggedValue(value);
-                                onDragStart(event, createAddNewNode(value));
-                            }}
-                        >
-                            {item.number}
-                        </div>
-                    ))}
-                </div>
-
-                <div className="flex justify-center items-center text-center p-2">
-                    <RandomSize />
-                </div>
+              {item.number}
             </div>
-        </>
-    );
+          ))}
+        </div>
+
+        <div className="flex justify-center items-center text-center p-2 w-full">
+          {/* ส่ง Props ไปให้ RandomSize เพื่อให้มันทำงานได้จริง */}
+          <RandomSize
+            onAdd={handleGenerateRandomNodes}
+            onReset={handleResetNodes}
+          />
+        </div>
+      </div>
+    </>
+  );
 }
 
 export default Data_sort;
 
 interface DragGhostProps {
-    type: string | null;
-    value: number | null;
+  type: string | null;
+  value: number | null;
 }
 
 export function DragGhost({ type, value }: DragGhostProps) {
-    const { position } = useDnDPosition();
+  const { position } = useDnDPosition();
 
-    if (!position || !type) return null;
+  if (!position || !type) return null;
 
-    return (
-        <div
-            className={`fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`}
-            style={{
-                transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
-            }}>
-            {value}
-        </div>
-    );
+  return (
+    <div
+      className={`fixed top-0 left-0 pointer-events-none z-[1000] flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`}
+      style={{
+        transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
+      }}
+    >
+      {value}
+    </div>
+  );
 }

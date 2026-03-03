@@ -6,7 +6,7 @@ export type SortNodeData = {
   value: number;
   index: number;
   status: "idle" | "compare" | "swap" | "merge" | "sorted";
-  level?: number; 
+  level?: number;
   currentLevel?: number;
 };
 
@@ -20,7 +20,6 @@ const STATUS_BG: Record<SortNodeData["status"], string> = {
 };
 
 export default function SortNode({ data }: NodeProps<Node<SortNodeData>>) {
-  
   return (
     <div
       className="

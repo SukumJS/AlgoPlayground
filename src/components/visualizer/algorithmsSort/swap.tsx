@@ -5,7 +5,7 @@ export function swapByIndex(
   arr: Node<SortNodeData>[],
   i: number,
   j: number,
-  positionFromIndex: (index: number) => { x: number; y: number }
+  positionFromIndex: (index: number) => { x: number; y: number },
 ) {
   const newArr = [...arr];
 

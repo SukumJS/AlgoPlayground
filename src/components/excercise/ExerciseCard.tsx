@@ -57,24 +57,18 @@ export default function ExerciseCard({ exercise }: { exercise: Exercise }) {
 
         {open && (
           <div className="mt-3 space-y-3 text-base text-gray-700">
-            <p className="leading-relaxed">
-              {exercise.description}
-            </p>
+            <p className="leading-relaxed">{exercise.description}</p>
 
             <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
               <div>
-                <p className="mb-1 font-semibold text-gray-900">
-                  Requirement
-                </p>
+                <p className="mb-1 font-semibold text-gray-900">Requirement</p>
                 <p className="leading-relaxed text-gray-600">
                   {exercise.requirement}
                 </p>
               </div>
 
               <div className="relative pb-2 pr-2">
-                <p className="mb-1  font-semibold text-gray-900">
-                  Example
-                </p>
+                <p className="mb-1  font-semibold text-gray-900">Example</p>
 
                 <div className="rounded-md bg-gray-900 px-3 py-2 mr-28 font-mono text-[11px] leading-relaxed text-white whitespace-pre-wrap">
                   {exercise.example}
@@ -97,7 +91,6 @@ export default function ExerciseCard({ exercise }: { exercise: Exercise }) {
             </div>
           </div>
         )}
-
       </div>
 
       <TipsModal
@@ -106,7 +99,6 @@ export default function ExerciseCard({ exercise }: { exercise: Exercise }) {
         title="Tips"
         sections={exercise.tips}
       />
-
     </>
   );
 }

@@ -1,7 +1,7 @@
-import Block from "./Block"
+import Block from "./Block";
 
 interface Props {
-  className?: string
+  className?: string;
 }
 
 export default function InsertionSortIcon({ className = "" }: Props) {
@@ -15,7 +15,7 @@ export default function InsertionSortIcon({ className = "" }: Props) {
       `}
     >
       {/* sorted part (นิ่ง) */}
-      
+
       <Block className="w-8 h-14" />
 
       {/* key element (ถูกยกออกมา) */}
@@ -39,5 +39,5 @@ export default function InsertionSortIcon({ className = "" }: Props) {
 
       <Block className="w-8 h-18" />
     </div>
-  )
+  );
 }

@@ -1,5 +1,5 @@
 interface Props {
-  className?: string
+  className?: string;
 }
 
 export default function MinHeapIcon({ className = "" }: Props) {
@@ -12,12 +12,40 @@ export default function MinHeapIcon({ className = "" }: Props) {
           viewBox="0 0 112 96"
           width="100%"
           height="100%"
-          style={{ overflow: 'visible' }}
+          style={{ overflow: "visible" }}
         >
-          <line x1="35" y1="16" x2="-15" y2="64" stroke="white" strokeWidth="1.5" />
-          <line x1="75" y1="16" x2="120" y2="64" stroke="white" strokeWidth="1.5" />
-          <line x1="5" y1="60" x2="30" y2="96" stroke="white" strokeWidth="1.5" />
-          <line x1="-50" y1="120" x2="-12" y2="64" stroke="white" strokeWidth="1.5" />
+          <line
+            x1="35"
+            y1="16"
+            x2="-15"
+            y2="64"
+            stroke="white"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="75"
+            y1="16"
+            x2="120"
+            y2="64"
+            stroke="white"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="5"
+            y1="60"
+            x2="30"
+            y2="96"
+            stroke="white"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="-50"
+            y1="120"
+            x2="-12"
+            y2="64"
+            stroke="white"
+            strokeWidth="1.5"
+          />
         </svg>
 
         {/* root (ใหญ่กว่า → ลง) */}
@@ -84,5 +112,5 @@ export default function MinHeapIcon({ className = "" }: Props) {
         </div>
       </div>
     </div>
-  )
+  );
 }

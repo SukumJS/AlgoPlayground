@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Navbar from "../components/Navbar"
-import AlgorithmSection from "../components/AlgorithmSection"
-import { algorithmCatalog } from "../data/algorithmCatalog"
+import { useState } from "react";
+import Navbar from "../components/Navbar";
+import AlgorithmSection from "../components/AlgorithmSection";
+import { algorithmCatalog } from "../data/algorithmCatalog";
 
 export default function Page() {
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
-  const [isLoggedIn, setIsLoggedIn] = useState(false) //  mock login state ถ้าจะเปลี่ยนเป็นยังไม่ล็อกอินเปลี่ยนเป็น falese
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [isLoggedIn, setIsLoggedIn] = useState(false); //  mock login state ถ้าจะเปลี่ยนเป็นยังไม่ล็อกอินเปลี่ยนเป็น falese
   return (
     <div className="bg-white min-h-screen w-full absolute top-0 left-0 ">
       <Navbar onSelectCategory={setSelectedCategory} isLoggedIn={isLoggedIn} />
@@ -17,7 +17,7 @@ export default function Page() {
           {(selectedCategory === "all"
             ? algorithmCatalog
             : algorithmCatalog.filter(
-                (section) => section.id === selectedCategory
+                (section) => section.id === selectedCategory,
               )
           ).map((section) => (
             <AlgorithmSection
@@ -29,5 +29,5 @@ export default function Page() {
         </div>
       </main>
     </div>
-  )
+  );
 }

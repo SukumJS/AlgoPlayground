@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Menu, X} from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 interface RightSidebarProps {
   children: React.ReactNode; // รับคอมโพเนนต์เฉพาะทางเข้ามาที่นี่
@@ -12,7 +12,7 @@ export default function Sidebar({ children, title }: RightSidebarProps) {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <aside 
+    <aside
       className={`fixed right-0 top-0 h-full bg-white transition-all duration-300 ease-in-out z-50 border-l shadow-xl flex flex-col ${
         isOpen ? "w-96 lg:w-108" : "w-16 overflow-hidden"
       }`}

@@ -21,7 +21,7 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
     confirm: false,
   });
 
-  // ฟังก์ชัน Handle Input Change 
+  // ฟังก์ชัน Handle Input Change
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -50,7 +50,9 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
             placeholder="Current Password"
             isVisible={showPass.current}
             onChange={handleChange}
-            toggleVisible={() => setShowPass(p => ({ ...p, current: !p.current }))}
+            toggleVisible={() =>
+              setShowPass((p) => ({ ...p, current: !p.current }))
+            }
           />
 
           {/* New Password */}
@@ -61,7 +63,7 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
             placeholder="New Password"
             isVisible={showPass.new}
             onChange={handleChange}
-            toggleVisible={() => setShowPass(p => ({ ...p, new: !p.new }))}
+            toggleVisible={() => setShowPass((p) => ({ ...p, new: !p.new }))}
           />
 
           {/* Confirm New Password */}
@@ -72,11 +74,13 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
             placeholder="Confirm New Password"
             isVisible={showPass.confirm}
             onChange={handleChange}
-            toggleVisible={() => setShowPass(p => ({ ...p, confirm: !p.confirm }))}
+            toggleVisible={() =>
+              setShowPass((p) => ({ ...p, confirm: !p.confirm }))
+            }
           />
 
           {/* Action Buttons */}
-            <div className="mt-6 flex justify-center gap-4">
+          <div className="mt-6 flex justify-center gap-4">
             <button
               type="button"
               onClick={onClose}
@@ -97,7 +101,6 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
   );
 }
 
-
 interface PasswordFieldProps {
   label: string;
   name: string;
@@ -108,9 +111,19 @@ interface PasswordFieldProps {
   toggleVisible: () => void;
 }
 
-const PasswordField = ({ label, name, value, placeholder, isVisible, onChange, toggleVisible }: PasswordFieldProps) => (
+const PasswordField = ({
+  label,
+  name,
+  value,
+  placeholder,
+  isVisible,
+  onChange,
+  toggleVisible,
+}: PasswordFieldProps) => (
   <div>
-    <label className="block text-gray-600 mb-1.5 font-medium text-sm">{label}</label>
+    <label className="block text-gray-600 mb-1.5 font-medium text-sm">
+      {label}
+    </label>
     <div className="relative">
       <input
         type={isVisible ? "text" : "password"}
@@ -125,8 +138,7 @@ const PasswordField = ({ label, name, value, placeholder, isVisible, onChange, t
         type="button"
         onClick={toggleVisible}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-      >
-      </button>
+      ></button>
     </div>
   </div>
 );

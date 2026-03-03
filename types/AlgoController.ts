@@ -12,6 +12,9 @@ export interface AlgoController {
 
   isRunning?: boolean;
 
+  // expose current step index so parent can react or generate explanation
+  currentStep?: number;
+
   setSpeed?: (speed: SpeedType) => void;
   speed?: SpeedType;
 }

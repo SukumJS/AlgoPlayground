@@ -1,7 +1,7 @@
-import Block from "./Block"
+import Block from "./Block";
 
 interface Props {
-  className?: string
+  className?: string;
 }
 
 export default function MergeSortIcon({ className = "" }: Props) {
@@ -46,5 +46,5 @@ export default function MergeSortIcon({ className = "" }: Props) {
         "
       />
     </div>
-  )
+  );
 }

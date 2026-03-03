@@ -1,5 +1,5 @@
 interface Props {
-  className?: string
+  className?: string;
 }
 
 export default function DoublyLinkedListIcon({ className = "" }: Props) {
@@ -15,5 +15,5 @@ export default function DoublyLinkedListIcon({ className = "" }: Props) {
         </div>
       ))}
     </div>
-  )
+  );
 }

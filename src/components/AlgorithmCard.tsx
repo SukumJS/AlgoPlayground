@@ -1,27 +1,31 @@
-"use client"
-import { useRouter } from "next/navigation"
-import { ProgressRow } from "./ProgressRow"
-import { Info } from "lucide-react"
-import { AlgorithmIcon } from "./AlgorithmIcon"
-
+"use client";
+import { useRouter } from "next/navigation";
+import { ProgressRow } from "./ProgressRow";
+import { Info } from "lucide-react";
+import { AlgorithmIcon } from "./AlgorithmIcon";
 
 interface Props {
-  slug: string
-  title: string
-  shortTitle?: string
+  slug: string;
+  title: string;
+  shortTitle?: string;
   progress: {
     pretest: {
-      score?: number
-      status: "locked" | "active" | "completed"
-    }
+      score?: number;
+      status: "locked" | "active" | "completed";
+    };
     posttest: {
-      score?: number
-      status: "locked" | "active" | "completed"
-    }
-  }
+      score?: number;
+      status: "locked" | "active" | "completed";
+    };
+  };
 }
-export default function AlgorithmCard({ slug, title, shortTitle, progress }: Props) {
-  const router = useRouter()
+export default function AlgorithmCard({
+  slug,
+  title,
+  shortTitle,
+  progress,
+}: Props) {
+  const router = useRouter();
 
   //กดการ์ด = ไปหน้า pretest เสมอ
   // const handleCardClick = () => {
@@ -29,8 +33,8 @@ export default function AlgorithmCard({ slug, title, shortTitle, progress }: Pro
   // }
 
   const handleCardClick = () => {
-    router.push(`/pretest`)
-  }
+    router.push(`/pretest`);
+  };
 
   // กด Info = ดูข้อมูล (ไม่เปลี่ยนหน้า)
   // const handleInfoClick = (e: React.MouseEvent) => {
@@ -67,9 +71,9 @@ export default function AlgorithmCard({ slug, title, shortTitle, progress }: Pro
       {/* Top right icon */}
       <Info
         onClick={(e) => {
-          e.stopPropagation()
-          console.log("Algorithm slug:", slug)
-          router.push(`/reading?id=${slug}`)
+          e.stopPropagation();
+          console.log("Algorithm slug:", slug);
+          router.push(`/reading?id=${slug}`);
         }}
         className="
         
@@ -100,7 +104,10 @@ export default function AlgorithmCard({ slug, title, shortTitle, progress }: Pro
           p-6 gap-4
         "
       >
-        <h2 className="text-lg font-semibold text-gray-900 text-center leading-tight relative -top-3" title={title}>
+        <h2
+          className="text-lg font-semibold text-gray-900 text-center leading-tight relative -top-3"
+          title={title}
+        >
           {shortTitle ?? title}
         </h2>
 
@@ -117,5 +124,5 @@ export default function AlgorithmCard({ slug, title, shortTitle, progress }: Pro
         />
       </div>
     </div>
-  )
+  );
 }

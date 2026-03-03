@@ -1,5 +1,5 @@
 interface Props {
-    className?: string
+  className?: string;
 }
 export default function StackIcon({ className = "" }: Props) {
   return (
@@ -19,5 +19,5 @@ export default function StackIcon({ className = "" }: Props) {
         ))}
       </div>
     </div>
-  )
+  );
 }
