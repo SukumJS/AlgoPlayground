@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { ChevronDown, ChevronUp, Play, Pause, SkipBack, SkipForward, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
@@ -9,63 +9,49 @@ interface CodeBlockProps {
   code?: string;
   language?: string;
   tutorialMode?: boolean;
+  // ใช้สำหรับเชื่อมกับ progress ของ algorithm ภายนอก (เช่น Bubble Sort)
+  algorithm?: string | null;
+  externalStep?: number | null;
+  externalTotalSteps?: number | null;
+  externalStepType?: "idle" | "compare" | "swap" | null;
 }
 
 export default function CodeAlgo({
   title = "Code",
   code = "",
   language = "python", // ไม่เป็นปัญหากับ Pseudo Code เอาแค่สีกับ format มา
-  tutorialMode = false
+  tutorialMode = false,
+  algorithm = null,
+  externalStep = null,
+  externalTotalSteps = null,
+  externalStepType = null,
 }: CodeBlockProps) {
   const [isCodeOpen, setIsCodeOpen] = useState<boolean>(false);
   const [currentStepIdx, setCurrentStepIdx] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  // ไม่มีปุ่มควบคุมการเล่นภายในแล้ว เหลือแค่ใช้สำหรับ fallback/manual step
 
-  const defaultCode: string = `class Node:
-    def __init__(self, key):
-        self.left = None
-        self.right = None
-        self.val = key
+  const bubbleSortCode: string = `ALGORITHM BubbleSort(list)
+    n = length of list
+    FOR i FROM 0 TO n - 1 DO
+        FOR j FROM 0 TO n - i - 2 DO
+            IF list[j] > list[j + 1] THEN
+                SWAP list[j] WITH list[j + 1]
 
-def insert(root, key):
-    # ถ้า Tree ว่าง ให้สร้าง Node ใหม่เป็น Root
-    if root is None:
-        return Node(key)
-    
-    # ถ้าค่าที่จะใส่ น้อยกว่าค่าใน Node ปัจจุบัน ให้ไปทางซ้าย
-    if key < root.val:
-        root.left = insert(root.left, key)
-    # ถ้ามากกว่า ให้ไปทางขวา
-    else:
-        root.right = insert(root.right, key)
-    return root
+`;
 
-def inorder_traversal(root):
-    # การอ่านค่าแบบเรียงจากน้อยไปมาก (ซ้าย -> ราก -> ขวา)
-    res = []
-    if root:
-        res = inorder_traversal(root.left)
-        res.append(root.val)
-        res.extend(inorder_traversal(root.right))
-    return res
+  const pickDefaultCodeByAlgorithm = () => {
+    // ตอนนี้ CodeAlgo ในหน้า Sorting ใช้สำหรับ Bubble Sort เป็นหลัก
+    // ถ้าอนาคตมี sort อื่น ค่อยมาเพิ่ม case ตรงนี้
+    return bubbleSortCode;
+  };
 
-# ตัวอย่างการใช้งาน
-root = Node(50)
-root = insert(root, 30)
-root = insert(root, 20)
-root = insert(root, 40)
-root = insert(root, 70)
+  const displayCode = (code || pickDefaultCodeByAlgorithm()).trim();
 
-print("In-order traversal:", inorder_traversal(root))`;
-
-  const displayCode = (code || defaultCode).trim();
-
-  // เปลี่ยนเป็นระบบ Auto Step (รันตามบรรทัดที่มีเนื้อหาจริง)
+  // เตรียม path ของบรรทัด (ใช้สำหรับ fallback ถ้าไม่มี externalStepType)
   const executionPath = useMemo(() => {
     const lines = displayCode.split("\n");
     const path: number[] = [];
     lines.forEach((line, index) => {
-      // เพิ่มบรรทัดเข้า Path เฉพาะบรรทัดที่มีข้อความ (ไม่ว่างเปล่า)
       if (line.trim().length > 0) {
         path.push(index + 1);
       }
@@ -73,24 +59,46 @@ print("In-order traversal:", inorder_traversal(root))`;
     return path;
   }, [displayCode]);
 
-  useEffect(() => {
-    setCurrentStepIdx(0);
-    setIsPlaying(false);
-  }, [displayCode]);
+  // map status ของ Bubble Sort → กลุ่มบรรทัดในโค้ด
+  const activeLines = useMemo(() => {
+    // case เชื่อมกับ Bubble Sort playground
+    if (algorithm === "bubble-sort" && externalStepType) {
+      // โครง Pseudocode (หลัง trim):
+      // 1: ALGORITHM BubbleSort(list)
+      // 2:   n = length of list
+      // 3:   FOR i FROM 0 TO n - 1 DO
+      // 4:       FOR j FROM 0 TO n - i - 2 DO
+      // 5:           IF list[j] > list[j + 1] THEN
+      // 6:               SWAP list[j] WITH list[j + 1]
+      // 7:           END IF
+      // 8:       END FOR
+      // 9:   END FOR
+      // 10: END ALGORITHM
+      switch (externalStepType) {
+        case "compare":
+          // เน้นส่วนของ loop + เงื่อนไขเปรียบเทียบ
+          return [3, 4, 5];
+        case "swap":
+          // เน้นบรรทัดสลับค่า
+          return [6];
+        case "idle":
+        default:
+          // เน้น header / การเตรียมค่าเริ่มต้นของอัลกอริทึม
+          return [1, 2];
+      }
+    }
+
+    // กรณีทั่วไป → fallback เป็นไฮไลท์ทีละบรรทัดแบบเดิม
+    const activeLine = executionPath[currentStepIdx];
+    return activeLine ? [activeLine] : [];
+  }, [algorithm, externalStepType, executionPath, currentStepIdx]);
 
   useEffect(() => {
-    let interval: any;
-    if (isPlaying && executionPath.length > 0) {
-      interval = setInterval(() => {
-        setCurrentStepIdx((prev) => {
-          if (prev < executionPath.length - 1) return prev + 1;
-          setIsPlaying(false);
-          return prev;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, executionPath]);
+    setCurrentStepIdx(0);
+  }, [displayCode]);
+
+  // สำหรับ bubble-sort เราใช้ externalStepType เป็นหลักอยู่แล้ว
+  // เลยไม่ต้อง map จาก externalStep → currentStepIdx อีก
 
   const handleClick = () => {
         if (!tutorialMode) {
@@ -128,21 +136,6 @@ print("In-order traversal:", inorder_traversal(root))`;
         }`}
       >
         <div className="overflow-hidden bg-[#0d1117] flex flex-col">
-          <div className="flex items-center gap-1 px-4 py-1 bg-[#161b22] border-b border-gray-800">
-            <div className="flex items-center gap-1">
-              <button onClick={() => { setCurrentStepIdx(0); setIsPlaying(false); }} className="p-1 text-gray-400 hover:text-white transition"><RotateCcw size={14} /></button>
-              <button onClick={() => setCurrentStepIdx(Math.max(0, currentStepIdx - 1))} className="p-1 text-gray-400 hover:text-white transition"><SkipBack size={14} /></button>
-              <button onClick={() => setIsPlaying(!isPlaying)} className="p-1 bg-blue-600/20 text-blue-400 rounded hover:bg-blue-600/40 transition">
-                {isPlaying ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
-              </button>
-              <button onClick={() => setCurrentStepIdx(Math.min(executionPath.length - 1, currentStepIdx + 1))} className="p-1 text-gray-400 hover:text-white transition"><SkipForward size={14} /></button>
-            </div>
-            <div className="h-4 w-[1px] bg-gray-700 mx-2"></div>
-            <span className="text-[10px] font-mono text-gray-400">
-              Step: {currentStepIdx + 1}/{executionPath.length || 1}
-            </span>
-          </div>
-
           <div className="relative">
             <SyntaxHighlighter
               key={`${displayCode}-${currentStepIdx}`}
@@ -163,11 +156,11 @@ print("In-order traversal:", inorder_traversal(root))`;
                 display: 'table-cell',
               }}
               lineProps={(lineNumber: number) => {
-                const activeLine = executionPath[currentStepIdx];
+                const isActive = activeLines.includes(lineNumber);
                 return {
                   style: {
                     display: "table-row",
-                    backgroundColor: lineNumber === activeLine ? "rgba(59, 130, 246, 0.2)" : "transparent",
+                    backgroundColor: isActive ? "rgba(59, 130, 246, 0.2)" : "transparent",
                   },
                 };
               }}

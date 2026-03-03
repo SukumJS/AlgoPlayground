@@ -12,6 +12,10 @@ export interface AlgoController {
 
   isRunning?: boolean;
 
+  // สำหรับ sync progress กับ CodeAlgo หรือ UI อื่น ๆ
+  currentStep?: number;
+  totalSteps?: number;
+
   setSpeed?: (speed: SpeedType) => void;
   speed?: SpeedType;
 }

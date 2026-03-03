@@ -101,6 +101,14 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         speed,
     });
 
+    // ระบุประเภทของ step ปัจจุบันจากสถานะของ node (ใช้ sync กับ CodeAlgo)
+    const currentStepType =
+        nodes.some((n) => n.data?.status === "swap")
+            ? "swap"
+            : nodes.some((n) => n.data?.status === "compare")
+                ? "compare"
+                : "idle";
+
     return (
         <div className="w-screen h-screen">
             <ReactFlow
@@ -129,7 +137,12 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
 
             <SideTab title="Sorting Algorithms">
                 <div>
-                    <CodeAlgo />
+                    <CodeAlgo
+                        algorithm={algorithm}
+                        externalStep={controller.currentStep ?? null}
+                        externalTotalSteps={controller.totalSteps ?? null}
+                        externalStepType={currentStepType}
+                    />
                     <ExplainAlgo />
                     <Data_sort
                         nodeInput={nodeInput}

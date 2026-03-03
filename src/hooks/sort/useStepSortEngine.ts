@@ -173,5 +173,7 @@ export function useStepSortEngine({
         skipBack,
         skipForward,
         isRunning,
+        currentStep,
+        totalSteps: steps.length,
     };
 }
