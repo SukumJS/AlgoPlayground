@@ -12,14 +12,10 @@ export interface AlgoController {
 
   isRunning?: boolean;
 
-<<<<<<< HEAD
-  // สำหรับ sync progress กับ CodeAlgo หรือ UI อื่น ๆ
-  currentStep?: number;
+  // สำหรับ sync progress กับ CodeAlgo หรือ UI อื่น ๆ;
   totalSteps?: number;
-=======
   // expose current step index so parent can react or generate explanation
   currentStep?: number;
->>>>>>> aefa6c22d7245fc04c616bb7629dfeaa543e60ce
 
   setSpeed?: (speed: SpeedType) => void;
   speed?: SpeedType;
