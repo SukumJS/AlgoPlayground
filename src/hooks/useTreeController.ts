@@ -10,25 +10,27 @@ export interface TreeAnimationEngine {
   reset: () => void;
 }
 
-export function useTreeController(engine: TreeAnimationEngine | null): AlgoController {
+export function useTreeController(
+  engine: TreeAnimationEngine | null,
+): AlgoController {
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState<"1x" | "2x" | "5x">("1x");
 
   const run = useCallback(() => {
     if (!engine) return;
     setIsRunning(true);
-    engine.play(); 
+    engine.play();
   }, [engine]);
 
   const stop = useCallback(() => {
     if (!engine) return;
     setIsRunning(false);
-    engine.pause(); 
+    engine.pause();
   }, [engine]);
 
   const nextStep = useCallback(() => {
     if (!engine) return;
-    stop(); 
+    stop();
     engine.nextStep();
   }, [engine, stop]);
 

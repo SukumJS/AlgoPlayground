@@ -17,9 +17,9 @@ export function useExecutionSpeed() {
   }, [delay]);
 
   const setSpeed = (newSpeed: keyof typeof SPEED_MAP) => {
-    setSpeedState(newSpeed);            
+    setSpeedState(newSpeed);
     setDelay(SPEED_MAP[newSpeed]);
   };
 
-  return { delayRef, setSpeed, speed }; 
+  return { delayRef, setSpeed, speed };
 }

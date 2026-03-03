@@ -1,7 +1,7 @@
-import Block from "./Block"
+import Block from "./Block";
 
 interface Props {
-  className?: string
+  className?: string;
 }
 
 export default function QueueSortIcon({ className = "" }: Props) {
@@ -39,5 +39,5 @@ export default function QueueSortIcon({ className = "" }: Props) {
         "
       />
     </div>
-  )
+  );
 }

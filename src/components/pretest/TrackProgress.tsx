@@ -45,8 +45,8 @@ function TrackProgress({
         {/* Progress fill */}
         <div
           className={`absolute h-full left-0 rounded-full transition-all duration-500 ease-out ${
-              isComplete ? "bg-[#22C55E]" : "bg-[#0066cc]"
-            }`}
+            isComplete ? "bg-[#22C55E]" : "bg-[#0066cc]"
+          }`}
           style={{ width: `${progressPercentage}%` }}
         />
       </div>

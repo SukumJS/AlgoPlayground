@@ -6,7 +6,7 @@ const NODE_WIDTH = 65;
 
 export function useSortableDrag(
   setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>,
-  positionFromIndex: (index: number) => { x: number; y: number }
+  positionFromIndex: (index: number) => { x: number; y: number },
 ) {
   const [isDraggingNode, setIsDraggingNode] = useState(false);
   const [isTrashActive, setIsTrashActive] = useState(false);
@@ -23,7 +23,7 @@ export function useSortableDrag(
 
       const e = event as unknown as MouseEvent | TouchEvent;
 
-      if ('touches' in e) {
+      if ("touches" in e) {
         if (e.touches.length > 0) {
           clientX = e.touches[0].clientX;
           clientY = e.touches[0].clientY;
@@ -36,7 +36,9 @@ export function useSortableDrag(
       if (clientX && clientY) {
         const trashX = window.innerWidth / 2;
         const trashY = window.innerHeight - 140;
-        const dist = Math.sqrt(Math.pow(clientX - trashX, 2) + Math.pow(clientY - trashY, 2));
+        const dist = Math.sqrt(
+          Math.pow(clientX - trashX, 2) + Math.pow(clientY - trashY, 2),
+        );
         setIsTrashActive(dist < 150);
       }
 
@@ -46,7 +48,7 @@ export function useSortableDrag(
 
         // คำนวณ index ใหม่จากตำแหน่ง X
         let newIndex = Math.floor(
-          (dragged.position.x + NODE_WIDTH / 2) / NODE_WIDTH
+          (dragged.position.x + NODE_WIDTH / 2) / NODE_WIDTH,
         );
 
         newIndex = Math.max(0, Math.min(prev.length - 1, newIndex));
@@ -55,9 +57,7 @@ export function useSortableDrag(
         // ถ้า index ไม่เปลี่ยน ไม่ต้อง reorder
         if (newIndex === currentIndex) {
           return prev.map((n) =>
-            n.id === dragged.id
-              ? { ...n, position: dragged.position }
-              : n
+            n.id === dragged.id ? { ...n, position: dragged.position } : n,
           );
         }
 
@@ -80,7 +80,7 @@ export function useSortableDrag(
         }));
       });
     },
-    [setNodes, positionFromIndex]
+    [setNodes, positionFromIndex],
   );
 
   /* ตอนปล่อยเมาส์ */
@@ -95,7 +95,7 @@ export function useSortableDrag(
 
       const e = event as unknown as MouseEvent | TouchEvent;
 
-      if ('changedTouches' in e) {
+      if ("changedTouches" in e) {
         if (e.changedTouches.length > 0) {
           clientX = e.changedTouches[0].clientX;
           clientY = e.changedTouches[0].clientY;
@@ -108,7 +108,9 @@ export function useSortableDrag(
       if (clientX && clientY) {
         const trashX = window.innerWidth / 2;
         const trashY = window.innerHeight - 140;
-        const dist = Math.sqrt(Math.pow(clientX - trashX, 2) + Math.pow(clientY - trashY, 2));
+        const dist = Math.sqrt(
+          Math.pow(clientX - trashX, 2) + Math.pow(clientY - trashY, 2),
+        );
         droppedInTrash = dist < 100;
       }
 
@@ -131,21 +133,28 @@ export function useSortableDrag(
         });
       } else {
         setNodes((prev) =>
-          prev.map((n) =>
-            n.id === dragged.id
-              ? {
-                ...n,
-                position: positionFromIndex(n.data.index),
-                selected: false, // ปล่อยแล้วให้หายเลือก
-                dragging: false
-              }
-              : { ...n, selected: false } // ตัวอื่นๆ ก็ให้หายเลือกด้วยเพื่อความชัวร์
-          )
+          prev.map(
+            (n) =>
+              n.id === dragged.id
+                ? {
+                    ...n,
+                    position: positionFromIndex(n.data.index),
+                    selected: false, // ปล่อยแล้วให้หายเลือก
+                    dragging: false,
+                  }
+                : { ...n, selected: false }, // ตัวอื่นๆ ก็ให้หายเลือกด้วยเพื่อความชัวร์
+          ),
         );
       }
     },
-    [setNodes, positionFromIndex]
+    [setNodes, positionFromIndex],
   );
 
-  return { onNodeDragStart, onNodeDrag, onNodeDragStop, isDraggingNode, isTrashActive };
+  return {
+    onNodeDragStart,
+    onNodeDrag,
+    onNodeDragStop,
+    isDraggingNode,
+    isTrashActive,
+  };
 }

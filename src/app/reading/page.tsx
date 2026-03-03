@@ -9,7 +9,7 @@ export default function ReadingPage() {
   const id = searchParams.get("id");
 
   const data: ContentReading | undefined = ALGO_CONTENT.find(
-    (item) => item.id === id
+    (item) => item.id === id,
   );
 
   if (!data) {
@@ -73,9 +73,7 @@ export default function ReadingPage() {
               </pre>
             )}
 
-            {index !== data.sections.length - 1 && (
-              <hr className="pt-4" />
-            )}
+            {index !== data.sections.length - 1 && <hr className="pt-4" />}
           </section>
         ))}
       </div>

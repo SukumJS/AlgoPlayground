@@ -23,9 +23,7 @@ export default function TipsModal({
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100">
             <AlertTriangle className="h-4 w-4 text-orange-500" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-900">
-            {title}
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
         </div>
 
         {/* ---------- Sections ---------- */}

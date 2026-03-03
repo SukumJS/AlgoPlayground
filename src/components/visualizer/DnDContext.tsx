@@ -1,20 +1,27 @@
-import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  Dispatch,
+  SetStateAction,
+} from "react";
 
 type DnDContextType = [string | null, Dispatch<SetStateAction<string | null>>];
 
 const DnDContext = createContext<DnDContextType | undefined>(undefined);
 
 export const DnDProvider = ({ children }: { children: ReactNode }) => {
-    const [type, setType] = useState<string | null>(null);
-    return (
-        <DnDContext.Provider value={[type, setType]}>
-        {children}
-        </DnDContext.Provider>
-    );
+  const [type, setType] = useState<string | null>(null);
+  return (
+    <DnDContext.Provider value={[type, setType]}>
+      {children}
+    </DnDContext.Provider>
+  );
 };
 
 export const useDnD = () => {
-    const context = useContext(DnDContext);
-    if (!context) throw new Error('useDnD must be used within a DnDProvider');
-    return context;
+  const context = useContext(DnDContext);
+  if (!context) throw new Error("useDnD must be used within a DnDProvider");
+  return context;
 };

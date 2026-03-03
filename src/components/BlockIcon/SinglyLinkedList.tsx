@@ -1,5 +1,5 @@
 interface Props {
-  className?: string
+  className?: string;
 }
 
 export default function SinglyLinkedListIcon({ className = "" }: Props) {
@@ -14,5 +14,5 @@ export default function SinglyLinkedListIcon({ className = "" }: Props) {
         </div>
       ))}
     </div>
-  )
+  );
 }

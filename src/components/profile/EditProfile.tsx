@@ -1,24 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 type Props = {
   onClose: () => void;
   username: string;
   email: string;
   avatar: string;
-  onUpdate?: (data: { username?: string; avatar?: string; name?: string }) => void;
+  onUpdate?: (data: {
+    username?: string;
+    avatar?: string;
+    name?: string;
+  }) => void;
 };
 
-export default function EditProfile({ onClose, username, email, avatar, onUpdate }: Props) {
+export default function EditProfile({
+  onClose,
+  username,
+  email,
+  avatar,
+  onUpdate,
+}: Props) {
   const [editedUsername, setEditedUsername] = useState(username);
   const [editedAvatar, setEditedAvatar] = useState(avatar);
+  const [prevProps, setPrevProps] = useState({ username, avatar });
 
-  // อัพเดท state เมื่อ props เปลี่ยน
-  useEffect(() => {
+  // อัพเดท state เมื่อ props เปลี่ยน (render-time adjustment)
+  if (username !== prevProps.username || avatar !== prevProps.avatar) {
+    setPrevProps({ username, avatar });
     setEditedUsername(username);
     setEditedAvatar(avatar);
-  }, [username, avatar]);
+  }
 
   const handleFocus = () => {
     if (editedUsername === username) {
@@ -38,12 +50,9 @@ export default function EditProfile({ onClose, username, email, avatar, onUpdate
   };
 
   return (
-       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-gray-300">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-gray-300">
       {/* BACKDROP */}
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* MODAL */}
       <div className="relative bg-white w-[400px] rounded-xl shadow-lg p-6">
@@ -58,7 +67,7 @@ export default function EditProfile({ onClose, username, email, avatar, onUpdate
             alt="Profile"
             className="w-24 h-24 rounded-full mb-2"
           />
-          <button 
+          <button
             className="text-sm text-blue-600 hover:underline"
             onClick={() => {
               // เปิด dialog สำหรับเลือก/อัพโหลดรูปภาพ
@@ -95,25 +104,23 @@ export default function EditProfile({ onClose, username, email, avatar, onUpdate
               Email cannot be changed
             </p>
           </div>
-
-        
         </div>
 
         {/* ACTIONS */}
-      <div className="mt-6 flex justify-center gap-4">
-        <button
+        <div className="mt-6 flex justify-center gap-4">
+          <button
             onClick={onClose}
             className="w-32 py-2 border rounded-md text-sm hover:bg-gray-100 text-gray-600"
-        >
+          >
             Cancel
-        </button>
+          </button>
 
-        <button 
+          <button
             onClick={handleSave}
             className="w-32 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-        >
+          >
             Save Change
-        </button>
+          </button>
         </div>
       </div>
     </div>

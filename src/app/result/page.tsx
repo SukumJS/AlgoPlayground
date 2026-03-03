@@ -83,7 +83,7 @@ function ResultPage({
                         text={choice.text}
                         isSelected={isUserSelection}
                         disabled={true}
-                        onSelect={() => { }}
+                        onSelect={() => {}}
                       />
                     );
                   })}
