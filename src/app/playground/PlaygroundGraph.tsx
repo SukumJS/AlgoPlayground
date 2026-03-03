@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, DragEvent } from "react";
+import React, { useState, useCallback, DragEvent, useMemo } from "react";
 import ControlPanel from "../../components/shared/controlPanel";
 import SideTab from "../../components/shared/sideTab";
 import ExplainAlgo from "../../components/visualizer/explainAlgo";
@@ -146,7 +146,22 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
             nodeInteraction.handlePaneClick();
         }
     }, [graphTutorial.showTutorial, nodeInteraction]);
-
+    
+    // สร้างตัวแปรแช่แข็ง SideTab ด้วย useMemo
+    const sideTabMemo = useMemo(() => (
+        <SideTab title="Graph Algorithms">
+            <div>
+                <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
+                <ExplainAlgo 
+                    tutorialMode={graphTutorial.showTutorial}
+                    algoType={algorithm}
+                    algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
+                />
+                <Data_graph />
+            </div>
+            <div><PostTest_portal /></div>
+        </SideTab>
+    ), [graphTutorial.showTutorial]);
     return (
         <div className="w-screen h-screen">
             <ReactFlow
@@ -184,7 +199,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
             <SideTab title="Graph Algorithms">
                 <div>
                     <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
-                    <ExplainAlgo tutorialMode={graphTutorial.showTutorial} />
+                    <ExplainAlgo 
+                        tutorialMode={graphTutorial.showTutorial}
+                        algoType={algorithm}
+                        algoName={algorithm ? algorithm[0].toUpperCase() + algorithm.slice(1).replace(/-/g,' ') : ''}
+                    />
                     <Data_graph />
                 </div>
                 <div><PostTest_portal /></div>

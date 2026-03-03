@@ -23,6 +23,7 @@ export function useBTRemoveHandler({
   setNodes,
   setEdges,
   setDescription,
+  applyHighlighting,
   animationSpeed,
   isPausedRef,
 }: UseBTRemoveHandlerProps) {
@@ -35,28 +36,18 @@ export function useBTRemoveHandler({
       const root = btRootRef.current;
       if (!root) { setDescription('Tree is empty'); return; }
 
-      const { found, nodeId } = searchBT(root, value);
-      if (!found) { setDescription(`Value ${value} not found`); return; }
+      const { found, nodeId, path } = searchBT(root, value);
+      if (!found) {
+        setDescription(`❌ Value ${value} not found`);
+        controller.scheduleStep(() => setDescription(''), animationSpeed * 4); // Longer delay for final state
+        return;
+      }
 
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
 
       // animate: BFS path
-      const searchPath: string[] = [];
-      const edgePath: string[] = [];
-
-      if (root) {
-        const queue: BTNode[] = [root];
-        while (queue.length > 0) {
-          const cur = queue.shift()!;
-          searchPath.push(cur.id);
-          if (cur.value === value) break;
-          if (cur.left) { queue.push(cur.left); edgePath.push(`bt-edge-${cur.id}-${cur.left.id}`); }
-          if (cur.right) { queue.push(cur.right); edgePath.push(`bt-edge-${cur.id}-${cur.right.id}`); }
-        }
-      }
-
       const positions = calculateBTPositions(root);
       const rfData = btToReactFlow(root, [], [], positions);
       const rfNodes = rfData.nodes as RFNode[];
@@ -65,8 +56,9 @@ export function useBTRemoveHandler({
       let globalOffset = 0;
 
       // Step 1: Traverse search path
-      if (root && searchPath.length > 0) {
-        searchPath.forEach((id, idx) => {
+      if (root && path.length > 0) {
+        path.forEach((id, idx) => {
+          globalOffset++; // Increment offset for each node visit
           controller.scheduleStep(() => {
             const highlightedNodes = rfNodes.map((n: RFNode) => ({
               ...n,
@@ -78,7 +70,8 @@ export function useBTRemoveHandler({
             }));
 
             const highlightedEdges = rfEdges.map((e: RFEdge) => {
-              const isHighlightedEdge = edgePath.slice(0, idx).includes(e.id);
+              const visitedNodeIds = new Set(path.slice(0, idx + 1));
+              const isHighlightedEdge = visitedNodeIds.has(e.source) && visitedNodeIds.has(e.target);
               return {
                 ...e,
                 style: isHighlightedEdge
@@ -89,9 +82,15 @@ export function useBTRemoveHandler({
 
             setNodes(highlightedNodes);
             setEdges(highlightedEdges);
-            setDescription(`Searching for ${value}... visiting node`);
-          }, animationSpeed * (idx + 1));
-          globalOffset = idx + 1;
+            const currentNode = rfNodes.find(n => n.id === id); // Find current node for description
+            setDescription(`Searching for node ${value} to remove. Visiting node ${currentNode?.data.label}.`);
+          }, animationSpeed * globalOffset);
+
+          globalOffset++; // Increment offset for the pause after description
+          controller.scheduleStep(() => {
+            // Keep description visible for a short duration
+            // No visual change, just a pause
+          }, animationSpeed * globalOffset);
         });
       }
 
@@ -107,9 +106,11 @@ export function useBTRemoveHandler({
           },
         }));
         setNodes(highlighted);
-        setEdges(rfEdges);
-        setDescription(`❌ Found ${value}! Removing...`);
+        setEdges(rfEdges); // Ensure edges are reset to original state
+        setDescription(`Found ${value}! Preparing for removal...`);
       }, animationSpeed * globalOffset);
+      globalOffset++; // Pause after description
+      controller.scheduleStep(() => {}, animationSpeed * globalOffset);
 
       // --- Pre-compute removal and new state ---
       const rootCopy = cloneBT(root);
@@ -129,7 +130,8 @@ export function useBTRemoveHandler({
           }));
           setNodes(highlighted);
           setEdges(rfEdges);
-          setDescription(`🔄 Replacing with deepest, rightmost node...`);
+          const deepestNode = rfNodes.find(n => n.id === deepestId);
+          setDescription(`Replacing node ${value} with the deepest, rightmost node (${deepestNode?.data.label}).`);
         }, animationSpeed * globalOffset);
       }
 
@@ -177,7 +179,7 @@ export function useBTRemoveHandler({
 
           setNodes(tangledNodes);
           setEdges(hlEdges);
-          setDescription('🔗 Re-wiring tree structure...');
+          setDescription('Re-wiring connections to remove the node...');
         }, animationSpeed * globalOffset);
 
         // Step 4b: Geometry Untangle (15 frames)
@@ -215,18 +217,18 @@ export function useBTRemoveHandler({
 
             setNodes(interpolated);
             setEdges(finalRF.edges as RFEdge[]);
-            setDescription('✨ Structuring tree layout...');
+            setDescription('Re-arranging nodes to the new structure...'); // Description for geometry change
           }, animationSpeed * fractionOffset);
         }
         globalOffset++;
 
         // Step 4c: Final State Update
         globalOffset++;
-        controller.scheduleStep(() => {
+        controller.scheduleStep(() => { // This step is for the final description and cleanup
           setBTRoot(newRoot);
           setNodes(finalRF.nodes as RFNode[]);
           setEdges(finalRF.edges as RFEdge[]);
-          setDescription(`✅ Removed ${value}.`);
+          setDescription(`Successfully removed ${value}.`);
           controller.scheduleStep(() => setDescription(''), animationSpeed * 2);
         }, animationSpeed * globalOffset);
 
@@ -237,8 +239,8 @@ export function useBTRemoveHandler({
           setBTRoot(null);
           setNodes([]);
           setEdges([]);
-          setDescription(`✅ Removed ${value}. Tree is empty.`);
-          controller.scheduleStep(() => setDescription(''), animationSpeed * 2);
+          setDescription(`Removed ${value}. The tree is now empty.`);
+          controller.scheduleStep(() => setDescription(''), animationSpeed * 4); // Longer delay for final state
         }, animationSpeed * globalOffset);
       }
     },

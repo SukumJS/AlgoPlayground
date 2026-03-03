@@ -1,13 +1,16 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import type { Node } from "@xyflow/react";
 import type { SortNodeData } from "@/src/components/shared/sortNode";
 import { generateStepsByType } from "@/src/components/visualizer/algorithmsSort/generateSteps";
+import { getExplanation } from "@/src/components/visualizer/explanations";
 type Params = {
     algoType: string | null;
     nodes: Node<SortNodeData>[];
     setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>;
     positionFromIndex: (index: number) => { x: number; y: number };
     delayRef: React.MutableRefObject<number>;
+    /** optional callback used to update explanation text whenever step changes */
+    setExplanation?: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export function useStepSortEngine({
@@ -16,6 +19,7 @@ export function useStepSortEngine({
     setNodes,
     positionFromIndex,
     delayRef,
+    setExplanation,
 }: Params) {
     const [steps, setSteps] = useState<Node<SortNodeData>[][]>([]);
     const [currentStep, setCurrentStep] = useState(0);
@@ -164,6 +168,21 @@ export function useStepSortEngine({
 
         setIsRunning(false);
     };
+
+    // whenever the step changes we can optionally generate a human readable description
+    useEffect(() => {
+        if (!setExplanation || steps.length === 0) return;
+
+        // delegate to the generic explanation dispatcher; the first argument is
+        // the algorithm category ("sort" in this hook).  this keeps the hook
+        // generic and makes it easier to reuse the dispatcher elsewhere.
+        const explanation = getExplanation("sort", algoType, currentStep, steps);
+        if (explanation !== undefined) {
+            setExplanation(explanation);
+        }
+        // setExplanation itself never changes so we don't need to include it as dependency
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentStep, steps, algoType]);
 
     return {
         run,

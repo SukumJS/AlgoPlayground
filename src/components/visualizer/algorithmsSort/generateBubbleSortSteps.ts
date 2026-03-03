@@ -74,7 +74,17 @@ export const generateBubbleSortSteps = (
             pushStep();
         }
 
-        // ถ้าไม่มีการสลับเลยในรอบนี้ แสดงว่าข้อมูลเรียงครบแล้ว → หยุด loop
+        // Mark the last element of the unsorted part as sorted
+        const sortedNodeIndex = n - i - 1;
+        const sortedNodeId = arr[sortedNodeIndex].id;
+        arr = arr.map((node) =>
+            node.id === sortedNodeId
+                ? { ...node, data: { ...node.data, status: "sorted" as const } }
+                : node
+        );
+        pushStep();
+
+        // ถ้าไม่มีการสลับเลยในรอบนี้ แสดงว่าข้อมูลเรียงครบแล้ว → หยุด loop ทันที
         if (!swapped) {
             break;
         }

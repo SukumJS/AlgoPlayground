@@ -14,12 +14,9 @@ import {
 interface UseBSTInsertHandlerProps {
     bstRoot: BSTNode | null;
     setBSTRoot: (root: BSTNode | null) => void;
-    nodes: RFNode[];
-    edges: RFEdge[];
     setNodes: (nodes: any) => void;
     setEdges: (edges: any) => void;
     setDescription: (desc: string) => void;
-    applyHighlighting: AnimationCallbacks['applyHighlighting'];
     animationSpeed: number;
     isPausedRef: React.MutableRefObject<boolean>;
 }
@@ -27,12 +24,9 @@ interface UseBSTInsertHandlerProps {
 export function useBSTInsertHandler({
     bstRoot,
     setBSTRoot,
-    nodes,
-    edges,
     setNodes,
     setEdges,
     setDescription,
-    applyHighlighting,
     animationSpeed,
     isPausedRef,
 }: UseBSTInsertHandlerProps) {
@@ -45,8 +39,8 @@ export function useBSTInsertHandler({
             // Duplicate check
             const { found, path } = searchBST(bstRoot, value);
             if (found) {
-                setDescription(`⚠️ Value ${value} already exists!`);
-                setTimeout(() => setDescription(''), 2000);
+                setDescription(`Value ${value} already exists!`);
+                controller.scheduleStep(() => setDescription(''), animationSpeed * 2); // Keep for 2 seconds
                 return;
             }
 
@@ -71,7 +65,7 @@ export function useBSTInsertHandler({
             // Step 1: Animate traversal path on OLD tree
             if (path.length > 0) {
                 path.forEach((nodeId, idx) => {
-                    controller.scheduleStep(() => {
+                    controller.scheduleStep(() => { // Description step
                         const highlighted = (oldRF.nodes as RFNode[]).map((n: RFNode) => ({
                             ...n,
                             data: {
@@ -92,10 +86,16 @@ export function useBSTInsertHandler({
                         });
                         setNodes(highlighted);
                         setEdges(highlightedEdges);
-                        setDescription(`Traversing... checking node`);
-                    }, animationSpeed * (idx + 1));
-                    globalOffset = idx + 1;
+                        const currentNode = (oldRF.nodes as RFNode[]).find(n => n.id === nodeId); // Find current node for description
+                        setDescription(`Finding insertion spot for ${value}. Comparing with node ${currentNode?.data.label}.`);
+                    }, animationSpeed * (idx * 2 + 1));
+
+                    controller.scheduleStep(() => { // Pause step
+                        // Keep description visible for a short duration
+                        // No visual change, just a pause
+                    }, animationSpeed * (idx * 2 + 2));
                 });
+                globalOffset = path.length * 2;
             }
 
             // Step 2: Show new tree with inserted node highlighted (green)
@@ -123,7 +123,7 @@ export function useBSTInsertHandler({
                 setDescription('');
             }, animationSpeed * globalOffset);
         },
-        [bstRoot, setBSTRoot, nodes, animationSpeed, isPausedRef, setNodes, setEdges, setDescription, applyHighlighting]
+        [bstRoot, setBSTRoot, animationSpeed, isPausedRef, setNodes, setEdges, setDescription]
     );
 
     const cancelAnimation = useCallback(() => { }, []);
