@@ -18,9 +18,8 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
   // Determine colors based on highlight status
   let bgColorClass = data.isDanger ? "bg-[#BF1A1A]" : "bg-[#D9E363]";
   let textColorClass = data.isDanger ? "text-white" : "text-[#222121]";
-  let borderColorClass = data.isDanger
-    ? "border-[#BF1A1A]"
-    : "border-[#5D5D5D]";
+  // Border is ALWAYS #5D5D5D — never changes regardless of highlight or danger state
+  const borderColorClass = "border-[#5D5D5D]";
 
   const inlineStyle: React.CSSProperties = {
     boxShadow: data.isGlowing
@@ -28,15 +27,14 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
       : undefined,
   };
 
-  // Override with highlight colors if highlighted
+  // Override background and text color if highlighted
   if (data.isHighlighted && data.highlightColor) {
     if (data.highlightColor.startsWith("#")) {
       bgColorClass = "";
-      borderColorClass = "";
       textColorClass = "";
 
       inlineStyle.backgroundColor = data.highlightColor;
-      inlineStyle.borderColor = data.highlightColor;
+      // Border stays #5D5D5D — do NOT set inlineStyle.borderColor
 
       if (data.highlightColor.toUpperCase() === "#F7AD45") {
         inlineStyle.color = "#222121";
@@ -47,30 +45,26 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
       switch (data.highlightColor) {
         case "blue":
           bgColorClass = "bg-blue-400";
-          borderColorClass = "border-blue-600";
           textColorClass = "text-white";
           break;
         case "red":
           bgColorClass = "bg-red-500";
-          borderColorClass = "border-red-700";
           textColorClass = "text-white";
           break;
         case "yellow":
           bgColorClass = "bg-yellow-300";
-          borderColorClass = "border-yellow-600";
           textColorClass = "text-gray-800";
           break;
         case "green":
           bgColorClass = "bg-green-500";
-          borderColorClass = "border-green-700";
           textColorClass = "text-white";
           break;
       }
     }
   }
 
-  const borderWidthClass =
-    data.isHighlighted || data.isDanger ? "border-4" : "border-2";
+  // Keep border width consistent — always border-2
+  const borderWidthClass = "border-2";
 
   return (
     <div

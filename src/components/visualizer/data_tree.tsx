@@ -48,6 +48,8 @@ import {
   type BTNode,
   removeBT,
   rebuildBTFromReactFlow,
+  insertBT,
+  cloneBT,
 } from "@/src/components/visualizer/algorithmsTree/binaryTree";
 import {
   calculateBTPositions,
@@ -351,6 +353,7 @@ function Data_tree({
     setDescription: animationCallbacks.setDescription,
     animationSpeed,
     isPausedRef,
+    setIsAnimating,
   });
   const { handleSearch: bstSearch } = useBSTSearchHandler({
     bstRoot,
@@ -359,6 +362,7 @@ function Data_tree({
     setDescription: animationCallbacks.setDescription,
     animationSpeed,
     isPausedRef,
+    setIsAnimating,
   });
   const { handleRemove: bstRemove } = useBSTRemoveHandler({
     bstRoot,
@@ -368,6 +372,7 @@ function Data_tree({
     setDescription: animationCallbacks.setDescription,
     animationSpeed,
     isPausedRef,
+    setIsAnimating,
   });
 
   // BT Handlers
@@ -382,6 +387,7 @@ function Data_tree({
     applyHighlighting: animationCallbacks.applyHighlighting,
     animationSpeed,
     isPausedRef,
+    setIsAnimating,
   });
   const { handleSearch: btSearch } = useBTSearchHandler({
     btRoot,
@@ -393,6 +399,7 @@ function Data_tree({
     applyHighlighting: animationCallbacks.applyHighlighting,
     animationSpeed,
     isPausedRef,
+    setIsAnimating,
   });
   const { handleRemove: btRemove } = useBTRemoveHandler({
     btRoot,
@@ -405,6 +412,7 @@ function Data_tree({
     applyHighlighting: animationCallbacks.applyHighlighting,
     animationSpeed,
     isPausedRef,
+    setIsAnimating,
   });
   const { handleInorder, handlePreorder, handlePostorder } =
     useBTTraversalHandler({
@@ -463,6 +471,9 @@ function Data_tree({
   const createAddNewNode = useCallback(
     (sampleValue: number): OnDropAction => {
       return ({ position }: { position: XYPosition }) => {
+        // Block drag-drop during animation
+        if (isAnimating) return;
+
         if (tutorialMode && tutorialStep === 0) {
           const dx = position.x - GLOW_ZONE.x;
           const dy = position.y - GLOW_ZONE.y;
@@ -482,8 +493,9 @@ function Data_tree({
           setBSTRoot((prev) =>
             insertBST(cloneBSTTree(prev), sampleValue, newNode.id),
           );
-        // For generic BT, we do NOT auto-insert on drag drop. The user will manually connect it, or we will auto-correct on invalid connect.
-        // if (isBT) setBTRoot(prev => insertBT(cloneBT(prev), sampleValue, newNode.id));
+        // For BT: insert the dragged node into btRoot so it persists through animations
+        if (isBT)
+          setBTRoot((prev) => insertBT(cloneBT(prev), sampleValue, newNode.id));
         if (isAVL)
           setAVLRoot((prev) => insertAVL(prev, sampleValue, newNode.id));
         if (isHeap)
@@ -505,7 +517,9 @@ function Data_tree({
       tutorialMode,
       tutorialStep,
       onTutorialDropSuccess,
+      isAnimating,
       isBST,
+      isBT,
       isAVL,
       isHeap,
       isMinHeap,
