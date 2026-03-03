@@ -19,6 +19,14 @@ function ResultPage({
   onGoToPlayground,
   className = "",
 }: ResultPageProps) {
+  if (!quizData || !userAnswers) {
+    return (
+      <div className="bg-white min-h-screen w-full flex items-center justify-center">
+        <p className="text-gray-500">No quiz data available.</p>
+      </div>
+    );
+  }
+
   // Calculate score for each question
   const getQuestionScore = (
     questionId: string,

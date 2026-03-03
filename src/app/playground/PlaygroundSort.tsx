@@ -236,9 +236,10 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
     [onNodeDragStop, tutorial],
   );
 
+  const { showTutorial, handleTutorialDropSuccess } = tutorial;
+
   const sideTabMemo = useMemo(
     () => (
-      // 3️⃣ เปลี่ยน title ตรงนี้ให้ใช้ prettyName
       <SideTab title={prettyName}>
         <div>
           <CodeAlgo />
@@ -252,9 +253,9 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
           <Data_sort
             nodeInput={nodeInput}
             setNodeInput={setNodeInput}
-            tutorialMode={tutorial.showTutorial}
+            tutorialMode={showTutorial}
             onTutorialDropSuccess={() => {
-              tutorial.handleTutorialDropSuccess();
+              handleTutorialDropSuccess();
               setNodeInput("");
             }}
           />
@@ -264,7 +265,14 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         </div>
       </SideTab>
     ),
-    [nodeInput, setNodeInput, explanation, algorithm, prettyName, tutorial],
+    [
+      nodeInput,
+      explanation,
+      algorithm,
+      prettyName,
+      showTutorial,
+      handleTutorialDropSuccess,
+    ],
   );
 
   return (

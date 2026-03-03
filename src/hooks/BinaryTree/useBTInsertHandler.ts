@@ -208,7 +208,7 @@ export function useBTInsertHandler({
         }, animationSpeed * 4); // Longer delay for final state
       }, animationSpeed * globalOffset);
     },
-     
+
     [
       animationSpeed,
       isPausedRef,

@@ -32,6 +32,8 @@ export function useTreeTutorial({
   // Dynamic screen positions for tutorial spotlight/tooltips
   const [droppedNodeScreenPos, setDroppedNodeScreenPos] =
     useState<ScreenPosition | null>(null);
+  const [glowZoneScreenPos, setGlowZoneScreenPos] =
+    useState<ScreenPosition | null>(null);
   const [node30ScreenPos, setNode30ScreenPos] = useState<ScreenPosition | null>(
     null,
   );
@@ -60,6 +62,12 @@ export function useTreeTutorial({
       });
       setDroppedNodeScreenPos(screenPos);
     }
+
+    // Drop Zone Position (Step 1)
+    // 5 and 285 correspond to GLOW_ZONE.x and GLOW_ZONE.y imported from tutorial_tree later,
+    // we'll just hardcode them right here for projection to avoid circular imports.
+    const glowPos = flowToScreenPosition({ x: 5 + 28, y: 285 + 28 });
+    setGlowZoneScreenPos(glowPos);
 
     // Find node 30 (label === "30")
     const node30 = nodes.find(
@@ -108,24 +116,32 @@ export function useTreeTutorial({
 
   // Initial position update & Resize listener
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    updateTutorialPositions();
+    //  ครอบด้วย requestAnimationFrame เพื่อให้ React ไม่มองว่าเป็นการอัปเดตแบบ Synchronous ทันที
+    const frameId = requestAnimationFrame(() => {
+      updateTutorialPositions();
+    });
 
     window.addEventListener("resize", updateTutorialPositions);
-    return () => window.removeEventListener("resize", updateTutorialPositions);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", updateTutorialPositions);
+    };
   }, [updateTutorialPositions]);
 
   // Check if user needs to see tutorial (default: show if tree type)
-  const [prevIsTree, setPrevIsTree] = useState(false);
-  if (isTree && isTree !== prevIsTree) {
-    setPrevIsTree(isTree);
-    // TODO: Check Firebase here
-    // Default: show tutorial since backend not ready
-    setShowTutorial(true);
-  }
-  if (!isTree && prevIsTree) {
-    setPrevIsTree(false);
-  }
+  useEffect(() => {
+    if (isTree) {
+      // TODO: Check Firebase here
+      // ใช้ setTimeout เพื่อจำลองการรอข้อมูลจาก Firebase และแก้ Error Cascading Renders
+      const timer = setTimeout(() => {
+        // Default: show tutorial since backend not ready
+        setShowTutorial(true);
+      }, 0);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isTree]);
 
   // Trigger position update when tutorial becomes active
   // Larger delay to ensure sidebar DOM elements are rendered
@@ -276,6 +292,7 @@ export function useTreeTutorial({
     isTrashActive,
 
     // Screen positions
+    glowZoneScreenPos,
     droppedNodeScreenPos,
     node30ScreenPos,
     node90ScreenPos,

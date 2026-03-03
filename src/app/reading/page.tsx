@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams, notFound } from "next/navigation";
 import Image from "next/image";
 import { ALGO_CONTENT, ContentReading } from "../../data/ContentReading";
 
-export default function ReadingPage() {
+function ReadingContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
 
@@ -78,5 +79,19 @@ export default function ReadingPage() {
         ))}
       </div>
     </main>
+  );
+}
+
+export default function ReadingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          Loading...
+        </div>
+      }
+    >
+      <ReadingContent />
+    </Suspense>
   );
 }

@@ -147,7 +147,7 @@ export function useBTSearchHandler({
         animationSpeed * (path.length + 1),
       );
     },
-     
+
     [animationSpeed, isPausedRef, setNodes, setEdges, setDescription],
   );
 

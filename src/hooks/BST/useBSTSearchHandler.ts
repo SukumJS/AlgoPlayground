@@ -118,7 +118,7 @@ export function useBSTSearchHandler({
         animationSpeed * (globalOffset + 1),
       );
     },
-     
+
     [animationSpeed, isPausedRef, setNodes, setEdges, setDescription],
   );
 

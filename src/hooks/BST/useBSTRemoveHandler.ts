@@ -285,7 +285,7 @@ export function useBSTRemoveHandler({
         }, animationSpeed * globalOffset);
       }
     },
-     
+
     [
       setBSTRoot,
       animationSpeed,
