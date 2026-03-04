@@ -104,6 +104,8 @@ interface Data_treeProps {
   onAutoInsertReady?: (fn: (value: number) => void) => void;
   // explanation callback lifted from PlaygroundTree
   setExplanation?: React.Dispatch<React.SetStateAction<string>>;
+  // Notifies parent when avlRoot changes so BF overlay can be applied at the always-mounted level
+  onAVLRootChange?: (root: AVLTreeNode | null) => void;
 }
 
 function Data_tree({
@@ -123,6 +125,7 @@ function Data_tree({
   onHeapRebalanceReady,
   onAutoInsertReady,
   setExplanation,
+  onAVLRootChange,
 }: Data_treeProps) {
   const [isDataSortOpen, setIsDataSortOpen] = useState(true);
   const { onDragStart, isDragging } = useDnD();
@@ -139,7 +142,7 @@ function Data_tree({
 
   // Animation states
   const [isAnimating, setIsAnimating] = useState(false);
-  const [animationSpeed] = useState(500);
+  const [animationSpeed] = useState(1200);
   const isPausedRef = useRef<boolean>(false);
 
   // Tree roots
@@ -240,6 +243,11 @@ function Data_tree({
     }
   }, [currentNodes.length, setAVLRoot, setHeapRoot, startTransition]);
 
+  // Notify parent when avlRoot changes (so parent can apply BF overlay independently of sidebar state)
+  useEffect(() => {
+    onAVLRootChange?.(avlRoot);
+  }, [avlRoot, onAVLRootChange]);
+
   const Sample = [{ number: "3" }, { number: "67" }, { number: "46" }];
 
   // Animation callbacks
@@ -253,7 +261,14 @@ function Data_tree({
       },
       setDescription: (desc: string) => {
         if (setExplanation) {
-          setExplanation(desc);
+          // When animation ends (empty desc), restore default help text instead of blank
+          if (!desc && (isBST || isBT || isAVL || isHeap)) {
+            setExplanation(
+              "Use the controls to insert, search, or remove nodes, or drag new nodes from the panel above.",
+            );
+          } else {
+            setExplanation(desc);
+          }
         }
       },
       applyHighlighting: (
@@ -300,7 +315,7 @@ function Data_tree({
         };
       },
     }),
-    [setNodes, setEdges, setExplanation, algorithm],
+    [setNodes, setEdges, setExplanation, algorithm, isBST, isBT, isAVL, isHeap],
   );
 
   // AVL Handlers

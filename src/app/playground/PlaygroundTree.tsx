@@ -3,6 +3,7 @@ import React, {
   useState,
   useCallback,
   useRef,
+  useEffect,
   DragEvent,
   useMemo,
 } from "react";
@@ -52,10 +53,11 @@ import {
 } from "@/src/components/visualizer/algorithmsTree/heapTree";
 import {
   insertAVL,
+  getBalanceFactor,
   type AVLTreeNode,
 } from "@/src/components/visualizer/algorithmsTree/avlTree";
 import Reading_modal from "@/src/components/shared/reading_modal";
-import { Info } from "lucide-react";
+import { Info, Scale } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 
@@ -211,6 +213,24 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
   const [nodes, setNodes] = useState<Node[]>(treeInitialNodes);
   const [edges, setEdges] = useState<Edge[]>(treeInitialEdges);
   const [showInfo, setShowInfo] = useState(false);
+  const [showAVLBalance, setShowAVLBalance] = useState(false);
+  // avlRoot tracked here so BF overlay works even when sidebar (Data_tree) is unmounted.
+  // Wrap in {root, seq} so the effect ALWAYS re-fires even when root is the same reference.
+  const avlSeqRef = useRef(0);
+  const [avlRootForBF, setAvlRootForBF] = useState<{
+    root: AVLTreeNode | null;
+    seq: number;
+  }>({ root: null, seq: 0 });
+  // persistedAVLRoot survives sidebar close/open — passed back as initialAVLRoot on remount
+  const [persistedAVLRoot, setPersistedAVLRoot] = useState<AVLTreeNode | null>(
+    treeInitialAVLRoot,
+  );
+  const onAVLRootChangeRef = useRef<(root: AVLTreeNode | null) => void>(
+    (root) => {
+      setAvlRootForBF({ root, seq: ++avlSeqRef.current });
+      setPersistedAVLRoot(root);
+    },
+  );
   const [explanation, setExplanation] = useState<string>(
     "This section will explain the tree algorithm's steps. Perform an operation to begin.",
   );
@@ -231,6 +251,38 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       );
     }
   }, [algorithm, prettyName]);
+
+  // ── AVL BF overlay — lives in PlaygroundTree so it persists even when sidebar closes ──
+  useEffect(() => {
+    if (algorithm !== "avl-tree") return;
+    const root = avlRootForBF.root;
+    if (showAVLBalance && root) {
+      const bfMap = new Map<string, number>();
+      const collect = (node: AVLTreeNode | null) => {
+        if (!node) return;
+        bfMap.set(node.id, getBalanceFactor(node));
+        collect(node.left as AVLTreeNode | null);
+        collect(node.right as AVLTreeNode | null);
+      };
+      collect(root);
+      setNodes((prev) =>
+        prev.map((n) => ({
+          ...n,
+          data: { ...n.data, balanceFactor: bfMap.get(n.id) },
+        })),
+      );
+    } else if (!showAVLBalance) {
+      setNodes((prev) =>
+        prev.map((n) => {
+          const d = n.data as Record<string, unknown>;
+          if (d.balanceFactor === undefined) return n;
+          const { balanceFactor: _r, ...rest } = d;
+          void _r;
+          return { ...n, data: rest };
+        }),
+      );
+    }
+  }, [showAVLBalance, avlRootForBF, algorithm, setNodes]);
 
   const btRebalanceRef = useRef<(() => void) | null>(null);
   const heapRebalanceRef = useRef<(() => void) | null>(null);
@@ -449,9 +501,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
                   ? treeInitialMaxHeapRoot
                   : null
             }
-            initialAVLRoot={
-              algorithm === "avl-tree" ? treeInitialAVLRoot : null
-            }
+            initialAVLRoot={algorithm === "avl-tree" ? persistedAVLRoot : null}
             onTrashDeleteReady={(fn) => {
               trashDeleteRef.current = fn;
             }}
@@ -459,6 +509,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
               autoInsertRef.current = fn;
             }}
             setExplanation={setExplanation}
+            onAVLRootChange={onAVLRootChangeRef.current}
           />
         </div>
         <div>
@@ -475,7 +526,8 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       algorithm,
       explanation,
       setExplanation,
-      prettyName, // อย่าลืมเพิ่มเป็น dependency ของ useMemo
+      persistedAVLRoot, // ensure sidebar gets latest avlRoot on remount
+      prettyName,
     ],
   );
 
@@ -530,6 +582,23 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         >
           <Info color="#000000" />
         </button>
+        {algorithm === "avl-tree" && (
+          <button
+            title={
+              showAVLBalance
+                ? "Hide Balance Factors"
+                : "Show Balance Factors always"
+            }
+            onClick={() => setShowAVLBalance((prev) => !prev)}
+            className={`rounded-full p-2 border shadow-lg hover:shadow-lg transition cursor-pointer ${
+              showAVLBalance
+                ? "bg-blue-100 border-blue-400"
+                : "bg-white border-gray-200 hover:bg-gray-100"
+            }`}
+          >
+            <Scale color={showAVLBalance ? "#2563EB" : "#000000"} />
+          </button>
+        )}
         <StatusNode />
       </div>
 
