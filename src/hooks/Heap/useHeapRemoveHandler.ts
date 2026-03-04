@@ -78,7 +78,11 @@ export function useHeapRemoveHandler(params: {
             }));
             setNodes(highlighted);
             setEdges(highlightedEdges);
-            setDescription(`Searching for ${value}... visiting node ${id}`);
+            const visitedNodeValue =
+              (rfNodes as RFNode[]).find((n) => n.id === id)?.data.label ?? id;
+            setDescription(
+              `Searching for ${value}... visiting node ${visitedNodeValue}`,
+            );
           },
           animationSpeed * (idx + 1),
         );

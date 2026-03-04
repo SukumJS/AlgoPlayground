@@ -107,8 +107,11 @@ export function useHeapInsertHandler(params: {
               );
               setNodes(highlighted);
               setEdges(highlightedEdges);
+              const visitedNodeValue =
+                (origRF.nodes as RFNode[]).find((n) => n.id === id)?.data
+                  .label ?? id;
               setDescription(
-                `Finding next empty position... checking node ${id}`,
+                `Finding next empty position... checking node ${visitedNodeValue}`,
               );
             },
             animationSpeed * (idx + 1),

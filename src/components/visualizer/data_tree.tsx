@@ -106,6 +106,8 @@ interface Data_treeProps {
   setExplanation?: React.Dispatch<React.SetStateAction<string>>;
   // Notifies parent when avlRoot changes so BF overlay can be applied at the always-mounted level
   onAVLRootChange?: (root: AVLTreeNode | null) => void;
+  // When true, BF badges are preserved on every animation frame (set by parent)
+  showAVLBalance?: boolean;
 }
 
 function Data_tree({
@@ -126,6 +128,7 @@ function Data_tree({
   onAutoInsertReady,
   setExplanation,
   onAVLRootChange,
+  showAVLBalance = false,
 }: Data_treeProps) {
   const [isDataSortOpen, setIsDataSortOpen] = useState(true);
   const { onDragStart, isDragging } = useDnD();
@@ -248,13 +251,94 @@ function Data_tree({
     onAVLRootChange?.(avlRoot);
   }, [avlRoot, onAVLRootChange]);
 
-  const Sample = [{ number: "3" }, { number: "67" }, { number: "46" }];
+  // ── Smart random node panel ───────────────────────────────────────────────
+  const PANEL_RANDOM_COUNT = 4; // number of random nodes (excluding the input node)
+
+  /** Generate a value 1-99 not already in the playground or in the given exclude set */
+  const pickUnique = useCallback(
+    (exclude: Set<number>): number => {
+      const inPlayground = new Set(
+        currentNodes
+          .map((n) => parseInt(n.data.label))
+          .filter((v) => !isNaN(v)),
+      );
+      let v: number;
+      let tries = 0;
+      do {
+        v = Math.floor(Math.random() * 99) + 1;
+        tries++;
+      } while ((inPlayground.has(v) || exclude.has(v)) && tries < 200);
+      return v;
+    },
+    [currentNodes],
+  );
+
+  /** Generate a fresh array of PANEL_RANDOM_COUNT unique random values */
+  const generateRandomPool = useCallback((): number[] => {
+    const used = new Set<number>();
+    return Array.from({ length: PANEL_RANDOM_COUNT }, () => {
+      const v = pickUnique(used);
+      used.add(v);
+      return v;
+    });
+  }, [pickUnique]);
+
+  // Initialize panelNodes on CLIENT only (after mount) to avoid SSR hydration mismatch
+  // from Math.random() producing different values on server vs client.
+  const [panelNodes, setPanelNodes] = useState<number[]>([]);
+  useEffect(() => {
+    setPanelNodes(generateRandomPool());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally run only on mount
+
+  // In tutorial mode default input to "3" so user can drag directly without typing
+  const [nodeInput, setNodeInput] = useState<string>(tutorialMode ? "3" : "");
+
+  /** Called when any random panel node is dragged away: slide rest left, append new at end */
+  const handlePanelNodeDragged = useCallback(
+    (idx: number) => {
+      setPanelNodes((prev) => {
+        const next = prev.filter((_, i) => i !== idx);
+        // Pick new value not conflicting with the remaining ones
+        const usedNow = new Set(next);
+        const fresh = pickUnique(usedNow);
+        return [...next, fresh];
+      });
+    },
+    [pickUnique],
+  );
 
   // Animation callbacks
   const animationCallbacks: AnimationCallbacks = useMemo(
     () => ({
-      setNodes: (nodes: RFNode[] | ((prev: RFNode[]) => RFNode[])) => {
-        setNodes(nodes);
+      setNodes: (nodesOrUpdater: RFNode[] | ((prev: RFNode[]) => RFNode[])) => {
+        if (isAVL && showAVLBalance) {
+          // Preserve existing balanceFactor so BF badges survive across all animation frames.
+          // If the incoming frame explicitly sets balanceFactor on a node, that value wins.
+          setNodes((prev) => {
+            const next =
+              typeof nodesOrUpdater === "function"
+                ? nodesOrUpdater(prev)
+                : nodesOrUpdater;
+            // Build map of current BF values from the previous frame
+            const prevBFMap = new Map<string, unknown>(
+              prev.map((n) => [
+                n.id,
+                (n.data as Record<string, unknown>).balanceFactor,
+              ]),
+            );
+            return next.map((n) => {
+              const d = n.data as Record<string, unknown>;
+              if (d.balanceFactor !== undefined) return n; // animation set BF explicitly
+              const preserved = prevBFMap.get(n.id);
+              if (preserved !== undefined)
+                return { ...n, data: { ...d, balanceFactor: preserved } };
+              return n;
+            });
+          });
+        } else {
+          setNodes(nodesOrUpdater);
+        }
       },
       setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => {
         setEdges(edges);
@@ -315,7 +399,17 @@ function Data_tree({
         };
       },
     }),
-    [setNodes, setEdges, setExplanation, algorithm, isBST, isBT, isAVL, isHeap],
+    [
+      setNodes,
+      setEdges,
+      setExplanation,
+      algorithm,
+      isBST,
+      isBT,
+      isAVL,
+      isHeap,
+      showAVLBalance,
+    ],
   );
 
   // AVL Handlers
@@ -748,24 +842,50 @@ function Data_tree({
       <div
         className={`flex-col ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}
       >
-        {/* Draggable sample nodes */}
+        {/* Smart draggable node panel: input node + 4 random unique nodes */}
         <div className="transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2 p-2">
-          {Sample.map((item, index) => (
-            <div
-              key={index}
-              className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] cursor-grab bg-[#D9E363]"
-              data-tutorial-target={
-                item.number === "3" ? "sidebar-node-3" : undefined
+          {/* Input node — user types a custom value */}
+          <div
+            data-tutorial-target="sidebar-node-3"
+            className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-16 h-16 rounded-full cursor-grab"
+            onPointerDown={(event) => {
+              const value = Number(nodeInput) || 0;
+              setType("custom");
+              setDraggedValue(value);
+              onDragStart(event, createAddNewNode(value));
+            }}
+          >
+            <input
+              type="number"
+              placeholder="0"
+              className="w-11 h-full bg-transparent text-center text-[#222121] font-semibold text-xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              value={nodeInput}
+              onChange={(e) =>
+                setNodeInput(
+                  e.target.value === "" ? "" : String(Number(e.target.value)),
+                )
               }
-              onPointerDown={(event) => {
-                setType("custom");
-                setDraggedValue(parseInt(item.number));
-                onDragStart(event, createAddNewNode(parseInt(item.number)));
-              }}
-            >
-              {item.number}
-            </div>
-          ))}
+              onPointerDown={(e) => e.stopPropagation()}
+            />
+          </div>
+
+          {/* Random unique nodes — slide when one is dragged; hidden in tutorial mode */}
+          {!tutorialMode &&
+            panelNodes.map((val, idx) => (
+              <div
+                key={`panel-${idx}-${val}`}
+                className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] cursor-grab transition-all duration-300"
+                onPointerDown={(event) => {
+                  setType("custom");
+                  setDraggedValue(val);
+                  onDragStart(event, createAddNewNode(val));
+                  // Slide nodes after successful pointer-down (node will shift immediately)
+                  setTimeout(() => handlePanelNodeDragged(idx), 0);
+                }}
+              >
+                {val}
+              </div>
+            ))}
         </div>
 
         <div

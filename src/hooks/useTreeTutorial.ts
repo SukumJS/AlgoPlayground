@@ -165,9 +165,9 @@ export function useTreeTutorial({
     (event: React.MouseEvent, node: Node) => {
       if (showTutorial) {
         if (tutorialStep === 1) {
-          // Step 2: Only allow clicking node 3 (the dropped node starts with 'dndnode_')
-          if (node.id.startsWith("dndnode_") && node.data.label === "3") {
-            // Highlight node 3 and set it as selected
+          // Step 2: Accept any node dragged from the panel (id starts with 'dndnode_')
+          if (node.id.startsWith("dndnode_")) {
+            // Highlight the dropped node and set it as selected
             setNodes((nds) =>
               nds.map((n) => ({
                 ...n,

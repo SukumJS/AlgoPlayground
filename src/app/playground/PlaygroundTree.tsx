@@ -510,6 +510,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
             }}
             setExplanation={setExplanation}
             onAVLRootChange={onAVLRootChangeRef.current}
+            showAVLBalance={algorithm === "avl-tree" && showAVLBalance}
           />
         </div>
         <div>
@@ -526,7 +527,8 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       algorithm,
       explanation,
       setExplanation,
-      persistedAVLRoot, // ensure sidebar gets latest avlRoot on remount
+      persistedAVLRoot,
+      showAVLBalance,
       prettyName,
     ],
   );
