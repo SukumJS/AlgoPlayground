@@ -35,6 +35,7 @@ import { useBSTRemoveHandler } from "@/src/hooks/BST/useBSTRemoveHandler";
 import {
   insertBST,
   cloneBSTTree,
+  rebuildBSTFromNodes,
   type BSTNode,
   removeBST,
 } from "@/src/components/visualizer/algorithmsTree/bstTree";
@@ -220,6 +221,40 @@ function Data_tree({
       }, 0);
     }
   }, [isBT, isAnimating, nodesStr, edgesStr]);
+
+  useEffect(() => {
+    if (isBST && !isAnimating) {
+      setTimeout(() => {
+        setBSTRoot(rebuildBSTFromNodes(JSON.parse(nodesStr)));
+      }, 0);
+    }
+  }, [isBST, isAnimating, nodesStr, edgesStr]);
+
+  useEffect(() => {
+    if (isAVL && !isAnimating) {
+      setTimeout(() => {
+        setAVLRoot(rebuildAVLTreeFromNodes(JSON.parse(nodesStr)));
+      }, 0);
+    }
+  }, [isAVL, isAnimating, nodesStr, edgesStr]);
+
+  useEffect(() => {
+    if (isHeap && !isAnimating) {
+      setTimeout(() => {
+        let root: HeapNode | null = null;
+
+        const numericNodes = JSON.parse(nodesStr).filter(
+          (n: { id: string; data: { label: string } }) =>
+            !isNaN(parseInt(n.data.label)),
+        );
+        numericNodes.forEach((n: { id: string; data: { label: string } }) => {
+          const res = insertHeap(root, parseInt(n.data.label), n.id, isMinHeap);
+          root = res.root;
+        });
+        setHeapRoot(root);
+      }, 0);
+    }
+  }, [isHeap, isAnimating, nodesStr, edgesStr, isMinHeap]);
 
   const heapInitRef = useRef(false);
   useEffect(() => {
