@@ -588,10 +588,17 @@ function Data_tree({
           const dy = position.y - GLOW_ZONE.y;
           if (Math.sqrt(dx * dx + dy * dy) > GLOW_ZONE.radius) return;
         }
+        // In tutorial mode, snap the node to the exact center of the glow zone
+        // so it always appears right inside the visual ring regardless of cursor position.
+        const placedPosition =
+          tutorialMode && tutorialStep === 0
+            ? { x: GLOW_ZONE.x, y: GLOW_ZONE.y }
+            : position;
+
         const newNode = {
           id: getId(),
           type: "custom",
-          position,
+          position: placedPosition,
           data: { label: sampleValue.toString(), variant: "circle" },
           zIndex: tutorialMode ? 100 : undefined,
         };

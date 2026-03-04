@@ -617,6 +617,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
           node30ScreenPos={tutorial.node30ScreenPos}
           node90ScreenPos={tutorial.node90ScreenPos}
           sidebarNode3Pos={tutorial.sidebarNode3Pos}
+          glowZoneScreenPos={tutorial.glowZoneScreenPos}
           isTrashActive={tutorial.isTrashActive}
           trashBinPos={tutorial.trashBinPos}
         />
