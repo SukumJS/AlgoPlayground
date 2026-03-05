@@ -402,9 +402,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     }
   }, [graphTutorial.showTutorial, nodeInteraction]);
 
+  const sideTabTitle = runner?.name ?? "Graph Algorithms";
+
   const sideTabMemo = useMemo(
     () => (
-      <SideTab title="Graph Algorithms">
+      <SideTab title={sideTabTitle}>
         <div>
           <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
           <ExplainAlgo
@@ -428,7 +430,12 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         </div>
       </SideTab>
     ),
-    [graphTutorial.showTutorial, algorithm, handleAlgorithmSearch],
+    [
+      graphTutorial.showTutorial,
+      algorithm,
+      handleAlgorithmSearch,
+      sideTabTitle,
+    ],
   );
 
   return (
