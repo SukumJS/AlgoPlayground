@@ -24,30 +24,13 @@ export default function ExplainAlgo({
   const [isExplain, setIsExplain] = useState(isOpen);
   const [displayedExplanation, setDisplayedExplanation] = useState(explanation);
   const [isFading, setIsFading] = useState(false);
-  const isInitialMount = useRef(true);
 
   useEffect(() => {
-    // Don't animate on initial mount
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
-    // Use requestAnimationFrame to ensure the state update happens after the render
-    const frame = requestAnimationFrame(() => {
-      setIsFading(true);
-    });
-
-    const timer = setTimeout(() => {
+    // Immediately update when explanation changes
+    if (explanation !== displayedExplanation) {
       setDisplayedExplanation(explanation);
-      setIsFading(false);
-    }, 150); // A short duration for the fade-out part
-
-    return () => {
-      cancelAnimationFrame(frame);
-      clearTimeout(timer);
-    };
-  }, [explanation]);
+    }
+  }, [explanation, displayedExplanation]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   return (

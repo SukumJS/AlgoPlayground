@@ -54,6 +54,16 @@ const edgeTypes = { tree: TreeEdge, floatingEdge: FloatingEdge };
 const fitViewOptions: FitViewOptions = { padding: 0.2 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: false };
 
+// สร้าง Object ไว้แปลงชื่อ Graph Algorithm
+const algorithmNames: Record<string, string> = {
+  "dijkstra": "Dijkstra's Algorithm",
+  "bellman-ford": "Bellman-Ford Algorithm",
+  "prims": "Prim's Algorithm",
+  "kruskals": "Kruskal's Algorithm",
+  "bfs": "Breadth-First Search (BFS)",
+  "dfs": "Depth-First Search (DFS)",
+};
+
 // Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
 const graphInitialNodes: Node[] = [
   {
@@ -251,6 +261,23 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   const [nodes, setNodes] = useState<Node[]>(graphInitialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [showInfo, setShowInfo] = useState(false);
+  const [explanation, setExplanation] = useState<string>(
+    "This section will explain the graph algorithm's steps. Perform an operation to begin.",
+  );
+
+  // 2️⃣ ดึงชื่อที่สวยงามจาก Mapping (ถ้าไม่เจอให้ใช้ค่า Default)
+  const prettyName = algorithm
+    ? algorithmNames[algorithm] || "Graph Algorithms"
+    : "Graph Algorithms";
+
+  // reset explanation when the selected algorithm changes
+  React.useEffect(() => {
+    if (algorithm) {
+      setExplanation(
+        `This section will explain ${prettyName}. Perform an operation to begin.`,
+      );
+    }
+  }, [algorithm, prettyName]);
 
   const { flowToScreenPosition } = useReactFlow();
 
@@ -412,17 +439,14 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
           <ExplainAlgo
             tutorialMode={graphTutorial.showTutorial}
             algoType={algorithm}
-            algoName={
-              algorithm
-                ? algorithm[0].toUpperCase() +
-                  algorithm.slice(1).replace(/-/g, " ")
-                : ""
-            }
+            explanation={explanation}
+            algoName={prettyName}
           />
           <Data_graph
             onSearch={handleAlgorithmSearch}
             algorithm={algorithm}
             tutorialMode={graphTutorial.showTutorial}
+            setExplanation={setExplanation}
           />
         </div>
         <div>
@@ -435,6 +459,9 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       algorithm,
       handleAlgorithmSearch,
       sideTabTitle,
+      explanation,
+      setExplanation,
+      prettyName,
     ],
   );
 
@@ -595,3 +622,4 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     </div>
   );
 }
+

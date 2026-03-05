@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef,useEffect } from "react";
 import { useReactFlow, XYPosition } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
@@ -23,12 +23,15 @@ interface DataGraphProps {
   algorithm?: string;
   /** Whether the component is in tutorial mode */
   tutorialMode?: boolean;
+  /** Callback to update explanation text */
+  setExplanation?: React.Dispatch<React.SetStateAction<string>>;
 }
 
 function Data_graph({
   onSearch,
   algorithm = "",
   tutorialMode = false,
+  setExplanation,
 }: DataGraphProps) {
   const [isDataSortOpen, setIsDataSortOpen] = useState(false);
   const { onDragStart, isDragging } = useDnD();
