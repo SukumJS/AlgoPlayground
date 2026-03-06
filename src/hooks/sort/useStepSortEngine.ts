@@ -28,6 +28,7 @@ export function useStepSortEngine({
   const autoPlayRef = useRef<number | null>(null);
   const isRunningRef = useRef(false);
   const isInternalUpdateRef = useRef(false);
+  const [hasUserChanged, setHasUserChanged] = useState(false);
 
   // Sync nodes กับ step ปัจจุบัน
   useEffect(() => {
@@ -61,6 +62,9 @@ export function useStepSortEngine({
     // user เปลี่ยนข้อมูล → reset steps
     setSteps([]);
     setCurrentStep(0);
+
+    // mark ว่า user เปลี่ยน data
+    setHasUserChanged(true);
   }, [nodes]);
 
   // Cleanup animation
@@ -122,7 +126,22 @@ export function useStepSortEngine({
 
   // Run (Auto Play)
   const run = () => {
-    const workingSteps = generateSteps();
+    // กันการกด Run ซ้ำ
+    if (isRunningRef.current) return;
+
+    // เผื่อมี animation เก่าค้าง
+    if (autoPlayRef.current !== null) {
+      cancelAnimationFrame(autoPlayRef.current);
+      autoPlayRef.current = null;
+    }
+
+    let workingSteps = steps;
+
+    // ถ้า user เปลี่ยน node → generate ใหม่
+    if (workingSteps.length === 0 || hasUserChanged) {
+      workingSteps = generateSteps();
+      setHasUserChanged(false);
+    }
 
     if (!workingSteps || workingSteps.length === 0) return;
 
@@ -160,6 +179,7 @@ export function useStepSortEngine({
 
     if (autoPlayRef.current !== null) {
       cancelAnimationFrame(autoPlayRef.current);
+      autoPlayRef.current = null;
     }
 
     setIsRunning(false);
