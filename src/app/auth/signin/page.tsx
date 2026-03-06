@@ -1,28 +1,27 @@
-"use client"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Eye, EyeOff } from "lucide-react"
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
 
-  const [identifier, setIdentifier] = useState("")
-  const [password, setPassword] = useState("")
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleLogin = () => {
     if (!identifier || !password) {
-      setError("Please enter your email/username and password")
-      return
+      setError("Please enter your email/username and password");
+      return;
     }
-    setError("")
-    router.push("/")
-  }
+    setError("");
+    router.push("/");
+  };
 
   return (
     <div className="flex flex-col items-center gap-6">
-
       {/* Email / Username */}
       <div className="w-[454px] flex flex-col gap-2">
         <label className="text-lg font-semibold text-[#222121] capitalize">
@@ -70,15 +69,15 @@ export default function LoginPage() {
               text-[#222121] hover:text-black
             "
           >
-            {showPassword ? <Eye className="w-6 h-6" /> : <EyeOff className="w-6 h-6" />}
+            {showPassword ? (
+              <Eye className="w-6 h-6" />
+            ) : (
+              <EyeOff className="w-6 h-6" />
+            )}
           </button>
         </div>
 
-        {error && (
-          <div className="text-sm text-red-500">
-            {error}
-          </div>
-        )}
+        {error && <div className="text-sm text-red-500">{error}</div>}
       </div>
 
       {/* Forgot password */}
@@ -138,5 +137,5 @@ export default function LoginPage() {
         </a>
       </div>
     </div>
-  )
+  );
 }

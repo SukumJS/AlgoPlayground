@@ -1,30 +1,30 @@
-export type Status = "active" | "locked" | "completed"
+export type Status = "active" | "locked" | "completed";
 
 export type TestProgress = {
-  slug: string
-  title: string
-  shortTitle?: string
+  slug: string;
+  title: string;
+  shortTitle?: string;
   progress: {
     pretest: {
-      status: Status
-      score?: number
-      answeredCount?: number
-      totalCount: number
-    }
+      status: Status;
+      score?: number;
+      answeredCount?: number;
+      totalCount: number;
+    };
     posttest: {
-      status: Status
-      score?: number
-      answeredCount?: number
-      totalCount: number
-    }
-  }
-}
+      status: Status;
+      score?: number;
+      answeredCount?: number;
+      totalCount: number;
+    };
+  };
+};
 
 export type AlgorithmSectionData = {
-  id: string
-  title: string
-  items: TestProgress[]
-}
+  id: string;
+  title: string;
+  items: TestProgress[];
+};
 export const algorithmCatalog: AlgorithmSectionData[] = [
   {
     id: "linear-ds",
@@ -449,5 +449,4 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
       },
     ],
   },
-]
-
+];

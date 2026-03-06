@@ -78,10 +78,7 @@ arr = [1.4, 2.0, 24.0, 5.0, 0.0]
       },
       {
         heading: "TYPES OF ARRAYS",
-        list: [
-          "On the basis of Size",
-          "On the basis of Dimensions",
-        ],
+        list: ["On the basis of Size", "On the basis of Dimensions"],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20240731124259/Types-of-Arrays.webp",
         ],
@@ -101,9 +98,7 @@ print(arr)
       },
       {
         heading: "DYNAMIC SIZE ARRAY",
-        content: [
-          "The size of a dynamic array can change during execution.",
-        ],
+        content: ["The size of a dynamic array can change during execution."],
         code: {
           language: "python",
           value: `
@@ -228,9 +223,7 @@ class Node:
       },
       {
         heading: "OUTPUT",
-        content: [
-          "10 <-> 20 <-> 30 <-> 40",
-        ],
+        content: ["10 <-> 20 <-> 30 <-> 40"],
       },
     ],
   },
@@ -329,11 +322,7 @@ class Node:
       },
       {
         heading: "TIME COMPLEXITY",
-        list: [
-          "Insertion: O(1)",
-          "Deletion: O(1)",
-          "Traversal: O(n)",
-        ],
+        list: ["Insertion: O(1)", "Deletion: O(1)", "Traversal: O(n)"],
       },
     ],
   },
@@ -373,11 +362,7 @@ class Node:
       },
       {
         heading: "TIME COMPLEXITY",
-        list: [
-          "Push: O(1)",
-          "Pop: O(1)",
-          "Peek: O(1)",
-        ],
+        list: ["Push: O(1)", "Pop: O(1)", "Peek: O(1)"],
       },
     ],
   },
@@ -395,12 +380,7 @@ class Node:
       },
       {
         heading: "QUEUE OPERATIONS",
-        list: [
-          "Enqueue (Insertion)",
-          "Dequeue (Deletion)",
-          "Front",
-          "Rear",
-        ],
+        list: ["Enqueue (Insertion)", "Dequeue (Deletion)", "Front", "Rear"],
         image: [
           "https://deen3evddmddt.cloudfront.net/uploads/content-images/what-is-queue-in-data-structure.webp",
         ],
@@ -413,10 +393,7 @@ class Node:
       },
       {
         heading: "TIME COMPLEXITY",
-        list: [
-          "Enqueue: O(1)",
-          "Dequeue: O(1)",
-        ],
+        list: ["Enqueue: O(1)", "Dequeue: O(1)"],
       },
     ],
   },
@@ -720,11 +697,11 @@ class Node:
         content: [
           "A Binary Search Tree (BST) is a hierarchical binary tree data structure in which each node stores a unique key and satisfies a strict ordering rule. For any given node, all values in its left subtree are strictly less than the node’s value, and all values in its right subtree are strictly greater.",
           "This ordering property allows BSTs to perform search, insertion, and deletion efficiently by eliminating half of the remaining tree at each step, similar to binary search on sorted arrays. When the tree is balanced, these operations take O(log n) time.",
-          "BSTs are widely used in database indexing, symbol tables, range queries, and are the conceptual foundation for self-balancing trees such as AVL Trees and Red-Black Trees. They are also useful in problems that require maintaining a dynamically sorted set of data."
+          "BSTs are widely used in database indexing, symbol tables, range queries, and are the conceptual foundation for self-balancing trees such as AVL Trees and Red-Black Trees. They are also useful in problems that require maintaining a dynamically sorted set of data.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20250904151404492797/bst1.webp",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20250904151404252799/bst2.webp"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20250904151404252799/bst2.webp",
         ],
         list: [
           "Left subtree values < node value",
@@ -732,51 +709,51 @@ class Node:
           "In-order traversal produces sorted sequence",
           "Search/insert/delete: O(log n) when balanced",
           "Worst case: O(n) when tree becomes skewed",
-          "Self-balancing BSTs (AVL, Red-Black) guarantee O(log n)"
-        ]
+          "Self-balancing BSTs (AVL, Red-Black) guarantee O(log n)",
+        ],
       },
 
       {
         heading: "How BST Operations Work",
         content: [
           "BST operations rely on comparing the target value with the current node and moving either left or right based on the ordering rule. This makes traversal decisions deterministic and efficient.",
-          "For example, to search for a value, we start at the root. If the target is smaller, we move to the left child; if larger, we move to the right child. This continues until the value is found or a null pointer is reached."
+          "For example, to search for a value, we start at the root. If the target is smaller, we move to the left child; if larger, we move to the right child. This continues until the value is found or a null pointer is reached.",
         ],
         list: [
           "Search: Compare and move left/right until found or null",
           "Insertion: Find correct leaf position preserving order",
-          "Deletion: Remove node and reorganize children to keep BST property"
-        ]
+          "Deletion: Remove node and reorganize children to keep BST property",
+        ],
       },
 
       {
         heading: "Balanced vs Unbalanced BST",
         content: [
           "The efficiency of a BST depends heavily on its height. In a balanced BST, the height is approximately log₂(n), which keeps operations fast. However, inserting sorted data (e.g., 1,2,3,4,5) can create a skewed tree that behaves like a linked list.",
-          "Self-balancing trees such as AVL and Red-Black Trees automatically restructure themselves after updates to maintain near-optimal height and guarantee O(log n) performance."
+          "Self-balancing trees such as AVL and Red-Black Trees automatically restructure themselves after updates to maintain near-optimal height and guarantee O(log n) performance.",
         ],
         list: [
           "Balanced BST height ≈ log₂(n)",
           "Skewed BST height ≈ n",
           "Skewed tree behaves like linked list",
-          "Self-balancing BST fixes height automatically"
-        ]
+          "Self-balancing BST fixes height automatically",
+        ],
       },
 
       {
         heading: "BST Applications",
         content: [
-          "BSTs are used in systems that require dynamic ordered data with fast lookup. Because they maintain sorted order while allowing efficient updates, they are fundamental in many algorithms and data systems."
+          "BSTs are used in systems that require dynamic ordered data with fast lookup. Because they maintain sorted order while allowing efficient updates, they are fundamental in many algorithms and data systems.",
         ],
         list: [
           "Database and file system indexing",
           "Ordered sets and maps",
           "Range queries (values between A and B)",
           "Auto-complete and search suggestions",
-          "Foundation for AVL and Red-Black Trees"
-        ]
-      }
-    ]
+          "Foundation for AVL and Red-Black Trees",
+        ],
+      },
+    ],
   },
   {
     id: "avl-tree",
@@ -787,75 +764,75 @@ class Node:
         heading: "Binary Search Tree (BST)",
         content: [
           "A Binary Search Tree (BST) is a type of binary tree data structure in which each node contains a unique key and follows a strict ordering rule. All values in the left subtree of a node must be strictly less than the node’s value, while all values in the right subtree must be strictly greater. This property allows efficient searching, insertion, and deletion operations, especially when the tree remains balanced.",
-          "BSTs are widely used in database indexing, symbol tables, range queries, and many problem-solving scenarios where maintaining a sorted stream of data is required. However, if the tree becomes skewed, performance can degrade significantly."
+          "BSTs are widely used in database indexing, symbol tables, range queries, and many problem-solving scenarios where maintaining a sorted stream of data is required. However, if the tree becomes skewed, performance can degrade significantly.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20250904151404492797/bst1.webp",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20250904151404252799/bst2.webp"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20250904151404252799/bst2.webp",
         ],
         list: [
           "Left subtree contains values smaller than the node",
           "Right subtree contains values larger than the node",
           "In-order traversal of a BST produces sorted output",
           "Average time complexity is O(log n) when balanced",
-          "Worst-case time complexity is O(n) when unbalanced"
-        ]
+          "Worst-case time complexity is O(n) when unbalanced",
+        ],
       },
 
       {
         heading: "AVL Tree Overview",
         content: [
           "An AVL Tree is a self-balancing Binary Search Tree where the height difference between the left and right subtrees of any node is at most one. This difference is known as the Balance Factor, calculated as the height of the left subtree minus the height of the right subtree.",
-          "By maintaining strict balance conditions, AVL Trees guarantee O(log n) time complexity for search, insertion, and deletion operations, making them suitable for applications where predictable performance is critical."
+          "By maintaining strict balance conditions, AVL Trees guarantee O(log n) time complexity for search, insertion, and deletion operations, making them suitable for applications where predictable performance is critical.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20250703161306662411/Example-of-an-AVL-Tree-11.webp",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20250703161407500927/Example-of-an-AVL-Tree-22.webp"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20250703161407500927/Example-of-an-AVL-Tree-22.webp",
         ],
         list: [
           "Balance Factor = height(left subtree) - height(right subtree)",
           "Valid balance factor range is -1 to +1",
           "AVL Tree is always a Binary Search Tree",
-          "Provides guaranteed O(log n) performance"
-        ]
+          "Provides guaranteed O(log n) performance",
+        ],
       },
 
       {
         heading: "Rotations in AVL Tree",
         content: [
-          "To maintain balance after insertions and deletions, AVL Trees use rotations. These rotations are local restructuring operations that preserve the BST property while restoring balance in constant time. There are four fundamental rotation cases used in AVL Trees."
+          "To maintain balance after insertions and deletions, AVL Trees use rotations. These rotations are local restructuring operations that preserve the BST property while restoring balance in constant time. There are four fundamental rotation cases used in AVL Trees.",
         ],
         list: [
           "Left-Left (LL): Single right rotation",
           "Right-Right (RR): Single left rotation",
           "Left-Right (LR): Left rotation followed by right rotation",
-          "Right-Left (RL): Right rotation followed by left rotation"
-        ]
+          "Right-Left (RL): Right rotation followed by left rotation",
+        ],
       },
 
       {
         heading: "AVL Tree Use Cases",
         content: [
-          "AVL Trees are particularly useful in environments where fast lookups are more important than frequent insertions or deletions. Because of their strict balancing rules, AVL Trees tend to have smaller height compared to other self-balancing trees, leading to faster search operations."
+          "AVL Trees are particularly useful in environments where fast lookups are more important than frequent insertions or deletions. Because of their strict balancing rules, AVL Trees tend to have smaller height compared to other self-balancing trees, leading to faster search operations.",
         ],
         list: [
           "Database indexing systems",
           "Real-time systems requiring predictable performance",
           "Applications with frequent searches and rare updates",
-          "Educational purposes for learning self-balancing trees"
-        ]
+          "Educational purposes for learning self-balancing trees",
+        ],
       },
 
       {
         heading: "Advantages and Disadvantages of AVL Tree",
         content: [
-          "AVL Trees offer strong performance guarantees but come with increased implementation complexity. Their strict balancing ensures fast searches, but insertions and deletions may require multiple rotations, leading to higher overhead compared to other balanced trees like Red-Black Trees."
+          "AVL Trees offer strong performance guarantees but come with increased implementation complexity. Their strict balancing ensures fast searches, but insertions and deletions may require multiple rotations, leading to higher overhead compared to other balanced trees like Red-Black Trees.",
         ],
         list: [
           "Advantages: Guaranteed O(log n) operations, sorted traversal, smaller tree height",
-          "Disadvantages: More complex implementation, higher rotation cost, less common in standard libraries"
-        ]
-      }
+          "Disadvantages: More complex implementation, higher rotation cost, less common in standard libraries",
+        ],
+      },
     ],
   },
   {
@@ -867,47 +844,47 @@ class Node:
         heading: "Min-Heap Overview",
         content: [
           "A Min-Heap is a specialized tree-based data structure that satisfies two main properties. First, it must be a Complete Binary Tree, meaning all levels are fully filled except possibly the last, which is filled from left to right. Second, the value of each node must be less than or equal to the values of its children. As a result, the smallest element in a Min-Heap is always located at the root node.",
-          "Because of these properties, Min-Heaps are widely used in priority-based systems where quick access to the minimum element is required."
+          "Because of these properties, Min-Heaps are widely used in priority-based systems where quick access to the minimum element is required.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20241105101737867907/min-heap-1.webp",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20241105101737995053/min-heap-2.webp"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20241105101737995053/min-heap-2.webp",
         ],
         list: [
           "It is a Complete Binary Tree",
           "The root node always contains the minimum value",
-          "Heap property must hold for all subtrees"
-        ]
+          "Heap property must hold for all subtrees",
+        ],
       },
 
       {
         heading: "Internal Representation of Min-Heap",
         content: [
-          "A Min-Heap can be efficiently implemented using an array instead of a pointer-based tree structure. This representation takes advantage of the complete binary tree property and allows constant-time access to parent and child nodes using index calculations."
+          "A Min-Heap can be efficiently implemented using an array instead of a pointer-based tree structure. This representation takes advantage of the complete binary tree property and allows constant-time access to parent and child nodes using index calculations.",
         ],
         image: [
-          "https://media.geeksforgeeks.org/wp-content/uploads/20251009110428295907/minH2drawio.png"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20251009110428295907/minH2drawio.png",
         ],
         list: [
           "Left child index = 2*i + 1",
           "Right child index = 2*i + 2",
-          "Parent index = floor((i - 1) / 2)"
-        ]
+          "Parent index = floor((i - 1) / 2)",
+        ],
       },
 
       {
         heading: "Insertion Operation in Min-Heap",
         content: [
-          "Insertion in a Min-Heap starts by placing the new element at the end of the heap, maintaining the complete binary tree property. The element is then repeatedly compared with its parent, and swapped if it violates the Min-Heap property. This process, known as heapify-up, continues until the heap property is restored or the element reaches the root."
+          "Insertion in a Min-Heap starts by placing the new element at the end of the heap, maintaining the complete binary tree property. The element is then repeatedly compared with its parent, and swapped if it violates the Min-Heap property. This process, known as heapify-up, continues until the heap property is restored or the element reaches the root.",
         ],
         image: [
-          "https://media.geeksforgeeks.org/wp-content/uploads/20230323191741/insertion-in-Minimum-heap.webp"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20230323191741/insertion-in-Minimum-heap.webp",
         ],
         list: [
           "Insert element at the end of the heap",
           "Compare with parent and swap if smaller",
           "Repeat until heap property is restored",
-          "Time Complexity: O(log n)"
+          "Time Complexity: O(log n)",
         ],
         code: {
           language: "python",
@@ -916,25 +893,25 @@ class Node:
       index = len(heap) - 1
       while index > 0 and heap[(index - 1) // 2] > heap[index]:
           heap[index], heap[(index - 1) // 2] = heap[(index - 1) // 2], heap[index]
-          index = (index - 1) // 2`
-        }
+          index = (index - 1) // 2`,
+        },
       },
 
       {
         heading: "Deletion Operation in Min-Heap",
         content: [
-          "Deleting the minimum element in a Min-Heap involves removing the root node. The last element in the heap is moved to the root position, and the heap size is reduced by one. The heap property is then restored by repeatedly pushing the element down the tree using the heapify-down process."
+          "Deleting the minimum element in a Min-Heap involves removing the root node. The last element in the heap is moved to the root position, and the heap size is reduced by one. The heap property is then restored by repeatedly pushing the element down the tree using the heapify-down process.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20250213150757930038/n1.png",
           "https://media.geeksforgeeks.org/wp-content/uploads/20250213150758245127/n4.png",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20250213150758568084/n5.png"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20250213150758568084/n5.png",
         ],
         list: [
           "Replace root with last element",
           "Remove last element",
           "Heapify-down from root",
-          "Time Complexity: O(log n)"
+          "Time Complexity: O(log n)",
         ],
         code: {
           language: "python",
@@ -964,43 +941,43 @@ class Node:
               heap[index], heap[smallest] = heap[smallest], heap[index]
               index = smallest
           else:
-              break`
-        }
+              break`,
+        },
       },
 
       {
         heading: "Peek and Heapify Operations",
         content: [
-          "The peek operation returns the minimum element of the Min-Heap, which is always located at the root, making it a constant-time operation. Heapify is a fundamental operation used to restore the heap property and can also be used to build a Min-Heap from an unsorted array in linear time."
+          "The peek operation returns the minimum element of the Min-Heap, which is always located at the root, making it a constant-time operation. Heapify is a fundamental operation used to restore the heap property and can also be used to build a Min-Heap from an unsorted array in linear time.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20230314114931/n8.png",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20230323191740/Heapify-Operation-in-min-heap.webp"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20230323191740/Heapify-Operation-in-min-heap.webp",
         ],
         list: [
           "Peek operation runs in O(1) time",
           "Heapify builds a heap in O(n) time",
-          "Used internally in insertion and deletion"
-        ]
+          "Used internally in insertion and deletion",
+        ],
       },
 
       {
         heading: "Applications, Advantages, and Comparison",
         content: [
-          "Min-Heaps are fundamental in many real-world and algorithmic applications due to their efficiency and simplicity. They are widely used in graph algorithms, data compression, scheduling systems, and sorting algorithms."
+          "Min-Heaps are fundamental in many real-world and algorithmic applications due to their efficiency and simplicity. They are widely used in graph algorithms, data compression, scheduling systems, and sorting algorithms.",
         ],
         image: [
-          "https://media.geeksforgeeks.org/wp-content/uploads/20251017120002612348/420046868.webp"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20251017120002612348/420046868.webp",
         ],
         list: [
           "Used in Priority Queues and Heap Sort",
           "Core data structure in Dijkstra’s Algorithm",
           "Supports fast insertion and deletion",
           "Provides O(1) access to minimum element",
-          "More space-efficient using array implementation"
-        ]
-      }
-    ]
+          "More space-efficient using array implementation",
+        ],
+      },
+    ],
   },
   {
     id: "max-heap",
@@ -1011,44 +988,44 @@ class Node:
         heading: "Max-Heap Overview",
         content: [
           "A Max-Heap is a tree-based data structure that satisfies two key properties. First, it must be a Complete Binary Tree, meaning all levels are fully filled except possibly the last, which is filled from left to right. Second, the value stored in each node must be greater than or equal to the values stored in its children. As a result, the largest element in a Max-Heap is always located at the root node.",
-          "Due to these properties, Max-Heaps are widely used in scenarios where quick access to the maximum element is required, such as priority-based scheduling systems."
+          "Due to these properties, Max-Heaps are widely used in scenarios where quick access to the maximum element is required, such as priority-based scheduling systems.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20251009123507375063/max-heap-1.webp",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20251009123507691262/max-heap-2.webp"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20251009123507691262/max-heap-2.webp",
         ],
         list: [
           "It is a Complete Binary Tree",
           "The root node always contains the maximum value",
-          "Heap property must hold for all subtrees"
-        ]
+          "Heap property must hold for all subtrees",
+        ],
       },
 
       {
         heading: "Internal Representation of Max-Heap",
         content: [
-          "A Max-Heap can be efficiently implemented using an array instead of explicit tree nodes. This approach takes advantage of the complete binary tree property and allows parent-child relationships to be determined using index calculations."
+          "A Max-Heap can be efficiently implemented using an array instead of explicit tree nodes. This approach takes advantage of the complete binary tree property and allows parent-child relationships to be determined using index calculations.",
         ],
         list: [
           "Left child index = 2*i + 1",
           "Right child index = 2*i + 2",
-          "Parent index = floor((i - 1) / 2)"
-        ]
+          "Parent index = floor((i - 1) / 2)",
+        ],
       },
 
       {
         heading: "Insertion Operation in Max-Heap",
         content: [
-          "Insertion in a Max-Heap begins by adding the new element at the end of the heap to maintain the complete binary tree structure. The element is then compared with its parent, and if it is larger, the two are swapped. This process, known as heapify-up, continues until the heap property is restored or the element reaches the root."
+          "Insertion in a Max-Heap begins by adding the new element at the end of the heap to maintain the complete binary tree structure. The element is then compared with its parent, and if it is larger, the two are swapped. This process, known as heapify-up, continues until the heap property is restored or the element reaches the root.",
         ],
         image: [
-          "https://media.geeksforgeeks.org/wp-content/uploads/20230901130152/Insertion-In-Max-Heap.png"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20230901130152/Insertion-In-Max-Heap.png",
         ],
         list: [
           "Insert element at the end of the heap",
           "Compare with parent and swap if larger",
           "Repeat until heap property is restored",
-          "Time Complexity: O(log n)"
+          "Time Complexity: O(log n)",
         ],
         code: {
           language: "python",
@@ -1057,25 +1034,25 @@ class Node:
       index = len(heap) - 1
       while index > 0 and heap[(index - 1) // 2] < heap[index]:
           heap[index], heap[(index - 1) // 2] = heap[(index - 1) // 2], heap[index]
-          index = (index - 1) // 2`
-        }
+          index = (index - 1) // 2`,
+        },
       },
 
       {
         heading: "Deletion Operation in Max-Heap",
         content: [
-          "Deleting the maximum element in a Max-Heap involves removing the root node. The last element in the heap is moved to the root position, and the heap size is reduced. The heap property is then restored using the heapify-down process, where the element is repeatedly swapped with the larger of its children until the property is satisfied."
+          "Deleting the maximum element in a Max-Heap involves removing the root node. The last element in the heap is moved to the root position, and the heap size is reduced. The heap property is then restored using the heapify-down process, where the element is repeatedly swapped with the larger of its children until the property is satisfied.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20230901130454/Max-Heap-Data-Structure.png",
           "https://media.geeksforgeeks.org/wp-content/uploads/20230901130624/Max-Heap-Data-Structure-step-1.png",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20230901130816/Max-Heap-Data-Structure-step-2.png"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20230901130816/Max-Heap-Data-Structure-step-2.png",
         ],
         list: [
           "Replace root with last element",
           "Remove last element",
           "Heapify-down from root",
-          "Time Complexity: O(log n)"
+          "Time Complexity: O(log n)",
         ],
         code: {
           language: "python",
@@ -1105,43 +1082,43 @@ class Node:
               heap[index], heap[largest] = heap[largest], heap[index]
               index = largest
           else:
-              break`
-        }
+              break`,
+        },
       },
 
       {
         heading: "Peek and Heapify Operations",
         content: [
-          "The peek operation in a Max-Heap returns the maximum element, which is always located at the root, making it a constant-time operation. Heapify is a fundamental operation used to restore the heap property and can also be used to build a Max-Heap from an unsorted array efficiently."
+          "The peek operation in a Max-Heap returns the maximum element, which is always located at the root, making it a constant-time operation. Heapify is a fundamental operation used to restore the heap property and can also be used to build a Max-Heap from an unsorted array efficiently.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20231108125528/peak-element-of-max-heap.png",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20231108125652/heapify-operations-in-max-heap.png"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20231108125652/heapify-operations-in-max-heap.png",
         ],
         list: [
           "Peek operation runs in O(1) time",
           "Heapify builds a heap in O(n) time",
-          "Used internally in insertion and deletion"
-        ]
+          "Used internally in insertion and deletion",
+        ],
       },
 
       {
         heading: "Applications and Advantages of Max-Heap",
         content: [
-          "Max-Heaps are widely used in many practical and algorithmic applications due to their efficiency and ability to prioritize large values. They play a critical role in scheduling, graph algorithms, and sorting techniques."
+          "Max-Heaps are widely used in many practical and algorithmic applications due to their efficiency and ability to prioritize large values. They play a critical role in scheduling, graph algorithms, and sorting techniques.",
         ],
         image: [
-          "https://media.geeksforgeeks.org/wp-content/uploads/20251017120002612348/420046868.webp"
+          "https://media.geeksforgeeks.org/wp-content/uploads/20251017120002612348/420046868.webp",
         ],
         list: [
           "Used in Priority Queues and Job Scheduling",
           "Core structure in Heap Sort algorithm",
           "Efficient for selecting the largest element repeatedly",
           "Provides O(1) access to maximum element",
-          "Space-efficient array-based implementation"
-        ]
-      }
-    ]
+          "Space-efficient array-based implementation",
+        ],
+      },
+    ],
   },
   {
     id: "breadth-first-search",
@@ -1152,46 +1129,46 @@ class Node:
         heading: "Breadth First Search Overview",
         content: [
           "Breadth First Search (BFS) is a fundamental graph traversal algorithm that starts from a given source node and explores the graph level by level. It first visits all vertices directly connected to the source, then proceeds to visit vertices at the next level of distance. This process continues until all reachable vertices from the source have been visited.",
-          "Unlike Depth First Search (DFS), BFS always explores the closest vertices first, making it particularly suitable for problems that require shortest-path solutions in unweighted graphs. BFS is also the foundation of several well-known graph algorithms such as Dijkstra’s shortest path algorithm (for unweighted graphs), Kahn’s Algorithm for topological sorting, and Prim’s algorithm for minimum spanning trees."
+          "Unlike Depth First Search (DFS), BFS always explores the closest vertices first, making it particularly suitable for problems that require shortest-path solutions in unweighted graphs. BFS is also the foundation of several well-known graph algorithms such as Dijkstra’s shortest path algorithm (for unweighted graphs), Kahn’s Algorithm for topological sorting, and Prim’s algorithm for minimum spanning trees.",
         ],
         list: [
           "Traverses the graph level by level",
           "Visits closest vertices before farther ones",
           "Uses a queue data structure internally",
-          "Guarantees shortest path in unweighted graphs"
-        ]
+          "Guarantees shortest path in unweighted graphs",
+        ],
       },
 
       {
         heading: "Key Properties and Capabilities of BFS",
         content: [
           "Breadth First Search can be applied to both directed and undirected graphs. By maintaining a visited array, BFS ensures that each vertex is processed only once, even in the presence of cycles. This makes BFS efficient and prevents infinite loops when traversing cyclic graphs.",
-          "In addition to traversal, BFS can be used to detect cycles, identify connected components, and determine the shortest path between nodes in an unweighted graph."
+          "In addition to traversal, BFS can be used to detect cycles, identify connected components, and determine the shortest path between nodes in an unweighted graph.",
         ],
         list: [
           "Detects cycles in directed and undirected graphs",
           "Finds shortest paths in unweighted graphs",
           "Identifies connected components",
-          "Used as a base for many advanced graph algorithms"
-        ]
+          "Used as a base for many advanced graph algorithms",
+        ],
       },
 
       {
         heading: "BFS Traversal Example",
         content: [
           "Consider a graph represented using an adjacency list. Starting from a source node, BFS visits nodes in increasing order of their distance from the source. All neighbors of the current node are explored before moving deeper into the graph.",
-          "For example, given an adjacency list [[1, 2], [0, 2], [0, 1, 3, 4], [2], [2]] and starting from node 0, BFS will visit nodes in the order 0, 1, 2, 3, and 4."
+          "For example, given an adjacency list [[1, 2], [0, 2], [0, 1, 3, 4], [2], [2]] and starting from node 0, BFS will visit nodes in the order 0, 1, 2, 3, and 4.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20251014173018632936/frame_3148.webp",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20251014110602842995/420046859.webp"
-        ]
+          "https://media.geeksforgeeks.org/wp-content/uploads/20251014110602842995/420046859.webp",
+        ],
       },
 
       {
         heading: "BFS from a Given Source (Single Connected Component)",
         content: [
-          "In a connected graph, BFS can be performed by starting from a single source vertex. The algorithm initializes a queue, marks the source as visited, and then repeatedly dequeues a vertex, processes it, and enqueues all of its unvisited neighbors. This continues until the queue becomes empty."
+          "In a connected graph, BFS can be performed by starting from a single source vertex. The algorithm initializes a queue, marks the source as visited, and then repeatedly dequeues a vertex, processes it, and enqueues all of its unvisited neighbors. This continues until the queue becomes empty.",
         ],
         code: {
           language: "python",
@@ -1216,19 +1193,19 @@ class Node:
                   visited[x] = True
                   q.append(x)
 
-      return res`
+      return res`,
         },
         list: [
           "Uses a queue to control traversal order",
           "Each vertex is visited exactly once",
-          "Maintains a visited array to avoid revisits"
-        ]
+          "Maintains a visited array to avoid revisits",
+        ],
       },
 
       {
         heading: "BFS in a Disconnected Undirected Graph",
         content: [
-          "In a disconnected graph, not all vertices are reachable from a single source. To ensure that BFS covers the entire graph, the algorithm iterates through all vertices and initiates a BFS traversal from any vertex that has not yet been visited. This guarantees that every connected component in the graph is explored."
+          "In a disconnected graph, not all vertices are reachable from a single source. To ensure that BFS covers the entire graph, the algorithm iterates through all vertices and initiates a BFS traversal from any vertex that has not yet been visited. This guarantees that every connected component in the graph is explored.",
         ],
         code: {
           language: "python",
@@ -1257,37 +1234,37 @@ class Node:
           if not visited[i]:
               bfsConnected(adj, i, visited, res)
 
-      return res`
-        }
+      return res`,
+        },
       },
 
       {
         heading: "Time and Space Complexity of BFS",
         content: [
           "The time complexity of Breadth First Search is O(V + E), where V represents the number of vertices and E represents the number of edges in the graph. This is because each vertex and each edge is visited at most once during the traversal.",
-          "The auxiliary space complexity of BFS is O(V), as it requires additional memory to store the visited array and the queue used during traversal."
+          "The auxiliary space complexity of BFS is O(V), as it requires additional memory to store the visited array and the queue used during traversal.",
         ],
         list: [
           "Time Complexity: O(V + E)",
           "Auxiliary Space: O(V)",
-          "Efficient for large sparse graphs"
-        ]
+          "Efficient for large sparse graphs",
+        ],
       },
 
       {
         heading: "Applications of Breadth First Search",
         content: [
-          "Breadth First Search plays a crucial role in many real-world and theoretical applications. Its ability to explore graphs level by level makes it especially useful in networking, pathfinding, and graph analysis problems."
+          "Breadth First Search plays a crucial role in many real-world and theoretical applications. Its ability to explore graphs level by level makes it especially useful in networking, pathfinding, and graph analysis problems.",
         ],
         list: [
           "Shortest path finding in unweighted graphs",
           "Cycle detection",
           "Finding connected components",
           "Network routing and broadcasting",
-          "Social network analysis"
-        ]
-      }
-    ]
+          "Social network analysis",
+        ],
+      },
+    ],
   },
   {
     id: "depth-first-search",
@@ -1298,47 +1275,47 @@ class Node:
         heading: "Depth First Search Overview",
         content: [
           "Depth First Search (DFS) is a graph traversal algorithm that starts from a source vertex and explores a path as deeply as possible before backtracking to explore other paths. Unlike Breadth First Search (BFS), DFS prioritizes depth over breadth, meaning it follows one branch of the graph until it can no longer proceed, then backtracks to explore alternative branches.",
-          "In graphs that contain cycles, DFS uses a visited array to ensure that each vertex is processed only once. The traversal order of DFS can vary depending on the order in which adjacent vertices are chosen, meaning a single graph can have multiple valid DFS traversal results."
+          "In graphs that contain cycles, DFS uses a visited array to ensure that each vertex is processed only once. The traversal order of DFS can vary depending on the order in which adjacent vertices are chosen, meaning a single graph can have multiple valid DFS traversal results.",
         ],
         list: [
           "Explores one path completely before backtracking",
           "Uses recursion or an explicit stack",
           "Traversal order depends on adjacency order",
-          "Requires a visited array to avoid infinite loops"
-        ]
+          "Requires a visited array to avoid infinite loops",
+        ],
       },
 
       {
         heading: "Key Characteristics of DFS",
         content: [
           "Depth First Search is particularly useful when the goal is to explore all possible paths in a graph or to analyze the structure of connected components. Because DFS dives deep into the graph, it is commonly used in problems related to connectivity, cycle detection, and topological sorting.",
-          "DFS can be implemented using recursion, which naturally leverages the call stack, or iteratively using an explicit stack data structure."
+          "DFS can be implemented using recursion, which naturally leverages the call stack, or iteratively using an explicit stack data structure.",
         ],
         list: [
           "Suitable for path exploration problems",
           "Used in cycle detection and connectivity checks",
           "Forms the basis of topological sorting",
-          "Works on both directed and undirected graphs"
-        ]
+          "Works on both directed and undirected graphs",
+        ],
       },
 
       {
         heading: "DFS Traversal Example",
         content: [
           "Consider a graph represented by an adjacency list. Starting from vertex 0, DFS first visits the source, then recursively explores the first unvisited adjacent vertex, continuing this process until it reaches a vertex with no unvisited neighbors. At that point, the algorithm backtracks and explores other available paths.",
-          "For the adjacency list [[1, 2], [0, 2], [0, 1, 3, 4], [2], [2]], one possible DFS traversal starting from node 0 is 0, 1, 2, 3, and 4. Different traversal orders may occur depending on the chosen adjacency order."
+          "For the adjacency list [[1, 2], [0, 2], [0, 1, 3, 4], [2], [2]], one possible DFS traversal starting from node 0 is 0, 1, 2, 3, and 4. Different traversal orders may occur depending on the chosen adjacency order.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20251014173018632936/frame_3148.webp",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20251014110602842995/420046859.webp"
-        ]
+          "https://media.geeksforgeeks.org/wp-content/uploads/20251014110602842995/420046859.webp",
+        ],
       },
 
       {
         heading: "DFS from a Given Source (Recursive Approach)",
         content: [
           "When performing DFS from a given source vertex, the algorithm marks the current vertex as visited, records it in the result list, and then recursively explores each unvisited adjacent vertex. This continues until all vertices reachable from the source have been visited.",
-          "Because graphs may contain cycles, a visited array is required to prevent the algorithm from revisiting the same vertex multiple times."
+          "Because graphs may contain cycles, a visited array is required to prevent the algorithm from revisiting the same vertex multiple times.",
         ],
         code: {
           language: "python",
@@ -1356,20 +1333,20 @@ class Node:
       visited = [False] * len(adj)
       res = []
       dfsRec(adj, visited, 0, res)
-      return res`
+      return res`,
         },
         list: [
           "Marks vertex as visited before exploring neighbors",
           "Uses recursion to naturally backtrack",
-          "Explores depth-first until no options remain"
-        ]
+          "Explores depth-first until no options remain",
+        ],
       },
 
       {
         heading: "DFS in a Disconnected Graph",
         content: [
           "In a disconnected graph, not all vertices can be reached from a single source. To ensure that DFS visits every vertex in the graph, the algorithm iterates over all vertices and starts a new DFS traversal whenever it encounters an unvisited vertex.",
-          "This approach guarantees that all connected components of the graph are explored, even when the graph consists of multiple disconnected subgraphs."
+          "This approach guarantees that all connected components of the graph are explored, even when the graph consists of multiple disconnected subgraphs.",
         ],
         code: {
           language: "python",
@@ -1391,37 +1368,37 @@ class Node:
           if not visited[i]:
               dfsRec(adj, visited, i, res)
 
-      return res`
-        }
+      return res`,
+        },
       },
 
       {
         heading: "Time and Space Complexity of DFS",
         content: [
           "The time complexity of Depth First Search is O(V + E), where V is the number of vertices and E is the number of edges in the graph. Each vertex is visited once, and each edge is explored at most once in directed graphs or twice in undirected graphs.",
-          "The auxiliary space complexity of DFS is O(V + E). This includes the visited array of size V and the recursive call stack, which in the worst case can grow proportional to the number of vertices in the graph."
+          "The auxiliary space complexity of DFS is O(V + E). This includes the visited array of size V and the recursive call stack, which in the worst case can grow proportional to the number of vertices in the graph.",
         ],
         list: [
           "Time Complexity: O(V + E)",
           "Auxiliary Space: O(V + E)",
-          "Worst-case recursion depth equals number of vertices"
-        ]
+          "Worst-case recursion depth equals number of vertices",
+        ],
       },
 
       {
         heading: "Applications of Depth First Search",
         content: [
-          "Depth First Search is widely used in graph-related problems where exploring all possible paths or analyzing graph structure is required. Its depth-oriented nature makes it especially useful for problems involving recursion and hierarchical structures."
+          "Depth First Search is widely used in graph-related problems where exploring all possible paths or analyzing graph structure is required. Its depth-oriented nature makes it especially useful for problems involving recursion and hierarchical structures.",
         ],
         list: [
           "Cycle detection in graphs",
           "Finding connected components",
           "Topological sorting",
           "Path existence problems",
-          "Maze and puzzle solving"
-        ]
-      }
-    ]
+          "Maze and puzzle solving",
+        ],
+      },
+    ],
   },
   {
     id: "dijkstra",
@@ -1432,50 +1409,50 @@ class Node:
         heading: "Dijkstra’s Algorithm Overview",
         content: [
           "Dijkstra’s Algorithm is a graph algorithm used to find the shortest path from a given source vertex to all other vertices in a weighted graph. The graph must not contain any negative edge weights, as the algorithm relies on the assumption that once the shortest distance to a vertex is determined, it will never be updated again.",
-          "The algorithm works by maintaining a distance array that stores the currently known shortest distance from the source to each vertex. At each step, the vertex with the smallest tentative distance is selected and its adjacent vertices are relaxed to check whether a shorter path exists through it."
+          "The algorithm works by maintaining a distance array that stores the currently known shortest distance from the source to each vertex. At each step, the vertex with the smallest tentative distance is selected and its adjacent vertices are relaxed to check whether a shorter path exists through it.",
         ],
         list: [
           "Works on weighted graphs",
           "Does not support negative edge weights",
           "Finds shortest path from a single source",
-          "Uses greedy strategy"
-        ]
+          "Uses greedy strategy",
+        ],
       },
 
       {
         heading: "Key Idea Behind Dijkstra’s Algorithm",
         content: [
           "The core idea of Dijkstra’s Algorithm is to grow a shortest-path tree from the source vertex. At every step, the algorithm selects the vertex that has the minimum distance from the source among all vertices that have not yet been finalized.",
-          "Once a vertex is selected, its shortest distance is considered final. The algorithm then updates the distances of its adjacent vertices if a shorter path is found through this vertex. This process continues until all vertices are processed."
+          "Once a vertex is selected, its shortest distance is considered final. The algorithm then updates the distances of its adjacent vertices if a shorter path is found through this vertex. This process continues until all vertices are processed.",
         ],
         list: [
           "Maintains a shortest-path tree",
           "Uses distance relaxation",
           "Finalizes vertices one by one",
-          "Greedy choice ensures correctness"
-        ]
+          "Greedy choice ensures correctness",
+        ],
       },
 
       {
         heading: "Example of Dijkstra’s Algorithm",
         content: [
           "Consider a weighted undirected graph with source vertex 0. The adjacency list representation is given as [[[1,4],[2,8]], [[0,4],[4,6],[2,3]], [[0,8],[3,2],[1,3]], [[2,2],[4,10]], [[1,6],[3,10]]].",
-          "Starting from node 0, the algorithm computes the shortest distances to all other vertices. The resulting distance array is [0, 4, 7, 9, 10], representing the shortest path cost from the source to each vertex."
-        ]
+          "Starting from node 0, the algorithm computes the shortest distances to all other vertices. The resulting distance array is [0, 4, 7, 9, 10], representing the shortest path cost from the source to each vertex.",
+        ],
       },
 
       {
         heading: "Why Priority Queue is Used",
         content: [
           "A priority queue is used in Dijkstra’s Algorithm to efficiently select the vertex with the smallest current distance. This ensures that the next vertex processed always has the shortest known path from the source.",
-          "If a vertex appears again in the priority queue with a larger distance than the currently recorded one, it is skipped. This avoids unnecessary processing and keeps the algorithm efficient."
+          "If a vertex appears again in the priority queue with a larger distance than the currently recorded one, it is skipped. This avoids unnecessary processing and keeps the algorithm efficient.",
         ],
         list: [
           "Always selects minimum distance vertex",
           "Avoids scanning all vertices repeatedly",
           "Improves efficiency over array-based approach",
-          "Ensures greedy correctness"
-        ]
+          "Ensures greedy correctness",
+        ],
       },
 
       {
@@ -1484,8 +1461,8 @@ class Node:
           "First, create a distance array dist[] of size V and initialize all values to infinity, except for the source vertex which is set to 0. Insert the source vertex into a priority queue.",
           "While the priority queue is not empty, extract the vertex with the smallest distance. If the extracted distance is greater than the recorded distance, skip it.",
           "For each adjacent vertex, calculate the distance through the current vertex. If this new distance is smaller than the previously known distance, update it and push the updated value into the priority queue.",
-          "Continue until the priority queue becomes empty. At the end, the distance array contains the shortest distances from the source to all vertices."
-        ]
+          "Continue until the priority queue becomes empty. At the end, the distance array contains the shortest distances from the source to all vertices.",
+        ],
       },
 
       {
@@ -1519,49 +1496,49 @@ class Node:
                   dist[v] = dist[u] + w
                   heapq.heappush(pq, (dist[v], v))
 
-      return dist`
-        }
+      return dist`,
+        },
       },
 
       {
         heading: "Time and Space Complexity",
         content: [
           "The time complexity of Dijkstra’s Algorithm using a priority queue is O((V + E) log V), where V is the number of vertices and E is the number of edges. Each vertex and edge is processed efficiently through heap operations.",
-          "The auxiliary space complexity is O(V + E), which includes the distance array, priority queue, and adjacency list representation of the graph."
+          "The auxiliary space complexity is O(V + E), which includes the distance array, priority queue, and adjacency list representation of the graph.",
         ],
         list: [
           "Time Complexity: O((V + E) log V)",
-          "Auxiliary Space: O(V + E)"
-        ]
+          "Auxiliary Space: O(V + E)",
+        ],
       },
 
       {
         heading: "Why Dijkstra’s Algorithm Does Not Work with Negative Weights",
         content: [
           "Dijkstra’s Algorithm assumes that once a vertex is extracted from the priority queue, its shortest distance is finalized. This assumption holds true only when all edge weights are non-negative.",
-          "If a negative weight edge exists, a vertex that has already been finalized might later receive a shorter path through another vertex. This violates the core assumption of the algorithm and leads to incorrect results."
+          "If a negative weight edge exists, a vertex that has already been finalized might later receive a shorter path through another vertex. This violates the core assumption of the algorithm and leads to incorrect results.",
         ],
         list: [
           "Relies on greedy finalization",
           "Negative edges can reduce finalized distances",
           "Incorrect shortest paths may be produced",
-          "Use Bellman-Ford instead for negative weights"
-        ]
+          "Use Bellman-Ford instead for negative weights",
+        ],
       },
 
       {
         heading: "Applications of Dijkstra’s Algorithm",
         content: [
-          "Dijkstra’s Algorithm is widely used in real-world systems where shortest paths are required in weighted graphs. Its efficiency and correctness make it a fundamental algorithm in computer science."
+          "Dijkstra’s Algorithm is widely used in real-world systems where shortest paths are required in weighted graphs. Its efficiency and correctness make it a fundamental algorithm in computer science.",
         ],
         list: [
           "GPS and map navigation systems",
           "Network routing protocols",
           "Shortest path in weighted graphs",
-          "Traffic and logistics optimization"
-        ]
-      }
-    ]
+          "Traffic and logistics optimization",
+        ],
+      },
+    ],
   },
   {
     id: "bellman-ford",
@@ -1572,72 +1549,72 @@ class Node:
         heading: "Bellman–Ford Algorithm Overview",
         content: [
           "Bellman–Ford Algorithm is a single-source shortest path algorithm used to find the shortest distances from a source vertex to all other vertices in a weighted graph. Unlike Dijkstra’s Algorithm, Bellman–Ford can handle graphs with negative edge weights and can also detect negative weight cycles.",
-          "If a vertex is unreachable from the source, its distance remains infinite (commonly represented as 1e8 or 10^8). If a negative weight cycle exists in the graph, the algorithm reports that no valid shortest path solution exists."
+          "If a vertex is unreachable from the source, its distance remains infinite (commonly represented as 1e8 or 10^8). If a negative weight cycle exists in the graph, the algorithm reports that no valid shortest path solution exists.",
         ],
         list: [
           "Works with negative edge weights",
           "Detects negative weight cycles",
           "Single-source shortest path algorithm",
-          "Slower than Dijkstra but more flexible"
-        ]
+          "Slower than Dijkstra but more flexible",
+        ],
       },
 
       {
         heading: "Negative Weight Cycle",
         content: [
           "A negative weight cycle is a cycle in a graph whose total sum of edge weights is negative. If such a cycle exists, the shortest path is undefined because repeatedly traversing the cycle keeps reducing the total path cost.",
-          "Bellman–Ford explicitly checks for negative weight cycles by attempting one extra relaxation after all shortest paths should have been finalized."
-        ]
+          "Bellman–Ford explicitly checks for negative weight cycles by attempting one extra relaxation after all shortest paths should have been finalized.",
+        ],
       },
 
       {
         heading: "Limitation of Dijkstra’s Algorithm",
         content: [
           "Dijkstra’s Algorithm fails in graphs containing negative edge weights because it assumes that once a vertex is marked as visited, its shortest distance is final.",
-          "If a shorter path exists through a vertex that is processed later using a negative edge, Dijkstra’s Algorithm cannot correct the distance, leading to incorrect results."
+          "If a shorter path exists through a vertex that is processed later using a negative edge, Dijkstra’s Algorithm cannot correct the distance, leading to incorrect results.",
         ],
         list: [
           "Does not support negative edges",
           "Greedy finalization fails with negatives",
-          "Bellman–Ford is preferred in such cases"
-        ]
+          "Bellman–Ford is preferred in such cases",
+        ],
       },
 
       {
         heading: "Principle of Relaxation of Edges",
         content: [
           "Relaxation is the process of updating the shortest distance to a vertex if a shorter path is found through another vertex. For an edge (u, v) with weight w, relaxation checks whether dist[v] > dist[u] + w.",
-          "If a shorter path is found, the distance to vertex v is updated. Bellman–Ford applies this relaxation process repeatedly to ensure all shortest paths are discovered."
-        ]
+          "If a shorter path is found, the distance to vertex v is updated. Bellman–Ford applies this relaxation process repeatedly to ensure all shortest paths are discovered.",
+        ],
       },
 
       {
         heading: "Why Relaxing Edges (V - 1) Times Works",
         content: [
           "The shortest path between two vertices in a graph can have at most (V - 1) edges. Any path with more edges would form a cycle.",
-          "By relaxing all edges (V - 1) times, Bellman–Ford guarantees that the shortest path to every vertex is found, assuming no negative cycles exist."
-        ]
+          "By relaxing all edges (V - 1) times, Bellman–Ford guarantees that the shortest path to every vertex is found, assuming no negative cycles exist.",
+        ],
       },
 
       {
         heading: "Detection of a Negative Weight Cycle",
         content: [
           "After performing (V - 1) relaxations, Bellman–Ford performs one additional relaxation. If any distance can still be updated during this step, it means a negative weight cycle exists.",
-          "This extra relaxation step is the key feature that allows Bellman–Ford to detect negative cycles."
+          "This extra relaxation step is the key feature that allows Bellman–Ford to detect negative cycles.",
         ],
         list: [
           "Extra relaxation step",
           "Any update indicates negative cycle",
-          "Returns -1 when detected"
-        ]
+          "Returns -1 when detected",
+        ],
       },
 
       {
         heading: "Example",
         content: [
           "For V = 5 and edges [[0,1,5],[1,2,1],[1,3,2],[2,4,1],[4,3,-1]] with source 0, the shortest distances are [0,5,6,6,7].",
-          "In another example containing a negative cycle, such as edges [[0,1,4],[1,2,-6],[2,3,5],[3,1,-2]], the algorithm detects the negative cycle and returns [-1]."
-        ]
+          "In another example containing a negative cycle, such as edges [[0,1,4],[1,2,-6],[2,3,5],[3,1,-2]], the algorithm detects the negative cycle and returns [-1].",
+        ],
       },
 
       {
@@ -1665,35 +1642,32 @@ class Node:
       V = 5
       edges = [[1, 3, 2], [4, 3, -1], [2, 4, 1], [1, 2, 1], [0, 1, 5]]
       src = 0
-      print(bellmanFord(V, edges, src))`
-        }
+      print(bellmanFord(V, edges, src))`,
+        },
       },
 
       {
         heading: "Time and Space Complexity",
         content: [
           "Bellman–Ford has a time complexity of O(V × E) because it relaxes all edges for each vertex. This makes it slower than Dijkstra’s Algorithm.",
-          "The auxiliary space complexity is O(V), as it only requires a distance array."
+          "The auxiliary space complexity is O(V), as it only requires a distance array.",
         ],
-        list: [
-          "Time Complexity: O(V × E)",
-          "Auxiliary Space: O(V)"
-        ]
+        list: ["Time Complexity: O(V × E)", "Auxiliary Space: O(V)"],
       },
 
       {
         heading: "Applications of Bellman–Ford Algorithm",
         content: [
-          "Bellman–Ford is useful in scenarios where graphs contain negative edge weights or where detecting negative cycles is necessary."
+          "Bellman–Ford is useful in scenarios where graphs contain negative edge weights or where detecting negative cycles is necessary.",
         ],
         list: [
           "Graphs with negative weights",
           "Financial arbitrage detection",
           "Routing protocols (e.g., RIP)",
-          "Cycle detection in weighted graphs"
-        ]
-      }
-    ]
+          "Cycle detection in weighted graphs",
+        ],
+      },
+    ],
   },
   {
     id: "prims",
@@ -1810,10 +1784,7 @@ class Node:
       },
       {
         heading: "TIME AND SPACE COMPLEXITY (ADJACENCY MATRIX)",
-        list: [
-          "Time Complexity: O(V²)",
-          "Auxiliary Space: O(V)",
-        ],
+        list: ["Time Complexity: O(V²)", "Auxiliary Space: O(V)"],
       },
       {
         heading: "EFFICIENT IMPLEMENTATION (PRIORITY QUEUE)",
@@ -2103,10 +2074,7 @@ class Node:
       },
       {
         heading: "COMPLEXITY ANALYSIS",
-        list: [
-          "Time Complexity: O(n²)",
-          "Auxiliary Space: O(1)",
-        ],
+        list: ["Time Complexity: O(n²)", "Auxiliary Space: O(1)"],
       },
       {
         heading: "ADVANTAGES AND DISADVANTAGES",
@@ -2178,10 +2146,7 @@ class Node:
       },
       {
         heading: "COMPLEXITY ANALYSIS",
-        list: [
-          "Time Complexity: O(n²) in all cases",
-          "Auxiliary Space: O(1)",
-        ],
+        list: ["Time Complexity: O(n²) in all cases", "Auxiliary Space: O(1)"],
       },
       {
         heading: "ADVANTAGES AND DISADVANTAGES",
@@ -2296,39 +2261,37 @@ class Node:
         heading: "WHAT IS MERGE SORT?",
         content: [
           "Merge Sort is a popular sorting algorithm known for its efficiency and stability. It follows the Divide and Conquer approach.",
-          "The algorithm works by recursively dividing the input array into two halves, sorting each half, and then merging them back together."
+          "The algorithm works by recursively dividing the input array into two halves, sorting each half, and then merging them back together.",
         ],
         image: [
-          "https://media.geeksforgeeks.org/wp-content/uploads/20250923102849709166/arr_.webp"
-        ]
+          "https://media.geeksforgeeks.org/wp-content/uploads/20250923102849709166/arr_.webp",
+        ],
       },
       {
         heading: "WORKING PRINCIPLE",
         list: [
           "Divide: Recursively divide the array into two halves until each subarray has one element.",
           "Conquer: Sort each subarray individually.",
-          "Merge: Merge the sorted subarrays to produce the final sorted array."
-        ]
+          "Merge: Merge the sorted subarrays to produce the final sorted array.",
+        ],
       },
       {
         heading: "STEP BY STEP EXAMPLE",
-        content: [
-          "Let’s sort the array [38, 27, 43, 10] using Merge Sort."
-        ],
+        content: ["Let’s sort the array [38, 27, 43, 10] using Merge Sort."],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20250923102849301345/420046649.webp",
           "https://media.geeksforgeeks.org/wp-content/uploads/20250923102849111197/420046650.webp",
           "https://media.geeksforgeeks.org/wp-content/uploads/20250923102848872960/420046651.webp",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20250923102849544932/420046652.webp"
-        ]
+          "https://media.geeksforgeeks.org/wp-content/uploads/20250923102849544932/420046652.webp",
+        ],
       },
       {
         heading: "DIVIDE PHASE",
         list: [
           "[38, 27, 43, 10] → [38, 27] and [43, 10]",
           "[38, 27] → [38] and [27]",
-          "[43, 10] → [43] and [10]"
-        ]
+          "[43, 10] → [43] and [10]",
+        ],
       },
       {
         heading: "CONQUER PHASE",
@@ -2336,16 +2299,16 @@ class Node:
           "[38] is already sorted",
           "[27] is already sorted",
           "[43] is already sorted",
-          "[10] is already sorted"
-        ]
+          "[10] is already sorted",
+        ],
       },
       {
         heading: "MERGE PHASE",
         list: [
           "Merge [38] and [27] → [27, 38]",
           "Merge [43] and [10] → [10, 43]",
-          "Merge [27, 38] and [10, 43] → [10, 27, 38, 43]"
-        ]
+          "Merge [27, 38] and [10, 43] → [10, 27, 38, 43]",
+        ],
       },
       {
         heading: "MERGE SORT IMPLEMENTATION (PYTHON)",
@@ -2398,8 +2361,8 @@ def mergeSort(arr, left, right):
 arr = [38, 27, 43, 10]
 mergeSort(arr, 0, len(arr) - 1)
 print(arr)
-          `.trim()
-        }
+          `.trim(),
+        },
       },
       {
         heading: "TIME AND SPACE COMPLEXITY",
@@ -2407,8 +2370,8 @@ print(arr)
           "Best Case: O(n log n)",
           "Average Case: O(n log n)",
           "Worst Case: O(n log n)",
-          "Auxiliary Space: O(n)"
-        ]
+          "Auxiliary Space: O(n)",
+        ],
       },
       {
         heading: "ADVANTAGES",
@@ -2416,18 +2379,18 @@ print(arr)
           "Stable sorting algorithm",
           "Guaranteed O(n log n) performance",
           "Easy to parallelize",
-          "Preferred for linked lists"
-        ]
+          "Preferred for linked lists",
+        ],
       },
       {
         heading: "DISADVANTAGES",
         list: [
           "Requires extra memory",
           "Not an in-place sorting algorithm",
-          "Generally slower than QuickSort due to memory access"
-        ]
-      }
-    ]
+          "Generally slower than QuickSort due to memory access",
+        ],
+      },
+    ],
   },
 
   {
@@ -2439,16 +2402,16 @@ print(arr)
         heading: "PROBLEM STATEMENT",
         content: [
           "Given a queue with random elements, sort it without using any extra space.",
-          "Only enqueue, dequeue, and isEmpty operations are allowed."
-        ]
+          "Only enqueue, dequeue, and isEmpty operations are allowed.",
+        ],
       },
       {
         heading: "IDEA",
         content: [
           "On each pass, find the minimum element in the unsorted part of the queue.",
           "Move this minimum element to the rear of the queue.",
-          "Repeat the process until the queue becomes sorted."
-        ]
+          "Repeat the process until the queue becomes sorted.",
+        ],
       },
       {
         heading: "ILLUSTRATION",
@@ -2457,8 +2420,8 @@ print(arr)
           "After first pass → 11 5 21 4",
           "After second pass → 11 21 4 5",
           "After third pass → 21 4 5 11",
-          "Final Queue → 4 5 11 21"
-        ]
+          "Final Queue → 4 5 11 21",
+        ],
       },
       {
         heading: "PYTHON IMPLEMENTATION",
@@ -2517,17 +2480,14 @@ sortQueue(q)
 while not q.empty():
     print(q.queue[0], end=" ")
     q.get()
-          `.trim()
-        }
+          `.trim(),
+        },
       },
       {
         heading: "COMPLEXITY ANALYSIS",
-        list: [
-          "Time Complexity: O(n²)",
-          "Extra Space: O(1)"
-        ]
-      }
-    ]
+        list: ["Time Complexity: O(n²)", "Extra Space: O(1)"],
+      },
+    ],
   },
   {
     id: "linear-search",
@@ -2538,36 +2498,36 @@ while not q.empty():
         heading: "WHAT IS LINEAR SEARCH?",
         content: [
           "Linear Search is a simple searching algorithm that checks each element of the array sequentially until the target element is found or the array ends.",
-          "It is also known as Sequential Search."
-        ]
+          "It is also known as Sequential Search.",
+        ],
       },
       {
         heading: "PROBLEM STATEMENT",
         content: [
           "Given an array arr[] of n integers and a target element x, find the index of the first occurrence of x in the array.",
-          "If the element does not exist, return -1."
-        ]
+          "If the element does not exist, return -1.",
+        ],
       },
       {
         heading: "EXAMPLES",
         list: [
           "arr = [1, 2, 3, 4], x = 3 → Output: 2",
           "arr = [10, 8, 30, 4, 5], x = 5 → Output: 4",
-          "arr = [10, 8, 30], x = 6 → Output: -1"
-        ]
+          "arr = [10, 8, 30], x = 6 → Output: -1",
+        ],
       },
       {
         heading: "HOW LINEAR SEARCH WORKS",
         content: [
           "The algorithm iterates through the array from the first element to the last.",
           "If the current element matches the target, its index is returned.",
-          "If the loop finishes without a match, return -1."
+          "If the loop finishes without a match, return -1.",
         ],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20240902185521/Linear-search-algorithm-1.webp",
           "https://media.geeksforgeeks.org/wp-content/uploads/20240902185522/Linear-search-algorithm-2.webp",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20240902185522/Linear-search-algorithm-3.webp"
-        ]
+          "https://media.geeksforgeeks.org/wp-content/uploads/20240902185522/Linear-search-algorithm-3.webp",
+        ],
       },
       {
         heading: "LINEAR SEARCH IMPLEMENTATION (C++)",
@@ -2596,8 +2556,8 @@ int main() {
         cout << "Element is present at index " << res;
     return 0;
 }
-          `.trim()
-        }
+          `.trim(),
+        },
       },
       {
         heading: "TIME AND SPACE COMPLEXITY",
@@ -2605,8 +2565,8 @@ int main() {
           "Best Case: O(1)",
           "Average Case: O(N)",
           "Worst Case: O(N)",
-          "Auxiliary Space: O(1)"
-        ]
+          "Auxiliary Space: O(1)",
+        ],
       },
       {
         heading: "APPLICATIONS",
@@ -2614,8 +2574,8 @@ int main() {
           "Searching in unsorted arrays",
           "Small datasets",
           "Searching in linked lists",
-          "Simple search operations"
-        ]
+          "Simple search operations",
+        ],
       },
       {
         heading: "ADVANTAGES",
@@ -2623,25 +2583,22 @@ int main() {
           "Works on both sorted and unsorted data",
           "Easy to implement",
           "No extra memory required",
-          "Good for small datasets"
-        ]
+          "Good for small datasets",
+        ],
       },
       {
         heading: "DISADVANTAGES",
-        list: [
-          "Slow for large datasets",
-          "Time complexity is O(N)"
-        ]
+        list: ["Slow for large datasets", "Time complexity is O(N)"],
       },
       {
         heading: "WHEN TO USE LINEAR SEARCH?",
         list: [
           "When the dataset is small",
           "When data is unsorted",
-          "When simplicity is more important than speed"
-        ]
-      }
-    ]
+          "When simplicity is more important than speed",
+        ],
+      },
+    ],
   },
   {
     id: "binary-search",
@@ -2652,18 +2609,18 @@ int main() {
         heading: "WHAT IS BINARY SEARCH?",
         content: [
           "Binary Search Tree is an efficient searching algorithm that works on sorted arrays.",
-          "It repeatedly divides the search space into two halves, reducing the search time to O(log N)."
+          "It repeatedly divides the search space into two halves, reducing the search time to O(log N).",
         ],
         image: [
-          "https://media.geeksforgeeks.org/wp-content/uploads/20260131112215575504/frame_1.webp"
-        ]
+          "https://media.geeksforgeeks.org/wp-content/uploads/20260131112215575504/frame_1.webp",
+        ],
       },
       {
         heading: "CONDITIONS TO APPLY BINARY SEARCH",
         list: [
           "The data structure must be sorted",
-          "Random access to elements should be possible in O(1) time"
-        ]
+          "Random access to elements should be possible in O(1) time",
+        ],
       },
       {
         heading: "BINARY SEARCH ALGORITHM STEPS",
@@ -2673,21 +2630,18 @@ int main() {
           "If equal, return the index",
           "If target is smaller, search left half",
           "If target is larger, search right half",
-          "Repeat until found or search space is empty"
-        ]
+          "Repeat until found or search space is empty",
+        ],
       },
       {
         heading: "WORKING EXAMPLE",
-        content: [
-          "Array: {2, 5, 8, 12, 16, 23, 38, 56, 72, 91}",
-          "Target: 23"
-        ],
+        content: ["Array: {2, 5, 8, 12, 16, 23, 38, 56, 72, 91}", "Target: 23"],
         image: [
           "https://media.geeksforgeeks.org/wp-content/uploads/20250219155359690903/Binary-Search-1.webp",
           "https://media.geeksforgeeks.org/wp-content/uploads/20250219155359020153/Binary-Search-2.webp",
           "https://media.geeksforgeeks.org/wp-content/uploads/20250219155358414164/Binary-Search-3.webp",
-          "https://media.geeksforgeeks.org/wp-content/uploads/20250219155357890968/Binary-Search-4.png"
-        ]
+          "https://media.geeksforgeeks.org/wp-content/uploads/20250219155357890968/Binary-Search-4.png",
+        ],
       },
       {
         heading: "ITERATIVE BINARY SEARCH (PYTHON)",
@@ -2714,8 +2668,8 @@ def binarySearch(arr, x):
 arr = [2, 3, 4, 10, 40]
 x = 10
 print(binarySearch(arr, x))
-          `.trim()
-        }
+          `.trim(),
+        },
       },
       {
         heading: "RECURSIVE BINARY SEARCH (PYTHON)",
@@ -2739,8 +2693,8 @@ def binarySearch(arr, low, high, x):
 arr = [2, 3, 4, 10, 40]
 x = 10
 print(binarySearch(arr, 0, len(arr) - 1, x))
-          `.trim()
-        }
+          `.trim(),
+        },
       },
       {
         heading: "COMPLEXITY ANALYSIS",
@@ -2749,8 +2703,8 @@ print(binarySearch(arr, 0, len(arr) - 1, x))
           "Average Case: O(log N)",
           "Worst Case: O(log N)",
           "Auxiliary Space: O(1) (Iterative)",
-          "Auxiliary Space: O(log N) (Recursive)"
-        ]
+          "Auxiliary Space: O(log N) (Recursive)",
+        ],
       },
       {
         heading: "APPLICATIONS",
@@ -2761,9 +2715,9 @@ print(binarySearch(arr, 0, len(arr) - 1, x))
           "File systems and libraries",
           "Machine learning parameter tuning",
           "Competitive programming",
-          "Binary Search Trees and related structures"
-        ]
-      }
-    ]
+          "Binary Search Trees and related structures",
+        ],
+      },
+    ],
   },
 ];

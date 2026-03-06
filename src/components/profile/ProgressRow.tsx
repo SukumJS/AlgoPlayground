@@ -1,4 +1,8 @@
-export default function ProgressRow({ item }: { item: { name: string; current: number; total: number } }) {
+export default function ProgressRow({
+  item,
+}: {
+  item: { name: string; current: number; total: number };
+}) {
   const percent = Math.round((item.current / item.total) * 100);
 
   return (

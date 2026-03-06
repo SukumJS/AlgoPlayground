@@ -1,15 +1,16 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams, notFound } from "next/navigation";
 import Image from "next/image";
 import { ALGO_CONTENT, ContentReading } from "../../data/ContentReading";
 
-export default function ReadingPage() {
+function ReadingContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
 
   const data: ContentReading | undefined = ALGO_CONTENT.find(
-    (item) => item.id === id
+    (item) => item.id === id,
   );
 
   if (!data) {
@@ -73,12 +74,24 @@ export default function ReadingPage() {
               </pre>
             )}
 
-            {index !== data.sections.length - 1 && (
-              <hr className="pt-4" />
-            )}
+            {index !== data.sections.length - 1 && <hr className="pt-4" />}
           </section>
         ))}
       </div>
     </main>
+  );
+}
+
+export default function ReadingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          Loading...
+        </div>
+      }
+    >
+      <ReadingContent />
+    </Suspense>
   );
 }

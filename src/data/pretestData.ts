@@ -8,7 +8,11 @@ export const sampleQuizData: QuizData = {
       id: "q1",
       question: "What is the basic operation in Bubble Sort?",
       choices: [
-        { id: "a", label: "A", text: "Comparing and swapping adjacent elements" },
+        {
+          id: "a",
+          label: "A",
+          text: "Comparing and swapping adjacent elements",
+        },
         { id: "b", label: "B", text: "Dividing the array into halves" },
         { id: "c", label: "C", text: "Finding the minimum element" },
         { id: "d", label: "D", text: "Merging two sorted arrays" },
@@ -41,8 +45,16 @@ export const sampleQuizData: QuizData = {
       id: "q4",
       question: "Is Bubble Sort a stable sorting algorithm?",
       choices: [
-        { id: "a", label: "A", text: "Yes, it preserves the relative order of equal elements" },
-        { id: "b", label: "B", text: "No, it changes the order of equal elements" },
+        {
+          id: "a",
+          label: "A",
+          text: "Yes, it preserves the relative order of equal elements",
+        },
+        {
+          id: "b",
+          label: "B",
+          text: "No, it changes the order of equal elements",
+        },
         { id: "c", label: "C", text: "Only when sorting numbers" },
         { id: "d", label: "D", text: "It depends on the implementation" },
       ],

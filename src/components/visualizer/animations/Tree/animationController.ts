@@ -40,7 +40,7 @@ export class AnimationController {
    * Clear all scheduled timers
    */
   clearAll(): void {
-    this.timers.forEach(id => clearTimeout(id));
+    this.timers.forEach((id) => clearTimeout(id));
     this.timers = [];
   }
 

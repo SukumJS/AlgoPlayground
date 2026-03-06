@@ -1,7 +1,7 @@
-import Block from "./Block"
+import Block from "./Block";
 
 interface Props {
-  className?: string
+  className?: string;
 }
 
 export default function QueueIcon({ className = "" }: Props) {
@@ -17,5 +17,5 @@ export default function QueueIcon({ className = "" }: Props) {
         </div>
       ))}
     </div>
-  )
+  );
 }

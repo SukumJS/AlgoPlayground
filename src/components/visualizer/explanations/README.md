@@ -1,12 +1,12 @@
 # Explanation Modules
 
 This directory contains logic for producing human‑readable descriptions of
-individual animation steps used by the various visualizers.  Logic is split by
+individual animation steps used by the various visualizers. Logic is split by
 algorithm (and eventually by category) so that:
 
-* adding a new algorithm only requires creating a single file,
-* the central engine (`useStepSortEngine`) stays lean and focussed, and
-* the explanations themselves can be unit tested or maintained in isolation.
+- adding a new algorithm only requires creating a single file,
+- the central engine (`useStepSortEngine`) stays lean and focussed, and
+- the explanations themselves can be unit tested or maintained in isolation.
 
 ## Structure
 

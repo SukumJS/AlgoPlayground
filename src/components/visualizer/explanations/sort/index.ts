@@ -7,14 +7,14 @@ import { explainInsertionSort } from "./insertionSort";
 import { explainMergeSort } from "./mergeSort";
 
 export type ExplanationFn = (
-    ctx: ExplanationContext<SortNodeData>
+  ctx: ExplanationContext<SortNodeData>,
 ) => string | undefined;
 
 const explanationMap: Record<string, ExplanationFn> = {
-    "bubble-sort": explainBubbleSort,
-    "selection-sort": explainSelectionSort,
-    "insertion-sort": explainInsertionSort,
-    "merge-sort": explainMergeSort,
+  "bubble-sort": explainBubbleSort,
+  "selection-sort": explainSelectionSort,
+  "insertion-sort": explainInsertionSort,
+  "merge-sort": explainMergeSort,
 };
 
 /**
@@ -23,25 +23,25 @@ const explanationMap: Record<string, ExplanationFn> = {
  * function to call and also handles the generic start/end messages.
  */
 export function explainSort(
-    algoType: string | null,
-    stepIndex: number,
-    steps: Node<SortNodeData>[][]
+  algoType: string | null,
+  stepIndex: number,
+  steps: Node<SortNodeData>[][],
 ): string | undefined {
-    if (steps.length === 0 || stepIndex >= steps.length) return "";
-    if (stepIndex === 0) return "This is the initial unsorted array.";
+  if (steps.length === 0 || stepIndex >= steps.length) return "";
+  if (stepIndex === 0) return "This is the initial unsorted array.";
 
-    const currentNodes = steps[stepIndex];
-    const prevNodes = steps[stepIndex - 1];
+  const currentNodes = steps[stepIndex];
+  const prevNodes = steps[stepIndex - 1];
 
-    // final step check: all sorted
-    const isFinalStep = stepIndex === steps.length - 1;
-    if (isFinalStep && currentNodes.every(n => n.data.status === 'sorted')) {
-        return "The array is now fully sorted.";
-    }
+  // final step check: all sorted
+  const isFinalStep = stepIndex === steps.length - 1;
+  if (isFinalStep && currentNodes.every((n) => n.data.status === "sorted")) {
+    return "The array is now fully sorted.";
+  }
 
-    const explFn = algoType ? explanationMap[algoType] : undefined;
-    if (!explFn) return undefined;
+  const explFn = algoType ? explanationMap[algoType] : undefined;
+  if (!explFn) return undefined;
 
-    const ctx = makeContext(currentNodes, prevNodes);
-    return explFn(ctx);
+  const ctx = makeContext(currentNodes, prevNodes);
+  return explFn(ctx);
 }

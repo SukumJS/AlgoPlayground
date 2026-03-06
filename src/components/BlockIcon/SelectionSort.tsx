@@ -1,7 +1,7 @@
-import Block from "./Block"
+import Block from "./Block";
 
 interface Props {
-  className?: string
+  className?: string;
 }
 
 export default function SelectionSortIcon({ className = "" }: Props) {
@@ -38,7 +38,6 @@ export default function SelectionSortIcon({ className = "" }: Props) {
 
       {/* block ธรรมดา */}
       <Block className="w-8 h-16" />
-
     </div>
-  )
+  );
 }

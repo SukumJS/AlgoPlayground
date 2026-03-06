@@ -4,7 +4,7 @@ import Navbar from "../../components/Navbar";
 import StatCard from "../../components/profile/StatCard";
 import ProgressRow from "../../components/profile/ProgressRow";
 import EditProfile from "../../components/profile/EditProfile";
-import ChangePassword from "../../components/ChangePassword"; 
+import ChangePassword from "../../components/ChangePassword";
 import { useState } from "react";
 
 type ProgressItem = {
@@ -14,7 +14,9 @@ type ProgressItem = {
 };
 
 export default function Profile() {
-  const [profileAvatar, setProfileAvatar] = useState("https://i.pravatar.cc/150");
+  const [profileAvatar, setProfileAvatar] = useState(
+    "https://i.pravatar.cc/150",
+  );
   const [profileName, setProfileName] = useState("Thunwa");
   const [profileEmail, setProfileEmail] = useState("thunwa@gmail.com");
   const [profileUsername, setProfileUsername] = useState("thunchan");
@@ -34,7 +36,7 @@ export default function Profile() {
   // MODAL STATES
   const [openEdit, setOpenEdit] = useState(false);
   const [openPassword, setOpenPassword] = useState(false); // 2. เพิ่ม State สำหรับเปิด Modal Password
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isLoggedIn, setIsLoggedIn] = useState(true); // mock login state
 
   const handleProfileUpdate = (updatedData: {
@@ -84,9 +86,21 @@ export default function Profile() {
         {/* RIGHT: STATS & PROGRESS */}
         <div className="col-span-9 space-y-6 mr-4">
           <div className="grid grid-cols-3 gap-4">
-            <StatCard title="Total Progress" value={`${totalProgress}%`} desc="Overall completion rate" />
-            <StatCard title="Pretest Score" value={`${pretestScore}%`} desc="Average across all tests" />
-            <StatCard title="Posttest Score" value={`${posttestScore}%`} desc="+30% improvement" />
+            <StatCard
+              title="Total Progress"
+              value={`${totalProgress}%`}
+              desc="Overall completion rate"
+            />
+            <StatCard
+              title="Pretest Score"
+              value={`${pretestScore}%`}
+              desc="Average across all tests"
+            />
+            <StatCard
+              title="Posttest Score"
+              value={`${posttestScore}%`}
+              desc="+30% improvement"
+            />
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border p-6">
