@@ -20,6 +20,7 @@ interface UseBTInsertHandlerProps {
   applyHighlighting: AnimationCallbacks["applyHighlighting"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
+  setIsAnimating: (v: boolean) => void;
 }
 
 export function useBTInsertHandler({
@@ -31,6 +32,7 @@ export function useBTInsertHandler({
   applyHighlighting,
   animationSpeed,
   isPausedRef,
+  setIsAnimating,
 }: UseBTInsertHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
@@ -41,6 +43,7 @@ export function useBTInsertHandler({
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
+      setIsAnimating(true);
 
       const newNodeId = `bt-node-${Date.now()}`;
       const rootAtInsertTime = btRootRef.current;
@@ -205,6 +208,7 @@ export function useBTInsertHandler({
           setNodes(finalNodes as RFNode[]);
           setEdges(finalEdges as RFEdge[]);
           setDescription("");
+          setIsAnimating(false);
         }, animationSpeed * 4); // Longer delay for final state
       }, animationSpeed * globalOffset);
     },
@@ -216,6 +220,7 @@ export function useBTInsertHandler({
       setNodes,
       setEdges,
       setDescription,
+      setIsAnimating,
     ],
   );
 

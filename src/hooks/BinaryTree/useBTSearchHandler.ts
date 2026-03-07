@@ -19,6 +19,7 @@ interface UseBTSearchHandlerProps {
   applyHighlighting: AnimationCallbacks["applyHighlighting"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
+  setIsAnimating: (v: boolean) => void;
 }
 
 /**
@@ -34,6 +35,7 @@ export function useBTSearchHandler({
   applyHighlighting,
   animationSpeed,
   isPausedRef,
+  setIsAnimating,
 }: UseBTSearchHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
@@ -50,6 +52,7 @@ export function useBTSearchHandler({
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
+      setIsAnimating(true);
 
       const { found, nodeId, path } = searchBT(root, value);
       const positions = calculateBTPositions(root);
@@ -142,13 +145,21 @@ export function useBTSearchHandler({
             setNodes(clean as RFNode[]);
             setEdges(cleanE as RFEdge[]);
             setDescription("");
+            setIsAnimating(false);
           }, animationSpeed * 4); // Longer delay for final state
         },
         animationSpeed * (path.length + 1),
       );
     },
 
-    [animationSpeed, isPausedRef, setNodes, setEdges, setDescription],
+    [
+      animationSpeed,
+      isPausedRef,
+      setNodes,
+      setEdges,
+      setDescription,
+      setIsAnimating,
+    ],
   );
 
   const cancelAnimation = useCallback(() => {

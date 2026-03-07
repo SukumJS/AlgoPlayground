@@ -20,6 +20,7 @@ interface UseBSTRemoveHandlerProps {
   setDescription: (desc: string) => void;
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
+  setIsAnimating: (v: boolean) => void;
 }
 
 export function useBSTRemoveHandler({
@@ -30,6 +31,7 @@ export function useBSTRemoveHandler({
   setDescription,
   animationSpeed,
   isPausedRef,
+  setIsAnimating,
 }: UseBSTRemoveHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const bstRootRef = useRef<BSTNode | null>(bstRoot);
@@ -42,6 +44,7 @@ export function useBSTRemoveHandler({
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
+      setIsAnimating(true);
 
       const root = bstRootRef.current;
       if (!root) {
@@ -270,7 +273,8 @@ export function useBSTRemoveHandler({
             setBSTRoot(newRoot);
             setNodes(finalRF.nodes as RFNode[]);
             setEdges(finalRF.edges as RFEdge[]);
-            setDescription(""); // Clear final description
+            setDescription("");
+            setIsAnimating(false);
           }, animationSpeed * 4);
         }, animationSpeed * globalOffset);
       } else {
@@ -281,7 +285,10 @@ export function useBSTRemoveHandler({
           setNodes([]);
           setEdges([]);
           setDescription(`Removed ${value}. The tree is now empty.`);
-          controller.scheduleStep(() => setDescription(""), animationSpeed * 4);
+          controller.scheduleStep(() => {
+            setDescription("");
+            setIsAnimating(false);
+          }, animationSpeed * 4);
         }, animationSpeed * globalOffset);
       }
     },
@@ -293,6 +300,7 @@ export function useBSTRemoveHandler({
       setNodes,
       setEdges,
       setDescription,
+      setIsAnimating,
     ],
   );
 

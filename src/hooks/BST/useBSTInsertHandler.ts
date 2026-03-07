@@ -19,6 +19,7 @@ interface UseBSTInsertHandlerProps {
   setDescription: (desc: string) => void;
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
+  setIsAnimating: (v: boolean) => void;
 }
 
 export function useBSTInsertHandler({
@@ -29,12 +30,14 @@ export function useBSTInsertHandler({
   setDescription,
   animationSpeed,
   isPausedRef,
+  setIsAnimating,
 }: UseBSTInsertHandlerProps) {
   const counterRef = useRef(0);
 
   const handleInsert = useCallback(
     (value: number) => {
       const controller = new AnimationController(isPausedRef);
+      setIsAnimating(true);
 
       // Duplicate check
       const { found, path } = searchBST(bstRoot, value);
@@ -138,6 +141,7 @@ export function useBSTInsertHandler({
         setNodes(newRF.nodes as RFNode[]);
         setEdges(newRF.edges as RFEdge[]);
         setDescription("");
+        setIsAnimating(false);
       }, animationSpeed * globalOffset);
     },
     [
@@ -148,6 +152,7 @@ export function useBSTInsertHandler({
       setNodes,
       setEdges,
       setDescription,
+      setIsAnimating,
     ],
   );
 
