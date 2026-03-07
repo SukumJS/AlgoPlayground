@@ -1,25 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 interface ExplainAlgoProps {
-  tutorialMode?: boolean;
   isOpen?: boolean;
-  onToggle?: () => void;
   explanation?: string;
-  /** optional values that describe the current algorithm so the explanation can be contextualized */
-  algoType?: string;
-  algoName?: string;
 }
 
 export default function ExplainAlgo({
   isOpen = true,
-  onToggle,
   explanation = "",
-  tutorialMode = false,
-  algoType,
-  algoName,
 }: ExplainAlgoProps) {
   const [isExplain, setIsExplain] = useState(isOpen);
   const [displayedExplanation, setDisplayedExplanation] = useState(explanation);
@@ -91,10 +82,7 @@ export default function ExplainAlgo({
                   : "opacity-100 translate-y-0 scale-100"
             }`}
           >
-            {
-              // if parent provided algoName we can prefix it for clarity
-              algoName ? `${displayedExplanation}` : displayedExplanation
-            }
+            {displayedExplanation}
           </p>
         </div>
       </div>

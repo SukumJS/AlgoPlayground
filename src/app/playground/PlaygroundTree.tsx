@@ -207,12 +207,18 @@ const algorithmNames: Record<string, string> = {
   "max-heap": "Max-Heap",
 };
 
+const getDefaultTreeExplanation = (name: string) =>
+  `This section will explain ${name}. Perform an operation to begin.`;
+
 export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
   const [nodes, setNodes] = useState<Node[]>(treeInitialNodes);
   const [edges, setEdges] = useState<Edge[]>(treeInitialEdges);
   const [showInfo, setShowInfo] = useState(false);
+  const defaultPrettyName = algorithm
+    ? algorithmNames[algorithm] || "Tree Algorithms"
+    : "Tree Algorithms";
   const [explanation, setExplanation] = useState<string>(
-    "This section will explain the tree algorithm's steps. Perform an operation to begin.",
+    getDefaultTreeExplanation(defaultPrettyName),
   );
   const { flowToScreenPosition } = useReactFlow();
 
@@ -222,13 +228,14 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
   const prettyName = algorithm
     ? algorithmNames[algorithm] || "Tree Algorithms"
     : "Tree Algorithms";
+  const effectiveExplanation = explanation.trim()
+    ? explanation
+    : getDefaultTreeExplanation(prettyName);
 
   // reset explanation when the selected algorithm changes
   React.useEffect(() => {
     if (algorithm) {
-      setExplanation(
-        `This section will explain ${prettyName}. Perform an operation to begin.`,
-      );
+      setExplanation(getDefaultTreeExplanation(prettyName));
     }
   }, [algorithm, prettyName]);
 
@@ -406,10 +413,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         <div>
           <CodeAlgo tutorialMode={tutorial.showTutorial} />
           <ExplainAlgo
-            tutorialMode={tutorial.showTutorial}
-            explanation={explanation}
-            algoType={algorithm}
-            algoName={prettyName}
+            explanation={effectiveExplanation}
           />
           {/* Display Data Input for Tree Algorithms */}
           <Data_tree
@@ -473,7 +477,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       treeNodes,
       edges,
       algorithm,
-      explanation,
+      effectiveExplanation,
       setExplanation,
       prettyName, // อย่าลืมเพิ่มเป็น dependency ของ useMemo
     ],

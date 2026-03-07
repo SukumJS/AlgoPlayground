@@ -63,8 +63,8 @@ const algorithmNames: Record<string, string> = {
   "bellman-ford": "Bellman-Ford Algorithm",
   "prims": "Prim's Algorithm",
   "kruskals": "Kruskal's Algorithm",
-  "bfs": "Breadth-First Search (BFS)",
-  "dfs": "Depth-First Search (DFS)",
+  "breadth-first-search": "Breadth-First Search",
+  "depth-first-search": "Depth-First Search",
 };
 
 // Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
@@ -264,14 +264,20 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   const [nodes, setNodes] = useState<Node[]>(graphInitialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [showInfo, setShowInfo] = useState(false);
+  const defaultPrettyName = algorithm
+    ? algorithmNames[algorithm] || "Graph Algorithms"
+    : "Graph Algorithms";
   const [explanation, setExplanation] = useState<string>(
-    "This section will explain Graph Algorithms. Perform an operation to begin.",
+    getDefaultGraphExplanation(defaultPrettyName),
   );
 
   // ดึงชื่อที่สวยงามจาก Mapping (ถ้าไม่เจอให้ใช้ค่า Default)
   const prettyName = algorithm
     ? algorithmNames[algorithm] || "Graph Algorithms"
     : "Graph Algorithms";
+  const effectiveExplanation = explanation.trim()
+    ? explanation
+    : getDefaultGraphExplanation(prettyName);
 
   // reset explanation when the selected algorithm changes
   React.useEffect(() => {
@@ -456,10 +462,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         <div>
           <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
           <ExplainAlgo
-            tutorialMode={graphTutorial.showTutorial}
-            algoType={algorithm}
-            explanation={explanation}
-            algoName={prettyName}
+            explanation={effectiveExplanation}
           />
           <Data_graph
             onSearch={handleAlgorithmSearch}
@@ -478,7 +481,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       algorithm,
       handleAlgorithmSearch,
       sideTabTitle,
-      explanation,
+      effectiveExplanation,
       setExplanation,
       prettyName,
     ],
@@ -641,4 +644,3 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     </div>
   );
 }
-
