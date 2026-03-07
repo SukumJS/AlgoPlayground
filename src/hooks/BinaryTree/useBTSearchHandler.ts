@@ -43,7 +43,7 @@ export function useBTSearchHandler({
     (value: number) => {
       const root = btRootRef.current;
       if (!root) {
-        setDescription("Tree is empty");
+        setDescription("The tree is empty. Insert a node first.");
         return;
       }
 
@@ -91,7 +91,7 @@ export function useBTSearchHandler({
             setNodes(highlighted);
             setEdges(highlightedEdges);
             setDescription(
-              `Searching for ${value}. Now checking node ${currentNode?.data.label}.`,
+              `Searching for ${value}. Check node ${currentNode?.data.label} in level order.`,
             );
           },
           animationSpeed * (globalOffset + 1),
@@ -125,10 +125,10 @@ export function useBTSearchHandler({
               },
             }));
             setNodes(highlighted);
-            setDescription(`Found ${value}!`);
+            setDescription(`Value ${value} found. This is the matching node.`);
           } else {
             setNodes(rfNodes as RFNode[]);
-            setDescription(`${value} was not found in the tree.`);
+            setDescription(`Value ${value} was not found after visiting all reachable nodes.`);
           }
           setEdges(rfEdges as RFEdge[]);
 

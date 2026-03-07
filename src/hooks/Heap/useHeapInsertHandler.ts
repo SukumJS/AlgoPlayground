@@ -108,7 +108,7 @@ export function useHeapInsertHandler(params: {
               setNodes(highlighted);
               setEdges(highlightedEdges);
               setDescription(
-                `Finding next empty position... checking node ${id}`,
+                `Finding the next empty position in level order. Checking node ${id}.`,
               );
             },
             animationSpeed * (idx + 1),
@@ -140,7 +140,7 @@ export function useHeapInsertHandler(params: {
         setNodes(highlighted);
         setEdges(rfEdges as RFEdge[]);
         setDescription(
-          `Inserted ${value}. ${siftPath.length > 0 ? "Checking heap property and sifting up..." : "Heap property maintained!"}`,
+          `Inserted ${value}. ${siftPath.length > 0 ? "Now restore heap order by sifting up." : "Heap property is already satisfied."}`,
         );
       }, animationSpeed * globalOffset);
 
@@ -174,7 +174,7 @@ export function useHeapInsertHandler(params: {
           setNodes(highlighted);
           setEdges(rfEdges as RFEdge[]);
           setDescription(
-            `Sifting up... swapping with parent node ${swapId} (${idx + 1}/${siftPath.length})`,
+            `Sift up step ${idx + 1} of ${siftPath.length}: swap with parent node ${swapId}.`,
           );
         }, animationSpeed * globalOffset);
 
@@ -287,7 +287,7 @@ export function useHeapInsertHandler(params: {
 
         setNodes(finalNode);
         setEdges(rfEdges as RFEdge[]);
-        setDescription(`Inserted ${value}. Heap property restored!`);
+        setDescription(`Insertion complete. Heap property is restored for ${value}.`);
 
         controller.scheduleStep(() => {
           const cleanNodes = (rfNodes as RFNode[]).map((n: RFNode) => ({

@@ -120,7 +120,7 @@ export function useBTInsertHandler({
                 (n) => n.id === id,
               );
               setDescription(
-                `Finding an empty spot... checking node ${currentNode?.data.label}.`,
+                `Finding the next empty position in level order. Checking node ${currentNode?.data.label}.`,
               );
             },
             animationSpeed * (idx + 1),
@@ -156,7 +156,7 @@ export function useBTInsertHandler({
             (n) => n.id === parentId,
           ); // Find parent node for description
           setDescription(
-            `Found an empty spot as the ${parentDir} child of node ${parentNode?.data.label}.`,
+            `Found an empty ${parentDir} child slot under node ${parentNode?.data.label}.`,
           );
         }, animationSpeed * globalOffset);
         globalOffset++; // Pause after description
@@ -190,7 +190,7 @@ export function useBTInsertHandler({
 
         setNodes(highlightedNodes);
         setEdges(rfEdges as RFEdge[]);
-        setDescription(`Inserted ${value} into the next available spot.`);
+        setDescription(`Inserted ${value} into the next available position and updated links.`);
 
         // clear highlight
         controller.scheduleStep(() => {

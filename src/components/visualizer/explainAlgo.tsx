@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface ExplainAlgoProps {
@@ -23,16 +23,30 @@ export default function ExplainAlgo({
 }: ExplainAlgoProps) {
   const [isExplain, setIsExplain] = useState(isOpen);
   const [displayedExplanation, setDisplayedExplanation] = useState(explanation);
-  const [isFading, setIsFading] = useState(false);
+  const [transitionState, setTransitionState] = useState<
+    "entered" | "exiting" | "entering"
+  >("entered");
+  const [transitionKey, setTransitionKey] = useState(0);
 
   useEffect(() => {
-    // Immediately update when explanation changes
-    if (explanation !== displayedExplanation) {
+    if (explanation === displayedExplanation) return;
+
+    setTransitionState("exiting");
+
+    const swapTimer = setTimeout(() => {
       setDisplayedExplanation(explanation);
-    }
+      setTransitionKey((k) => k + 1);
+      setTransitionState("entering");
+
+      // Advance to fully visible on the next frame.
+      requestAnimationFrame(() => {
+        setTransitionState("entered");
+      });
+    }, 170);
+
+    return () => clearTimeout(swapTimer);
   }, [explanation, displayedExplanation]);
 
-  const contentRef = useRef<HTMLDivElement>(null);
   return (
     <>
       <button
@@ -66,10 +80,15 @@ export default function ExplainAlgo({
           isExplain ? "max-h-32 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div ref={contentRef} className="p-4 min-h-15">
+        <div className="p-4 min-h-15">
           <p
-            className={`text-lg text-gray-700 transition-opacity duration-150 ${
-              isFading ? "opacity-0" : "opacity-100"
+            key={transitionKey}
+            className={`text-lg text-gray-700 transition-all duration-220 ease-out ${
+              transitionState === "exiting"
+                ? "opacity-0 -translate-y-1 scale-[0.99]"
+                : transitionState === "entering"
+                  ? "opacity-0 translate-y-1 scale-[1.01]"
+                  : "opacity-100 translate-y-0 scale-100"
             }`}
           >
             {

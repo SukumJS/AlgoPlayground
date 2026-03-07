@@ -137,7 +137,7 @@ function Data_tree({
 
   // Animation states
   const [isAnimating, setIsAnimating] = useState(false);
-  const [animationSpeed] = useState(500);
+  const [animationSpeed] = useState(700);
   const isPausedRef = useRef<boolean>(false);
 
   // Tree roots

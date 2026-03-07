@@ -218,7 +218,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
 
   const rebalanceRef = useRef<(() => void) | null>(null);
 
-  // 2️⃣ ดึงชื่อที่สวยงามจาก Mapping (ถ้าไม่เจอให้ใช้ค่า Default)
+  // ดึงชื่อจาก Mapping (ถ้าไม่เจอให้ใช้ค่า Default)
   const prettyName = algorithm
     ? algorithmNames[algorithm] || "Tree Algorithms"
     : "Tree Algorithms";

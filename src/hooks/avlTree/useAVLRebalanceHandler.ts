@@ -51,7 +51,9 @@ export function useAVLRebalanceHandler(params: {
 
     const controller = new AnimationController(isPausedRef);
 
-    animationCallbacks.setDescription("Rebalancing tree...");
+    animationCallbacks.setDescription(
+      "Checking AVL balance and rebuilding node positions.",
+    );
 
     const positions = calculateTreePositions(latestRoot);
     const { nodes, edges } = avlTreeToReactFlow(latestRoot, [], [], positions);
@@ -59,7 +61,9 @@ export function useAVLRebalanceHandler(params: {
     controller.scheduleStep(() => {
       animationCallbacks.setNodes(nodes);
       animationCallbacks.setEdges(edges);
-      animationCallbacks.setDescription("Tree rebalanced!");
+      animationCallbacks.setDescription(
+        "Rebalancing complete. The AVL tree is now balanced.",
+      );
       setAVLRoot(latestRoot);
     }, INSTANT_SPEED);
 

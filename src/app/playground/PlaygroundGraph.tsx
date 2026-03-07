@@ -54,6 +54,9 @@ const edgeTypes = { tree: TreeEdge, floatingEdge: FloatingEdge };
 const fitViewOptions: FitViewOptions = { padding: 0.2 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: false };
 
+const getDefaultGraphExplanation = (name: string) =>
+  `This section will explain ${name}. Perform an operation to begin.`;
+
 // สร้าง Object ไว้แปลงชื่อ Graph Algorithm
 const algorithmNames: Record<string, string> = {
   "dijkstra": "Dijkstra's Algorithm",
@@ -262,10 +265,10 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [showInfo, setShowInfo] = useState(false);
   const [explanation, setExplanation] = useState<string>(
-    "This section will explain the graph algorithm's steps. Perform an operation to begin.",
+    "This section will explain Graph Algorithms. Perform an operation to begin.",
   );
 
-  // 2️⃣ ดึงชื่อที่สวยงามจาก Mapping (ถ้าไม่เจอให้ใช้ค่า Default)
+  // ดึงชื่อที่สวยงามจาก Mapping (ถ้าไม่เจอให้ใช้ค่า Default)
   const prettyName = algorithm
     ? algorithmNames[algorithm] || "Graph Algorithms"
     : "Graph Algorithms";
@@ -273,9 +276,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   // reset explanation when the selected algorithm changes
   React.useEffect(() => {
     if (algorithm) {
-      setExplanation(
-        `This section will explain ${prettyName}. Perform an operation to begin.`,
-      );
+      setExplanation(getDefaultGraphExplanation(prettyName));
     }
   }, [algorithm, prettyName]);
 
@@ -300,6 +301,24 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   useEffect(() => {
     animationRef.current = animation;
   }, [animation]);
+
+  // Keep Explain panel synced to the current animation step.
+  useEffect(() => {
+    if (isAnimationActive && animation.description) {
+      setExplanation(animation.description);
+      return;
+    }
+
+    if (!isAnimationActive && algorithm) {
+      setExplanation(getDefaultGraphExplanation(prettyName));
+    }
+  }, [
+    algorithm,
+    prettyName,
+    isAnimationActive,
+    animation.description,
+    setExplanation,
+  ]);
 
   // Callback from Data_graph "Search" button — stable identity via ref
   const handleAlgorithmSearch = useCallback(

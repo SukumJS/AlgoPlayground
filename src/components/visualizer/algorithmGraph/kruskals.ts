@@ -115,7 +115,7 @@ export const kruskalsRunner: AlgorithmRunner = {
         .join(", ");
       steps.push({
         ...s,
-        description: `Sorted edges by weight: ${edgeList}`,
+        description: `Sort all edges by weight (smallest first): ${edgeList}`,
       });
       prevNode = s.nodeStates;
       prevEdge = s.edgeStates;
@@ -154,7 +154,7 @@ export const kruskalsRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
-          description: `Consider edge ${sourceLabel} — ${targetLabel} (weight ${edge.weight})`,
+          description: `Check next lightest edge ${sourceLabel} - ${targetLabel} (weight ${edge.weight}) and test for cycle.`,
         });
         prevNode = s.nodeStates;
         prevEdge = s.edgeStates;
@@ -184,7 +184,7 @@ export const kruskalsRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
-          description: `Accept edge ${sourceLabel} — ${targetLabel} (total weight: ${totalWeight})`,
+          description: `No cycle found, so accept ${sourceLabel} - ${targetLabel}. Total MST weight is ${totalWeight}.`,
         });
         prevNode = s.nodeStates;
         prevEdge = s.edgeStates;
@@ -200,7 +200,7 @@ export const kruskalsRunner: AlgorithmRunner = {
         const s = snap(allNodeIds, allEdgeIds, {}, eOver, prevNode, prevEdge);
         steps.push({
           ...s,
-          description: `Reject edge ${sourceLabel} — ${targetLabel} (would create cycle)`,
+          description: `Reject ${sourceLabel} - ${targetLabel} because it would create a cycle.`,
         });
         prevNode = s.nodeStates;
         prevEdge = s.edgeStates;
@@ -217,7 +217,7 @@ export const kruskalsRunner: AlgorithmRunner = {
       const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
       steps.push({
         ...s,
-        description: `MST complete! Total weight: ${totalWeight} (${mstEdgeIds.length} edges)`,
+        description: `MST complete. We selected ${mstEdgeIds.length} edges with total weight ${totalWeight}.`,
       });
     }
 

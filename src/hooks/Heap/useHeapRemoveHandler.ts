@@ -38,7 +38,7 @@ export function useHeapRemoveHandler(params: {
       const controller = new AnimationController(isPausedRef);
       setIsAnimating(true);
       if (!heapRoot) {
-        setDescription("Tree is empty");
+        setDescription("The heap is empty. There is nothing to remove.");
         setIsAnimating(false);
         return;
       }
@@ -78,7 +78,7 @@ export function useHeapRemoveHandler(params: {
             }));
             setNodes(highlighted);
             setEdges(highlightedEdges);
-            setDescription(`Searching for ${value}... visiting node ${id}`);
+            setDescription(`Searching for ${value}. Visiting node ${id} in level order.`);
           },
           animationSpeed * (idx + 1),
         );
@@ -90,7 +90,7 @@ export function useHeapRemoveHandler(params: {
         controller.scheduleStep(() => {
           setNodes(rfNodes as RFNode[]);
           setEdges(rfEdges as RFEdge[]);
-          setDescription(`✗ ${value} not found`);
+          setDescription(`Value ${value} was not found in the heap.`);
           controller.scheduleStep(() => {
             setDescription("");
             setIsAnimating(false);
@@ -113,7 +113,7 @@ export function useHeapRemoveHandler(params: {
         setNodes(highlighted);
         setEdges(rfEdges as RFEdge[]);
         setDescription(
-          `Found ${value}! Identifying deep-right leaf to replace it...`,
+          `Found ${value}. Locate the deepest rightmost node to replace it.`,
         );
       }, animationSpeed * globalOffset);
 
@@ -133,7 +133,7 @@ export function useHeapRemoveHandler(params: {
           setHeapRoot(null);
           setNodes([]);
           setEdges([]);
-          setDescription(`Removed ${value}. Tree is now empty.`);
+          setDescription(`Removed ${value}. The heap is now empty.`);
           setTimeout(() => setIsAnimating(false), animationSpeed * 2);
         }, animationSpeed * globalOffset);
         return;
@@ -166,7 +166,7 @@ export function useHeapRemoveHandler(params: {
           ? String((foundNode.data as Record<string, unknown>).label)
           : "";
         setDescription(
-          `Deepest-rightmost leaf is ${labelStr}. Flying up to replace...`,
+          `Deepest rightmost node is ${labelStr}. Move it to the removed node position.`,
         );
       }, animationSpeed * globalOffset);
 
@@ -269,7 +269,7 @@ export function useHeapRemoveHandler(params: {
         setNodes(snHigh);
         setEdges(se as RFEdge[]);
         setDescription(
-          `Node replaced. Checking heap property (sift down/up)...`,
+          `Replacement complete. Check heap property and apply sift operations if needed.`,
         );
       }, animationSpeed * globalOffset);
 
@@ -303,7 +303,7 @@ export function useHeapRemoveHandler(params: {
           setNodes(snHigh);
           setEdges(se as RFEdge[]);
           setDescription(
-            `Sifting... swapping with ${swapId} (${idx + 1}/${siftPath.length})`,
+            `Sift step ${idx + 1} of ${siftPath.length}: swap with node ${swapId}.`,
           );
         }, animationSpeed * globalOffset);
 
@@ -409,7 +409,7 @@ export function useHeapRemoveHandler(params: {
           setNodes([]);
           setEdges([]);
         }
-        setDescription(`Removed ${value}. Heap property restored.`);
+        setDescription(`Removal complete. Heap property is restored.`);
 
         controller.scheduleStep(() => {
           setDescription("");

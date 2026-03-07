@@ -38,7 +38,7 @@ export function useBSTSearchHandler({
 
       const root = bstRootRef.current;
       if (!root) {
-        setDescription("Tree is empty");
+        setDescription("The tree is empty. Insert a node first.");
         controller.scheduleStep(() => setDescription(""), animationSpeed * 2); // Keep for 2 seconds
       }
 
@@ -77,7 +77,7 @@ export function useBSTSearchHandler({
           setEdges(highlightedEdges);
           const currentNode = rfNodes.find((n) => n.id === id); // Find current node for description
           setDescription(
-            `Searching for ${value}. Comparing with node ${currentNode?.data.label}.`,
+            `Searching for ${value}. Compare with node ${currentNode?.data.label} and choose left or right branch.`,
           );
         }, animationSpeed * globalOffset);
 
@@ -100,10 +100,10 @@ export function useBSTSearchHandler({
               },
             }));
             setNodes(highlighted);
-            setDescription(`Found ${value}!`);
+            setDescription(`Value ${value} found. This is the target node.`);
           } else {
             setNodes(rfNodes);
-            setDescription(`${value} was not found in the tree.`);
+            setDescription(`Value ${value} was not found after reaching the end of the search path.`);
           }
           setEdges(rfEdges);
 
