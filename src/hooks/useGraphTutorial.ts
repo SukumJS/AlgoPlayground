@@ -49,14 +49,17 @@ interface UseGraphTutorialProps {
  * 4: Hold and drag to trash bin
  * 5: Tutorial Completed!
  *
- * UNDIRECTED WEIGHTED (Prim/Kruskal) — 7 Steps:
+ * UNDIRECTED WEIGHTED (Prim/Kruskal) — 10 Steps:
  * 0: Tap node 69 to start
  * 1: Tap node 70 to create link
  * 2: Type weight '2' for the new edge
  * 3: Value Set! confirmation
- * 4: Click node 70 (highlight for delete)
- * 5: Hold and drag to trash bin
- * 6: Tutorial Completed!
+ * 4: Tap existing weight (64→39, weight 4)
+ * 5: Type weight '5' to edit
+ * 6: Value Set! confirmation
+ * 7: Click node 70 (highlight for delete)
+ * 8: Hold and drag to trash bin
+ * 9: Tutorial Completed!
  */
 export function useGraphTutorial({
   nodes,
@@ -298,8 +301,8 @@ export function useGraphTutorial({
           );
           setTutorialStep(8);
         }
-      } else if (!directed && weighted && tutorialStep === 4) {
-        // Undirected+weighted step 4: Click node 70 (highlight for delete)
+      } else if (!directed && weighted && tutorialStep === 7) {
+        // Undirected+weighted step 7: Click node 70 (highlight for delete)
         if (nodeLabel === "70") {
           setNodes((nds) =>
             nds.map((n) => ({
@@ -311,7 +314,7 @@ export function useGraphTutorial({
               },
             })),
           );
-          setTutorialStep(5);
+          setTutorialStep(8);
         }
       } else if (!directed && !weighted && tutorialStep === 3) {
         // Undirected step 3: Click node 70 (highlight for delete)
@@ -415,11 +418,7 @@ export function useGraphTutorial({
 
       // Auto-advance to next step after short delay
       setTimeout(() => {
-        if (directed) {
-          setTutorialStep(4); // → tap weight step
-        } else {
-          setTutorialStep(4); // → highlight node for delete step
-        }
+        setTutorialStep(4); // → tap weight step
       }, 1500);
     } else if (tutorialStep === 5 && editingEdgeId) {
       // Edit existing edge weight (64→39) - update BOTH label and data.weight
@@ -450,9 +449,9 @@ export function useGraphTutorial({
     setEdges,
   ]);
 
-  // Dynamic step calculations: directed: step 8, undirected+weighted: step 5, undirected+unweighted: step 4
-  const dragDeleteStep = directed ? 8 : weighted ? 5 : 4;
-  const completedStep = directed ? 9 : weighted ? 6 : 5;
+  // Dynamic step calculations: weighted: step 8, undirected+unweighted: step 4
+  const dragDeleteStep = weighted ? 8 : 4;
+  const completedStep = weighted ? 9 : 5;
 
   // Handle node drag for trash bin glow effect (drag step)
   const onNodeDrag = useCallback(
