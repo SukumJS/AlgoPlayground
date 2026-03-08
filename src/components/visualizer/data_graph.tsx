@@ -11,7 +11,25 @@ import Data_sort from "./data_sort";
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-function Data_graph() {
+/** Algorithms that only need a Start Vertex (MST algorithms) */
+const START_ONLY_ALGORITHMS = ["prims"];
+/** Algorithms that need no vertex input at all (auto-start MST) */
+const AUTO_ALGORITHMS = ["kruskals"];
+
+interface DataGraphProps {
+  /** Called when user clicks Search — starts the algorithm */
+  onSearch?: (startLabel: string, endLabel: string) => void;
+  /** Algorithm slug from URL (e.g. "breadth-first-search") */
+  algorithm?: string;
+  /** Whether the component is in tutorial mode */
+  tutorialMode?: boolean;
+}
+
+function Data_graph({
+  onSearch,
+  algorithm = "",
+  tutorialMode = false,
+}: DataGraphProps) {
   const [isDataSortOpen, setIsDataSortOpen] = useState(false);
   const { onDragStart, isDragging } = useDnD();
   // The type of the node that is being dragged.
@@ -22,6 +40,14 @@ function Data_graph() {
   const [removeValue, setRemoveValue] = useState<string>("");
   const [nodeInput, setNodeInput] = useState<string>("");
   const [draggedValue, setDraggedValue] = useState<number | null>(null); // Added draggedValue state
+
+  const needsEndVertex =
+    !START_ONLY_ALGORITHMS.includes(algorithm) &&
+    !AUTO_ALGORITHMS.includes(algorithm);
+  const needsStartVertex = !AUTO_ALGORITHMS.includes(algorithm);
+  const isMST =
+    START_ONLY_ALGORITHMS.includes(algorithm) ||
+    AUTO_ALGORITHMS.includes(algorithm);
 
   const Sample = [
     { number: "1" },
@@ -40,7 +66,7 @@ function Data_graph() {
           id: getId(),
           type: "custom", // Changed node type to "custom"
           position,
-          data: { label: Sample.toString() },
+          data: { label: Sample.toString(), variant: "circle" },
         };
 
         setNodes((nds) => nds.concat(newNode));
@@ -61,6 +87,12 @@ function Data_graph() {
     setInputValue("");
     setSearchValue("");
     setRemoveValue("");
+  };
+
+  const handleSearch = () => {
+    // Kruskal's doesn't need any vertex input; Prim's only needs start
+    if (needsStartVertex && !inputValue) return;
+    onSearch?.(inputValue, searchValue);
   };
 
   return (
@@ -87,7 +119,7 @@ function Data_graph() {
         className={`flex-col ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}
       >
         <div
-          className={`transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2`}
+          className={`transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2 px-2 py-2`}
         >
           <div
             className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-16 h-16 rounded-full cursor-grab"
@@ -120,34 +152,42 @@ function Data_graph() {
             </div>
           ))}
         </div>
-        <div className="flex-col justify-center items-center text-center">
-          <div className="grid-cols-1 grid gap-2 text-start m-1">
-            <p className="font-bold text-md">Start Vertex</p>
-            <div className="flex gap-2">
+        <div className="flex flex-col gap-2 px-2">
+          {needsStartVertex && (
+            <div className="flex flex-col gap-1 text-start">
+              <p className="font-bold text-md">Start Vertex</p>
               <input
                 type="number"
-                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="border border-gray-200 p-2 rounded-lg w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
               />
             </div>
-          </div>
-          <div className="grid-cols-1 grid gap-2 text-start m-1">
-            <p className="font-bold text-md">End Vertex</p>
-            <div className="flex gap-2">
+          )}
+          {needsEndVertex && (
+            <div className="flex flex-col gap-1 text-start">
+              <p className="font-bold text-md">End Vertex</p>
               <input
                 type="number"
-                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="border border-gray-200 p-2 rounded-lg w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
               />
             </div>
-          </div>
-          <div className="grid-cols-1 grid gap-2 text-start m-1">
-            <button className="bg-[#222121] rounded-lg p-2 mt-2 text-white">
-              Search
-            </button>
-          </div>
+          )}
+          <button
+            className="bg-[#222121] rounded-lg p-2 mt-1 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleSearch}
+            disabled={
+              needsEndVertex
+                ? !inputValue || !searchValue
+                : needsStartVertex
+                  ? !inputValue
+                  : false
+            }
+          >
+            {isMST ? "Find MST" : "Search"}
+          </button>
           <RandomSize onReset={handleReset} />
         </div>
       </div>
@@ -171,7 +211,7 @@ export function DragGhost({ type, value }: DragGhostProps) {
 
   return (
     <div
-      className={`fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-lg border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`} // Standardized classes
+      className={`fixed top-0 left-0 pointer-events-none z-1000 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#5D5D5D] bg-[#D9E363] text-center text-2xl font-semibold text-[#222121] shadow-lg`}
       style={{
         transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
       }}

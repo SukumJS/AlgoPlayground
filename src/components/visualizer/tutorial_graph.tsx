@@ -3,8 +3,8 @@
 import React from "react";
 import { Trash2, Check } from "lucide-react";
 
-// Graph Tutorial Steps configuration
-const GRAPH_TUTORIAL_STEPS = [
+// Graph Tutorial Steps configuration — DIRECTED mode (Dijkstra)
+const DIRECTED_TUTORIAL_STEPS = [
   { id: 0, instruction: "Tap a node to start.", action: "tap" },
   {
     id: 1,
@@ -20,6 +20,41 @@ const GRAPH_TUTORIAL_STEPS = [
   { id: 8, instruction: "Drag it to the trash bin icon.", action: "drag" },
   { id: 9, instruction: "Tutorial Completed!", action: "complete" },
 ];
+
+// Graph Tutorial Steps configuration — UNDIRECTED mode (BFS/DFS)
+const UNDIRECTED_TUTORIAL_STEPS = [
+  { id: 0, instruction: "Tap a node to start.", action: "tap" },
+  {
+    id: 1,
+    instruction: "Now, tap another node to create a link.",
+    action: "tap",
+  },
+  { id: 2, instruction: "Link Created!", action: "confirm" },
+  { id: 3, instruction: "Tap to hold node 70.", action: "tap" },
+  { id: 4, instruction: "Drag it to the trash bin icon.", action: "drag" },
+  { id: 5, instruction: "Tutorial Completed!", action: "complete" },
+];
+
+// Graph Tutorial Steps configuration — UNDIRECTED WEIGHTED mode (Prim/Kruskal)
+const UNDIRECTED_WEIGHTED_TUTORIAL_STEPS = [
+  { id: 0, instruction: "Tap a node to start.", action: "tap" },
+  {
+    id: 1,
+    instruction: "Now, tap another node to create a link.",
+    action: "tap",
+  },
+  { id: 2, instruction: "Type '2' to set the weight.", action: "input" },
+  { id: 3, instruction: "Value Set!", action: "confirm" },
+  { id: 4, instruction: "Tap this weight!", action: "tap" },
+  { id: 5, instruction: "Type '5' to edit the weight.", action: "input" },
+  { id: 6, instruction: "Value Set!", action: "confirm" },
+  { id: 7, instruction: "Tap to hold node 70.", action: "tap" },
+  { id: 8, instruction: "Drag it to the trash bin icon.", action: "drag" },
+  { id: 9, instruction: "Tutorial Completed!", action: "complete" },
+];
+
+// Keep a default reference
+const GRAPH_TUTORIAL_STEPS = DIRECTED_TUTORIAL_STEPS;
 
 // Custom Dashed Arrow Component
 const DashedArrow = ({
@@ -74,12 +109,17 @@ interface TutorialGraphProps {
   currentStep: number;
   setCurrentStep: (step: number) => void;
   onComplete: () => void;
+  // Mode flags
+  directed?: boolean;
+  weighted?: boolean;
   // Screen positions
   node69ScreenPos?: { x: number; y: number } | null;
   node70ScreenPos?: { x: number; y: number } | null;
   edge64to39WeightPos?: { x: number; y: number } | null;
   trashBinPos?: { x: number; y: number } | null;
   isTrashActive?: boolean;
+  /** Computed screen-space radius of a graph node (accounts for zoom) */
+  nodeScreenRadius?: number;
   // Weight input
   showWeightInput?: boolean;
   weightInputValue?: string;
@@ -91,18 +131,32 @@ export default function TutorialGraph({
   currentStep,
   setCurrentStep,
   onComplete,
+  directed = true,
+  weighted = directed,
   node69ScreenPos,
   node70ScreenPos,
   edge64to39WeightPos,
   trashBinPos,
   isTrashActive = false,
+  nodeScreenRadius = 32,
   showWeightInput = false,
   weightInputValue = "",
   onWeightInputChange,
   onWeightConfirm,
 }: TutorialGraphProps) {
-  const stepData = GRAPH_TUTORIAL_STEPS[currentStep];
+  const steps = directed
+    ? DIRECTED_TUTORIAL_STEPS
+    : weighted
+      ? UNDIRECTED_WEIGHTED_TUTORIAL_STEPS
+      : UNDIRECTED_TUTORIAL_STEPS;
+
+  const stepData = steps[currentStep];
   if (!stepData) return null;
+
+  // Dynamic step references
+  const deleteHighlightStep = weighted ? 7 : 3;
+  const dragStep = weighted ? 8 : 4;
+  const completeStep = weighted ? 9 : 5;
 
   return (
     <>
@@ -120,7 +174,7 @@ export default function TutorialGraph({
               <circle
                 cx={node69ScreenPos.x}
                 cy={node69ScreenPos.y}
-                r="45"
+                r={nodeScreenRadius}
                 fill="black"
               />
             )}
@@ -130,7 +184,7 @@ export default function TutorialGraph({
               <circle
                 cx={node69ScreenPos.x}
                 cy={node69ScreenPos.y}
-                r="45"
+                r={nodeScreenRadius}
                 fill="black"
               />
             )}
@@ -138,39 +192,41 @@ export default function TutorialGraph({
               <circle
                 cx={node70ScreenPos.x}
                 cy={node70ScreenPos.y}
-                r="45"
+                r={nodeScreenRadius}
                 fill="black"
               />
             )}
 
-            {/* Step 4: Spotlight on edge 64→39 weight */}
-            {currentStep === 4 && edge64to39WeightPos && (
+            {/* Step 4 (weighted): Spotlight on edge 64→39 weight */}
+            {weighted && currentStep === 4 && edge64to39WeightPos && (
               <circle
                 cx={edge64to39WeightPos.x}
                 cy={edge64to39WeightPos.y}
-                r="30"
+                r="20"
                 fill="black"
               />
             )}
 
-            {/* Step 7, 8: Spotlight on node 70 */}
-            {(currentStep === 7 || currentStep === 8) && node70ScreenPos && (
-              <circle
-                cx={node70ScreenPos.x}
-                cy={node70ScreenPos.y}
-                r="45"
-                fill="black"
-              />
-            )}
+            {/* Delete highlight & drag step: Spotlight on node 70 */}
+            {(currentStep === deleteHighlightStep ||
+              currentStep === dragStep) &&
+              node70ScreenPos && (
+                <circle
+                  cx={node70ScreenPos.x}
+                  cy={node70ScreenPos.y}
+                  r={nodeScreenRadius}
+                  fill="black"
+                />
+              )}
           </mask>
         </defs>
 
         {/* Dark overlay with spotlight */}
         {(currentStep === 0 ||
           currentStep === 1 ||
-          currentStep === 4 ||
-          currentStep === 7 ||
-          currentStep === 8) && (
+          (weighted && currentStep === 4) ||
+          currentStep === deleteHighlightStep ||
+          currentStep === dragStep) && (
           <rect
             width="100%"
             height="100%"
@@ -179,11 +235,17 @@ export default function TutorialGraph({
           />
         )}
 
-        {/* Steps 2, 3, 5, 6: Full dark overlay (no spotlight, focus on input) */}
-        {(currentStep === 2 ||
-          currentStep === 3 ||
-          currentStep === 5 ||
-          currentStep === 6) && (
+        {/* Weighted: Steps 2, 3, 5, 6: Full dark overlay (no spotlight, focus on input) */}
+        {weighted &&
+          (currentStep === 2 ||
+            currentStep === 3 ||
+            currentStep === 5 ||
+            currentStep === 6) && (
+            <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.5)" />
+          )}
+
+        {/* Undirected+Unweighted: Step 2 = "Link Created!" confirmation overlay */}
+        {!directed && !weighted && currentStep === 2 && (
           <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.5)" />
         )}
       </svg>
@@ -240,38 +302,55 @@ export default function TutorialGraph({
         </div>
       )}
 
-      {/* Step 2 & 5: Weight Input Modal */}
-      {showWeightInput && (currentStep === 2 || currentStep === 5) && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200 min-w-70">
-            <p className="text-lg text-gray-800 font-medium mb-4 text-center">
-              {currentStep === 2
-                ? "Type '2' to set the weight."
-                : "Type '5' to edit the weight."}
-            </p>
-            <input
-              type="number"
-              value={weightInputValue}
-              onChange={(e) => onWeightInputChange?.(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") onWeightConfirm?.();
-              }}
-              className="w-full text-center text-3xl font-bold p-4 border-2 border-gray-300 rounded-xl focus:border-[#D9E363] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              placeholder="0"
-              autoFocus
-            />
-            <button
-              onClick={onWeightConfirm}
-              className="w-full mt-4 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors"
-            >
-              Confirm
-            </button>
+      {/* Weighted: Step 2 & 5: Weight Input Modal */}
+      {weighted &&
+        showWeightInput &&
+        (currentStep === 2 || currentStep === 5) && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center">
+            <div className="bg-white rounded-2xl shadow-2xl p-6 border border-gray-200 min-w-70">
+              <p className="text-lg text-gray-800 font-medium mb-4 text-center">
+                {currentStep === 2
+                  ? "Type '2' to set the weight."
+                  : "Type '5' to edit the weight."}
+              </p>
+              <input
+                type="number"
+                value={weightInputValue}
+                onChange={(e) => onWeightInputChange?.(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onWeightConfirm?.();
+                }}
+                className="w-full text-center text-3xl font-bold p-4 border-2 border-gray-300 rounded-xl focus:border-[#D9E363] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="0"
+                autoFocus
+              />
+              <button
+                onClick={onWeightConfirm}
+                className="w-full mt-4 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors"
+              >
+                Confirm
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+
+      {/* Undirected+Unweighted Step 2: Link Created! confirmation */}
+      {!directed && !weighted && currentStep === 2 && (
+        <>
+          <div
+            className="fixed inset-0 z-60 cursor-pointer"
+            onClick={() => setCurrentStep(currentStep + 1)}
+          />
+          <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-xl px-6 py-4 border border-gray-200">
+            <p className="text-lg text-gray-800 font-bold text-center">
+              Link Created!
+            </p>
+          </div>
+        </>
       )}
 
-      {/* Step 3 & 6: Value Set! Confirmation */}
-      {(currentStep === 3 || currentStep === 6) && (
+      {/* Weighted: Step 3 & 6: Value Set! Confirmation */}
+      {weighted && (currentStep === 3 || currentStep === 6) && (
         <>
           <div
             className="fixed inset-0 z-60 cursor-pointer"
@@ -285,8 +364,8 @@ export default function TutorialGraph({
         </>
       )}
 
-      {/* Step 4: Tooltip pointing to edge weight */}
-      {currentStep === 4 && edge64to39WeightPos && (
+      {/* Step 4 (weighted): Tooltip pointing to edge weight */}
+      {weighted && currentStep === 4 && edge64to39WeightPos && (
         <div
           className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 border border-gray-200"
           style={{
@@ -311,8 +390,8 @@ export default function TutorialGraph({
         </div>
       )}
 
-      {/* Step 7: Tooltip for hold node 70 */}
-      {currentStep === 7 && node70ScreenPos && (
+      {/* Delete highlight step: Tooltip for hold node 70 */}
+      {currentStep === deleteHighlightStep && node70ScreenPos && (
         <div
           className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 border border-gray-200"
           style={{
@@ -337,8 +416,8 @@ export default function TutorialGraph({
         </div>
       )}
 
-      {/* Step 8: Trash bin and tooltip */}
-      {currentStep === 8 && (
+      {/* Drag step: Trash bin and tooltip */}
+      {currentStep === dragStep && (
         <>
           <div
             className="fixed z-50 bg-white rounded-lg shadow-xl px-4 py-2 border border-gray-200"
@@ -379,8 +458,8 @@ export default function TutorialGraph({
         </>
       )}
 
-      {/* Step 9: Completion Modal */}
-      {currentStep === 9 && (
+      {/* Complete step: Completion Modal */}
+      {currentStep === completeStep && (
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200 text-center min-w-[320px]">
             <div className="w-16 h-16 mx-auto mb-4 bg-green-500 rounded-full flex items-center justify-center">
@@ -405,4 +484,9 @@ export default function TutorialGraph({
   );
 }
 
-export { GRAPH_TUTORIAL_STEPS };
+export {
+  GRAPH_TUTORIAL_STEPS,
+  DIRECTED_TUTORIAL_STEPS,
+  UNDIRECTED_TUTORIAL_STEPS,
+  UNDIRECTED_WEIGHTED_TUTORIAL_STEPS,
+};

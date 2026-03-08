@@ -10,6 +10,18 @@ type CustomNodeData = {
   isDanger?: boolean;
   highlightColor?: string;
   balanceFactor?: number;
+  /** Graph algorithm animation state (set by useAlgorithmAnimation) */
+  animationState?: "default" | "visiting" | "visited" | "target-found";
+};
+
+/** Map graph animation states to visual colors */
+const ANIMATION_STATE_COLORS: Record<
+  string,
+  { bg: string; border: string; text: string }
+> = {
+  visiting: { bg: "#F7AD45", border: "#D4912B", text: "#222121" },
+  visited: { bg: "#62A2F7", border: "#4A85D6", text: "#FFFFFF" },
+  "target-found": { bg: "#4CAF7D", border: "#388E5C", text: "#FFFFFF" },
 };
 
 export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
@@ -17,9 +29,9 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
 
   // Determine colors based on highlight status
   let bgColorClass = data.isDanger ? "bg-[#BF1A1A]" : "bg-[#D9E363]";
-  const textColorClass = data.isDanger ? "text-white" : "text-[#222121]";
+  let textColorClass = data.isDanger ? "text-white" : "text-[#222121]";
   // Border is ALWAYS #5D5D5D — never changes regardless of highlight or danger state
-  const borderColorClass = "border-[#5D5D5D]";
+  let borderColorClass = "border-[#5D5D5D]";
 
   const inlineStyle: React.CSSProperties = {
     boxShadow: data.isGlowing
@@ -27,8 +39,20 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
       : undefined,
   };
 
-  // Override background color only if highlighted — text color stays original
-  if (data.isHighlighted && data.highlightColor) {
+  // Graph animation state takes priority (set by useAlgorithmAnimation)
+  const animColors =
+    data.animationState && data.animationState !== "default"
+      ? ANIMATION_STATE_COLORS[data.animationState]
+      : null;
+
+  if (animColors) {
+    bgColorClass = "";
+    borderColorClass = "";
+    textColorClass = "";
+    inlineStyle.backgroundColor = animColors.bg;
+    inlineStyle.borderColor = animColors.border;
+    inlineStyle.color = animColors.text;
+  } else if (data.isHighlighted && data.highlightColor) {
     if (data.highlightColor.startsWith("#")) {
       bgColorClass = "";
       inlineStyle.backgroundColor = data.highlightColor;
@@ -52,8 +76,8 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
     }
   }
 
-  // Keep border width consistent — always border-2
-  const borderWidthClass = "border-2";
+  const borderWidthClass =
+    animColors || data.isHighlighted || data.isDanger ? "border-4" : "border-2";
 
   return (
     <div
