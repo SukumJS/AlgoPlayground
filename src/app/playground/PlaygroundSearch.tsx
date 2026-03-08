@@ -81,12 +81,6 @@ const initialNodes: Node<SortNodeData>[] = [
     position: positionFromIndex(4),
     data: { value: 5, index: 4, status: "idle" },
   },
-  {
-    id: "6",
-    type: "custom",
-    position: positionFromIndex(5),
-    data: { value: 6, index: 5, status: "idle" },
-  },
 ];
 
 const initialEdges: Edge[] = [];
