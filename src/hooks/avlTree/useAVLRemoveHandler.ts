@@ -209,7 +209,7 @@ export function useAVLRemoveHandler(params: {
                   n.id === id
                     ? id === rotationNodeId
                       ? "#EF4444"
-                      : "#9B59B6"
+                      : "#F7AD45"
                     : undefined,
                 balanceFactor: bfMap.get(n.id),
               },

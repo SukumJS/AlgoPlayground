@@ -57,7 +57,7 @@ const TREE_TUTORIAL_STEPS: TutorialStep[] = [
 export const GLOW_ZONE = {
   x: 5,
   y: 285,
-  radius: 20,
+  radius: 60, // generous hit radius (canvas pixels) to match visual ring size
 };
 
 interface TutorialProps {
@@ -70,6 +70,7 @@ interface TutorialProps {
   node30ScreenPos?: { x: number; y: number } | null;
   node90ScreenPos?: { x: number; y: number } | null;
   sidebarNode3Pos?: { x: number; y: number } | null;
+  glowZoneScreenPos?: { x: number; y: number } | null;
   isTrashActive?: boolean;
   trashBinPos?: { x: number; y: number } | null;
 }
@@ -124,6 +125,7 @@ export default function TutorialTree({
   node30ScreenPos,
   node90ScreenPos,
   sidebarNode3Pos,
+  glowZoneScreenPos,
   isTrashActive,
   trashBinPos,
 }: TutorialProps) {
@@ -299,13 +301,14 @@ export default function TutorialTree({
         </div>
       )}
 
-      {/* Glow drop zone (Step 1) - Visual indicator only, pointer-events pass through to RF pane */}
+      {/* Glow drop zone (Step 1) — Dynamically positioned to match canvas GLOW_ZONE */}
       {currentStep === 0 && (
         <div
           className="fixed z-50 pointer-events-none"
           style={{
-            left: "300px",
-            top: "500px",
+            // Center the 100px ring on the computed screen position
+            left: glowZoneScreenPos ? `${glowZoneScreenPos.x - 50}px` : "250px",
+            top: glowZoneScreenPos ? `${glowZoneScreenPos.y - 50}px` : "450px",
             width: "100px",
             height: "100px",
             borderRadius: "50%",

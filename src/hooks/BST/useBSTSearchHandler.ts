@@ -16,6 +16,7 @@ interface UseBSTSearchHandlerProps {
   setDescription: (desc: string) => void;
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
+  setIsAnimating: (v: boolean) => void;
 }
 
 export function useBSTSearchHandler({
@@ -25,6 +26,7 @@ export function useBSTSearchHandler({
   setDescription,
   animationSpeed,
   isPausedRef,
+  setIsAnimating,
 }: UseBSTSearchHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const bstRootRef = useRef<BSTNode | null>(bstRoot);
@@ -35,11 +37,16 @@ export function useBSTSearchHandler({
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
+      setIsAnimating(true);
 
       const root = bstRootRef.current;
       if (!root) {
         setDescription("Tree is empty");
-        controller.scheduleStep(() => setDescription(""), animationSpeed * 2); // Keep for 2 seconds
+        controller.scheduleStep(() => {
+          setDescription("");
+          setIsAnimating(false);
+        }, animationSpeed * 2);
+        return;
       }
 
       // Pre-compute
@@ -108,18 +115,25 @@ export function useBSTSearchHandler({
           setEdges(rfEdges);
 
           // Step 3: Clean up
-          // Keep the result visible for a moment before clearing highlights and text.
           controller.scheduleStep(() => {
             setNodes(rfNodes);
             setEdges(rfEdges);
             setDescription("");
+            setIsAnimating(false);
           }, animationSpeed * 4);
         },
         animationSpeed * (globalOffset + 1),
       );
     },
 
-    [animationSpeed, isPausedRef, setNodes, setEdges, setDescription],
+    [
+      animationSpeed,
+      isPausedRef,
+      setNodes,
+      setEdges,
+      setDescription,
+      setIsAnimating,
+    ],
   );
 
   const cancelAnimation = useCallback(() => {

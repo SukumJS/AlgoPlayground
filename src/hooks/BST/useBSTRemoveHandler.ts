@@ -20,6 +20,7 @@ interface UseBSTRemoveHandlerProps {
   setDescription: (desc: string) => void;
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
+  setIsAnimating: (v: boolean) => void;
 }
 
 export function useBSTRemoveHandler({
@@ -30,6 +31,7 @@ export function useBSTRemoveHandler({
   setDescription,
   animationSpeed,
   isPausedRef,
+  setIsAnimating,
 }: UseBSTRemoveHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const bstRootRef = useRef<BSTNode | null>(bstRoot);
@@ -42,11 +44,15 @@ export function useBSTRemoveHandler({
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
+      setIsAnimating(true);
 
       const root = bstRootRef.current;
       if (!root) {
         setDescription("Tree is empty");
-        controller.scheduleStep(() => setDescription(""), animationSpeed * 2); // Keep for 2 seconds
+        controller.scheduleStep(() => {
+          setDescription("");
+          setIsAnimating(false);
+        }, animationSpeed * 2);
       }
 
       // Pre-compute search path and tree states
@@ -112,7 +118,10 @@ export function useBSTRemoveHandler({
           setNodes(rfNodes); // Ensure nodes are reset to original state
           setEdges(rfEdges); // Ensure edges are reset to original state
           setDescription(`❌ ${value} was not found in the tree.`);
-          controller.scheduleStep(() => setDescription(""), animationSpeed * 4); // Longer delay for final state
+          controller.scheduleStep(() => {
+            setDescription("");
+            setIsAnimating(false);
+          }, animationSpeed * 4);
         }, animationSpeed * globalOffset);
         return;
       }
@@ -263,14 +272,13 @@ export function useBSTRemoveHandler({
         // Step 5c: Final State Update
         globalOffset++;
         controller.scheduleStep(() => {
-          // The nodes are already in their final highlighted state from the interpolation.
-          // We just update the description and schedule the final cleanup.
           setDescription(`Removed ${value}.`);
           controller.scheduleStep(() => {
             setBSTRoot(newRoot);
             setNodes(finalRF.nodes as RFNode[]);
             setEdges(finalRF.edges as RFEdge[]);
-            setDescription(""); // Clear final description
+            setDescription("");
+            setIsAnimating(false);
           }, animationSpeed * 4);
         }, animationSpeed * globalOffset);
       } else {
@@ -281,7 +289,10 @@ export function useBSTRemoveHandler({
           setNodes([]);
           setEdges([]);
           setDescription(`Removed ${value}. The tree is now empty.`);
-          controller.scheduleStep(() => setDescription(""), animationSpeed * 4);
+          controller.scheduleStep(() => {
+            setDescription("");
+            setIsAnimating(false);
+          }, animationSpeed * 4);
         }, animationSpeed * globalOffset);
       }
     },
@@ -293,6 +304,7 @@ export function useBSTRemoveHandler({
       setNodes,
       setEdges,
       setDescription,
+      setIsAnimating,
     ],
   );
 

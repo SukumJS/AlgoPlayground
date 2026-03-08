@@ -254,12 +254,56 @@ export function rebuildBTFromReactFlow(
 
   // 3. Find the root (the node that is NEVER a target)
   // If there are multiple disconnected components, we'll just pick the first valid root we find.
+  let mainRoot: BTNode | null = null;
   for (const n of validNodes) {
     if (!targetIds.has(n.id)) {
-      return nodeMap.get(n.id) || null;
+      mainRoot = nodeMap.get(n.id) || null;
+      break;
     }
   }
 
-  // Fallback (e.g. cycles exist, though React Flow UI usually prevents this): just return the first node
-  return nodeMap.get(validNodes[0].id) || null;
+  if (!mainRoot) {
+    mainRoot = nodeMap.get(validNodes[0].id) || null;
+  }
+
+  // 4. Trace the tree from mainRoot to find all reached nodes
+  const reached = new Set<string>();
+  if (mainRoot) {
+    const queue = [mainRoot];
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      reached.add(cur.id);
+      if (cur.left) queue.push(cur.left);
+      if (cur.right) queue.push(cur.right);
+    }
+  }
+
+  // 5. Any node in validNodes that is NOT reached by mainRoot is an orphan
+  // We simulate "inserting" them into the generic BT so they are assimilated natively.
+  const orphans = validNodes
+    .filter((n) => !reached.has(n.id))
+    .map((n) => nodeMap.get(n.id)!);
+
+  if (orphans.length > 0) {
+    // Sort orphans exactly by timestamp embedded in ID to preserve insertion order
+    orphans.sort((a, b) => {
+      const getTs = (id: string) => {
+        const match = id.match(/(\d{10,})/);
+        return match ? parseInt(match[1], 10) : 0;
+      };
+      return getTs(a.id) - getTs(b.id);
+    });
+
+    // Insert them into mainRoot
+    orphans.forEach((o) => {
+      if (!mainRoot) {
+        mainRoot = { id: o.id, value: o.value, left: null, right: null };
+        reached.add(o.id);
+      } else {
+        insertBT(mainRoot, o.value, o.id);
+      }
+    });
+  }
+
+  return mainRoot;
 }
