@@ -22,6 +22,7 @@ interface UseBTRemoveHandlerProps {
   applyHighlighting: AnimationCallbacks["applyHighlighting"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
+  setIsAnimating: (v: boolean) => void;
 }
 
 export function useBTRemoveHandler({
@@ -33,6 +34,7 @@ export function useBTRemoveHandler({
   applyHighlighting,
   animationSpeed,
   isPausedRef,
+  setIsAnimating,
 }: UseBTRemoveHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
@@ -60,6 +62,7 @@ export function useBTRemoveHandler({
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
+      setIsAnimating(true);
 
       // animate: BFS path
       const positions = calculateBTPositions(root);
@@ -263,7 +266,10 @@ export function useBTRemoveHandler({
           setNodes(finalRF.nodes as RFNode[]);
           setEdges(finalRF.edges as RFEdge[]);
           setDescription(`Successfully removed ${value}.`);
-          controller.scheduleStep(() => setDescription(""), animationSpeed * 2);
+          controller.scheduleStep(() => {
+            setDescription("");
+            setIsAnimating(false);
+          }, animationSpeed * 2);
         }, animationSpeed * globalOffset);
       } else {
         // Tree is completely empty
@@ -273,7 +279,10 @@ export function useBTRemoveHandler({
           setNodes([]);
           setEdges([]);
           setDescription(`Removed ${value}. The tree is now empty.`);
-          controller.scheduleStep(() => setDescription(""), animationSpeed * 4); // Longer delay for final state
+          controller.scheduleStep(() => {
+            setDescription("");
+            setIsAnimating(false);
+          }, animationSpeed * 4);
         }, animationSpeed * globalOffset);
       }
     },
@@ -285,6 +294,7 @@ export function useBTRemoveHandler({
       setNodes,
       setEdges,
       setDescription,
+      setIsAnimating,
     ],
   );
 

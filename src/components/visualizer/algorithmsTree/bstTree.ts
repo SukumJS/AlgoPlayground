@@ -327,7 +327,7 @@ export function rebuildBSTFromNodes(
 }
 
 function extractTimestamp(id: string): number | null {
-  const match = id.match(/(\d{10,})$/);
+  const match = id.match(/(\d{10,})/);
   if (match) return parseInt(match[1], 10);
   return null;
 }

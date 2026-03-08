@@ -85,22 +85,36 @@ function shouldSwap(
   return isMinHeap ? childVal < parentVal : childVal > parentVal;
 }
 
-/** Sift up: swap node with parent until heap property is restored. Returns array of swap paths (ids). */
+/** Sift up: swap node with parent until heap property is restored.
+ *  Records the ID of the PARENT position where our value lands after each swap,
+ *  so the animation can follow the node moving upward.
+ */
 function siftUp(root: HeapNode, nodeId: string, isMinHeap: boolean): string[] {
   const swaps: string[] = [];
+  // Track the current node by its live tree reference so we can follow it up
   let cur = findWithParent(root, nodeId);
   while (cur && cur.parent) {
     if (shouldSwap(cur.parent.value, cur.node.value, isMinHeap)) {
-      // Swap values (keep structure)
-      const tmpVal = cur.parent.value;
-      const tmpId = cur.parent.id;
-      cur.parent.value = cur.node.value;
-      cur.parent.id = cur.node.id;
-      cur.node.value = tmpVal;
-      cur.node.id = tmpId;
-      swaps.push(cur.parent.id);
-      // Continue from the parent position (which now has our value)
-      cur = findWithParent(root, cur.parent.id);
+      const parentRef = cur.parent;
+      const nodeRef = cur.node;
+
+      // Record the parent's current ID (destination for our value)
+      const parentId = parentRef.id;
+
+      // Swap values and IDs in-place
+      const tmpVal = parentRef.value;
+      const tmpId = parentRef.id;
+      parentRef.value = nodeRef.value;
+      parentRef.id = nodeRef.id;
+      nodeRef.value = tmpVal;
+      nodeRef.id = tmpId;
+
+      // After swap, our value is now AT parentRef (whose id is now nodeRef's original id)
+      // Record the id of WHERE our node landed (i.e. parentRef.id after swap = old nodeId)
+      swaps.push(parentId); // parentId is now the "old parent position" — animation swaps nodeId ↔ parentId
+
+      // Continue upward: our value is now at parentRef, find its parent
+      cur = findWithParent(root, parentRef.id);
     } else {
       break;
     }
@@ -108,7 +122,10 @@ function siftUp(root: HeapNode, nodeId: string, isMinHeap: boolean): string[] {
   return swaps;
 }
 
-/** Sift down: swap node with smallest/largest child until heap property is restored. Returns swap paths. */
+/** Sift down: swap node with the better child until heap property is restored.
+ *  Records the CHILD's ID (the swap partner) before swapping, so animation can show
+ *  the node at its original position moving out, and the child coming up.
+ */
 function siftDown(
   root: HeapNode,
   nodeId: string,
@@ -121,6 +138,7 @@ function siftDown(
   let cur = curFind.node;
   while (true) {
     let target = cur;
+    // Pick the child that should bubble up (min of children for min-heap, max for max-heap)
     if (cur.left && shouldSwap(target.value, cur.left.value, isMinHeap)) {
       target = cur.left;
     }
@@ -129,16 +147,21 @@ function siftDown(
     }
     if (target === cur) break;
 
-    // Swap values
+    // Record the child's ID BEFORE swapping (animation: cur swaps with target)
+    const childId = target.id;
+
+    // Swap values and IDs in-place
     const tmpVal = cur.value;
     const tmpId = cur.id;
     cur.value = target.value;
     cur.id = target.id;
     target.value = tmpVal;
     target.id = tmpId;
-    swaps.push(cur.id);
 
-    // Follow the swapped-down node
+    // Record the child position (where the sifting node descended to)
+    swaps.push(childId);
+
+    // Follow the swapped-down node (now at `target` tree position)
     cur = target;
   }
   return swaps;
@@ -228,17 +251,18 @@ export function removeHeap(
     else last.parent.right = null;
   }
 
-  // Replace target's value with last node's value/id to retain visual node for animation
+  // Replace target's value/id with the last node's, then sift to restore heap property
   let siftPath: string[] = [];
   if (targetNode.id !== last.node.id) {
     targetNode.value = last.node.value;
     targetNode.id = last.node.id;
 
-    // Sift down from target position
+    // Standard heap deletion: try sift-down first.
+    // Only sift-up if sift-down produced no swaps (replacement is smaller/larger than parent).
     siftPath = siftDown(root, targetNode.id, isMinHeap);
-    // Also try sift up in case replacement is smaller (min-heap) or larger (max-heap) than parent
-    const upPath = siftUp(root, targetNode.id, isMinHeap);
-    if (upPath.length > 0) siftPath = upPath;
+    if (siftPath.length === 0) {
+      siftPath = siftUp(root, targetNode.id, isMinHeap);
+    }
   }
 
   return { root, siftPath, lastNodeId, removedId };

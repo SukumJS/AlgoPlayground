@@ -141,7 +141,6 @@ function animateTraversal(
         );
         callbacks.setNodes(clean as RFNode[]);
         callbacks.setEdges(cleanE as never[]);
-        callbacks.setDescription("");
         onComplete();
       }, animationSpeed * 2);
     },
