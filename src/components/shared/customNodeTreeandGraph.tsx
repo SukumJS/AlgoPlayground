@@ -29,9 +29,9 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
 
   // Determine colors based on highlight status
   let bgColorClass = data.isDanger ? "bg-[#BF1A1A]" : "bg-[#D9E363]";
-  const textColorClass = data.isDanger ? "text-white" : "text-[#222121]";
+  let textColorClass = data.isDanger ? "text-white" : "text-[#222121]";
   // Border is ALWAYS #5D5D5D — never changes regardless of highlight or danger state
-  const borderColorClass = "border-[#5D5D5D]";
+  let borderColorClass = "border-[#5D5D5D]";
 
   const inlineStyle: React.CSSProperties = {
     boxShadow: data.isGlowing
