@@ -96,7 +96,7 @@ export const dijkstraRunner: AlgorithmRunner = {
       const s = snap(allNodeIds, allEdgeIds, nOver, {}, prevNode, prevEdge);
       steps.push({
         ...s,
-        description: `Start at node ${startLabel} (distance = 0)`,
+        description: `Initialize distances: ${startLabel} = 0, all other nodes = infinity.`,
       });
       prevNode = s.nodeStates;
       prevEdge = s.edgeStates;
@@ -141,7 +141,7 @@ export const dijkstraRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
-          description: `Visit node ${currentLabel} (distance = ${currentDist})`,
+          description: `Pick the unvisited node with the smallest distance: ${currentLabel} (${currentDist}). Mark it visited.`,
         });
         prevNode = s.nodeStates;
         prevEdge = s.edgeStates;
@@ -179,7 +179,7 @@ export const dijkstraRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
-          description: `Target found! Shortest path to ${endLabel} has distance ${currentDist}`,
+          description: `Target ${endLabel} is finalized. The shortest distance is ${currentDist}.`,
         });
         prevNode = s.nodeStates;
         prevEdge = s.edgeStates;
@@ -217,7 +217,7 @@ export const dijkstraRunner: AlgorithmRunner = {
           );
           steps.push({
             ...s,
-            description: `Relax edge ${currentLabel} → ${targetLabel}: distance updated to ${newDist}`,
+            description: `Check ${currentLabel} -> ${targetLabel}. This route is shorter, so update distance to ${newDist}.`,
           });
           prevNode = s.nodeStates;
           prevEdge = s.edgeStates;
@@ -232,7 +232,7 @@ export const dijkstraRunner: AlgorithmRunner = {
           );
           steps.push({
             ...s,
-            description: `Edge ${currentLabel} → ${targetLabel}: no improvement (${newDist} ≥ ${dist.get(targetId)!})`,
+            description: `Check ${currentLabel} -> ${targetLabel}. No update, because current best is already smaller (${dist.get(targetId)!}).`,
           });
           prevNode = s.nodeStates;
           prevEdge = s.edgeStates;

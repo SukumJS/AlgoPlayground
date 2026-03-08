@@ -54,6 +54,19 @@ const edgeTypes = { tree: TreeEdge, floatingEdge: FloatingEdge };
 const fitViewOptions: FitViewOptions = { padding: 0.2 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: false };
 
+const getDefaultGraphExplanation = (name: string) =>
+  `This section will explain ${name}. Perform an operation to begin.`;
+
+// สร้าง Object ไว้แปลงชื่อ Graph Algorithm
+const algorithmNames: Record<string, string> = {
+  dijkstra: "Dijkstra's Algorithm",
+  "bellman-ford": "Bellman-Ford Algorithm",
+  prims: "Prim's Algorithm",
+  kruskals: "Kruskal's Algorithm",
+  "breadth-first-search": "Breadth-First Search",
+  "depth-first-search": "Depth-First Search",
+};
+
 // Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
 const graphInitialNodes: Node[] = [
   {
@@ -251,6 +264,24 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   const [nodes, setNodes] = useState<Node[]>(graphInitialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [showInfo, setShowInfo] = useState(false);
+  const defaultPrettyName = algorithm
+    ? algorithmNames[algorithm] || "Graph Algorithms"
+    : "Graph Algorithms";
+  const [explanation, setExplanation] = useState<string>(
+    getDefaultGraphExplanation(defaultPrettyName),
+  );
+
+  // ดึงชื่อที่สวยงามจาก Mapping (ถ้าไม่เจอให้ใช้ค่า Default)
+  const prettyName = algorithm
+    ? algorithmNames[algorithm] || "Graph Algorithms"
+    : "Graph Algorithms";
+
+  // reset explanation when the selected algorithm changes
+  React.useEffect(() => {
+    if (algorithm) {
+      setExplanation(getDefaultGraphExplanation(prettyName));
+    }
+  }, [algorithm, prettyName]);
 
   const { flowToScreenPosition } = useReactFlow();
 
@@ -273,6 +304,17 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   useEffect(() => {
     animationRef.current = animation;
   }, [animation]);
+
+  // Derive effective explanation based on animation state
+  const effectiveExplanation = useMemo(() => {
+    if (isAnimationActive && animation.description) {
+      return animation.description;
+    }
+    if (explanation.trim()) {
+      return explanation;
+    }
+    return getDefaultGraphExplanation(prettyName);
+  }, [isAnimationActive, animation.description, explanation, prettyName]);
 
   // Callback from Data_graph "Search" button — stable identity via ref
   const handleAlgorithmSearch = useCallback(
@@ -409,20 +451,12 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       <SideTab title={sideTabTitle}>
         <div>
           <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
-          <ExplainAlgo
-            tutorialMode={graphTutorial.showTutorial}
-            algoType={algorithm}
-            algoName={
-              algorithm
-                ? algorithm[0].toUpperCase() +
-                  algorithm.slice(1).replace(/-/g, " ")
-                : ""
-            }
-          />
+          <ExplainAlgo explanation={effectiveExplanation} />
           <Data_graph
             onSearch={handleAlgorithmSearch}
             algorithm={algorithm}
             tutorialMode={graphTutorial.showTutorial}
+            setExplanation={setExplanation}
           />
         </div>
         <div>
@@ -435,6 +469,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       algorithm,
       handleAlgorithmSearch,
       sideTabTitle,
+      effectiveExplanation,
+      setExplanation,
     ],
   );
 

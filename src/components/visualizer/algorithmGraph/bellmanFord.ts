@@ -88,7 +88,7 @@ export const bellmanFordRunner: AlgorithmRunner = {
       const s = snap(allNodeIds, allEdgeIds, nOver, {}, prevNode, prevEdge);
       steps.push({
         ...s,
-        description: `Initialize: dist[${startLabel}] = 0, all others = ∞`,
+        description: `Initialize distances: ${startLabel} = 0, all other nodes = infinity.`,
       });
       prevNode = s.nodeStates;
       prevEdge = s.edgeStates;
@@ -132,7 +132,7 @@ export const bellmanFordRunner: AlgorithmRunner = {
           );
           steps.push({
             ...s,
-            description: `Iteration ${i}: Check edge ${sourceLabel} → ${targetLabel} (weight ${edge.weight}): dist[${sourceLabel}] + ${edge.weight} = ${newDist} vs dist[${targetLabel}] = ${fmtDist(oldDist)}`,
+            description: `Round ${i}: Check ${sourceLabel} -> ${targetLabel}. Candidate distance is ${newDist}, current distance is ${fmtDist(oldDist)}.`,
           });
           prevNode = s.nodeStates;
           prevEdge = s.edgeStates;
@@ -160,7 +160,7 @@ export const bellmanFordRunner: AlgorithmRunner = {
           );
           steps.push({
             ...s,
-            description: `Iteration ${i}: Relax ${sourceLabel} → ${targetLabel}: dist[${targetLabel}] updated ${fmtDist(oldDist)} → ${newDist}`,
+            description: `Round ${i}: Update distance of ${targetLabel} from ${fmtDist(oldDist)} to ${newDist} via ${sourceLabel}.`,
           });
           prevNode = s.nodeStates;
           prevEdge = s.edgeStates;
@@ -172,7 +172,7 @@ export const bellmanFordRunner: AlgorithmRunner = {
           const s = snap(allNodeIds, allEdgeIds, {}, eOver, prevNode, prevEdge);
           steps.push({
             ...s,
-            description: `Iteration ${i}: No improvement for ${sourceLabel} → ${targetLabel} (${newDist} ≥ ${fmtDist(oldDist)})`,
+            description: `Round ${i}: No update for ${targetLabel}; ${fmtDist(oldDist)} is still better than ${newDist}.`,
           });
           prevNode = s.nodeStates;
           prevEdge = s.edgeStates;
@@ -184,7 +184,7 @@ export const bellmanFordRunner: AlgorithmRunner = {
         const s = snap(allNodeIds, allEdgeIds, {}, {}, prevNode, prevEdge);
         steps.push({
           ...s,
-          description: `Iteration ${i}: No edges relaxed — algorithm converged early`,
+          description: `Round ${i}: No distances changed, so Bellman-Ford can stop early.`,
         });
         prevNode = s.nodeStates;
         prevEdge = s.edgeStates;
@@ -208,7 +208,7 @@ export const bellmanFordRunner: AlgorithmRunner = {
         const s = snap(allNodeIds, allEdgeIds, {}, {}, prevNode, prevEdge);
         steps.push({
           ...s,
-          description: `Negative cycle detected! Shortest paths are undefined.`,
+          description: `A negative cycle is detected. Shortest-path results are not reliable.`,
         });
         return steps;
       }
@@ -220,7 +220,7 @@ export const bellmanFordRunner: AlgorithmRunner = {
       const s = snap(allNodeIds, allEdgeIds, {}, {}, prevNode, prevEdge);
       steps.push({
         ...s,
-        description: `No path from ${startLabel} to ${endLabel} exists`,
+        description: `No path exists from ${startLabel} to ${endLabel}.`,
       });
       return steps;
     }
@@ -248,7 +248,7 @@ export const bellmanFordRunner: AlgorithmRunner = {
     const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
     steps.push({
       ...s,
-      description: `Shortest path found! Distance from ${startLabel} to ${endLabel} = ${endDist}`,
+      description: `Shortest path is finalized. Distance from ${startLabel} to ${endLabel} is ${endDist}.`,
     });
 
     return steps;

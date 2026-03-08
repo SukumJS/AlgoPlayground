@@ -89,7 +89,10 @@ export const dfsRunner: AlgorithmRunner = {
         [startNode.id]: "visiting",
       };
       const s = snap(allNodeIds, allEdgeIds, nOver, {}, prevNode, prevEdge);
-      steps.push({ ...s, description: `Start DFS at node ${startLabel}` });
+      steps.push({
+        ...s,
+        description: `Start DFS from node ${startLabel}. Push it onto the stack.`,
+      });
       prevNode = s.nodeStates;
       prevEdge = s.edgeStates;
     }
@@ -123,7 +126,7 @@ export const dfsRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
-          description: `Pop and visit node ${currentLabel}`,
+          description: `Pop node ${currentLabel} from the stack and mark it as visited.`,
         });
         prevNode = s.nodeStates;
         prevEdge = s.edgeStates;
@@ -161,7 +164,7 @@ export const dfsRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
-          description: `Target node ${endLabel} found!`,
+          description: `Target node ${endLabel} is reached. Trace back through parents to highlight the path.`,
         });
         break;
       }
@@ -200,7 +203,7 @@ export const dfsRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
-          description: `Explore edge ${currentLabel} — ${targetLabel}: push node ${targetLabel}`,
+          description: `Explore ${currentLabel} -> ${targetLabel}. ${targetLabel} is unvisited, so push it onto the stack.`,
         });
         prevNode = s.nodeStates;
         prevEdge = s.edgeStates;

@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 
 const SPEED_MAP = {
-  "1x": 900,
-  "2x": 500,
+  "1x": 1000,
+  "2x": 700,
   "5x": 300,
 } as const;
 

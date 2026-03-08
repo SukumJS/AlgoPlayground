@@ -55,7 +55,16 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
   } else if (data.isHighlighted && data.highlightColor) {
     if (data.highlightColor.startsWith("#")) {
       bgColorClass = "";
+      borderColorClass = "";
+      textColorClass = "";
       inlineStyle.backgroundColor = data.highlightColor;
+      inlineStyle.borderColor = data.highlightColor;
+
+      if (data.highlightColor.toUpperCase() === "#F7AD45") {
+        inlineStyle.color = "#222121";
+      } else {
+        inlineStyle.color = "white";
+      }
       // Text stays #222121 — do NOT set inlineStyle.color
     } else {
       switch (data.highlightColor) {
@@ -76,6 +85,7 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
     }
   }
 
+  // Keep border width consistent — always border-2
   const borderWidthClass =
     animColors || data.isHighlighted || data.isDanger ? "border-4" : "border-2";
 

@@ -48,11 +48,8 @@ export function useBSTRemoveHandler({
 
       const root = bstRootRef.current;
       if (!root) {
-        setDescription("Tree is empty");
-        controller.scheduleStep(() => {
-          setDescription("");
-          setIsAnimating(false);
-        }, animationSpeed * 2);
+        setDescription("The tree is empty. There is nothing to remove.");
+        controller.scheduleStep(() => setDescription(""), animationSpeed * 2); // Keep for 2 seconds
       }
 
       // Pre-compute search path and tree states
@@ -94,7 +91,7 @@ export function useBSTRemoveHandler({
             setEdges(highlightedEdges);
             const currentNode = rfNodes.find((n) => n.id === id);
             setDescription(
-              `Searching for node ${value} to remove. Comparing with ${currentNode?.data.label}.`,
+              `Searching for ${value} to remove. Compare with node ${currentNode?.data.label} and continue down the BST path.`,
             );
           },
           animationSpeed * (idx * 2 + 1),
@@ -117,11 +114,8 @@ export function useBSTRemoveHandler({
         controller.scheduleStep(() => {
           setNodes(rfNodes); // Ensure nodes are reset to original state
           setEdges(rfEdges); // Ensure edges are reset to original state
-          setDescription(`❌ ${value} was not found in the tree.`);
-          controller.scheduleStep(() => {
-            setDescription("");
-            setIsAnimating(false);
-          }, animationSpeed * 4);
+          setDescription(`Value ${value} was not found, so no node is removed.`);
+          controller.scheduleStep(() => setDescription(""), animationSpeed * 4); // Longer delay for final state
         }, animationSpeed * globalOffset);
         return;
       }
@@ -139,7 +133,7 @@ export function useBSTRemoveHandler({
         }));
         setNodes(highlighted);
         setEdges(rfEdges);
-        setDescription(`Found ${value}! Preparing for removal...`);
+        setDescription(`Found ${value}. Prepare to remove this node and reconnect the tree.`);
       }, animationSpeed * globalOffset);
       globalOffset++; // Pause after description
       controller.scheduleStep(() => {}, animationSpeed * globalOffset);
@@ -164,7 +158,7 @@ export function useBSTRemoveHandler({
           setNodes(highlighted);
           setEdges(rfEdges);
           setDescription(
-            `Node has two children. Finding its inorder successor to take its place.`,
+            `This node has two children. Find the inorder successor to replace it safely.`,
           );
         }, animationSpeed * globalOffset);
         globalOffset++; // Pause after description
@@ -221,7 +215,7 @@ export function useBSTRemoveHandler({
 
           setNodes(tangledNodes);
           setEdges(hlEdges);
-          setDescription("Re-wiring connections to remove the node..."); // Description for topology change
+          setDescription("Update parent and child links to remove the target node.");
         }, animationSpeed * globalOffset);
 
         globalOffset++; // Pause after description
@@ -263,7 +257,7 @@ export function useBSTRemoveHandler({
 
             setNodes(interpolated);
             setEdges(finalRF.edges as RFEdge[]);
-            setDescription("Re-arranging nodes to the new structure..."); // Description for geometry change
+            setDescription("Move nodes into their new positions after removal.");
           }, animationSpeed * fractionOffset);
         }
         globalOffset++;
@@ -272,7 +266,9 @@ export function useBSTRemoveHandler({
         // Step 5c: Final State Update
         globalOffset++;
         controller.scheduleStep(() => {
-          setDescription(`Removed ${value}.`);
+          // The nodes are already in their final highlighted state from the interpolation.
+          // We just update the description and schedule the final cleanup.
+          setDescription(`Removed ${value}. BST structure is updated.`);
           controller.scheduleStep(() => {
             setBSTRoot(newRoot);
             setNodes(finalRF.nodes as RFNode[]);

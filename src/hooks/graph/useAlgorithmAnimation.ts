@@ -14,9 +14,9 @@ const EDGE_STROKE: Record<EdgeAnimationState, string> = {
 
 // ── Speed multipliers (ms per step) ──────────────────────────────
 const SPEED_MS: Record<string, number> = {
-  "1x": 1000,
-  "2x": 500,
-  "5x": 200,
+  "1x": 1400,
+  "2x": 700,
+  "5x": 300,
 };
 
 // ── Hook ─────────────────────────────────────────────────────────

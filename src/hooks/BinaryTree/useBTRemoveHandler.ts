@@ -44,13 +44,13 @@ export function useBTRemoveHandler({
     (value: number) => {
       const root = btRootRef.current;
       if (!root) {
-        setDescription("Tree is empty");
+        setDescription("The tree is empty. There is nothing to remove.");
         return;
       }
 
       const { found, nodeId, path } = searchBT(root, value);
       if (!found) {
-        setDescription(`❌ Value ${value} not found`);
+        setDescription(`Value ${value} was not found, so no node is removed.`);
         const tempController = new AnimationController(isPausedRef);
         tempController.scheduleStep(
           () => setDescription(""),
@@ -102,7 +102,7 @@ export function useBTRemoveHandler({
             setEdges(highlightedEdges);
             const currentNode = rfNodes.find((n) => n.id === id); // Find current node for description
             setDescription(
-              `Searching for node ${value} to remove. Visiting node ${currentNode?.data.label}.`,
+              `Searching for ${value} to remove. Visiting node ${currentNode?.data.label} in level order.`,
             );
           }, animationSpeed * globalOffset);
 
@@ -127,7 +127,7 @@ export function useBTRemoveHandler({
         }));
         setNodes(highlighted);
         setEdges(rfEdges); // Ensure edges are reset to original state
-        setDescription(`Found ${value}! Preparing for removal...`);
+        setDescription(`Found ${value}. Prepare to remove the node and reconnect the tree.`);
       }, animationSpeed * globalOffset);
       globalOffset++; // Pause after description
       controller.scheduleStep(() => {}, animationSpeed * globalOffset);
@@ -157,7 +157,7 @@ export function useBTRemoveHandler({
           setEdges(rfEdges);
           const deepestNode = rfNodes.find((n) => n.id === deepestId);
           setDescription(
-            `Replacing node ${value} with the deepest, rightmost node (${deepestNode?.data.label}).`,
+            `Use the deepest rightmost node (${deepestNode?.data.label}) to replace the removed value.`,
           );
         }, animationSpeed * globalOffset);
       }
@@ -213,7 +213,7 @@ export function useBTRemoveHandler({
 
           setNodes(tangledNodes);
           setEdges(hlEdges);
-          setDescription("Re-wiring connections to remove the node...");
+          setDescription("Update parent and child links after deletion.");
         }, animationSpeed * globalOffset);
 
         // Step 4b: Geometry Untangle (15 frames)
@@ -253,7 +253,7 @@ export function useBTRemoveHandler({
 
             setNodes(interpolated);
             setEdges(finalRF.edges as RFEdge[]);
-            setDescription("Re-arranging nodes to the new structure..."); // Description for geometry change
+            setDescription("Move nodes into their new positions after restructuring.");
           }, animationSpeed * fractionOffset);
         }
         globalOffset++;
@@ -265,11 +265,8 @@ export function useBTRemoveHandler({
           setBTRoot(newRoot);
           setNodes(finalRF.nodes as RFNode[]);
           setEdges(finalRF.edges as RFEdge[]);
-          setDescription(`Successfully removed ${value}.`);
-          controller.scheduleStep(() => {
-            setDescription("");
-            setIsAnimating(false);
-          }, animationSpeed * 2);
+          setDescription(`Removed ${value}. Binary tree structure is updated.`);
+          controller.scheduleStep(() => setDescription(""), animationSpeed * 2);
         }, animationSpeed * globalOffset);
       } else {
         // Tree is completely empty

@@ -37,7 +37,7 @@ export function useHeapSearchHandler(params: {
       const controller = new AnimationController(isPausedRef);
       setIsAnimating(true);
       if (!heapRoot) {
-        setDescription("Tree is empty");
+        setDescription("The heap is empty. Insert a node first.");
         setIsAnimating(false);
         return;
       }
@@ -77,7 +77,7 @@ export function useHeapSearchHandler(params: {
             setNodes(highlighted);
             setEdges(highlightedEdges);
             setDescription(
-              `🔍 Searching for ${value}... (step ${idx + 1}/${path.length})`,
+              `Searching for ${value}. Step ${idx + 1} of ${path.length} in level order.`,
             );
           },
           animationSpeed * (idx + 1),
@@ -97,10 +97,10 @@ export function useHeapSearchHandler(params: {
               },
             }));
             setNodes(highlighted);
-            setDescription(`✓ Found ${value}!`);
+            setDescription(`Value ${value} found. This is the matching heap node.`);
           } else {
             setNodes(rfNodes as RFNode[]);
-            setDescription(`✗ ${value} not found`);
+            setDescription(`Value ${value} was not found in the heap.`);
           }
           setEdges(rfEdges as RFEdge[]);
 

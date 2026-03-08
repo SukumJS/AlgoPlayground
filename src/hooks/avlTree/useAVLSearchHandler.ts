@@ -39,7 +39,7 @@ export function useAVLSearchHandler(params: {
       setIsAnimating(true);
 
       if (!avlRoot) {
-        animationCallbacks.setDescription("Tree is empty");
+        animationCallbacks.setDescription("The tree is empty. Insert a node first.");
         setIsAnimating(false);
         controller.scheduleStep(
           () => animationCallbacks.setDescription(""),
@@ -80,7 +80,7 @@ export function useAVLSearchHandler(params: {
             animationCallbacks.setEdges(highlightedEdges);
             const currentNode = rfNodes.find((n) => n.id === id);
             animationCallbacks.setDescription(
-              `Searching for ${value}. Comparing with ${currentNode?.data.label}.`,
+              `Searching for ${value}. Compare with node ${currentNode?.data.label} and follow the AVL search path.`,
             );
           },
           animationSpeed * (idx + 1),
@@ -100,10 +100,10 @@ export function useAVLSearchHandler(params: {
               },
             }));
             animationCallbacks.setNodes(highlighted);
-            animationCallbacks.setDescription(`Found ${value}!`);
+            animationCallbacks.setDescription(`Value ${value} found. This is the target node.`);
           } else {
             animationCallbacks.setNodes(rfNodes);
-            animationCallbacks.setDescription(`${value} not found`);
+            animationCallbacks.setDescription(`Value ${value} was not found in the AVL tree.`);
           }
           animationCallbacks.setEdges(rfEdges);
 
