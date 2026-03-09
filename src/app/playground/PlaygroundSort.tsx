@@ -243,9 +243,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
       <SideTab title={prettyName}>
         <div>
           <CodeAlgo />
-          <ExplainAlgo
-            explanation={explanation}
-          />
+          <ExplainAlgo explanation={explanation} />
           <Data_sort
             nodeInput={nodeInput}
             setNodeInput={setNodeInput}
@@ -257,7 +255,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
           />
         </div>
         <div>
-          <PostTest_portal />
+          <PostTest_portal algorithm={algorithm} algoType="sort" />
         </div>
       </SideTab>
     ),

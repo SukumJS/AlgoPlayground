@@ -7,6 +7,11 @@ const eslintConfig = [
   ...nextCoreWebVitals,
   ...nextTypescript,
   prettierConfig,
+  {
+    rules: {
+      "no-multiple-empty-lines": ["warn", { max: 1, maxEOF: 0, maxBOF: 0 }],
+    },
+  },
 ];
 
 export default eslintConfig;
