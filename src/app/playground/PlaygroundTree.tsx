@@ -464,9 +464,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       <SideTab title={prettyName}>
         <div>
           <CodeAlgo tutorialMode={tutorial.showTutorial} />
-          <ExplainAlgo
-            explanation={effectiveExplanation}
-          />
+          <ExplainAlgo explanation={effectiveExplanation} />
           {/* Display Data Input for Tree Algorithms */}
           <Data_tree
             tutorialMode={tutorial.showTutorial}
@@ -518,7 +516,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
           />
         </div>
         <div>
-          <PostTest_portal />
+          <PostTest_portal algorithm={algorithm} algoType="tree" />
         </div>
       </SideTab>
     ),

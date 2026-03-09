@@ -95,6 +95,7 @@ function PlaygroundOrderingQuestion({
         data: {
           ...node.data,
           isHighlighted: isSelected,
+          highlightColor: isSelected ? "#9CA3AF" : undefined,
           label: node.data.label as string,
           variant: node.data.variant as "square" | "circle",
         },

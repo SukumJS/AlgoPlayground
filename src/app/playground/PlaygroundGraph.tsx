@@ -460,7 +460,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
           />
         </div>
         <div>
-          <PostTest_portal />
+          <PostTest_portal algorithm={algorithm} algoType="graph" />
         </div>
       </SideTab>
     ),
