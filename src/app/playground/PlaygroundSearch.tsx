@@ -277,6 +277,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
               handleTutorialDropSuccess();
               setNodeInput("");
             }}
+            isRunning={controller.isRunning}
           />
         </div>
         <div>
@@ -293,6 +294,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
       handleTargetChange,
       showTutorial,
       handleTutorialDropSuccess,
+      controller.isRunning,
     ],
   );
 

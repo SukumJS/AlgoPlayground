@@ -258,6 +258,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
               handleTutorialDropSuccess();
               setNodeInput("");
             }}
+            isRunning={controller.isRunning}
           />
         </div>
         <div>
@@ -272,6 +273,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
       prettyName,
       showTutorial,
       handleTutorialDropSuccess,
+      controller.isRunning,
     ],
   );
 

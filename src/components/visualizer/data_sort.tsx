@@ -21,7 +21,10 @@ type nodeProps = {
 
   // search
   targetValue?: number | string;
+  // รับค่า isRunning มาจากหน้าหลัก
   setTargetValue?: (val: number | string) => void;
+
+  isRunning?: boolean;
 };
 
 function Data_sort({
@@ -31,6 +34,7 @@ function Data_sort({
   onTutorialDropSuccess,
   targetValue,
   setTargetValue,
+  isRunning,
 }: nodeProps) {
   // ตั้งค่าเริ่มต้นให้เปิดแท็บอัตโนมัติถ้าเป็น Tutorial
   const [isDataSortOpen, setIsDataSortOpen] = useState(
@@ -203,6 +207,7 @@ function Data_sort({
             data-tutorial-target="sidebar-sort-node"
             className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg cursor-grab"
             onPointerDown={(event) => {
+              if (isRunning) return;
               const value = Number(nodeInput) || 0;
               setType("input");
               setDraggedValue(value);
@@ -212,6 +217,7 @@ function Data_sort({
             <input
               type="number"
               placeholder="0"
+              disabled={isRunning}
               className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={nodeInput}
               onChange={(e) => {
@@ -231,6 +237,7 @@ function Data_sort({
               key={index}
               className="shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] cursor-grab"
               onPointerDown={(event) => {
+                if (isRunning) return;
                 const value = parseInt(item.number);
                 setType("custom");
                 setDraggedValue(value);
@@ -243,7 +250,11 @@ function Data_sort({
         </div>
 
         {/* Random generator */}
-        <div className="flex justify-center items-center text-center p-2 w-full">
+        <div
+          className={`flex justify-center items-center text-center p-2 w-full transition-all ${
+            isRunning ? "pointer-events-none opacity-50" : ""
+          }`}
+        >
           <RandomSize
             onAdd={handleGenerateRandomNodes}
             onReset={handleResetNodes}
@@ -260,12 +271,13 @@ function Data_sort({
             <input
               type="number"
               value={targetValue}
+              disabled={isRunning}
               onChange={(e) =>
                 setTargetValue(
                   e.target.value === "" ? "" : Number(e.target.value),
                 )
               }
-              className="w-full p-2 mt-2 border-2 border-[#5D5D5D] rounded-lg text-center text-xl font-bold focus:border-[#D9E363] focus:outline-none transition-colors"
+              className="mt-2 border border-gray-200 p-2 rounded-lg w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
         )}
