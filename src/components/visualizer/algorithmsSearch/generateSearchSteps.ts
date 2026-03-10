@@ -13,9 +13,9 @@ export function generateSearchStepsByType(
   }));
 
   switch (algoType) {
-    case "linear":
+    case "linear-search":
       return generateLinearSearchSteps(initialNodes, target);
-    case "binary":
+    case "binary-search":
       return generateBinarySearchSteps(initialNodes, target);
     default:
       return generateLinearSearchSteps(initialNodes, target);
