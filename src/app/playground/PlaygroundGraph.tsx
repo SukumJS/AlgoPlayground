@@ -457,6 +457,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
             algorithm={algorithm}
             tutorialMode={graphTutorial.showTutorial}
             setExplanation={setExplanation}
+            isAnimating={isAnimationActive}
           />
         </div>
         <div>
@@ -471,6 +472,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       sideTabTitle,
       effectiveExplanation,
       setExplanation,
+      isAnimationActive,
     ],
   );
 

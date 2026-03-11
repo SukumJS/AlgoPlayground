@@ -1,12 +1,10 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import React, { useState, useCallback, useRef,useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { useReactFlow, XYPosition } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
-import { Plus, Search, Trash } from "lucide-react";
-import Data_sort from "./data_sort";
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -25,13 +23,14 @@ interface DataGraphProps {
   tutorialMode?: boolean;
   /** Callback to update explanation text */
   setExplanation?: React.Dispatch<React.SetStateAction<string>>;
+  /** True while the algorithm animation is running — locks all interactions */
+  isAnimating?: boolean;
 }
 
 function Data_graph({
   onSearch,
   algorithm = "",
-  tutorialMode = false,
-  setExplanation,
+  isAnimating = false,
 }: DataGraphProps) {
   const [isDataSortOpen, setIsDataSortOpen] = useState(false);
   const { onDragStart, isDragging } = useDnD();
@@ -63,6 +62,9 @@ function Data_graph({
   const createAddNewNode = useCallback(
     (Sample: number): OnDropAction => {
       return ({ position }: { position: XYPosition }) => {
+        // Block drag-drop during animation
+        if (isAnimating) return;
+
         // Here, we create a new node and add it to the flow.
         // You can customize the behavior of what happens when a node is dropped on the flow here.
         const newNode = {
@@ -76,14 +78,8 @@ function Data_graph({
         setType(null);
       };
     },
-    [setNodes, setType],
+    [setNodes, setType, isAnimating],
   );
-
-  //random number in insert tree data
-  const handleInsert = () => {
-    const randomNum = Math.floor(Math.random() * 100) + 1;
-    setInputValue(randomNum.toString());
-  };
 
   //reset all of value in input data
   const handleReset = () => {
@@ -93,6 +89,7 @@ function Data_graph({
   };
 
   const handleSearch = () => {
+    if (isAnimating) return;
     // Kruskal's doesn't need any vertex input; Prim's only needs start
     if (needsStartVertex && !inputValue) return;
     onSearch?.(inputValue, searchValue);
@@ -119,7 +116,11 @@ function Data_graph({
       </button>
       {/* map drag and drop data */}
       <div
-        className={`flex-col ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}
+        className={`flex-col ${isAnimating ? "pointer-events-none" : ""}`}
+        style={{
+          opacity: isAnimating ? 0.2 : isDataSortOpen ? 1 : 0,
+          transition: "opacity 0.3s ease-in-out",
+        }}
       >
         <div
           className={`transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2 px-2 py-2`}
@@ -155,6 +156,8 @@ function Data_graph({
             </div>
           ))}
         </div>
+        <RandomSize onReset={handleReset} />
+        <hr className="border-t border-[#5D5D5D]/20 my-6 mx-2" />
         <div className="flex flex-col gap-2 px-2">
           {needsStartVertex && (
             <div className="flex flex-col gap-1 text-start">
@@ -164,6 +167,7 @@ function Data_graph({
                 className="border border-gray-200 p-2 rounded-lg w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
+                disabled={isAnimating}
               />
             </div>
           )}
@@ -175,6 +179,7 @@ function Data_graph({
                 className="border border-gray-200 p-2 rounded-lg w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
+                disabled={isAnimating}
               />
             </div>
           )}
@@ -182,16 +187,16 @@ function Data_graph({
             className="bg-[#222121] rounded-lg p-2 mt-1 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleSearch}
             disabled={
-              needsEndVertex
+              isAnimating ||
+              (needsEndVertex
                 ? !inputValue || !searchValue
                 : needsStartVertex
                   ? !inputValue
-                  : false
+                  : false)
             }
           >
             {isMST ? "Find MST" : "Search"}
           </button>
-          <RandomSize onReset={handleReset} />
         </div>
       </div>
     </>
