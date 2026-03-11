@@ -25,12 +25,18 @@ interface DataGraphProps {
   setExplanation?: React.Dispatch<React.SetStateAction<string>>;
   /** True while the algorithm animation is running — locks all interactions */
   isAnimating?: boolean;
+  /** Called when user clicks + in Random Size — generates random graph */
+  onRandomGenerate?: (count: number) => void;
+  /** Called when user clicks Reset All */
+  onResetGraph?: () => void;
 }
 
 function Data_graph({
   onSearch,
   algorithm = "",
   isAnimating = false,
+  onRandomGenerate,
+  onResetGraph,
 }: DataGraphProps) {
   const [isDataSortOpen, setIsDataSortOpen] = useState(false);
   const { onDragStart, isDragging } = useDnD();
@@ -86,6 +92,7 @@ function Data_graph({
     setInputValue("");
     setSearchValue("");
     setRemoveValue("");
+    onResetGraph?.();
   };
 
   const handleSearch = () => {
@@ -156,7 +163,7 @@ function Data_graph({
             </div>
           ))}
         </div>
-        <RandomSize onReset={handleReset} />
+        <RandomSize onReset={handleReset} onAdd={onRandomGenerate} />
         <hr className="border-t border-[#5D5D5D]/20 my-6 mx-2" />
         <div className="flex flex-col gap-2 px-2">
           {needsStartVertex && (

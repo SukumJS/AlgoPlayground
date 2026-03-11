@@ -325,6 +325,208 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     [],
   );
 
+  // ── Random Graph Generation ────────────────────────────────────────────────
+  const handleRandomGraphGenerate = useCallback(
+    (count: number) => {
+      if (count <= 0) return;
+
+      const currentNodes = nodes;
+      let allNodes: Node[];
+
+      // Circular layout helper: distribute nodes evenly around a center
+      const centerX = 350;
+      const centerY = 280;
+      const baseRadius = Math.max(120, count * 30); // scale radius with node count
+
+      const circularPosition = (index: number, total: number) => ({
+        x: Math.round(
+          centerX +
+            baseRadius * Math.cos((2 * Math.PI * index) / total - Math.PI / 2),
+        ),
+        y: Math.round(
+          centerY +
+            baseRadius * Math.sin((2 * Math.PI * index) / total - Math.PI / 2),
+        ),
+      });
+
+      if (count > currentNodes.length) {
+        // Keep existing nodes, add more to reach the target count
+        const existingLabels = new Set(
+          currentNodes.map((n) => String(n.data.label)),
+        );
+        const toAdd = count - currentNodes.length;
+        const addedNodes: Node[] = [];
+
+        // Place new nodes in remaining slots around the circle
+        for (let i = 0; i < toAdd; i++) {
+          let label: number;
+          let tries = 0;
+          do {
+            label = Math.floor(Math.random() * 99) + 1;
+            tries++;
+          } while (existingLabels.has(String(label)) && tries < 200);
+          existingLabels.add(String(label));
+
+          addedNodes.push({
+            id: `g_rand_${Date.now()}_${i}`,
+            type: "custom",
+            data: { label: String(label), variant: "circle" },
+            position: circularPosition(currentNodes.length + i, count),
+          });
+        }
+
+        allNodes = [...currentNodes, ...addedNodes];
+      } else {
+        // Generate fresh nodes in circular layout
+        const usedLabels = new Set<string>();
+        const newNodes: Node[] = [];
+
+        for (let i = 0; i < count; i++) {
+          let label: number;
+          let tries = 0;
+          do {
+            label = Math.floor(Math.random() * 99) + 1;
+            tries++;
+          } while (usedLabels.has(String(label)) && tries < 200);
+          usedLabels.add(String(label));
+
+          newNodes.push({
+            id: `g_rand_${Date.now()}_${i}`,
+            type: "custom",
+            data: { label: String(label), variant: "circle" },
+            position: circularPosition(i, count),
+          });
+        }
+
+        allNodes = newNodes;
+      }
+
+      // Generate random edges between nodes (~30% chance per pair for connectivity)
+      const randomEdges: Edge[] = [];
+      const edgeSet = new Set<string>();
+
+      for (let i = 0; i < allNodes.length; i++) {
+        for (let j = i + 1; j < allNodes.length; j++) {
+          if (Math.random() < 0.3) {
+            const src = allNodes[i];
+            const tgt = allNodes[j];
+            const edgeKey = `${src.id}-${tgt.id}`;
+            if (edgeSet.has(edgeKey)) continue;
+            edgeSet.add(edgeKey);
+
+            const weight = isWeightedGraph
+              ? Math.floor(Math.random() * 10) + 1
+              : undefined;
+
+            const edge: Edge = {
+              id: `e-${src.data.label}-${tgt.data.label}-${Date.now()}-${randomEdges.length}`,
+              source: src.id,
+              target: tgt.id,
+              type: "floatingEdge",
+              ...(isWeightedGraph && {
+                label: String(weight),
+                data: {
+                  weight,
+                  ...(isDirectedGraph ? {} : { directed: false }),
+                },
+              }),
+              ...(!isWeightedGraph && {
+                data: { directed: false },
+              }),
+              style: { stroke: "#222121", strokeWidth: 1 },
+              ...(isDirectedGraph && {
+                markerEnd: {
+                  type: "arrowclosed" as const,
+                  width: 25,
+                  height: 25,
+                  color: "#222121",
+                },
+              }),
+            };
+
+            randomEdges.push(edge);
+          }
+        }
+      }
+
+      // Ensure graph is connected: for each disconnected node, add one random edge
+      const connected = new Set<string>();
+      if (allNodes.length > 0) {
+        connected.add(allNodes[0].id);
+        const edgeMap = new Map<string, Set<string>>();
+        for (const e of randomEdges) {
+          if (!edgeMap.has(e.source)) edgeMap.set(e.source, new Set());
+          if (!edgeMap.has(e.target)) edgeMap.set(e.target, new Set());
+          edgeMap.get(e.source)!.add(e.target);
+          edgeMap.get(e.target)!.add(e.source);
+        }
+        // BFS to find connected component
+        const queue = [allNodes[0].id];
+        while (queue.length > 0) {
+          const curr = queue.shift()!;
+          for (const neighbor of edgeMap.get(curr) ?? []) {
+            if (!connected.has(neighbor)) {
+              connected.add(neighbor);
+              queue.push(neighbor);
+            }
+          }
+        }
+        // Connect disconnected nodes
+        for (const node of allNodes) {
+          if (!connected.has(node.id)) {
+            // Pick a random connected node to link to
+            const connectedArr = Array.from(connected);
+            const targetId =
+              connectedArr[Math.floor(Math.random() * connectedArr.length)];
+            const targetNode = allNodes.find((n) => n.id === targetId)!;
+            const weight = isWeightedGraph
+              ? Math.floor(Math.random() * 10) + 1
+              : undefined;
+
+            const edge: Edge = {
+              id: `e-${node.data.label}-${targetNode.data.label}-${Date.now()}-conn`,
+              source: node.id,
+              target: targetId,
+              type: "floatingEdge",
+              ...(isWeightedGraph && {
+                label: String(weight),
+                data: {
+                  weight,
+                  ...(isDirectedGraph ? {} : { directed: false }),
+                },
+              }),
+              ...(!isWeightedGraph && {
+                data: { directed: false },
+              }),
+              style: { stroke: "#222121", strokeWidth: 1 },
+              ...(isDirectedGraph && {
+                markerEnd: {
+                  type: "arrowclosed" as const,
+                  width: 25,
+                  height: 25,
+                  color: "#222121",
+                },
+              }),
+            };
+
+            randomEdges.push(edge);
+            connected.add(node.id);
+          }
+        }
+      }
+
+      setNodes(allNodes);
+      setEdges(randomEdges);
+    },
+    [nodes, setNodes, setEdges, isDirectedGraph, isWeightedGraph],
+  );
+
+  // Reset graph: clear all nodes and edges
+  const handleResetGraph = useCallback(() => {
+    setNodes([]);
+    setEdges([]);
+  }, [setNodes, setEdges]);
+
   // ── Custom Hooks ───────────────────────────────────────────────────────────
   // Graph Tutorial hook
   const graphTutorial = useGraphTutorial({
@@ -458,6 +660,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
             tutorialMode={graphTutorial.showTutorial}
             setExplanation={setExplanation}
             isAnimating={isAnimationActive}
+            onRandomGenerate={handleRandomGraphGenerate}
+            onResetGraph={handleResetGraph}
           />
         </div>
         <div>
@@ -469,6 +673,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       graphTutorial.showTutorial,
       algorithm,
       handleAlgorithmSearch,
+      handleRandomGraphGenerate,
+      handleResetGraph,
       sideTabTitle,
       effectiveExplanation,
       setExplanation,
