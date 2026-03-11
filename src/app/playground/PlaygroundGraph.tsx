@@ -298,6 +298,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
 
   // True when the animation pipeline has generated steps (playing, paused, or finished)
   const isAnimationActive = animation.totalSteps > 0;
+  // True only while auto-play is running — used to lock UI interactions
+  const isAnimationPlaying = animation.isPlaying;
 
   // Keep a ref to animation so the search callback has a stable identity
   const animationRef = useRef(animation);
@@ -573,48 +575,48 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
 
   const onDragOver = useCallback(
     (event: DragEvent<HTMLDivElement>) => {
-      if (isAnimationActive) return; // lock during animation
+      if (isAnimationPlaying) return; // lock during animation
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
     },
-    [isAnimationActive],
+    [isAnimationPlaying],
   );
 
   // ── Custom Interaction Handlers ────────────────────────────────────────────
   // Edge click handler (for weight editing)
   const handleEdgeClick = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
-      if (isAnimationActive) return; // lock during animation
+      if (isAnimationPlaying) return; // lock during animation
       if (graphTutorial.showTutorial) {
         graphTutorial.handleWeightClick(edge.id);
       } else {
         nodeInteraction.handleEdgeClick(event, edge.id);
       }
     },
-    [isAnimationActive, graphTutorial, nodeInteraction],
+    [isAnimationPlaying, graphTutorial, nodeInteraction],
   );
 
   // Combined node click handler
   const handleNodeClick = useCallback(
     (event: React.MouseEvent, node: Node) => {
-      if (isAnimationActive) return; // lock during animation
+      if (isAnimationPlaying) return; // lock during animation
       if (graphTutorial.showTutorial) {
         graphTutorial.handleNodeClick(event, node);
       } else {
         nodeInteraction.handleNodeClick(event, node);
       }
     },
-    [isAnimationActive, graphTutorial, nodeInteraction],
+    [isAnimationPlaying, graphTutorial, nodeInteraction],
   );
 
   // Combined node drag handlers
   const handleNodeDragStart = useCallback(
     (event: React.MouseEvent, node: Node) => {
-      if (isAnimationActive) return; // lock during animation
+      if (isAnimationPlaying) return; // lock during animation
       if (graphTutorial.showTutorial) return;
       nodeInteraction.handleNodeDragStart(event, node);
     },
-    [isAnimationActive, graphTutorial.showTutorial, nodeInteraction],
+    [isAnimationPlaying, graphTutorial.showTutorial, nodeInteraction],
   );
 
   const handleNodeDrag = useCallback(
@@ -659,7 +661,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
             algorithm={algorithm}
             tutorialMode={graphTutorial.showTutorial}
             setExplanation={setExplanation}
-            isAnimating={isAnimationActive}
+            isAnimating={isAnimationPlaying}
             onRandomGenerate={handleRandomGraphGenerate}
             onResetGraph={handleResetGraph}
           />
@@ -678,7 +680,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       sideTabTitle,
       effectiveExplanation,
       setExplanation,
-      isAnimationActive,
+      isAnimationPlaying,
     ],
   );
 
@@ -688,7 +690,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         nodes={nodes}
         edges={edges}
         onNodesChange={
-          isAnimationActive
+          isAnimationPlaying
             ? undefined
             : graphTutorial.showTutorial
               ? graphTutorial.tutorialStep === graphTutorial.dragDeleteStep
@@ -697,11 +699,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               : onNodesChange
         }
         onEdgesChange={
-          graphTutorial.showTutorial || isAnimationActive
+          graphTutorial.showTutorial || isAnimationPlaying
             ? undefined
             : onEdgesChange
         }
-        onConnect={isAnimationActive ? undefined : onConnect}
+        onConnect={isAnimationPlaying ? undefined : onConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onDragOver={onDragOver}
@@ -714,7 +716,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         zoomOnPinch={!graphTutorial.showTutorial}
         zoomOnDoubleClick={!graphTutorial.showTutorial}
         nodesDraggable={
-          !isAnimationActive &&
+          !isAnimationPlaying &&
           (!graphTutorial.showTutorial ||
             (graphTutorial.showTutorial &&
               graphTutorial.tutorialStep === graphTutorial.dragDeleteStep))
