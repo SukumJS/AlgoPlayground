@@ -21,9 +21,9 @@ type nodeProps = {
 
   // search
   targetValue?: number | string;
-  // รับค่า isRunning มาจากหน้าหลัก
   setTargetValue?: (val: number | string) => void;
 
+  // รับค่า isRunning มาจากหน้าหลัก
   isRunning?: boolean;
 };
 
@@ -56,8 +56,11 @@ function Data_sort({
   const [type, setType] = useState<string | null>(null);
   const [draggedValue, setDraggedValue] = useState<number | null>(null);
 
+  // สร้าง State สำหรับ Sample Nodes (เริ่มด้วยค่า 1-5 แบบเดิม หรือค่าสุ่มก็ได้)
+  const [sampleNodes, setSampleNodes] = useState<number[]>([1, 2, 3, 4, 5]);
+
   const createAddNewNode = useCallback(
-    (sampleValue: number): OnDropAction => {
+    (sampleValue: number, sampleIndex?: number): OnDropAction => {
       return ({ position }: { position: XYPosition }) => {
         setNodes((prev) => {
           const currentIndex = prev.length;
@@ -75,6 +78,16 @@ function Data_sort({
 
           return prev.concat(newNode);
         });
+
+        //  สุ่มค่าใหม่มาแทนที่ใน Sample Nodes ถ้ามีการลากจากกล่อง Sample
+        if (sampleIndex !== undefined) {
+          setSampleNodes((prev) => {
+            const newSamples = [...prev];
+            // สุ่มเลข 1-99
+            newSamples[sampleIndex] = Math.floor(Math.random() * 99) + 1;
+            return newSamples;
+          });
+        }
 
         setType(null);
         setDraggedValue(null);
@@ -139,34 +152,35 @@ function Data_sort({
 
       const randomNumbers = generateDiverseArray(count);
 
-      const newNodes: Node[] = randomNumbers.map((num, i) => ({
-        id: getId(),
-        type: "custom",
-        position: { x: i * 65, y: 5 },
-        data: {
-          value: num,
-          status: "idle",
-          index: i,
-        },
-      }));
+      // ดึงข้อมูลกล่องทั้งหมดที่มีอยู่บนจอตอนนี้
+      setNodes((prev) => {
+        const startIndex = prev.length; // นับว่ามีกล่องอยู่แล้วกี่ใบ จะได้ไปต่อคิวถูก
 
-      setNodes(newNodes);
+        const newNodes: Node[] = randomNumbers.map((num, i) => {
+          const currentIndex = startIndex + i; // รัน index ต่อจากของเดิม
+
+          return {
+            id: getId(),
+            type: "custom",
+            position: { x: currentIndex * 65, y: 5 }, //  คำนวณพิกัด X ต่อจากกล่องสุดท้าย
+            data: {
+              value: num,
+              status: "idle",
+              index: currentIndex,
+            },
+          };
+        });
+
+        // 🎯 เอาของเดิม (prev) มารวมกับของใหม่ (newNodes)
+        return [...prev, ...newNodes];
+      });
     },
     [setNodes],
   );
-
   // reset nodes
   const handleResetNodes = useCallback(() => {
     setNodes([]);
   }, [setNodes]);
-
-  const Sample = [
-    { number: "1" },
-    { number: "2" },
-    { number: "3" },
-    { number: "4" },
-    { number: "5" },
-  ];
 
   return (
     <>
@@ -205,20 +219,24 @@ function Data_sort({
           {/* Input Node */}
           <div
             data-tutorial-target="sidebar-sort-node"
-            className="shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg cursor-grab"
+            className={`shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg transition-all ${
+              isRunning ? "cursor-not-allowed opacity-50" : "cursor-grab"
+            }`}
             onPointerDown={(event) => {
               if (isRunning) return;
               const value = Number(nodeInput) || 0;
               setType("input");
               setDraggedValue(value);
-              onDragStart(event, createAddNewNode(value));
+              onDragStart(event, createAddNewNode(value)); // ไม่ส่ง index เพราะอันนี้เป็นกล่อง input ไม่ต้องสุ่มใหม่
             }}
           >
             <input
               type="number"
               placeholder="0"
               disabled={isRunning}
-              className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className={`w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                isRunning ? "cursor-not-allowed" : ""
+              }`}
               value={nodeInput}
               onChange={(e) => {
                 if (typeof setNodeInput === "function") {
@@ -231,20 +249,22 @@ function Data_sort({
             />
           </div>
 
-          {/* Sample nodes */}
-          {Sample.map((item, index) => (
+          {/* 🎯 Sample nodes (ลูปจาก State แทน) */}
+          {sampleNodes.map((num, index) => (
             <div
               key={index}
-              className="shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] cursor-grab"
+              className={`shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] transition-all ${
+                isRunning ? "cursor-not-allowed opacity-50" : "cursor-grab"
+              }`}
               onPointerDown={(event) => {
                 if (isRunning) return;
-                const value = parseInt(item.number);
                 setType("custom");
-                setDraggedValue(value);
-                onDragStart(event, createAddNewNode(value));
+                setDraggedValue(num);
+                // 🎯 ส่งค่าและ index เข้าไปเพื่อใช้สุ่มใหม่
+                onDragStart(event, createAddNewNode(num, index));
               }}
             >
-              {item.number}
+              {num}
             </div>
           ))}
         </div>
@@ -264,7 +284,11 @@ function Data_sort({
         {/* Target Value (ใช้เฉพาะ Search) */}
         {targetValue !== undefined && setTargetValue && (
           <div className="p-3 border-t border-gray-300">
-            <label className="font-bold text-md mb-2 text-start m-1 gap-2">
+            <label
+              className={`font-bold text-md mb-2 text-start m-1 gap-2 ${
+                isRunning ? "text-gray-400" : ""
+              }`}
+            >
               Target Value
             </label>
 
@@ -277,7 +301,11 @@ function Data_sort({
                   e.target.value === "" ? "" : Number(e.target.value),
                 )
               }
-              className="mt-2 border border-gray-200 p-2 rounded-lg w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className={`mt-2 border p-2 rounded-lg w-full transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                isRunning
+                  ? "border-gray-100 bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "border-gray-200"
+              }`}
             />
           </div>
         )}
