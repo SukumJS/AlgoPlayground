@@ -47,7 +47,6 @@ export function useStepSearchEngine({
     );
   }, [currentStep, steps, setNodes]);
 
-  // ถ้า target เปลี่ยน หรือ nodes เปลี่ยน (User ลากเล่น) ให้ Reset
   const needsNewStepsRef = useRef(false);
 
   useEffect(() => {
@@ -55,12 +54,9 @@ export function useStepSearchEngine({
       isInternalUpdateRef.current = false;
       return;
     }
-
-    // แค่ mark ว่าต้อง generate ใหม่
     needsNewStepsRef.current = true;
   }, [nodes, target]);
 
-  // Cleanup animation
   useEffect(() => {
     return () => {
       if (autoPlayRef.current !== null) {
@@ -69,26 +65,43 @@ export function useStepSearchEngine({
     };
   }, []);
 
-  // Generate Steps (สร้างภาพแอนิเมชันล่วงหน้า)
   const generateSteps = () => {
     const generated = generateSearchStepsByType(algoType, nodes, target);
-
     setSteps(generated);
     setCurrentStep(0);
-
     return generated;
   };
 
-  // ----------------------------------------
-  //  Manual Controls (ปุ่มกดเอง)
-  // ----------------------------------------
+  // ฟังก์ชัน stop และ reset
+  const stop = () => {
+    isRunningRef.current = false;
+
+    if (autoPlayRef.current !== null) {
+      cancelAnimationFrame(autoPlayRef.current);
+    }
+
+    setIsRunning(false);
+  };
+
+  const reset = () => {
+    stop(); // หยุดแอนิเมชัน
+    setSteps([]);
+    setCurrentStep(0);
+    // เปลี่ยนสีกล่องทุกใบกลับเป็น idle
+    setNodes((prev) =>
+      prev.map((n) => ({
+        ...n,
+        data: { ...n.data, status: "idle" },
+      })),
+    );
+  };
+
+  // Manual Controls (ปุ่มกดเอง)
   const nextStep = () => {
     let workingSteps = steps;
-
     if (workingSteps.length === 0) {
       workingSteps = generateSteps();
     }
-
     if (currentStep >= workingSteps.length - 1) return;
     setCurrentStep((prev) => prev + 1);
   };
@@ -101,27 +114,21 @@ export function useStepSearchEngine({
 
   const skipForward = () => {
     let workingSteps = steps;
-
     if (workingSteps.length === 0) {
       workingSteps = generateSteps();
     }
-
     setCurrentStep(workingSteps.length - 1);
   };
 
   const skipBack = () => {
     let workingSteps = steps;
-
     if (workingSteps.length === 0) {
       workingSteps = generateSteps();
     }
-
     setCurrentStep(0);
   };
 
-  // ----------------------------------------
   // Auto Play Controls (เล่นอัตโนมัติ)
-  // ----------------------------------------
   const run = () => {
     const workingSteps = generateSteps();
 
@@ -142,6 +149,10 @@ export function useStepSearchEngine({
           if (prev >= workingSteps.length - 1) {
             isRunningRef.current = false;
             setIsRunning(false);
+            setTimeout(() => {
+              reset();
+            }, 2500);
+
             return prev;
           }
           return prev + 1;
@@ -156,19 +167,10 @@ export function useStepSearchEngine({
     autoPlayRef.current = requestAnimationFrame(animate);
   };
 
-  const stop = () => {
-    isRunningRef.current = false;
-
-    if (autoPlayRef.current !== null) {
-      cancelAnimationFrame(autoPlayRef.current);
-    }
-
-    setIsRunning(false);
-  };
-
   return {
     run,
     stop,
+    reset,
     nextStep,
     prevStep,
     skipBack,
