@@ -125,7 +125,8 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
   }, [algorithm, prettyName]);
   const [showInfo, setShowInfo] = useState(false);
 
-  const { flowToScreenPosition } = useReactFlow();
+  // ดึง setCenter กับ getZoom เพิ่มเข้ามา
+  const { flowToScreenPosition, setCenter, getZoom } = useReactFlow();
 
   const tutorial = useSortTutorial({
     nodes,
@@ -172,6 +173,47 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
     speed,
     setExplanation,
   });
+
+  // เพิ่มระบบ Smart Camera (กล้องติดตามกล่องที่กำลังทำงาน)
+  const isUserPanning = React.useRef(false);
+  const lastPannedPosition = React.useRef<{ id: string; x: number } | null>(
+    null,
+  );
+
+  React.useEffect(() => {
+    // ถ้าไม่ได้รันอยู่ ให้ล้างค่าความจำกล้องทิ้ง
+    if (!controller.isRunning) {
+      lastPannedPosition.current = null;
+      return;
+    }
+
+    // ถ้าคนเล่นกำลังเอามือลากจออยู่ ให้พักกล้องอัตโนมัติ
+    if (isUserPanning.current) return;
+
+    // หากล่องที่กำลังทำงานอยู่ (สำหรับหน้า Sort คือ compare หรือ swap)
+    const activeNode = nodes.find(
+      (n) => n.data.status === "compare" || n.data.status === "swap",
+    );
+
+    if (activeNode) {
+      const isSameNode = lastPannedPosition.current?.id === activeNode.id;
+      const isSamePos = lastPannedPosition.current?.x === activeNode.position.x;
+
+      // เลื่อนกล้องเมื่อเปลี่ยนกล่อง หรือกล่องขยับ
+      if (!isSameNode || !isSamePos) {
+        lastPannedPosition.current = {
+          id: activeNode.id,
+          x: activeNode.position.x,
+        };
+
+        setCenter(
+          activeNode.position.x + 32.5, // 32.5 คือระยะครึ่งกล่อง ให้ภาพอยู่ตรงกลาง
+          activeNode.position.y + 25,
+          { zoom: 1.5, duration: 600 }, // เลื่อนสมูทๆ ใช้เวลา 0.6 วิ
+        );
+      }
+    }
+  }, [nodes, controller.isRunning, setCenter, getZoom]);
 
   //แมปข้อมูลเพื่อ "สตาฟ" กล่องที่ไม่เกี่ยวข้อง
   const displayNodes = useMemo(() => {
@@ -283,6 +325,19 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
         className={controller.isRunning ? "sorting" : ""}
         nodes={displayNodes}
         edges={edges}
+        onMoveStart={(event) => {
+          if (event) {
+            isUserPanning.current = true;
+          }
+        }}
+        onMoveEnd={(event) => {
+          if (event) {
+            // เมื่อคนเล่นปล่อยเมาส์ ให้หน่วงเวลา 1.5 วินาที กล้องถึงจะกลับมาทำงาน
+            setTimeout(() => {
+              isUserPanning.current = false;
+            }, 1500);
+          }
+        }}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
