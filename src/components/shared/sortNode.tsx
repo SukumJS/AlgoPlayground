@@ -12,6 +12,7 @@ export type SortNodeData = {
     | "merge"
     | "sorted"
     | "found"
+    | "processing"
     | "discarded";
   level?: number;
   currentLevel?: number;
@@ -24,7 +25,8 @@ const STATUS_BG: Record<SortNodeData["status"], string> = {
   swap: "#F19F72",
   sorted: "#D9E363",
   merge: "#F19F72",
-  found: "#F19F72",
+  found: "#4CAF7D",
+  processing: "#F19F72",
   discarded: "#E5E7EB",
 };
 
