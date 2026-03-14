@@ -124,7 +124,7 @@ export function useSearchTutorial({
     setTrashBinPos({ x: window.innerWidth / 2, y: window.innerHeight - 140 });
   }, [nodes, showTutorial, flowToScreenPosition]);
 
-  // 🎯 แก้บั๊ก Cascading Renders ด้วย requestAnimationFrame
+  // แก้บั๊ก Cascading Renders ด้วย requestAnimationFrame
   useEffect(() => {
     const frameId = requestAnimationFrame(() => {
       updateTutorialPositions();
@@ -136,7 +136,7 @@ export function useSearchTutorial({
     };
   }, [updateTutorialPositions]);
 
-  // 🎯 แก้บั๊กเปิด Tutorial โต้งๆ ด้วย setTimeout
+  // แก้บั๊กเปิด Tutorial โต้งๆ ด้วย setTimeout
   useEffect(() => {
     if (isSearch) {
       const timer = setTimeout(() => setShowTutorial(true), 0);
@@ -162,6 +162,25 @@ export function useSearchTutorial({
     setShowTutorial(false);
     setShowCompletionModal(true);
   }, []);
+
+  // เพิ่ม useEffect ตัวนี้เพื่อดักจับว่า "กล่องถูกลบไปจริงๆ หรือยัง"
+  // และแก้บั๊ก Cascading Renders ด้วย setTimeout
+  useEffect(() => {
+    if (!showTutorial) return;
+
+    if (tutorialStep === 4) {
+      const isNode1Alive = nodes.some((n) => String(n.data.value) === "1");
+
+      if (!isNode1Alive) {
+        const timer = setTimeout(() => {
+          setIsTrashActive(false);
+          handleTutorialComplete();
+        }, 0);
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [nodes, tutorialStep, showTutorial, handleTutorialComplete]);
 
   const handleTutorialDropSuccess = useCallback(() => {
     if (showTutorial && tutorialStep === 0) setTutorialStep(1);

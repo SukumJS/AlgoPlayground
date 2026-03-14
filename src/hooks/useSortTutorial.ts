@@ -46,13 +46,13 @@ export function useSortTutorial({
   const [dropZoneScreenPos, setDropZoneScreenPos] =
     useState<ScreenPosition | null>(null);
 
-  // 🌟 เพิ่ม State เก็บขนาดกล่องแบบไดนามิก
+  // เพิ่ม State เก็บขนาดกล่องแบบไดนามิก
   const [nodeMaskSize, setNodeMaskSize] = useState<number>(85);
 
   const updateTutorialPositions = useCallback(() => {
     if (!showTutorial) return;
 
-    // 🌟 คำนวณขนาดซูม (Zoom Scale) ของ React Flow ณ ตอนนั้น
+    // คำนวณขนาดซูม (Zoom Scale) ของ React Flow ณ ตอนนั้น
     // โดยการวัดระยะห่างบนหน้าจอระหว่างจุด 0 และจุด 56 (ขนาดฐานของกล่อง)
     const p1 = flowToScreenPosition({ x: 0, y: 0 });
     const p2 = flowToScreenPosition({ x: 56, y: 0 }); // กล่องกว้าง 56px (w-14)
@@ -126,21 +126,25 @@ export function useSortTutorial({
     setTrashBinPos({ x: window.innerWidth / 2, y: window.innerHeight - 140 });
   }, [nodes, showTutorial, flowToScreenPosition]);
 
+  // แก้บั๊ก Cascading Renders ด้วย requestAnimationFrame
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    updateTutorialPositions();
+    const frameId = requestAnimationFrame(() => {
+      updateTutorialPositions();
+    });
     window.addEventListener("resize", updateTutorialPositions);
-    return () => window.removeEventListener("resize", updateTutorialPositions);
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", updateTutorialPositions);
+    };
   }, [updateTutorialPositions]);
 
-  const [prevIsSort, setPrevIsSort] = useState(false);
-  if (isSort && isSort !== prevIsSort) {
-    setPrevIsSort(isSort);
-    setShowTutorial(true);
-  }
-  if (!isSort && prevIsSort) {
-    setPrevIsSort(false);
-  }
+  // แก้บั๊กเปิด Tutorial โต้งๆ ด้วย setTimeout
+  useEffect(() => {
+    if (isSort) {
+      const timer = setTimeout(() => setShowTutorial(true), 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isSort]);
 
   useEffect(() => {
     if (showTutorial) {
@@ -162,6 +166,26 @@ export function useSortTutorial({
     setShowTutorial(false);
     setShowCompletionModal(true);
   }, []);
+
+  // เพิ่ม useEffect ตัวนี้เพื่อดักจับว่า "กล่องถูกลบไปจริงๆ หรือยัง"
+  // และแก้บั๊ก Cascading Renders ด้วย setTimeout
+  useEffect(() => {
+    if (!showTutorial) return;
+
+    if (tutorialStep === 4) {
+      // สำหรับหน้า Sort เป้าหมายที่จะถูกลบคือกล่องเลข "3"
+      const isNode3Alive = nodes.some((n) => String(n.data.value) === "3");
+
+      if (!isNode3Alive) {
+        const timer = setTimeout(() => {
+          setIsTrashActive(false);
+          handleTutorialComplete();
+        }, 0);
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [nodes, tutorialStep, showTutorial, handleTutorialComplete]);
 
   const handleTutorialDropSuccess = useCallback(() => {
     if (showTutorial && tutorialStep === 0) {
@@ -214,7 +238,7 @@ export function useSortTutorial({
               Math.pow(event.clientY - trashY, 2),
           ) < 60
         ) {
-          //  ลงถังขยะ ให้ลบทิ้ง พร้อมจัดแถวกล่องที่เหลือใหม่ให้ชิดกัน!
+          // ลงถังขยะ ให้ลบทิ้ง พร้อมจัดแถวกล่องที่เหลือใหม่ให้ชิดกัน!
           setNodes((nds) => {
             // 1. คัดเอาตัวที่ถูกลบออกไป
             const remainingNodes = nds.filter((n) => n.id !== node.id);
