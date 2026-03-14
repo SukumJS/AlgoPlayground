@@ -113,7 +113,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
     }
   }, [algorithm, prettyName]);
 
-  const { flowToScreenPosition } = useReactFlow();
+  const { flowToScreenPosition, setCenter, getZoom } = useReactFlow();
 
   const tutorial = useSearchTutorial({
     nodes,
@@ -144,7 +144,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
 
   const [showBinaryWarning, setShowBinaryWarning] = useState(false);
 
-  // 🎯 ฟังก์ชันดักจับ: เช็คว่ากล่องบนหน้าจอเรียงลำดับตัวเลขจากน้อยไปมากหรือยัง
+  // ฟังก์ชันดักจับ: เช็คว่ากล่องบนหน้าจอเรียงลำดับตัวเลขจากน้อยไปมากหรือยัง
   const checkIsSorted = useCallback(() => {
     // 1. เรียงลำดับกล่องตามตำแหน่ง X (ซ้ายไปขวา) เผื่อว่าคนเล่นลากสลับตำแหน่งกัน
     const sortedByX = [...nodes].sort((a, b) => a.position.x - b.position.x);
@@ -188,10 +188,50 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
           return;
         }
       }
-      // 🎯 เปลี่ยนจาก engine.play() เป็น engine.run()
       engine.run();
     },
   };
+
+  // ระบบ Smart Camera (กล้องติดตามกล่องที่กำลังทำงาน)
+  const isUserPanning = React.useRef(false);
+  const lastPannedPosition = React.useRef<{ id: string; x: number } | null>(
+    null,
+  );
+
+  React.useEffect(() => {
+    // ถ้าไม่ได้รันอยู่ ให้ล้างค่าความจำกล้องทิ้ง
+    if (!controller.isRunning) {
+      lastPannedPosition.current = null;
+      return;
+    }
+
+    // ถ้าคนเล่นกำลังเอามือลากจออยู่ ให้พักกล้องอัตโนมัติ
+    if (isUserPanning.current) return;
+
+    //หากล่องที่กำลังทำงานอยู่ (สำหรับหน้า Search คือ compare หรือ processing)
+    const activeNode = nodes.find(
+      (n) => n.data.status === "compare" || n.data.status === "processing",
+    );
+
+    if (activeNode) {
+      const isSameNode = lastPannedPosition.current?.id === activeNode.id;
+      const isSamePos = lastPannedPosition.current?.x === activeNode.position.x;
+
+      // เลื่อนกล้องเมื่อเปลี่ยนกล่อง หรือกล่องขยับ
+      if (!isSameNode || !isSamePos) {
+        lastPannedPosition.current = {
+          id: activeNode.id,
+          x: activeNode.position.x,
+        };
+
+        setCenter(
+          activeNode.position.x + 32.5, // 32.5 คือระยะครึ่งกล่อง ให้ภาพอยู่ตรงกลาง
+          activeNode.position.y + 25,
+          { zoom: 1.5, duration: 600 }, //  ซูมเข้าไปที่ 1.5 (150%) เพื่อให้เห็นชัดๆ
+        );
+      }
+    }
+  }, [nodes, controller.isRunning, setCenter, getZoom]);
 
   const handleNodeDragStart = useCallback(
     (event: React.MouseEvent, node: Node, allNodes: Node[]) => {
@@ -304,6 +344,19 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
         className={controller.isRunning ? "sorting" : ""}
         nodes={displayNodes}
         edges={edges}
+        onMoveStart={(event) => {
+          if (event) {
+            isUserPanning.current = true;
+          }
+        }}
+        onMoveEnd={(event) => {
+          if (event) {
+            // เมื่อคนเล่นปล่อยเมาส์ ให้หน่วงเวลา 1.5 วินาที กล้องถึงจะกลับมาทำงาน
+            setTimeout(() => {
+              isUserPanning.current = false;
+            }, 1500);
+          }
+        }}
         onNodesChange={showTutorial ? undefined : onNodesChange}
         onEdgesChange={showTutorial ? undefined : onEdgesChange}
         onConnect={onConnect}
