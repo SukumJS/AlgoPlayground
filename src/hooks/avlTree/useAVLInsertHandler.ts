@@ -24,22 +24,17 @@ function collectBFs(
   return map;
 }
 
-function cloneAVL(node: AVLTreeNode | null): AVLTreeNode | null {
-  if (!node) return null;
-  return JSON.parse(JSON.stringify(node));
-}
-
 export function useAVLInsertHandler(params: {
   avlRoot: AVLTreeNode | null;
   setAVLRoot: (root: AVLTreeNode | null) => void;
-  nodeIdCounter: number;
   animationSpeed: number;
   rf: ReturnType<typeof useReactFlow>;
   animationCallbacks: AnimationCallbacks;
   isPausedRef: MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
-  setAnimationDescription: (desc: string) => void;
+  setAnimationDescription: (v: string) => void;
   setNodeIdCounter: (v: number) => void;
+  nodeIdCounter: number;
 }) {
   const {
     avlRoot,
@@ -60,6 +55,18 @@ export function useAVLInsertHandler(params: {
       const controller = new AnimationController(isPausedRef);
       setIsAnimating(true);
 
+      // Pseudo code drive: CodeAVLTreeView (avl-insert)
+      // 1 ALGORITHM
+      // 4 WHILE node...
+      // 6 bf = balanceFactor(node)
+      // 7 IF bf is -2 or +2 THEN
+      // 8 ROTATE...
+      // 13 END ALGORITHM
+      const stepToLine = [1, 4, 6, 7, 8, 13];
+      animationCallbacks.setTreeAction?.("avl-insert");
+      animationCallbacks.setStepToCodeLine?.(stepToLine);
+      animationCallbacks.setCodeStep?.(0);
+
       const latestRoot = avlRoot;
 
       // --- Duplicate check ---
@@ -70,6 +77,8 @@ export function useAVLInsertHandler(params: {
         latestRoot.value === valueToInsert
       ) {
         setIsAnimating(false);
+        animationCallbacks.setCodeStep?.(0);
+        animationCallbacks.setTreeAction?.(null);
         setAnimationDescription(
           `Value ${valueToInsert} already exists. AVL does not insert duplicates.`,
         );
@@ -144,6 +153,7 @@ export function useAVLInsertHandler(params: {
               setAnimationDescription(
                 `Finding where to insert ${valueToInsert}. Compare with node ${currentNode?.data.label} and move left or right.`,
               );
+              animationCallbacks.setCodeStep?.(1);
             },
             animationSpeed * (idx + 1),
           );
@@ -188,6 +198,7 @@ export function useAVLInsertHandler(params: {
         setAnimationDescription(
           `Inserted ${valueToInsert}. Move upward to check balance factors on ancestors.`,
         );
+        animationCallbacks.setCodeStep?.(2);
       }, animationSpeed * offset);
       offset++; // Pause after description
       controller.scheduleStep(() => {}, animationSpeed * offset);
@@ -195,7 +206,7 @@ export function useAVLInsertHandler(params: {
       // ── Step 4: Check balance — highlight path back up with BF badges ──
       const bfMap = collectBFs(afterInsert);
       const reversePath = [...path].reverse();
-      reversePath.forEach((nodeId, idx) => {
+      reversePath.forEach((nodeId) => {
         offset++;
         controller.scheduleStep(() => {
           const hl = (insertedRF.nodes as RFNode[]).map((n: RFNode) => ({
@@ -217,19 +228,15 @@ export function useAVLInsertHandler(params: {
           animationCallbacks.setNodes(hl);
           const bf = bfMap.get(nodeId) ?? 0;
           if (nodeId === rotationNodeId) {
-            const nodeLabel = hl.find((n) => n.id === nodeId)?.data as
-              | Record<string, unknown>
-              | undefined;
             setAnimationDescription(
               `Balance factor is ${bf}. This node is imbalanced, so apply ${rotationType}.`,
             );
+            animationCallbacks.setCodeStep?.(3);
           } else {
-            const nodeLabel = hl.find((n) => n.id === nodeId)?.data as
-              | Record<string, unknown>
-              | undefined;
             setAnimationDescription(
               `Balance factor is ${bf}. This node is balanced, continue upward.`,
             );
+            animationCallbacks.setCodeStep?.(2);
           }
         }, animationSpeed * offset);
       });
@@ -273,6 +280,7 @@ export function useAVLInsertHandler(params: {
           setAnimationDescription(
             `Imbalance detected at node ${nodeLabel}. Perform ${rotationType}.`,
           );
+          animationCallbacks.setCodeStep?.(4);
         }, animationSpeed * offset);
         offset++; // Pause after description
         controller.scheduleStep(() => {}, animationSpeed * offset);
@@ -305,7 +313,9 @@ export function useAVLInsertHandler(params: {
 
           animationCallbacks.setNodes(tangledNodes);
           animationCallbacks.setEdges(hlEdges);
-          setAnimationDescription("Update child links for the rotation topology.");
+          setAnimationDescription(
+            "Update child links for the rotation topology.",
+          );
         }, animationSpeed * offset);
 
         offset++; // Pause after description
@@ -366,6 +376,7 @@ export function useAVLInsertHandler(params: {
           setAnimationDescription(
             `${rotationType} complete. AVL balance is restored.`,
           );
+          animationCallbacks.setCodeStep?.(5);
         }, animationSpeed * offset);
         offset++; // Pause after description
         controller.scheduleStep(() => {}, animationSpeed * offset);
@@ -377,8 +388,9 @@ export function useAVLInsertHandler(params: {
           setAnimationDescription(
             `All nodes are balanced. No rotation was needed.`,
           );
+          animationCallbacks.setCodeStep?.(5);
         }, animationSpeed * offset);
-        offset++; // Pause after description
+        offset++;
         controller.scheduleStep(() => {}, animationSpeed * offset);
       }
 
@@ -389,6 +401,8 @@ export function useAVLInsertHandler(params: {
         animationCallbacks.setNodes(finalRF.nodes as RFNode[]);
         animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
         setAnimationDescription("");
+        animationCallbacks.setCodeStep?.(0);
+        animationCallbacks.setTreeAction?.(null);
         setIsAnimating(false);
         setNodeIdCounter(nodeIdCounter + 1);
       }, animationSpeed * offset);

@@ -18,6 +18,9 @@ export function useHeapSearchHandler(params: {
   setNodes: (nodes: RFNode[] | ((prev: RFNode[]) => RFNode[])) => void;
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
+  setCodeStep?: (step: number) => void;
+  setStepToCodeLine?: (map: number[]) => void;
+  setTreeAction?: (action: string | null) => void;
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
@@ -27,6 +30,9 @@ export function useHeapSearchHandler(params: {
     setNodes,
     setEdges,
     setDescription,
+    setCodeStep,
+    setStepToCodeLine,
+    setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
@@ -38,9 +44,16 @@ export function useHeapSearchHandler(params: {
       setIsAnimating(true);
       if (!heapRoot) {
         setDescription("The heap is empty. Insert a node first.");
+        setCodeStep?.(0);
+        setTreeAction?.(null);
         setIsAnimating(false);
         return;
       }
+
+      const stepToLine = [1, 3, 4, 5, 6, 10, 11];
+      setTreeAction?.("heap-search");
+      setStepToCodeLine?.(stepToLine);
+      setCodeStep?.(0);
 
       const { found, nodeId, path } = searchHeap(heapRoot, value);
       const positions = calculateHeapPositions(heapRoot);
@@ -79,6 +92,7 @@ export function useHeapSearchHandler(params: {
             setDescription(
               `Searching for ${value}. Step ${idx + 1} of ${path.length} in level order.`,
             );
+            setCodeStep?.(2);
           },
           animationSpeed * (idx + 1),
         );
@@ -97,10 +111,14 @@ export function useHeapSearchHandler(params: {
               },
             }));
             setNodes(highlighted);
-            setDescription(`Value ${value} found. This is the matching heap node.`);
+            setDescription(
+              `Value ${value} found. This is the matching heap node.`,
+            );
+            setCodeStep?.(4);
           } else {
             setNodes(rfNodes as RFNode[]);
             setDescription(`Value ${value} was not found in the heap.`);
+            setCodeStep?.(5);
           }
           setEdges(rfEdges as RFEdge[]);
 
@@ -109,6 +127,8 @@ export function useHeapSearchHandler(params: {
             setNodes(rfNodes as RFNode[]);
             setEdges(rfEdges as RFEdge[]);
             setDescription("");
+            setCodeStep?.(0);
+            setTreeAction?.(null);
             setIsAnimating(false);
           }, animationSpeed * 2);
         },
@@ -123,6 +143,9 @@ export function useHeapSearchHandler(params: {
       animationSpeed,
       isPausedRef,
       setIsAnimating,
+      setCodeStep,
+      setStepToCodeLine,
+      setTreeAction,
     ],
   );
 

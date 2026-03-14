@@ -5,10 +5,10 @@ import CodeBubbleSort from "./types/codalgo/codebubblesort";
 import CodeSelectionSort from "./types/codalgo/codeselectionsort";
 import CodeInsertionSort from "./types/codalgo/codeinsertingsort";
 import CodeMergeSort from "./types/codalgo/codemergesort";
-import CodeHeapTree from "./types/codalgo/codeheaptree";
-import CodeAVLTree from "./types/codalgo/codeavltree";
-import CodeBSTTree from "./types/codalgo/codebsttree";
-import CodeBinaryTree from "./types/codalgo/codebinarytree";
+import CodeHeapTree from "./types/codalgo/codeheaptreeView";
+import CodeAVLTree from "./types/codalgo/codeavltreeView";
+import CodeBSTTree from "./types/codalgo/codebsttreeView";
+import CodeBinaryTree from "./types/codalgo/codebinarytreeView";
 
 interface CodeAlgoProps {
   title?: string;
