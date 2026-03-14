@@ -333,12 +333,13 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       if (count <= 0) return;
 
       const currentNodes = nodes;
-      let allNodes: Node[];
+      const currentEdges = edges;
 
       // Circular layout helper: distribute nodes evenly around a center
       const centerX = 350;
       const centerY = 280;
-      const baseRadius = Math.max(120, count * 30); // scale radius with node count
+      const totalCount = currentNodes.length + count;
+      const baseRadius = Math.max(120, totalCount * 30); // scale radius with total node count
 
       const circularPosition = (index: number, total: number) => ({
         x: Math.round(
@@ -351,77 +352,67 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         ),
       });
 
-      if (count > currentNodes.length) {
-        // Keep existing nodes, add more to reach the target count
-        const existingLabels = new Set(
-          currentNodes.map((n) => String(n.data.label)),
-        );
-        const toAdd = count - currentNodes.length;
-        const addedNodes: Node[] = [];
+      // Always KEEP existing nodes, add `count` more nodes
+      const existingLabels = new Set(
+        currentNodes.map((n) => String(n.data.label)),
+      );
+      const addedNodes: Node[] = [];
 
-        // Place new nodes in remaining slots around the circle
-        for (let i = 0; i < toAdd; i++) {
-          let label: number;
-          let tries = 0;
-          do {
-            label = Math.floor(Math.random() * 99) + 1;
-            tries++;
-          } while (existingLabels.has(String(label)) && tries < 200);
-          existingLabels.add(String(label));
+      // Place new nodes in remaining slots around the circle based on totalCount
+      for (let i = 0; i < count; i++) {
+        let label: number;
+        let tries = 0;
+        do {
+          label = Math.floor(Math.random() * 99) + 1;
+          tries++;
+        } while (existingLabels.has(String(label)) && tries < 200);
+        existingLabels.add(String(label));
 
-          addedNodes.push({
-            id: `g_rand_${Date.now()}_${i}`,
-            type: "custom",
-            data: { label: String(label), variant: "circle" },
-            position: circularPosition(currentNodes.length + i, count),
-          });
-        }
-
-        allNodes = [...currentNodes, ...addedNodes];
-      } else {
-        // Generate fresh nodes in circular layout
-        const usedLabels = new Set<string>();
-        const newNodes: Node[] = [];
-
-        for (let i = 0; i < count; i++) {
-          let label: number;
-          let tries = 0;
-          do {
-            label = Math.floor(Math.random() * 99) + 1;
-            tries++;
-          } while (usedLabels.has(String(label)) && tries < 200);
-          usedLabels.add(String(label));
-
-          newNodes.push({
-            id: `g_rand_${Date.now()}_${i}`,
-            type: "custom",
-            data: { label: String(label), variant: "circle" },
-            position: circularPosition(i, count),
-          });
-        }
-
-        allNodes = newNodes;
+        addedNodes.push({
+          id: `g_rand_${Date.now()}_${i}`,
+          type: "custom",
+          data: { label: String(label), variant: "circle" },
+          position: circularPosition(currentNodes.length + i, totalCount),
+        });
       }
 
-      // Generate random edges between nodes (~30% chance per pair for connectivity)
-      const randomEdges: Edge[] = [];
+      const allNodes: Node[] = [...currentNodes, ...addedNodes];
+
+      // Keep existing edges, and add new random edges for the new nodes
+      const newEdges: Edge[] = [];
       const edgeSet = new Set<string>();
 
-      for (let i = 0; i < allNodes.length; i++) {
-        for (let j = i + 1; j < allNodes.length; j++) {
+      // Record existing edges to prevent exact duplicates
+      for (const edge of currentEdges) {
+        edgeSet.add(`${edge.source}-${edge.target}`);
+        if (!isDirectedGraph) {
+          edgeSet.add(`${edge.target}-${edge.source}`);
+        }
+      }
+
+      // For every newly added node, give it a chance to connect to ANY node in allNodes
+      for (let i = 0; i < addedNodes.length; i++) {
+        const src = addedNodes[i];
+        for (let j = 0; j < allNodes.length; j++) {
+          const tgt = allNodes[j];
+          if (src.id === tgt.id) continue;
+
           if (Math.random() < 0.3) {
-            const src = allNodes[i];
-            const tgt = allNodes[j];
             const edgeKey = `${src.id}-${tgt.id}`;
+            const reverseKey = `${tgt.id}-${src.id}`;
+
             if (edgeSet.has(edgeKey)) continue;
+            if (!isDirectedGraph && edgeSet.has(reverseKey)) continue;
+
             edgeSet.add(edgeKey);
+            if (!isDirectedGraph) edgeSet.add(reverseKey);
 
             const weight = isWeightedGraph
               ? Math.floor(Math.random() * 10) + 1
               : undefined;
 
             const edge: Edge = {
-              id: `e-${src.data.label}-${tgt.data.label}-${Date.now()}-${randomEdges.length}`,
+              id: `e-${src.data.label}-${tgt.data.label}-${Date.now()}-${newEdges.length}`,
               source: src.id,
               target: tgt.id,
               type: "floatingEdge",
@@ -446,22 +437,27 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               }),
             };
 
-            randomEdges.push(edge);
+            newEdges.push(edge);
           }
         }
       }
 
-      // Ensure graph is connected: for each disconnected node, add one random edge
+      const allEdges = [...currentEdges, ...newEdges];
+
+      // Ensure graph is connected: explicitly check addedNodes to see if they are connected
+      // to the largest component (or just ensuring the whole graph is 1 component)
       const connected = new Set<string>();
       if (allNodes.length > 0) {
+        // Find existing nodes' component to use as the root of connectivity, or use first node
         connected.add(allNodes[0].id);
         const edgeMap = new Map<string, Set<string>>();
-        for (const e of randomEdges) {
+        for (const e of allEdges) {
           if (!edgeMap.has(e.source)) edgeMap.set(e.source, new Set());
           if (!edgeMap.has(e.target)) edgeMap.set(e.target, new Set());
           edgeMap.get(e.source)!.add(e.target);
           edgeMap.get(e.target)!.add(e.source);
         }
+
         // BFS to find connected component
         const queue = [allNodes[0].id];
         while (queue.length > 0) {
@@ -473,10 +469,10 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
             }
           }
         }
-        // Connect disconnected nodes
+
+        // Connect any disconnected nodes (especially the new ones) to the connected component
         for (const node of allNodes) {
           if (!connected.has(node.id)) {
-            // Pick a random connected node to link to
             const connectedArr = Array.from(connected);
             const targetId =
               connectedArr[Math.floor(Math.random() * connectedArr.length)];
@@ -511,16 +507,34 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               }),
             };
 
-            randomEdges.push(edge);
+            allEdges.push(edge);
+
+            // Mark node and its sub-component as connected
             connected.add(node.id);
+            if (!edgeMap.has(node.id)) edgeMap.set(node.id, new Set());
+            if (!edgeMap.has(targetId)) edgeMap.set(targetId, new Set());
+            edgeMap.get(node.id)!.add(targetId);
+            edgeMap.get(targetId)!.add(node.id);
+
+            // Sub-BFS to connect its whole isolated component
+            const subQueue = [node.id];
+            while (subQueue.length > 0) {
+              const subCurr = subQueue.shift()!;
+              for (const neighbor of edgeMap.get(subCurr) ?? []) {
+                if (!connected.has(neighbor)) {
+                  connected.add(neighbor);
+                  subQueue.push(neighbor);
+                }
+              }
+            }
           }
         }
       }
 
       setNodes(allNodes);
-      setEdges(randomEdges);
+      setEdges(allEdges);
     },
-    [nodes, setNodes, setEdges, isDirectedGraph, isWeightedGraph],
+    [nodes, edges, setNodes, setEdges, isDirectedGraph, isWeightedGraph],
   );
 
   // Reset graph: clear all nodes and edges
