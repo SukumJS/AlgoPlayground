@@ -19,6 +19,7 @@ interface UseBTSearchHandlerProps {
   applyHighlighting: AnimationCallbacks["applyHighlighting"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
+  setIsAnimating: (v: boolean) => void;
 }
 
 /**
@@ -34,6 +35,7 @@ export function useBTSearchHandler({
   applyHighlighting,
   animationSpeed,
   isPausedRef,
+  setIsAnimating,
 }: UseBTSearchHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
@@ -43,13 +45,14 @@ export function useBTSearchHandler({
     (value: number) => {
       const root = btRootRef.current;
       if (!root) {
-        setDescription("Tree is empty");
+        setDescription("The tree is empty. Insert a node first.");
         return;
       }
 
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
+      setIsAnimating(true);
 
       const { found, nodeId, path } = searchBT(root, value);
       const positions = calculateBTPositions(root);
@@ -91,7 +94,7 @@ export function useBTSearchHandler({
             setNodes(highlighted);
             setEdges(highlightedEdges);
             setDescription(
-              `Searching for ${value}. Now checking node ${currentNode?.data.label}.`,
+              `Searching for ${value}. Check node ${currentNode?.data.label} in level order.`,
             );
           },
           animationSpeed * (globalOffset + 1),
@@ -125,10 +128,12 @@ export function useBTSearchHandler({
               },
             }));
             setNodes(highlighted);
-            setDescription(`Found ${value}!`);
+            setDescription(`Value ${value} found. This is the matching node.`);
           } else {
             setNodes(rfNodes as RFNode[]);
-            setDescription(`${value} was not found in the tree.`);
+            setDescription(
+              `Value ${value} was not found after visiting all reachable nodes.`,
+            );
           }
           setEdges(rfEdges as RFEdge[]);
 
@@ -142,13 +147,21 @@ export function useBTSearchHandler({
             setNodes(clean as RFNode[]);
             setEdges(cleanE as RFEdge[]);
             setDescription("");
+            setIsAnimating(false);
           }, animationSpeed * 4); // Longer delay for final state
         },
         animationSpeed * (path.length + 1),
       );
     },
 
-    [animationSpeed, isPausedRef, setNodes, setEdges, setDescription],
+    [
+      animationSpeed,
+      isPausedRef,
+      setNodes,
+      setEdges,
+      setDescription,
+      setIsAnimating,
+    ],
   );
 
   const cancelAnimation = useCallback(() => {

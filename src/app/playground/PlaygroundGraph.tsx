@@ -1,5 +1,12 @@
 "use client";
-import React, { useState, useCallback, DragEvent, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  DragEvent,
+  useMemo,
+} from "react";
 import ControlPanel from "../../components/shared/controlPanel";
 import SideTab from "../../components/shared/sideTab";
 import ExplainAlgo from "../../components/visualizer/explainAlgo";
@@ -37,10 +44,28 @@ import { Info } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 
+// ── Graph Algorithm imports ──────────────────────────────────────────
+import { getAlgorithmRunner } from "@/src/components/visualizer/algorithmGraph";
+import { useAlgorithmAnimation } from "@/src/hooks/graph/useAlgorithmAnimation";
+import { useGraphController } from "@/src/hooks/useGraphController";
+
 const nodeTypes = { custom: CustomNode };
 const edgeTypes = { tree: TreeEdge, floatingEdge: FloatingEdge };
 const fitViewOptions: FitViewOptions = { padding: 0.2 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: false };
+
+const getDefaultGraphExplanation = (name: string) =>
+  `This section will explain ${name}. Perform an operation to begin.`;
+
+// สร้าง Object ไว้แปลงชื่อ Graph Algorithm
+const algorithmNames: Record<string, string> = {
+  dijkstra: "Dijkstra's Algorithm",
+  "bellman-ford": "Bellman-Ford Algorithm",
+  prims: "Prim's Algorithm",
+  kruskals: "Kruskal's Algorithm",
+  "breadth-first-search": "Breadth-First Search",
+  "depth-first-search": "Depth-First Search",
+};
 
 // Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
 const graphInitialNodes: Node[] = [
@@ -77,7 +102,7 @@ const graphInitialNodes: Node[] = [
 ];
 
 // Initial edges for graph (directed with weights) - 69→39 is created during tutorial
-const graphInitialEdges: Edge[] = [
+const graphDirectedInitialEdges: Edge[] = [
   {
     id: "eg-64-39",
     source: "g1",
@@ -140,13 +165,165 @@ const graphInitialEdges: Edge[] = [
   },
 ];
 
+// Initial edges for graph (undirected, no weights) — used by BFS/DFS
+const graphUndirectedInitialEdges: Edge[] = [
+  {
+    id: "eg-64-39",
+    source: "g1",
+    target: "g2",
+    type: "floatingEdge",
+    data: { directed: false },
+    style: { stroke: "#222121", strokeWidth: 1 },
+  },
+  {
+    id: "eg-64-69",
+    source: "g1",
+    target: "g4",
+    type: "floatingEdge",
+    data: { directed: false },
+    style: { stroke: "#222121", strokeWidth: 1 },
+  },
+  {
+    id: "eg-39-97",
+    source: "g2",
+    target: "g3",
+    type: "floatingEdge",
+    data: { directed: false },
+    style: { stroke: "#222121", strokeWidth: 1 },
+  },
+  {
+    id: "eg-97-70",
+    source: "g3",
+    target: "g5",
+    type: "floatingEdge",
+    data: { directed: false },
+    style: { stroke: "#222121", strokeWidth: 1 },
+  },
+];
+
+// Initial edges for graph (undirected WITH weights) — used by Prim's/Kruskal's
+const graphUndirectedWeightedInitialEdges: Edge[] = [
+  {
+    id: "eg-64-39",
+    source: "g1",
+    target: "g2",
+    type: "floatingEdge",
+    label: "4",
+    data: { directed: false, weight: 4 },
+    style: { stroke: "#222121", strokeWidth: 1 },
+  },
+  {
+    id: "eg-64-69",
+    source: "g1",
+    target: "g4",
+    type: "floatingEdge",
+    label: "1",
+    data: { directed: false, weight: 1 },
+    style: { stroke: "#222121", strokeWidth: 1 },
+  },
+  {
+    id: "eg-39-97",
+    source: "g2",
+    target: "g3",
+    type: "floatingEdge",
+    label: "3",
+    data: { directed: false, weight: 3 },
+    style: { stroke: "#222121", strokeWidth: 1 },
+  },
+  {
+    id: "eg-97-70",
+    source: "g3",
+    target: "g5",
+    type: "floatingEdge",
+    label: "1",
+    data: { directed: false, weight: 1 },
+    style: { stroke: "#222121", strokeWidth: 1 },
+  },
+];
+
 export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
+  // ── Determine graph mode ───────────────────────────────────────────────────
+  // Directed: Dijkstra and Bellman-Ford use directed (weighted) edges
+  const isDirectedGraph = ["dijkstra", "bellman-ford"].includes(algorithm);
+  // Weighted: Dijkstra, Bellman-Ford, Prim's, Kruskal's use weighted edges
+  const isWeightedGraph = [
+    "dijkstra",
+    "bellman-ford",
+    "prims",
+    "kruskals",
+  ].includes(algorithm);
+
+  // Choose correct initial edges based on algorithm type
+  const initialEdges = useMemo(() => {
+    if (isDirectedGraph) return graphDirectedInitialEdges;
+    if (isWeightedGraph) return graphUndirectedWeightedInitialEdges;
+    return graphUndirectedInitialEdges;
+  }, [isDirectedGraph, isWeightedGraph]);
+
   // ── State Management ───────────────────────────────────────────────────────
   const [nodes, setNodes] = useState<Node[]>(graphInitialNodes);
-  const [edges, setEdges] = useState<Edge[]>(graphInitialEdges);
+  const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [showInfo, setShowInfo] = useState(false);
+  const defaultPrettyName = algorithm
+    ? algorithmNames[algorithm] || "Graph Algorithms"
+    : "Graph Algorithms";
+  const [explanation, setExplanation] = useState<string>(
+    getDefaultGraphExplanation(defaultPrettyName),
+  );
+
+  // ดึงชื่อที่สวยงามจาก Mapping (ถ้าไม่เจอให้ใช้ค่า Default)
+  const prettyName = algorithm
+    ? algorithmNames[algorithm] || "Graph Algorithms"
+    : "Graph Algorithms";
+
+  // reset explanation when the selected algorithm changes
+  React.useEffect(() => {
+    if (algorithm) {
+      setExplanation(getDefaultGraphExplanation(prettyName));
+    }
+  }, [algorithm, prettyName]);
 
   const { flowToScreenPosition } = useReactFlow();
+
+  // ── Algorithm Animation Pipeline ────────────────────────────────────────────
+  const runner = useMemo(() => getAlgorithmRunner(algorithm), [algorithm]);
+  const animation = useAlgorithmAnimation(
+    runner,
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+  );
+  const controller = useGraphController(animation);
+
+  // True when the animation pipeline has generated steps (playing, paused, or finished)
+  const isAnimationActive = animation.totalSteps > 0;
+
+  // Keep a ref to animation so the search callback has a stable identity
+  const animationRef = useRef(animation);
+  useEffect(() => {
+    animationRef.current = animation;
+  }, [animation]);
+
+  // Derive effective explanation based on animation state
+  const effectiveExplanation = useMemo(() => {
+    if (isAnimationActive && animation.description) {
+      return animation.description;
+    }
+    if (explanation.trim()) {
+      return explanation;
+    }
+    return getDefaultGraphExplanation(prettyName);
+  }, [isAnimationActive, animation.description, explanation, prettyName]);
+
+  // Callback from Data_graph "Search" button — stable identity via ref
+  const handleAlgorithmSearch = useCallback(
+    (startLabel: string, endLabel: string) => {
+      animationRef.current.reset();
+      animationRef.current.start(startLabel, endLabel);
+    },
+    [],
+  );
 
   // ── Custom Hooks ───────────────────────────────────────────────────────────
   // Graph Tutorial hook
@@ -157,6 +334,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     setNodes,
     setEdges,
     isGraph: true,
+    directed: isDirectedGraph,
+    weighted: isWeightedGraph,
   });
 
   // Node interaction (universal - works for graph interactions, active when NOT in tutorial)
@@ -168,6 +347,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     isTree: false,
     isGraph: true,
     isTutorialActive: graphTutorial.showTutorial,
+    directed: isDirectedGraph,
+    weighted: isWeightedGraph,
   });
 
   // ── React Flow Event Handlers ──────────────────────────────────────────────
@@ -188,43 +369,50 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     [setEdges],
   );
 
-  const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-  }, []);
+  const onDragOver = useCallback(
+    (event: DragEvent<HTMLDivElement>) => {
+      if (isAnimationActive) return; // lock during animation
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+    },
+    [isAnimationActive],
+  );
 
   // ── Custom Interaction Handlers ────────────────────────────────────────────
   // Edge click handler (for weight editing)
   const handleEdgeClick = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
+      if (isAnimationActive) return; // lock during animation
       if (graphTutorial.showTutorial) {
         graphTutorial.handleWeightClick(edge.id);
       } else {
         nodeInteraction.handleEdgeClick(event, edge.id);
       }
     },
-    [graphTutorial, nodeInteraction],
+    [isAnimationActive, graphTutorial, nodeInteraction],
   );
 
   // Combined node click handler
   const handleNodeClick = useCallback(
     (event: React.MouseEvent, node: Node) => {
+      if (isAnimationActive) return; // lock during animation
       if (graphTutorial.showTutorial) {
         graphTutorial.handleNodeClick(event, node);
       } else {
         nodeInteraction.handleNodeClick(event, node);
       }
     },
-    [graphTutorial, nodeInteraction],
+    [isAnimationActive, graphTutorial, nodeInteraction],
   );
 
   // Combined node drag handlers
   const handleNodeDragStart = useCallback(
     (event: React.MouseEvent, node: Node) => {
+      if (isAnimationActive) return; // lock during animation
       if (graphTutorial.showTutorial) return;
       nodeInteraction.handleNodeDragStart(event, node);
     },
-    [graphTutorial.showTutorial, nodeInteraction],
+    [isAnimationActive, graphTutorial.showTutorial, nodeInteraction],
   );
 
   const handleNodeDrag = useCallback(
@@ -256,39 +444,56 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     }
   }, [graphTutorial.showTutorial, nodeInteraction]);
 
-  // สร้างตัวแปรแช่แข็ง SideTab ด้วย useMemo
+  const sideTabTitle = runner?.name ?? "Graph Algorithms";
+
   const sideTabMemo = useMemo(
     () => (
-      <SideTab title="Graph Algorithms">
+      <SideTab title={sideTabTitle}>
         <div>
           <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
-          <ExplainAlgo
+          <ExplainAlgo explanation={effectiveExplanation} />
+          <Data_graph
+            onSearch={handleAlgorithmSearch}
+            algorithm={algorithm}
             tutorialMode={graphTutorial.showTutorial}
-            algoType={algorithm}
-            algoName={
-              algorithm
-                ? algorithm[0].toUpperCase() +
-                  algorithm.slice(1).replace(/-/g, " ")
-                : ""
-            }
+            setExplanation={setExplanation}
           />
-          <Data_graph />
         </div>
         <div>
-          <PostTest_portal />
+          <PostTest_portal algorithm={algorithm} algoType="graph" />
         </div>
       </SideTab>
     ),
-    [graphTutorial.showTutorial],
+    [
+      graphTutorial.showTutorial,
+      algorithm,
+      handleAlgorithmSearch,
+      sideTabTitle,
+      effectiveExplanation,
+      setExplanation,
+    ],
   );
+
   return (
     <div className="w-screen h-screen">
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={graphTutorial.showTutorial ? undefined : onNodesChange}
-        onEdgesChange={graphTutorial.showTutorial ? undefined : onEdgesChange}
-        onConnect={onConnect}
+        onNodesChange={
+          isAnimationActive
+            ? undefined
+            : graphTutorial.showTutorial
+              ? graphTutorial.tutorialStep === graphTutorial.dragDeleteStep
+                ? onNodesChange
+                : undefined
+              : onNodesChange
+        }
+        onEdgesChange={
+          graphTutorial.showTutorial || isAnimationActive
+            ? undefined
+            : onEdgesChange
+        }
+        onConnect={isAnimationActive ? undefined : onConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onDragOver={onDragOver}
@@ -301,8 +506,10 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         zoomOnPinch={!graphTutorial.showTutorial}
         zoomOnDoubleClick={!graphTutorial.showTutorial}
         nodesDraggable={
-          !graphTutorial.showTutorial ||
-          (graphTutorial.showTutorial && graphTutorial.tutorialStep === 8)
+          !isAnimationActive &&
+          (!graphTutorial.showTutorial ||
+            (graphTutorial.showTutorial &&
+              graphTutorial.tutorialStep === graphTutorial.dragDeleteStep))
         }
         onNodeDrag={handleNodeDrag}
         onNodeDragStop={handleNodeDragStop}
@@ -315,28 +522,10 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       </ReactFlow>
 
       <div className="absolute bottom-4 w-full z-10">
-        <ControlPanel />
+        <ControlPanel controller={controller} />
       </div>
 
-      <SideTab title="Graph Algorithms">
-        <div>
-          <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
-          <ExplainAlgo
-            tutorialMode={graphTutorial.showTutorial}
-            algoType={algorithm}
-            algoName={
-              algorithm
-                ? algorithm[0].toUpperCase() +
-                  algorithm.slice(1).replace(/-/g, " ")
-                : ""
-            }
-          />
-          <Data_graph />
-        </div>
-        <div>
-          <PostTest_portal />
-        </div>
-      </SideTab>
+      {sideTabMemo}
 
       {/* Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
       <div className="absolute top-4 left-8 z-10 flex gap-2">
@@ -356,17 +545,20 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       {/* Info Reading inside Playground */}
       <Reading_modal isOpen={showInfo} onClose={() => setShowInfo(false)} />
 
-      {/* Tutorial overlay for graph */}
-      {graphTutorial.showTutorial && (
+      {/* Tutorial overlay for graph — only render after positions are stable */}
+      {graphTutorial.showTutorial && graphTutorial.positionsReady && (
         <TutorialGraph
           onComplete={graphTutorial.handleTutorialComplete}
           currentStep={graphTutorial.tutorialStep}
           setCurrentStep={graphTutorial.setTutorialStep}
+          directed={graphTutorial.directed}
+          weighted={graphTutorial.weighted}
           node69ScreenPos={graphTutorial.node69ScreenPos}
           node70ScreenPos={graphTutorial.node70ScreenPos}
           edge64to39WeightPos={graphTutorial.edge64to39WeightPos}
           trashBinPos={graphTutorial.trashBinPos}
           isTrashActive={graphTutorial.isTrashActive}
+          nodeScreenRadius={graphTutorial.nodeScreenRadius}
           showWeightInput={graphTutorial.showWeightInput}
           weightInputValue={graphTutorial.weightInputValue}
           onWeightInputChange={graphTutorial.handleWeightInputChange}

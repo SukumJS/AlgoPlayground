@@ -57,15 +57,17 @@ function animateTraversal(
   const positions = calculateBTPositions(root);
   const values = order.map((id) => getNodeValue(root, id) ?? 0);
 
-  // แสดงผลทาง console ก่อนเริ่ม animation
-  console.log(`[${label}]:`, values.join(" → "));
+  // Log traversal order in console before animation starts.
+  console.log(`[${label}]:`, values.join(" -> "));
 
   // reset
   controller.scheduleStep(() => {
     const { nodes, edges } = btToReactFlow(root, [], [], positions);
     callbacks.setNodes(nodes as RFNode[]);
     callbacks.setEdges(edges as never[]);
-    callbacks.setDescription(`Starting ${label}... (result in console)`);
+    callbacks.setDescription(
+      `Start ${label}. Follow the highlighted node order.`,
+    );
   }, animationSpeed * 0.5);
 
   order.forEach((nodeId, idx) => {
@@ -108,7 +110,7 @@ function animateTraversal(
         callbacks.setNodes(highlighted);
         callbacks.setEdges(highlightedEdges);
         callbacks.setDescription(
-          `${label}: visiting ${getNodeValue(root, nodeId)} (${idx + 1}/${order.length})`,
+          `${label}: visit node ${getNodeValue(root, nodeId)} (step ${idx + 1}/${order.length}).`,
         );
       },
       animationSpeed * (idx + 1),
@@ -130,7 +132,9 @@ function animateTraversal(
       }));
       callbacks.setNodes(final);
       callbacks.setEdges(edges as never[]);
-      callbacks.setDescription(`${label} complete: [${values.join(" → ")}]`);
+      callbacks.setDescription(
+        `${label} complete. Visit order: [${values.join(" -> ")}].`,
+      );
 
       controller.scheduleStep(() => {
         const { nodes: clean, edges: cleanE } = btToReactFlow(
@@ -141,7 +145,6 @@ function animateTraversal(
         );
         callbacks.setNodes(clean as RFNode[]);
         callbacks.setEdges(cleanE as never[]);
-        callbacks.setDescription("");
         onComplete();
       }, animationSpeed * 2);
     },
@@ -159,7 +162,7 @@ export function animateBTInorder(
   onComplete: () => void,
 ): void {
   if (!root) {
-    callbacks.setDescription("Tree is empty");
+    callbacks.setDescription("The tree is empty. Traversal cannot start.");
     onComplete();
     return;
   }
@@ -167,7 +170,7 @@ export function animateBTInorder(
   animateTraversal(
     root,
     collectInorder(root),
-    "Inorder (L → Root → R)",
+    "Inorder (L -> Root -> R)",
     "#F7AD45",
     animationSpeed,
     controller,
@@ -184,14 +187,14 @@ export function animateBTPreorder(
   onComplete: () => void,
 ): void {
   if (!root) {
-    callbacks.setDescription("Tree is empty");
+    callbacks.setDescription("The tree is empty. Traversal cannot start.");
     onComplete();
     return;
   }
   animateTraversal(
     root,
     collectPreorder(root),
-    "Preorder (Root → L → R)",
+    "Preorder (Root -> L -> R)",
     "#F7AD45",
     animationSpeed,
     controller,
@@ -208,7 +211,7 @@ export function animateBTPostorder(
   onComplete: () => void,
 ): void {
   if (!root) {
-    callbacks.setDescription("Tree is empty");
+    callbacks.setDescription("The tree is empty. Traversal cannot start.");
     onComplete();
     return;
   }
@@ -216,7 +219,7 @@ export function animateBTPostorder(
   animateTraversal(
     root,
     collectPostorder(root),
-    "Postorder (L → R → Root)",
+    "Postorder (L -> R -> Root)",
     "#F7AD45",
     animationSpeed,
     controller,

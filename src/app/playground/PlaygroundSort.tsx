@@ -94,7 +94,7 @@ const initialEdges: Edge[] = [];
 const fitViewOptions: FitViewOptions = { padding: 0.2 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: true };
 
-// 1️⃣ สร้าง Object ไว้แปลงชื่อ Algorithm
+// สร้าง Object ไว้แปลงชื่อ Algorithm
 const algorithmNames: Record<string, string> = {
   "bubble-sort": "Bubble Sort",
   "selection-sort": "Selection Sort",
@@ -285,13 +285,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
       <SideTab title={prettyName}>
         <div>
           <CodeAlgo />
-          <ExplainAlgo
-            isOpen={true}
-            onToggle={() => {}}
-            explanation={explanation}
-            algoType={algorithm}
-            algoName={prettyName}
-          />
+          <ExplainAlgo explanation={explanation} />
           <Data_sort
             nodeInput={nodeInput}
             setNodeInput={setNodeInput}
@@ -304,7 +298,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
           />
         </div>
         <div>
-          <PostTest_portal />
+          <PostTest_portal algorithm={algorithm} algoType="sort" />
         </div>
       </SideTab>
     ),

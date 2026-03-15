@@ -10,6 +10,18 @@ type CustomNodeData = {
   isDanger?: boolean;
   highlightColor?: string;
   balanceFactor?: number;
+  /** Graph algorithm animation state (set by useAlgorithmAnimation) */
+  animationState?: "default" | "visiting" | "visited" | "target-found";
+};
+
+/** Map graph animation states to visual colors */
+const ANIMATION_STATE_COLORS: Record<
+  string,
+  { bg: string; border: string; text: string }
+> = {
+  visiting: { bg: "#F7AD45", border: "#D4912B", text: "#222121" },
+  visited: { bg: "#62A2F7", border: "#4A85D6", text: "#FFFFFF" },
+  "target-found": { bg: "#4CAF7D", border: "#388E5C", text: "#FFFFFF" },
 };
 
 export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
@@ -18,9 +30,8 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
   // Determine colors based on highlight status
   let bgColorClass = data.isDanger ? "bg-[#BF1A1A]" : "bg-[#D9E363]";
   let textColorClass = data.isDanger ? "text-white" : "text-[#222121]";
-  let borderColorClass = data.isDanger
-    ? "border-[#BF1A1A]"
-    : "border-[#5D5D5D]";
+  // Border is ALWAYS #5D5D5D — never changes regardless of highlight or danger state
+  let borderColorClass = "border-[#5D5D5D]";
 
   const inlineStyle: React.CSSProperties = {
     boxShadow: data.isGlowing
@@ -28,13 +39,24 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
       : undefined,
   };
 
-  // Override with highlight colors if highlighted
-  if (data.isHighlighted && data.highlightColor) {
+  // Graph animation state takes priority (set by useAlgorithmAnimation)
+  const animColors =
+    data.animationState && data.animationState !== "default"
+      ? ANIMATION_STATE_COLORS[data.animationState]
+      : null;
+
+  if (animColors) {
+    bgColorClass = "";
+    borderColorClass = "";
+    textColorClass = "";
+    inlineStyle.backgroundColor = animColors.bg;
+    inlineStyle.borderColor = animColors.border;
+    inlineStyle.color = animColors.text;
+  } else if (data.isHighlighted && data.highlightColor) {
     if (data.highlightColor.startsWith("#")) {
       bgColorClass = "";
       borderColorClass = "";
       textColorClass = "";
-
       inlineStyle.backgroundColor = data.highlightColor;
       inlineStyle.borderColor = data.highlightColor;
 
@@ -43,34 +65,29 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
       } else {
         inlineStyle.color = "white";
       }
+      // Text stays #222121 — do NOT set inlineStyle.color
     } else {
       switch (data.highlightColor) {
         case "blue":
           bgColorClass = "bg-blue-400";
-          borderColorClass = "border-blue-600";
-          textColorClass = "text-white";
           break;
         case "red":
           bgColorClass = "bg-red-500";
-          borderColorClass = "border-red-700";
-          textColorClass = "text-white";
           break;
         case "yellow":
           bgColorClass = "bg-yellow-300";
-          borderColorClass = "border-yellow-600";
-          textColorClass = "text-gray-800";
           break;
         case "green":
           bgColorClass = "bg-green-500";
-          borderColorClass = "border-green-700";
-          textColorClass = "text-white";
           break;
       }
+      // textColorClass stays as-is (original dark text)
     }
   }
 
+  // Keep border width consistent — always border-2
   const borderWidthClass =
-    data.isHighlighted || data.isDanger ? "border-4" : "border-2";
+    animColors || data.isHighlighted || data.isDanger ? "border-4" : "border-2";
 
   return (
     <div
@@ -105,19 +122,13 @@ export default function CustomNode({ data }: NodeProps<Node<CustomNodeData>>) {
       {/* Balance factor badge — shown only during AVL balance-check animations */}
       {data.balanceFactor !== undefined && (
         <div
-          className="absolute -top-3 -right-3 flex items-center justify-center text-xs font-semibold rounded-full w-6 h-6 border-2"
-          style={{
-            backgroundColor:
-              Math.abs(data.balanceFactor) > 1 ? "#EF4444" : "#4CAF7D",
-            borderColor:
-              Math.abs(data.balanceFactor) > 1 ? "#DC2626" : "#388E5C",
-            color: "white",
-            fontSize: "14px",
-            lineHeight: 1,
-            zIndex: 10,
-          }}
+          className={`absolute -top-3 -right-3 w-6 h-6 rounded-full border text-xs flex items-center justify-center font-bold font-mono z-50 shadow-sm pointer-events-none ${
+            Math.abs(data.balanceFactor as number) > 1
+              ? "bg-red-100 border-red-400 text-red-800"
+              : "bg-blue-100 border-blue-400 text-blue-800"
+          }`}
         >
-          {data.balanceFactor > 0
+          {(data.balanceFactor as number) > 0
             ? `+${data.balanceFactor}`
             : data.balanceFactor}
         </div>

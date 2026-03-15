@@ -20,6 +20,7 @@ interface UseBTInsertHandlerProps {
   applyHighlighting: AnimationCallbacks["applyHighlighting"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
+  setIsAnimating: (v: boolean) => void;
 }
 
 export function useBTInsertHandler({
@@ -31,6 +32,7 @@ export function useBTInsertHandler({
   applyHighlighting,
   animationSpeed,
   isPausedRef,
+  setIsAnimating,
 }: UseBTInsertHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
@@ -41,6 +43,7 @@ export function useBTInsertHandler({
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
+      setIsAnimating(true);
 
       const newNodeId = `bt-node-${Date.now()}`;
       const rootAtInsertTime = btRootRef.current;
@@ -120,7 +123,7 @@ export function useBTInsertHandler({
                 (n) => n.id === id,
               );
               setDescription(
-                `Finding an empty spot... checking node ${currentNode?.data.label}.`,
+                `Finding the next empty position in level order. Checking node ${currentNode?.data.label}.`,
               );
             },
             animationSpeed * (idx + 1),
@@ -156,7 +159,7 @@ export function useBTInsertHandler({
             (n) => n.id === parentId,
           ); // Find parent node for description
           setDescription(
-            `Found an empty spot as the ${parentDir} child of node ${parentNode?.data.label}.`,
+            `Found an empty ${parentDir} child slot under node ${parentNode?.data.label}.`,
           );
         }, animationSpeed * globalOffset);
         globalOffset++; // Pause after description
@@ -190,7 +193,9 @@ export function useBTInsertHandler({
 
         setNodes(highlightedNodes);
         setEdges(rfEdges as RFEdge[]);
-        setDescription(`Inserted ${value} into the next available spot.`);
+        setDescription(
+          `Inserted ${value} into the next available position and updated links.`,
+        );
 
         // clear highlight
         controller.scheduleStep(() => {
@@ -205,6 +210,7 @@ export function useBTInsertHandler({
           setNodes(finalNodes as RFNode[]);
           setEdges(finalEdges as RFEdge[]);
           setDescription("");
+          setIsAnimating(false);
         }, animationSpeed * 4); // Longer delay for final state
       }, animationSpeed * globalOffset);
     },
@@ -216,6 +222,7 @@ export function useBTInsertHandler({
       setNodes,
       setEdges,
       setDescription,
+      setIsAnimating,
     ],
   );
 

@@ -16,6 +16,7 @@ interface UseBSTSearchHandlerProps {
   setDescription: (desc: string) => void;
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
+  setIsAnimating: (v: boolean) => void;
 }
 
 export function useBSTSearchHandler({
@@ -25,6 +26,7 @@ export function useBSTSearchHandler({
   setDescription,
   animationSpeed,
   isPausedRef,
+  setIsAnimating,
 }: UseBSTSearchHandlerProps) {
   const controllerRef = useRef<AnimationController | null>(null);
   const bstRootRef = useRef<BSTNode | null>(bstRoot);
@@ -35,10 +37,11 @@ export function useBSTSearchHandler({
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
+      setIsAnimating(true);
 
       const root = bstRootRef.current;
       if (!root) {
-        setDescription("Tree is empty");
+        setDescription("The tree is empty. Insert a node first.");
         controller.scheduleStep(() => setDescription(""), animationSpeed * 2); // Keep for 2 seconds
       }
 
@@ -77,7 +80,7 @@ export function useBSTSearchHandler({
           setEdges(highlightedEdges);
           const currentNode = rfNodes.find((n) => n.id === id); // Find current node for description
           setDescription(
-            `Searching for ${value}. Comparing with node ${currentNode?.data.label}.`,
+            `Searching for ${value}. Compare with node ${currentNode?.data.label} and choose left or right branch.`,
           );
         }, animationSpeed * globalOffset);
 
@@ -100,26 +103,35 @@ export function useBSTSearchHandler({
               },
             }));
             setNodes(highlighted);
-            setDescription(`Found ${value}!`);
+            setDescription(`Value ${value} found. This is the target node.`);
           } else {
             setNodes(rfNodes);
-            setDescription(`${value} was not found in the tree.`);
+            setDescription(
+              `Value ${value} was not found after reaching the end of the search path.`,
+            );
           }
           setEdges(rfEdges);
 
           // Step 3: Clean up
-          // Keep the result visible for a moment before clearing highlights and text.
           controller.scheduleStep(() => {
             setNodes(rfNodes);
             setEdges(rfEdges);
             setDescription("");
+            setIsAnimating(false);
           }, animationSpeed * 4);
         },
         animationSpeed * (globalOffset + 1),
       );
     },
 
-    [animationSpeed, isPausedRef, setNodes, setEdges, setDescription],
+    [
+      animationSpeed,
+      isPausedRef,
+      setNodes,
+      setEdges,
+      setDescription,
+      setIsAnimating,
+    ],
   );
 
   const cancelAnimation = useCallback(() => {

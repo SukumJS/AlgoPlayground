@@ -1,82 +1,200 @@
 import React from "react";
-import { EdgeLabelRenderer, type EdgeProps } from "@xyflow/react";
+import {
+  EdgeLabelRenderer,
+  useStore,
+  type EdgeProps,
+  type InternalNode,
+} from "@xyflow/react";
 
 /**
- * FloatingEdge - Custom edge that connects to node borders
+ * Get the center point of a node using its absolute position and measured dimensions.
+ */
+function getNodeCenter(node: InternalNode) {
+  const w = (node.measured?.width ?? 0) / 2;
+  const h = (node.measured?.height ?? 0) / 2;
+  return {
+    x: node.internals.positionAbsolute.x + w,
+    y: node.internals.positionAbsolute.y + h,
+  };
+}
+
+/**
+ * Get the intersection point of the line from sourceCenter to targetCenter
+ * with the circular border of the given node.
+ */
+function getCircleIntersection(node: InternalNode, otherNode: InternalNode) {
+  const nodeCenter = getNodeCenter(node);
+  const otherCenter = getNodeCenter(otherNode);
+
+  // Circle radius = half of node width (w-14 = 56px → radius = 28px)
+  // Subtract 1px so the arrowhead tip visually touches the outer border edge
+  const radius = (node.measured?.width ?? 56) / 2 - 1;
+
+  const dx = otherCenter.x - nodeCenter.x;
+  const dy = otherCenter.y - nodeCenter.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+
+  if (dist === 0) return nodeCenter;
+
+  return {
+    x: nodeCenter.x + (dx / dist) * radius,
+    y: nodeCenter.y + (dy / dist) * radius,
+  };
+}
+
+/**
+ * FloatingEdge - Custom edge for graph nodes (circular)
  *
- * Key features:
- * 1. Calculates intersection at node circle border (not center)
- * 2. Splits edge into 2 paths around the label (no overlap)
- * 3. Dynamic arrow positioning based on angle/distance
- * 4. Preserves user-defined styles
+ * Uses actual node positions (via useStore) to calculate exact
+ * circle-border intersection points. Renders a custom arrowhead
+ * polygon flush against the target node border with no gap.
+ *
+ * Supports `data.directed` flag:
+ *   - true (default): directed edge with arrowhead + weight label
+ *   - false: undirected edge — plain line, no arrow, no label gap
  */
 export default function FloatingEdge({
   id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
+  source,
+  target,
   label,
+  data,
   style,
-  markerEnd,
 }: EdgeProps) {
-  // Node radius (w-14 = 56px, so radius = 28px)
-  const nodeRadius = 28;
-  // Gap size for label (transparent area around the number)
+  const isDirected = data?.directed !== false;
+
+  // Get actual internal nodes (with positionAbsolute and measured dimensions)
+  const { sourceNode, targetNode } = useStore((s) => {
+    return {
+      sourceNode: s.nodeLookup.get(source),
+      targetNode: s.nodeLookup.get(target),
+    };
+  });
+
+  if (!sourceNode || !targetNode) return null;
+
+  // Calculate intersection points on circle borders
+  const sourcePoint = getCircleIntersection(sourceNode, targetNode);
+  const targetPoint = getCircleIntersection(targetNode, sourceNode);
+
+  const strokeColor = (style?.stroke as string) || "#222121";
+
+  // ── Undirected mode: simple line, no arrow ─────────────────────
+  if (!isDirected) {
+    // If there's a weight label, split path around it (like directed but no arrow)
+    if (label) {
+      const dx = targetPoint.x - sourcePoint.x;
+      const dy = targetPoint.y - sourcePoint.y;
+      const angle = Math.atan2(dy, dx);
+      const midX = (sourcePoint.x + targetPoint.x) / 2;
+      const midY = (sourcePoint.y + targetPoint.y) / 2;
+      const labelGap = 16;
+      const halfGap = labelGap / 2;
+      const beforeLabelX = midX - Math.cos(angle) * halfGap;
+      const beforeLabelY = midY - Math.sin(angle) * halfGap;
+      const afterLabelX = midX + Math.cos(angle) * halfGap;
+      const afterLabelY = midY + Math.sin(angle) * halfGap;
+
+      const path1 = `M ${sourcePoint.x} ${sourcePoint.y} L ${beforeLabelX} ${beforeLabelY}`;
+      const path2 = `M ${afterLabelX} ${afterLabelY} L ${targetPoint.x} ${targetPoint.y}`;
+
+      return (
+        <>
+          <path
+            id={`${id}-path1`}
+            className="react-flow__edge-path"
+            d={path1}
+            style={style}
+          />
+          <path
+            id={`${id}-path2`}
+            className="react-flow__edge-path"
+            d={path2}
+            style={style}
+          />
+          <EdgeLabelRenderer>
+            <div
+              style={{
+                position: "absolute",
+                transform: `translate(-50%, -50%) translate(${midX}px, ${midY}px)`,
+                pointerEvents: "all",
+                fontSize: "12px",
+                fontWeight: 500,
+                color: strokeColor,
+                background: "transparent",
+                padding: "4px 8px",
+                cursor: "pointer",
+                zIndex: 1000,
+              }}
+              className="nodrag nopan edge-weight-label"
+              data-edge-id={id}
+            >
+              {label}
+            </div>
+          </EdgeLabelRenderer>
+        </>
+      );
+    }
+
+    // No label: plain line (BFS/DFS)
+    const path = `M ${sourcePoint.x} ${sourcePoint.y} L ${targetPoint.x} ${targetPoint.y}`;
+    return (
+      <path id={id} className="react-flow__edge-path" d={path} style={style} />
+    );
+  }
+
+  // ── Directed mode: arrowhead + split path around label ────────
+  // Arrow dimensions
+  const arrowLength = 14;
+  const arrowWidth = 8;
   const labelGap = 16;
 
-  // Calculate the angle from source to target
-  const deltaX = targetX - sourceX;
-  const deltaY = targetY - sourceY;
-  const angle = Math.atan2(deltaY, deltaX);
-  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  // Angle from source intersection to target intersection
+  const dx = targetPoint.x - sourcePoint.x;
+  const dy = targetPoint.y - sourcePoint.y;
+  const angle = Math.atan2(dy, dx);
 
-  // Adjust source point to be at circle edge (start at border)
-  const adjustedSourceX = sourceX + Math.cos(angle) * nodeRadius;
-  const adjustedSourceY = sourceY + Math.sin(angle) * nodeRadius;
+  // Edge line ends at the base of the arrowhead
+  const lineEndX = targetPoint.x - Math.cos(angle) * arrowLength;
+  const lineEndY = targetPoint.y - Math.sin(angle) * arrowLength;
 
-  // Dynamic arrow offset - smaller when nodes are far, just enough for arrowhead
-  // Arrowhead size is 25px, so we need minimal padding
-  const arrowOffset = nodeRadius + 2; // Just 2px extra for arrowhead tip
-  const adjustedTargetX = targetX - Math.cos(angle) * arrowOffset;
-  const adjustedTargetY = targetY - Math.sin(angle) * arrowOffset;
+  // Midpoint for label
+  const midX = (sourcePoint.x + lineEndX) / 2;
+  const midY = (sourcePoint.y + lineEndY) / 2;
 
-  // Calculate midpoint for label
-  const midX = (adjustedSourceX + adjustedTargetX) / 2;
-  const midY = (adjustedSourceY + adjustedTargetY) / 2;
+  // Split path around label
+  const halfGap = labelGap / 2;
+  const beforeLabelX = midX - Math.cos(angle) * halfGap;
+  const beforeLabelY = midY - Math.sin(angle) * halfGap;
+  const afterLabelX = midX + Math.cos(angle) * halfGap;
+  const afterLabelY = midY + Math.sin(angle) * halfGap;
 
-  // Calculate path segments that stop before and after the label
-  const halfLabelGap = labelGap / 2;
+  const path1 = `M ${sourcePoint.x} ${sourcePoint.y} L ${beforeLabelX} ${beforeLabelY}`;
+  const path2 = `M ${afterLabelX} ${afterLabelY} L ${lineEndX} ${lineEndY}`;
 
-  // Points before label
-  const beforeLabelX = midX - Math.cos(angle) * halfLabelGap;
-  const beforeLabelY = midY - Math.sin(angle) * halfLabelGap;
-
-  // Points after label
-  const afterLabelX = midX + Math.cos(angle) * halfLabelGap;
-  const afterLabelY = midY + Math.sin(angle) * halfLabelGap;
-
-  // Create two separate paths that don't overlap with label
-  const path1 = `M ${adjustedSourceX} ${adjustedSourceY} L ${beforeLabelX} ${beforeLabelY}`;
-  const path2 = `M ${afterLabelX} ${afterLabelY} L ${adjustedTargetX} ${adjustedTargetY}`;
+  // Arrowhead polygon: tip at target border, base at arrowLength back
+  const perpAngle = angle + Math.PI / 2;
+  const arrowPoints = [
+    `${targetPoint.x},${targetPoint.y}`,
+    `${lineEndX + Math.cos(perpAngle) * arrowWidth},${lineEndY + Math.sin(perpAngle) * arrowWidth}`,
+    `${lineEndX - Math.cos(perpAngle) * arrowWidth},${lineEndY - Math.sin(perpAngle) * arrowWidth}`,
+  ].join(" ");
 
   return (
     <>
-      {/* First segment: source to before label */}
       <path
         id={`${id}-path1`}
         className="react-flow__edge-path"
         d={path1}
         style={style}
       />
-      {/* Second segment: after label to target (with arrow) */}
       <path
         id={`${id}-path2`}
         className="react-flow__edge-path"
         d={path2}
         style={style}
-        markerEnd={markerEnd as string}
       />
+      <polygon points={arrowPoints} fill={strokeColor} stroke="none" />
       {label && (
         <EdgeLabelRenderer>
           <div
@@ -86,13 +204,14 @@ export default function FloatingEdge({
               pointerEvents: "all",
               fontSize: "12px",
               fontWeight: 500,
-              color: "#222121",
+              color: strokeColor,
               background: "transparent",
               padding: "4px 8px",
               cursor: "pointer",
               zIndex: 1000,
             }}
             className="nodrag nopan edge-weight-label"
+            data-edge-id={id}
           >
             {label}
           </div>

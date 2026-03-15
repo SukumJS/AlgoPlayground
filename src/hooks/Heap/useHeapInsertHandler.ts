@@ -107,8 +107,11 @@ export function useHeapInsertHandler(params: {
               );
               setNodes(highlighted);
               setEdges(highlightedEdges);
+              const visitedNodeValue =
+                (origRF.nodes as RFNode[]).find((n) => n.id === id)?.data
+                  .label ?? id;
               setDescription(
-                `Finding next empty position... checking node ${id}`,
+                `Finding the next empty position in level order. Checking node ${id}.`,
               );
             },
             animationSpeed * (idx + 1),
@@ -140,14 +143,20 @@ export function useHeapInsertHandler(params: {
         setNodes(highlighted);
         setEdges(rfEdges as RFEdge[]);
         setDescription(
-          `Inserted ${value}. ${siftPath.length > 0 ? "Checking heap property and sifting up..." : "Heap property maintained!"}`,
+          `Inserted ${value}. ${siftPath.length > 0 ? "Now restore heap order by sifting up." : "Heap property is already satisfied."}`,
         );
       }, animationSpeed * globalOffset);
 
       // Step 3: Animate sift-up swaps smoothly
-      const currentSiftNodeId = nodeId;
+      // Use a mutable ref so each step closure captures the CURRENT sifting node ID
+      let currentSiftNodeId = nodeId;
 
       siftPath.forEach((swapId, idx) => {
+        // Capture the values for this step's closures
+        const siftingId = currentSiftNodeId;
+        const parentId = swapId;
+        const stepNum = siftPath.indexOf(swapId) + 1;
+
         // First highlight the two nodes about to swap
         globalOffset++;
         controller.scheduleStep(() => {
@@ -164,17 +173,15 @@ export function useHeapInsertHandler(params: {
             ...n,
             data: {
               ...n.data,
-              isHighlighted: n.id === currentSiftNodeId || n.id === swapId,
+              isHighlighted: n.id === siftingId || n.id === parentId,
               highlightColor:
-                n.id === currentSiftNodeId || n.id === swapId
-                  ? "#F7AD45"
-                  : undefined,
+                n.id === siftingId || n.id === parentId ? "#F7AD45" : undefined,
             },
           }));
           setNodes(highlighted);
           setEdges(rfEdges as RFEdge[]);
           setDescription(
-            `Sifting up... swapping with parent node ${swapId} (${idx + 1}/${siftPath.length})`,
+            `Sift up step ${idx + 1} of ${siftPath.length}: swap with parent node ${swapId}.`,
           );
         }, animationSpeed * globalOffset);
 
@@ -192,8 +199,8 @@ export function useHeapInsertHandler(params: {
                 "heap-edge",
               );
 
-              const posA = positions.get(currentSiftNodeId);
-              const posB = positions.get(swapId);
+              const posA = positions.get(siftingId);
+              const posB = positions.get(parentId);
 
               if (posA && posB) {
                 const t = frame / INTERP_FRAMES;
@@ -203,7 +210,7 @@ export function useHeapInsertHandler(params: {
                 const currBY = posB.y + (posA.y - posB.y) * t;
 
                 const movingNodes = (rfNodes as RFNode[]).map((n: RFNode) => {
-                  if (n.id === currentSiftNodeId) {
+                  if (n.id === siftingId) {
                     return {
                       ...n,
                       position: { x: currAX, y: currAY },
@@ -214,7 +221,7 @@ export function useHeapInsertHandler(params: {
                       },
                     };
                   }
-                  if (n.id === swapId) {
+                  if (n.id === parentId) {
                     return {
                       ...n,
                       position: { x: currBX, y: currBY },
@@ -245,8 +252,8 @@ export function useHeapInsertHandler(params: {
           const sq = [simTree];
           while (sq.length > 0) {
             const c = sq.shift()!;
-            if (c.id === currentSiftNodeId) nodeA = c;
-            if (c.id === swapId) nodeB = c;
+            if (c.id === siftingId) nodeA = c;
+            if (c.id === parentId) nodeB = c;
             if (c.left) sq.push(c.left);
             if (c.right) sq.push(c.right);
           }
@@ -258,11 +265,13 @@ export function useHeapInsertHandler(params: {
             nodeB.value = tmpV;
             nodeB.id = tmpI;
           }
-          // (After swapping IDs, nodeA child becomes swapId, and nodeB parent becomes currentSiftNodeId).
         }, animationSpeed * globalOffset);
+
+        // After this swap our node moved to parentId position
+        currentSiftNodeId = parentId;
       });
 
-      // Step 4: Final state
+      // Step 4: Final state — currentSiftNodeId now holds the final resting node ID
       globalOffset++;
       controller.scheduleStep(() => {
         setHeapRoot(newRoot);
@@ -287,7 +296,9 @@ export function useHeapInsertHandler(params: {
 
         setNodes(finalNode);
         setEdges(rfEdges as RFEdge[]);
-        setDescription(`Inserted ${value}. Heap property restored!`);
+        setDescription(
+          `Insertion complete. Heap property is restored for ${value}.`,
+        );
 
         controller.scheduleStep(() => {
           const cleanNodes = (rfNodes as RFNode[]).map((n: RFNode) => ({

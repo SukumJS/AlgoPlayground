@@ -70,7 +70,9 @@ export function useAVLInsertHandler(params: {
         latestRoot.value === valueToInsert
       ) {
         setIsAnimating(false);
-        setAnimationDescription(`Value ${valueToInsert} already exists!`);
+        setAnimationDescription(
+          `Value ${valueToInsert} already exists. AVL does not insert duplicates.`,
+        );
         setTimeout(() => setAnimationDescription(""), 2000);
         return;
       }
@@ -140,7 +142,7 @@ export function useAVLInsertHandler(params: {
                 (n) => n.id === nodeId,
               );
               setAnimationDescription(
-                `Finding insertion spot for ${valueToInsert}. Comparing with ${currentNode?.data.label}.`,
+                `Finding where to insert ${valueToInsert}. Compare with node ${currentNode?.data.label} and move left or right.`,
               );
             },
             animationSpeed * (idx + 1),
@@ -163,7 +165,7 @@ export function useAVLInsertHandler(params: {
           }));
           animationCallbacks.setNodes(hl);
           setAnimationDescription(
-            `Found insertion spot. Inserting ${valueToInsert} as the ${position} child of node ${parentValue}.`,
+            `Found an empty ${position} child slot under node ${parentValue}.`,
           );
         }, animationSpeed * offset);
         offset++; // Pause after description
@@ -184,7 +186,7 @@ export function useAVLInsertHandler(params: {
         animationCallbacks.setNodes(hl);
         animationCallbacks.setEdges(insertedRF.edges as RFEdge[]);
         setAnimationDescription(
-          `Inserted ${valueToInsert}. Now, walking back up to check balance factors.`,
+          `Inserted ${valueToInsert}. Move upward to check balance factors on ancestors.`,
         );
       }, animationSpeed * offset);
       offset++; // Pause after description
@@ -205,7 +207,7 @@ export function useAVLInsertHandler(params: {
                 n.id === nodeId
                   ? nodeId === rotationNodeId
                     ? "#EF4444"
-                    : "#9B59B6"
+                    : "#F7AD45"
                   : n.id === newNodeId
                     ? "#4CAF7D"
                     : undefined,
@@ -219,14 +221,14 @@ export function useAVLInsertHandler(params: {
               | Record<string, unknown>
               | undefined;
             setAnimationDescription(
-              `Balance Factor = ${bf} — Imbalanced! Need ${rotationType}.`,
+              `Balance factor is ${bf}. This node is imbalanced, so apply ${rotationType}.`,
             );
           } else {
             const nodeLabel = hl.find((n) => n.id === nodeId)?.data as
               | Record<string, unknown>
               | undefined;
             setAnimationDescription(
-              `Balance Factor = ${bf} — Balanced . Continuing up...`,
+              `Balance factor is ${bf}. This node is balanced, continue upward.`,
             );
           }
         }, animationSpeed * offset);
@@ -269,7 +271,7 @@ export function useAVLInsertHandler(params: {
             (n) => n.id === rotationNodeId,
           )?.data.label;
           setAnimationDescription(
-            `Imbalance at node ${nodeLabel}. Performing ${rotationType}...`,
+            `Imbalance detected at node ${nodeLabel}. Perform ${rotationType}.`,
           );
         }, animationSpeed * offset);
         offset++; // Pause after description
@@ -303,7 +305,9 @@ export function useAVLInsertHandler(params: {
 
           animationCallbacks.setNodes(tangledNodes);
           animationCallbacks.setEdges(hlEdges);
-          setAnimationDescription(`Disconnecting & Reassigning Child Nodes...`);
+          setAnimationDescription(
+            "Update child links for the rotation topology.",
+          );
         }, animationSpeed * offset);
 
         offset++; // Pause after description
@@ -348,7 +352,7 @@ export function useAVLInsertHandler(params: {
             animationCallbacks.setNodes(interpolated);
             animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
             setAnimationDescription(
-              `Re-arranging nodes to the new structure...`,
+              "Move rotated nodes into their new positions.",
             );
           }, animationSpeed * fractionOffset);
         }
@@ -362,7 +366,7 @@ export function useAVLInsertHandler(params: {
           animationCallbacks.setNodes(finalRF.nodes as RFNode[]);
           animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
           setAnimationDescription(
-            `${rotationType} complete. The tree is now balanced.`,
+            `${rotationType} complete. AVL balance is restored.`,
           );
         }, animationSpeed * offset);
         offset++; // Pause after description

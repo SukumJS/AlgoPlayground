@@ -38,7 +38,7 @@ export function useHeapRemoveHandler(params: {
       const controller = new AnimationController(isPausedRef);
       setIsAnimating(true);
       if (!heapRoot) {
-        setDescription("Tree is empty");
+        setDescription("The heap is empty. There is nothing to remove.");
         setIsAnimating(false);
         return;
       }
@@ -78,7 +78,9 @@ export function useHeapRemoveHandler(params: {
             }));
             setNodes(highlighted);
             setEdges(highlightedEdges);
-            setDescription(`Searching for ${value}... visiting node ${id}`);
+            setDescription(
+              `Searching for ${value}. Visiting node ${id} in level order.`,
+            );
           },
           animationSpeed * (idx + 1),
         );
@@ -90,7 +92,7 @@ export function useHeapRemoveHandler(params: {
         controller.scheduleStep(() => {
           setNodes(rfNodes as RFNode[]);
           setEdges(rfEdges as RFEdge[]);
-          setDescription(`✗ ${value} not found`);
+          setDescription(`Value ${value} was not found in the heap.`);
           controller.scheduleStep(() => {
             setDescription("");
             setIsAnimating(false);
@@ -113,7 +115,7 @@ export function useHeapRemoveHandler(params: {
         setNodes(highlighted);
         setEdges(rfEdges as RFEdge[]);
         setDescription(
-          `Found ${value}! Identifying deep-right leaf to replace it...`,
+          `Found ${value}. Locate the deepest rightmost node to replace it.`,
         );
       }, animationSpeed * globalOffset);
 
@@ -133,7 +135,7 @@ export function useHeapRemoveHandler(params: {
           setHeapRoot(null);
           setNodes([]);
           setEdges([]);
-          setDescription(`Removed ${value}. Tree is now empty.`);
+          setDescription(`Removed ${value}. The heap is now empty.`);
           setTimeout(() => setIsAnimating(false), animationSpeed * 2);
         }, animationSpeed * globalOffset);
         return;
@@ -154,7 +156,7 @@ export function useHeapRemoveHandler(params: {
               n.id === removedId
                 ? "#EF4444"
                 : n.id === lastNodeId
-                  ? "#A855F7"
+                  ? "#F7AD45"
                   : undefined,
           },
         }));
@@ -166,7 +168,7 @@ export function useHeapRemoveHandler(params: {
           ? String((foundNode.data as Record<string, unknown>).label)
           : "";
         setDescription(
-          `Deepest-rightmost leaf is ${labelStr}. Flying up to replace...`,
+          `Deepest rightmost node is ${labelStr}. Move it to the removed node position.`,
         );
       }, animationSpeed * globalOffset);
 
@@ -192,7 +194,7 @@ export function useHeapRemoveHandler(params: {
                     data: {
                       ...n.data,
                       isHighlighted: true,
-                      highlightColor: "#A855F7",
+                      highlightColor: "#F7AD45",
                     },
                   };
                 }
@@ -263,20 +265,26 @@ export function useHeapRemoveHandler(params: {
           data: {
             ...n.data,
             isHighlighted: n.id === lastNodeId,
-            highlightColor: n.id === lastNodeId ? "#A855F7" : undefined,
+            highlightColor: n.id === lastNodeId ? "#F7AD45" : undefined,
           },
         }));
         setNodes(snHigh);
         setEdges(se as RFEdge[]);
         setDescription(
-          `Node replaced. Checking heap property (sift down/up)...`,
+          `Replacement complete. Check heap property and apply sift operations if needed.`,
         );
       }, animationSpeed * globalOffset);
 
       // Step 5: Sift Swaps
-      const currentSiftNodeId = lastNodeId;
+      // Use a mutable variable so each step closure captures the CURRENT sifting node ID
+      let currentSiftNodeId = lastNodeId;
 
       siftPath.forEach((swapId, idx) => {
+        // Capture current values for this step's closures
+        const siftingId = currentSiftNodeId;
+        const partnerId = swapId;
+        const stepNum = siftPath.indexOf(swapId) + 1;
+
         globalOffset++;
         controller.scheduleStep(() => {
           const simPos = calculateHeapPositions(simTree);
@@ -293,9 +301,9 @@ export function useHeapRemoveHandler(params: {
             ...n,
             data: {
               ...n.data,
-              isHighlighted: n.id === currentSiftNodeId || n.id === swapId,
+              isHighlighted: n.id === siftingId || n.id === partnerId,
               highlightColor:
-                n.id === currentSiftNodeId || n.id === swapId
+                n.id === siftingId || n.id === partnerId
                   ? "#F7AD45"
                   : undefined,
             },
@@ -303,7 +311,7 @@ export function useHeapRemoveHandler(params: {
           setNodes(snHigh);
           setEdges(se as RFEdge[]);
           setDescription(
-            `Sifting... swapping with ${swapId} (${idx + 1}/${siftPath.length})`,
+            `Sift step ${idx + 1} of ${siftPath.length}: swap with node ${swapId}.`,
           );
         }, animationSpeed * globalOffset);
 
@@ -321,8 +329,8 @@ export function useHeapRemoveHandler(params: {
                 "heap-edge",
               );
 
-              const posA = simPos.get(currentSiftNodeId);
-              const posB = simPos.get(swapId);
+              const posA = simPos.get(siftingId);
+              const posB = simPos.get(partnerId);
 
               if (posA && posB) {
                 const t = frame / INTERP_FRAMES;
@@ -332,7 +340,7 @@ export function useHeapRemoveHandler(params: {
                 const currBY = posB.y + (posA.y - posB.y) * t;
 
                 const movingNodes = (rfNodes as RFNode[]).map((n) => {
-                  if (n.id === currentSiftNodeId) {
+                  if (n.id === siftingId) {
                     return {
                       ...n,
                       position: { x: currAX, y: currAY },
@@ -343,7 +351,7 @@ export function useHeapRemoveHandler(params: {
                       },
                     };
                   }
-                  if (n.id === swapId) {
+                  if (n.id === partnerId) {
                     return {
                       ...n,
                       position: { x: currBX, y: currBY },
@@ -374,8 +382,8 @@ export function useHeapRemoveHandler(params: {
           const sq = [simTree];
           while (sq.length > 0) {
             const c = sq.shift()!;
-            if (c.id === currentSiftNodeId) nodeA = c;
-            if (c.id === swapId) nodeB = c;
+            if (c.id === siftingId) nodeA = c;
+            if (c.id === partnerId) nodeB = c;
             if (c.left) sq.push(c.left);
             if (c.right) sq.push(c.right);
           }
@@ -388,6 +396,9 @@ export function useHeapRemoveHandler(params: {
             nodeB.id = tmpI;
           }
         }, animationSpeed * globalOffset);
+
+        // After this swap our sifting node moved to partnerId position
+        currentSiftNodeId = partnerId;
       });
 
       // Step 6: Finalize state
@@ -409,7 +420,7 @@ export function useHeapRemoveHandler(params: {
           setNodes([]);
           setEdges([]);
         }
-        setDescription(`Removed ${value}. Heap property restored.`);
+        setDescription(`Removal complete. Heap property is restored.`);
 
         controller.scheduleStep(() => {
           setDescription("");

@@ -300,13 +300,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
       <SideTab title={prettyName}>
         <div>
           <CodeAlgo />
-          <ExplainAlgo
-            isOpen={true}
-            onToggle={() => {}}
-            explanation={explanation}
-            algoType={algorithm}
-            algoName={prettyName}
-          />
+          <ExplainAlgo explanation={explanation} />
           <Data_sort
             nodeInput={nodeInput}
             setNodeInput={setNodeInput}
@@ -329,7 +323,6 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
       nodeInput,
       targetValue,
       explanation,
-      algorithm,
       prettyName,
       handleTargetChange,
       showTutorial,

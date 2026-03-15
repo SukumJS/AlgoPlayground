@@ -1,0 +1,207 @@
+import type { Node, Edge } from "@xyflow/react";
+import type {
+  AlgorithmRunner,
+  AnimationStep,
+  NodeAnimationState,
+  EdgeAnimationState,
+} from "../types/algorithm";
+
+// ── Helpers ───────────────────────────────────────────────────────
+interface AdjEntry {
+  targetId: string;
+  edgeId: string;
+}
+
+/**
+ * Build an **undirected** adjacency list — every edge appears in both directions.
+ */
+function buildUndirectedAdjList(edges: Edge[]): Map<string, AdjEntry[]> {
+  const adj = new Map<string, AdjEntry[]>();
+  for (const edge of edges) {
+    if (!adj.has(edge.source)) adj.set(edge.source, []);
+    if (!adj.has(edge.target)) adj.set(edge.target, []);
+    adj.get(edge.source)!.push({ targetId: edge.target, edgeId: edge.id });
+    adj.get(edge.target)!.push({ targetId: edge.source, edgeId: edge.id });
+  }
+  return adj;
+}
+
+/** Find the node whose *label* matches the given value. */
+function findNodeByLabel(nodes: Node[], label: string): Node | undefined {
+  return nodes.find((n) => String(n.data?.label) === label);
+}
+
+/** Create a snapshot helper that carries forward previous states. */
+function snap(
+  allNodeIds: string[],
+  allEdgeIds: string[],
+  nodeOverrides: Record<string, NodeAnimationState>,
+  edgeOverrides: Record<string, EdgeAnimationState>,
+  prevNodeStates: Record<string, NodeAnimationState>,
+  prevEdgeStates: Record<string, EdgeAnimationState>,
+): {
+  nodeStates: Record<string, NodeAnimationState>;
+  edgeStates: Record<string, EdgeAnimationState>;
+} {
+  const nodeStates: Record<string, NodeAnimationState> = {};
+  for (const id of allNodeIds) {
+    nodeStates[id] = nodeOverrides[id] ?? prevNodeStates[id] ?? "default";
+  }
+  const edgeStates: Record<string, EdgeAnimationState> = {};
+  for (const id of allEdgeIds) {
+    edgeStates[id] = edgeOverrides[id] ?? prevEdgeStates[id] ?? "default";
+  }
+  return { nodeStates, edgeStates };
+}
+
+// ── BFS implementation ────────────────────────────────────────────
+export const bfsRunner: AlgorithmRunner = {
+  name: "Breadth-First Search",
+
+  generateSteps(
+    nodes: Node[],
+    edges: Edge[],
+    startLabel: string,
+    endLabel: string,
+  ): AnimationStep[] {
+    const startNode = findNodeByLabel(nodes, startLabel);
+    const endNode = findNodeByLabel(nodes, endLabel);
+    if (!startNode || !endNode) return [];
+
+    const allNodeIds = nodes.map((n) => n.id);
+    const allEdgeIds = edges.map((e) => e.id);
+    const adj = buildUndirectedAdjList(edges);
+
+    const steps: AnimationStep[] = [];
+    let prevNode: Record<string, NodeAnimationState> = {};
+    let prevEdge: Record<string, EdgeAnimationState> = {};
+
+    const visited = new Set<string>();
+    const parent = new Map<string, { nodeId: string; edgeId: string } | null>();
+    const queue: string[] = [];
+
+    // Step 0 – highlight start node
+    visited.add(startNode.id);
+    parent.set(startNode.id, null);
+    queue.push(startNode.id);
+    {
+      const nOver: Record<string, NodeAnimationState> = {
+        [startNode.id]: "visiting",
+      };
+      const s = snap(allNodeIds, allEdgeIds, nOver, {}, prevNode, prevEdge);
+      steps.push({
+        ...s,
+        description: `Start BFS from node ${startLabel}. Put it into the queue.`,
+      });
+      prevNode = s.nodeStates;
+      prevEdge = s.edgeStates;
+    }
+
+    // Main BFS loop
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      const currentLabel =
+        nodes.find((n) => n.id === currentId)?.data?.label ?? currentId;
+
+      // Mark current as visited
+      {
+        const nOver: Record<string, NodeAnimationState> = {
+          [currentId]: "visited",
+        };
+        const eOver: Record<string, EdgeAnimationState> = {};
+        const pred = parent.get(currentId);
+        if (pred) {
+          eOver[pred.edgeId] = "traversed";
+        }
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
+        steps.push({
+          ...s,
+          description: `Take node ${currentLabel} from the front of the queue and mark it as visited.`,
+        });
+        prevNode = s.nodeStates;
+        prevEdge = s.edgeStates;
+      }
+
+      // Check if target found
+      if (currentId === endNode.id) {
+        // Trace path back
+        const pathNodeIds: string[] = [];
+        const pathEdgeIds: string[] = [];
+        let traceId: string | null = endNode.id;
+        while (traceId) {
+          pathNodeIds.push(traceId);
+          const p = parent.get(traceId);
+          if (p) {
+            pathEdgeIds.push(p.edgeId);
+            traceId = p.nodeId;
+          } else {
+            traceId = null;
+          }
+        }
+
+        const nOver: Record<string, NodeAnimationState> = {};
+        for (const id of pathNodeIds) nOver[id] = "target-found";
+        const eOver: Record<string, EdgeAnimationState> = {};
+        for (const id of pathEdgeIds) eOver[id] = "traversed";
+
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
+        steps.push({
+          ...s,
+          description: `Target node ${endLabel} is reached. Trace back through parents to highlight the path.`,
+        });
+        break;
+      }
+
+      // Explore neighbours
+      const neighbours = adj.get(currentId) ?? [];
+      for (const { targetId, edgeId } of neighbours) {
+        if (visited.has(targetId)) continue;
+
+        visited.add(targetId);
+        parent.set(targetId, { nodeId: currentId, edgeId });
+        queue.push(targetId);
+
+        const targetLabel =
+          nodes.find((n) => n.id === targetId)?.data?.label ?? targetId;
+
+        // Show edge being explored + neighbour enqueued
+        const eOver: Record<string, EdgeAnimationState> = {
+          [edgeId]: "traversing",
+        };
+        const nOver: Record<string, NodeAnimationState> = {
+          [targetId]: "visiting",
+        };
+        const s = snap(
+          allNodeIds,
+          allEdgeIds,
+          nOver,
+          eOver,
+          prevNode,
+          prevEdge,
+        );
+        steps.push({
+          ...s,
+          description: `Explore ${currentLabel} -> ${targetLabel}. ${targetLabel} is unvisited, so add it to the queue.`,
+        });
+        prevNode = s.nodeStates;
+        prevEdge = s.edgeStates;
+      }
+    }
+
+    return steps;
+  },
+};

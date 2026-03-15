@@ -18,14 +18,40 @@ interface UseGraphTutorialProps {
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
   isGraph: boolean;
+  /** true = directed (Dijkstra), false = undirected */
+  directed?: boolean;
+  /** true = weighted edges (Dijkstra, Prim, Kruskal), false = unweighted (BFS/DFS) */
+  weighted?: boolean;
 }
 
 /**
  * Graph Tutorial Hook
  *
- * 10 Steps:
+ * Supports 3 modes:
+ *
+ * DIRECTED (Dijkstra) — 10 Steps:
  * 0: Tap node 69 to start (highlight)
  * 1: Tap node 70 to create link (69→70)
+ * 2: Type weight '2' for the new edge
+ * 3: Value Set! confirmation
+ * 4: Tap existing weight (64→39, weight 4)
+ * 5: Type weight '5' to edit
+ * 6: Value Set! confirmation
+ * 7: Click node 70 (highlight for delete)
+ * 8: Hold and drag to trash bin
+ * 9: Tutorial Completed!
+ *
+ * UNDIRECTED UNWEIGHTED (BFS/DFS) — 6 Steps:
+ * 0: Tap node 69 to start
+ * 1: Tap node 70 to create link (undirected, no weight)
+ * 2: Link Created! confirmation
+ * 3: Click node 70 (highlight for delete)
+ * 4: Hold and drag to trash bin
+ * 5: Tutorial Completed!
+ *
+ * UNDIRECTED WEIGHTED (Prim/Kruskal) — 10 Steps:
+ * 0: Tap node 69 to start
+ * 1: Tap node 70 to create link
  * 2: Type weight '2' for the new edge
  * 3: Value Set! confirmation
  * 4: Tap existing weight (64→39, weight 4)
@@ -42,6 +68,8 @@ export function useGraphTutorial({
   setNodes,
   setEdges,
   isGraph,
+  directed = true,
+  weighted = directed,
 }: UseGraphTutorialProps) {
   // Tutorial state
   const [showTutorial, setShowTutorial] = useState(() => isGraph);
@@ -67,7 +95,12 @@ export function useGraphTutorial({
   const [edge64to39WeightPos, setEdge64to39WeightPos] =
     useState<ScreenPosition | null>(null);
   const [trashBinPos, setTrashBinPos] = useState<ScreenPosition | null>(null);
+  const [nodeScreenRadius, setNodeScreenRadius] = useState(32);
   const [isTrashActive, setIsTrashActive] = useState(false);
+
+  // Prevents the spotlight overlay from rendering before positions are stable
+  // (avoids a flash at the wrong position while ReactFlow's fitView settles)
+  const [positionsReady, setPositionsReady] = useState(false);
 
   // Track first selected node for linking
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -84,6 +117,18 @@ export function useGraphTutorial({
         y: node69.position.y + 28,
       });
       setNode69ScreenPos(screenPos);
+
+      // Compute screen-space radius: convert node width (56px flow) to screen pixels
+      const topLeft = flowToScreenPosition({
+        x: node69.position.x,
+        y: node69.position.y,
+      });
+      const topRight = flowToScreenPosition({
+        x: node69.position.x + 56,
+        y: node69.position.y,
+      });
+      const screenDiameter = topRight.x - topLeft.x;
+      setNodeScreenRadius(screenDiameter / 2);
     }
 
     // Find node 70
@@ -96,7 +141,7 @@ export function useGraphTutorial({
       setNode70ScreenPos(screenPos);
     }
 
-    // Find edge 64→39 weight position (midpoint of edge)
+    // Find edge 64→39 weight position — read from actual DOM label for precision
     const edge64to39 = edges.find((e) => {
       const sourceNode = nodes.find((n) => n.id === e.source);
       const targetNode = nodes.find((n) => n.id === e.target);
@@ -107,13 +152,26 @@ export function useGraphTutorial({
     });
 
     if (edge64to39) {
-      const sourceNode = nodes.find((n) => n.id === edge64to39.source);
-      const targetNode = nodes.find((n) => n.id === edge64to39.target);
-      if (sourceNode && targetNode) {
-        const midX = (sourceNode.position.x + targetNode.position.x) / 2 + 28;
-        const midY = (sourceNode.position.y + targetNode.position.y) / 2 + 28;
-        const screenPos = flowToScreenPosition({ x: midX, y: midY });
-        setEdge64to39WeightPos(screenPos);
+      // Try DOM query first for pixel-perfect position
+      const labelEl = document.querySelector(
+        `[data-edge-id="${edge64to39.id}"]`,
+      ) as HTMLElement | null;
+      if (labelEl) {
+        const rect = labelEl.getBoundingClientRect();
+        setEdge64to39WeightPos({
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+        });
+      } else {
+        // Fallback to flow-coordinate calculation
+        const sourceNode = nodes.find((n) => n.id === edge64to39.source);
+        const targetNode = nodes.find((n) => n.id === edge64to39.target);
+        if (sourceNode && targetNode) {
+          const midX = (sourceNode.position.x + targetNode.position.x) / 2 + 28;
+          const midY = (sourceNode.position.y + targetNode.position.y) / 2 + 28;
+          const screenPos = flowToScreenPosition({ x: midX, y: midY });
+          setEdge64to39WeightPos(screenPos);
+        }
       }
     }
 
@@ -136,12 +194,14 @@ export function useGraphTutorial({
     };
   }, [updateTutorialPositions]);
 
-  // Trigger position update when tutorial becomes active
+  // Trigger position update when tutorial becomes active.
+  // Wait for ReactFlow's fitView to settle before marking positions as ready.
   useEffect(() => {
     if (showTutorial) {
       const timer = setTimeout(() => {
         updateTutorialPositions();
-      }, 500);
+        setPositionsReady(true);
+      }, 600);
       return () => clearTimeout(timer);
     }
   }, [showTutorial, updateTutorialPositions]);
@@ -176,29 +236,58 @@ export function useGraphTutorial({
           setTutorialStep(1);
         }
       } else if (tutorialStep === 1) {
-        // Step 1: Click node 70 to create link (69→70)
+        // Step 1: Click node 70 to create link
         if (nodeLabel === "70" && selectedNodeId) {
-          // Store pending edge (will be created after weight input)
-          setPendingEdge({ source: selectedNodeId, target: node.id });
-          // Clear node highlight
-          setNodes((nds) =>
-            nds.map((n) => ({
-              ...n,
-              data: {
-                ...n.data,
-                isHighlighted: false,
-                isGlowing: false,
-              },
-            })),
-          );
-          setSelectedNodeId(null);
-          // Show weight input
-          setShowWeightInput(true);
-          setWeightInputValue("");
-          setTutorialStep(2);
+          if (directed) {
+            // Directed mode: store pending edge → open weight input
+            setPendingEdge({ source: selectedNodeId, target: node.id });
+            setNodes((nds) =>
+              nds.map((n) => ({
+                ...n,
+                data: { ...n.data, isHighlighted: false, isGlowing: false },
+              })),
+            );
+            setSelectedNodeId(null);
+            setShowWeightInput(true);
+            setWeightInputValue("");
+            setTutorialStep(2);
+          } else if (weighted) {
+            // Undirected + weighted mode: store pending edge → open weight input
+            setPendingEdge({ source: selectedNodeId, target: node.id });
+            setNodes((nds) =>
+              nds.map((n) => ({
+                ...n,
+                data: { ...n.data, isHighlighted: false, isGlowing: false },
+              })),
+            );
+            setSelectedNodeId(null);
+            setShowWeightInput(true);
+            setWeightInputValue("");
+            setTutorialStep(2);
+          } else {
+            // Undirected mode: create edge immediately (no weight)
+            const newEdge: Edge = {
+              id: `e-${selectedNodeId}-${node.id}`,
+              source: selectedNodeId,
+              target: node.id,
+              type: "floatingEdge",
+              data: { directed: false },
+              style: { stroke: "#222121", strokeWidth: 1 },
+            };
+            setEdges((eds) => [...eds, newEdge]);
+            setNodes((nds) =>
+              nds.map((n) => ({
+                ...n,
+                data: { ...n.data, isHighlighted: false, isGlowing: false },
+              })),
+            );
+            setSelectedNodeId(null);
+            // Step 2 = "Link Created!" confirmation in undirected mode
+            setTutorialStep(2);
+          }
         }
-      } else if (tutorialStep === 7) {
-        // Step 7: Click node 70 (highlight for delete)
+      } else if (directed && tutorialStep === 7) {
+        // Directed: Step 7: Click node 70 (highlight for delete)
         if (nodeLabel === "70") {
           setNodes((nds) =>
             nds.map((n) => ({
@@ -212,9 +301,47 @@ export function useGraphTutorial({
           );
           setTutorialStep(8);
         }
+      } else if (!directed && weighted && tutorialStep === 7) {
+        // Undirected+weighted step 7: Click node 70 (highlight for delete)
+        if (nodeLabel === "70") {
+          setNodes((nds) =>
+            nds.map((n) => ({
+              ...n,
+              data: {
+                ...n.data,
+                isHighlighted: n.id === node.id,
+                isGlowing: n.id === node.id,
+              },
+            })),
+          );
+          setTutorialStep(8);
+        }
+      } else if (!directed && !weighted && tutorialStep === 3) {
+        // Undirected step 3: Click node 70 (highlight for delete)
+        if (nodeLabel === "70") {
+          setNodes((nds) =>
+            nds.map((n) => ({
+              ...n,
+              data: {
+                ...n.data,
+                isHighlighted: n.id === node.id,
+                isGlowing: n.id === node.id,
+              },
+            })),
+          );
+          setTutorialStep(4);
+        }
       }
     },
-    [showTutorial, tutorialStep, selectedNodeId, setNodes],
+    [
+      showTutorial,
+      tutorialStep,
+      selectedNodeId,
+      directed,
+      weighted,
+      setNodes,
+      setEdges,
+    ],
   );
 
   // Handle weight click for editing (Step 4)
@@ -253,30 +380,45 @@ export function useGraphTutorial({
     if (tutorialStep === 2 && pendingEdge) {
       // Create new edge 69→70 with weight
       const weight = parseInt(weightInputValue) || 2;
-      const newEdge: Edge = {
-        id: `e-${pendingEdge.source}-${pendingEdge.target}`,
-        source: pendingEdge.source,
-        target: pendingEdge.target,
-        type: "floatingEdge",
-        label: String(weight),
-        data: { weight },
-        style: { stroke: "#222121", strokeWidth: 1 },
-        markerEnd: {
-          type: "arrowclosed" as const,
-          width: 25,
-          height: 25,
-          color: "#222121",
-        },
-      };
-      setEdges((eds) => [...eds, newEdge]);
+      if (directed) {
+        // Directed: edge WITH arrow
+        const newEdge: Edge = {
+          id: `e-${pendingEdge.source}-${pendingEdge.target}`,
+          source: pendingEdge.source,
+          target: pendingEdge.target,
+          type: "floatingEdge",
+          label: String(weight),
+          data: { weight },
+          style: { stroke: "#222121", strokeWidth: 1 },
+          markerEnd: {
+            type: "arrowclosed" as const,
+            width: 25,
+            height: 25,
+            color: "#222121",
+          },
+        };
+        setEdges((eds) => [...eds, newEdge]);
+      } else {
+        // Undirected + weighted: create edge WITHOUT arrow but WITH weight
+        const newEdge: Edge = {
+          id: `e-${pendingEdge.source}-${pendingEdge.target}`,
+          source: pendingEdge.source,
+          target: pendingEdge.target,
+          type: "floatingEdge",
+          label: String(weight),
+          data: { directed: false, weight },
+          style: { stroke: "#222121", strokeWidth: 1 },
+        };
+        setEdges((eds) => [...eds, newEdge]);
+      }
       setPendingEdge(null);
       setShowWeightInput(false);
       setWeightInputValue("");
       setTutorialStep(3);
 
-      // Auto-advance to step 4 after short delay
+      // Auto-advance to next step after short delay
       setTimeout(() => {
-        setTutorialStep(4);
+        setTutorialStep(4); // → tap weight step
       }, 1500);
     } else if (tutorialStep === 5 && editingEdgeId) {
       // Edit existing edge weight (64→39) - update BOTH label and data.weight
@@ -298,12 +440,23 @@ export function useGraphTutorial({
         setTutorialStep(7);
       }, 1500);
     }
-  }, [tutorialStep, pendingEdge, editingEdgeId, weightInputValue, setEdges]);
+  }, [
+    tutorialStep,
+    pendingEdge,
+    editingEdgeId,
+    weightInputValue,
+    directed,
+    setEdges,
+  ]);
 
-  // Handle node drag for trash bin glow effect (Step 8)
+  // Dynamic step calculations: weighted: step 8, undirected+unweighted: step 4
+  const dragDeleteStep = weighted ? 8 : 4;
+  const completedStep = weighted ? 9 : 5;
+
+  // Handle node drag for trash bin glow effect (drag step)
   const onNodeDrag = useCallback(
     (event: React.MouseEvent, node: Node) => {
-      if (showTutorial && tutorialStep === 8) {
+      if (showTutorial && tutorialStep === dragDeleteStep) {
         const trashX = window.innerWidth / 2;
         const trashY = window.innerHeight - 140;
         const dropTargetRadius = 150;
@@ -314,6 +467,13 @@ export function useGraphTutorial({
         );
 
         setIsTrashActive(dist < dropTargetRadius);
+
+        // Keep spotlight in sync with the dragged node so it follows smoothly
+        const screenPos = flowToScreenPosition({
+          x: node.position.x + 28,
+          y: node.position.y + 28,
+        });
+        setNode70ScreenPos(screenPos);
 
         // Update node danger state
         setNodes((nds) =>
@@ -327,13 +487,19 @@ export function useGraphTutorial({
         );
       }
     },
-    [showTutorial, tutorialStep, setNodes],
+    [
+      showTutorial,
+      tutorialStep,
+      dragDeleteStep,
+      setNodes,
+      flowToScreenPosition,
+    ],
   );
 
-  // Handle node drag stop for trash bin deletion (Step 8)
+  // Handle node drag stop for trash bin deletion (drag step)
   const onNodeDragStop = useCallback(
     (event: React.MouseEvent, node: Node) => {
-      if (showTutorial && tutorialStep === 8) {
+      if (showTutorial && tutorialStep === dragDeleteStep) {
         const trashX = window.innerWidth / 2;
         const trashY = window.innerHeight - 140;
         const dropTargetRadius = 60;
@@ -350,7 +516,7 @@ export function useGraphTutorial({
             eds.filter((e) => e.source !== node.id && e.target !== node.id),
           );
           // Complete tutorial
-          setTutorialStep(9);
+          setTutorialStep(completedStep);
           handleTutorialComplete();
         } else {
           // Clear danger state
@@ -365,7 +531,15 @@ export function useGraphTutorial({
         setIsTrashActive(false);
       }
     },
-    [showTutorial, tutorialStep, setNodes, setEdges, handleTutorialComplete],
+    [
+      showTutorial,
+      tutorialStep,
+      dragDeleteStep,
+      completedStep,
+      setNodes,
+      setEdges,
+      handleTutorialComplete,
+    ],
   );
 
   return {
@@ -378,11 +552,23 @@ export function useGraphTutorial({
     weightInputValue,
     pendingEdge,
 
+    // Mode flags (pass to tutorial_graph UI)
+    directed,
+    weighted,
+
+    // Dynamic step references
+    dragDeleteStep,
+    completedStep,
+
+    // True once positions have been computed after fitView settles
+    positionsReady,
+
     // Screen positions
     node69ScreenPos,
     node70ScreenPos,
     edge64to39WeightPos,
     trashBinPos,
+    nodeScreenRadius,
 
     // Setters
     setShowTutorial,
