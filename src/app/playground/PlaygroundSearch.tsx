@@ -312,6 +312,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
               setNodeInput("");
             }}
             isRunning={controller.isRunning}
+            algorithm={algorithm}
           />
         </div>
         <div>
@@ -324,6 +325,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
       targetValue,
       explanation,
       prettyName,
+      algorithm,
       handleTargetChange,
       showTutorial,
       handleTutorialDropSuccess,

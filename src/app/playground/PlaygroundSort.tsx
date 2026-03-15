@@ -126,7 +126,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
   const [showInfo, setShowInfo] = useState(false);
 
   // ดึง setCenter กับ getZoom เพิ่มเข้ามา
-  const { flowToScreenPosition, setCenter, getZoom } = useReactFlow();
+  const { flowToScreenPosition, setCenter, getZoom, fitView } = useReactFlow();
 
   const tutorial = useSortTutorial({
     nodes,
@@ -197,23 +197,44 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
 
     if (activeNode) {
       const isSameNode = lastPannedPosition.current?.id === activeNode.id;
+      // เช็คแค่พิกัด X เท่านั้น ถ้าแกน Y เปลี่ยน (ยกกล่อง) เราไม่สน
       const isSamePos = lastPannedPosition.current?.x === activeNode.position.x;
 
-      // เลื่อนกล้องเมื่อเปลี่ยนกล่อง หรือกล่องขยับ
+      // เลื่อนกล้องเมื่อเปลี่ยนกล่อง หรือกล่องขยับแนวนอน
       if (!isSameNode || !isSamePos) {
         lastPannedPosition.current = {
           id: activeNode.id,
           x: activeNode.position.x,
         };
 
+        const isMergeSort = algorithm === "merge-sort";
+
+        // แต่ถ้าอัลกออื่น ให้ล็อกเป้าแกน Y ไว้ที่ความสูง 50 (จอนิ่งไม่กระชากขึ้นลง)
+        const targetY = isMergeSort ? activeNode.position.y + 25 : 50;
+
+        // ถ้าอัลกออื่น ซูมเข้าใกล้ๆ ให้เห็นชัดๆ
+        const targetZoom = isMergeSort ? 1.8 : 1.2;
+
         setCenter(
-          activeNode.position.x + 32.5, // 32.5 คือระยะครึ่งกล่อง ให้ภาพอยู่ตรงกลาง
-          activeNode.position.y + 25,
-          { zoom: 1.5, duration: 600 }, // เลื่อนสมูทๆ ใช้เวลา 0.6 วิ
+          activeNode.position.x + 32.5, // 32.5 คือระยะครึ่งกล่อง ให้ภาพอยู่ตรงกลางแนวนอน
+          targetY,
+          { zoom: targetZoom, duration: 600 }, // เลื่อนสมูทๆ ใช้เวลา 0.6 วิ
         );
       }
     }
-  }, [nodes, controller.isRunning, setCenter, getZoom]);
+  }, [nodes, controller.isRunning, setCenter, getZoom, algorithm]);
+  //  ดึงกล้องกลับมาดูภาพรวม (Fit View) เมื่อรันเสร็จ
+  React.useEffect(() => {
+    // ถ้าอัลกอริทึมหยุดทำงานแล้ว
+    if (!controller.isRunning) {
+      // หน่วงเวลา 500ms ให้กล่องขยับเข้าที่ให้เสร็จก่อน แล้วค่อยให้กล้องซูมออก
+      const timer = setTimeout(() => {
+        fitView({ padding: 0.2, duration: 800 });
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [controller.isRunning, fitView]);
 
   //แมปข้อมูลเพื่อ "สตาฟ" กล่องที่ไม่เกี่ยวข้อง
   const displayNodes = useMemo(() => {
