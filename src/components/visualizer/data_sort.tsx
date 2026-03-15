@@ -25,6 +25,7 @@ type nodeProps = {
 
   // รับค่า isRunning มาจากหน้าหลัก
   isRunning?: boolean;
+  algorithm?: string;
 };
 
 function Data_sort({
@@ -35,6 +36,7 @@ function Data_sort({
   targetValue,
   setTargetValue,
   isRunning,
+  algorithm,
 }: nodeProps) {
   // ตั้งค่าเริ่มต้นให้เปิดแท็บอัตโนมัติถ้าเป็น Tutorial
   const [isDataSortOpen, setIsDataSortOpen] = useState(
@@ -63,6 +65,14 @@ function Data_sort({
     (sampleValue: number, sampleIndex?: number): OnDropAction => {
       return ({ position }: { position: XYPosition }) => {
         setNodes((prev) => {
+          //  เช็คว่ากล่องบนจอเต็ม 50 หรือยัง?
+          if (prev.length >= 50) {
+            alert(
+              "หน้าจอรองรับกล่องได้สูงสุด 50 ตัวเท่านั้น ไม่สามารถลากเพิ่มได้แล้ว!",
+            ); // ใส่ alert ไว้ก่อนยังไม่ได้คิดว่าจะให้เตือนยังไงดี
+            return prev; // ยกเลิกการวางกล่อง
+          }
+
           const currentIndex = prev.length;
 
           const newNode: Node = {
@@ -79,11 +89,10 @@ function Data_sort({
           return prev.concat(newNode);
         });
 
-        //  สุ่มค่าใหม่มาแทนที่ใน Sample Nodes ถ้ามีการลากจากกล่อง Sample
+        // สุ่มค่าใหม่มาแทนที่ใน Sample Nodes ถ้ามีการลากจากกล่อง Sample
         if (sampleIndex !== undefined) {
           setSampleNodes((prev) => {
             const newSamples = [...prev];
-            // สุ่มเลข 1-99
             newSamples[sampleIndex] = Math.floor(Math.random() * 99) + 1;
             return newSamples;
           });
@@ -145,15 +154,44 @@ function Data_sort({
     return arr;
   };
 
+  // ฟังก์ชันสุ่มตัวเลขสำหรับ Binary Search (ห้ามซ้ำ และ เรียงจากน้อยไปมาก)
+  const generateBinarySearchArray = (count: number) => {
+    const uniqueNumbers = new Set<number>();
+
+    // สุ่มไปเรื่อยๆ จนกว่าจะได้เลขครบจำนวน
+    while (uniqueNumbers.size < count) {
+      // สุ่มเลข 1 - 100
+      const randomNum = Math.floor(Math.random() * 100) + 1;
+      uniqueNumbers.add(randomNum);
+    }
+
+    // แปลง Set เป็น Array แล้วเรียงจากน้อยไปมาก
+    return Array.from(uniqueNumbers).sort((a, b) => a - b);
+  };
+
   // generate random nodes
   const handleGenerateRandomNodes = useCallback(
     (count: number) => {
       if (count <= 0) return;
 
-      const randomNumbers = generateDiverseArray(count);
+      //ถ้าผู้ใช้พิมพ์มาเกิน 50 ให้ปรับลดลงมาเหลือแค่ 50 ตัว
+      const safeCount = Math.min(count, 50);
+
+      // ใช้ safeCount แทน count
+      const randomNumbers =
+        algorithm === "binary-search"
+          ? generateBinarySearchArray(safeCount)
+          : generateDiverseArray(safeCount);
 
       // ดึงข้อมูลกล่องทั้งหมดที่มีอยู่บนจอตอนนี้
       setNodes((prev) => {
+        //ถ้ารวมของเก่าบนจอแล้วจะเกิน 50 ตัว ให้หยุดสร้างและคืนค่าเดิม
+        // (ถ้าไม่อยากดักชั้นนี้ สามารถลบ 3 บรรทัดนี้ทิ้งได้ครับ)
+        if (prev.length + safeCount > 50) {
+          alert("หน้าจอรองรับกล่องได้สูงสุด 50 ");
+          return prev;
+        }
+
         const startIndex = prev.length; // นับว่ามีกล่องอยู่แล้วกี่ใบ จะได้ไปต่อคิวถูก
 
         const newNodes: Node[] = randomNumbers.map((num, i) => {
@@ -162,7 +200,7 @@ function Data_sort({
           return {
             id: getId(),
             type: "custom",
-            position: { x: currentIndex * 65, y: 5 }, //  คำนวณพิกัด X ต่อจากกล่องสุดท้าย
+            position: { x: currentIndex * 65, y: 5 }, // คำนวณพิกัด X ต่อจากกล่องสุดท้าย
             data: {
               value: num,
               status: "idle",
@@ -171,15 +209,35 @@ function Data_sort({
           };
         });
 
-        // 🎯 เอาของเดิม (prev) มารวมกับของใหม่ (newNodes)
         return [...prev, ...newNodes];
       });
     },
-    [setNodes],
+    [setNodes, algorithm],
   );
+
   // reset nodes
   const handleResetNodes = useCallback(() => {
     setNodes([]);
+  }, [setNodes]);
+
+  // ฟังก์ชันสำหรับเรียงลำดับกล่องที่มีอยู่บนจอแบบอัตโนมัติ (จากน้อยไปมาก)
+  const handleAutoSort = useCallback(() => {
+    setNodes((prev) => {
+      if (prev.length === 0) return prev; // ถ้าไม่มีกล่องเลยก็ไม่ต้องทำอะไร
+
+      const sortedNodes = [...prev].sort((a, b) => {
+        return Number(a.data.value) - Number(b.data.value);
+      });
+
+      return sortedNodes.map((node, i) => ({
+        ...node,
+        position: { x: i * 65, y: 5 },
+        data: {
+          ...node.data,
+          index: i,
+        },
+      }));
+    });
   }, [setNodes]);
 
   return (
@@ -249,7 +307,7 @@ function Data_sort({
             />
           </div>
 
-          {/* 🎯 Sample nodes (ลูปจาก State แทน) */}
+          {/*Sample nodes (ลูปจาก State แทน) */}
           {sampleNodes.map((num, index) => (
             <div
               key={index}
@@ -260,7 +318,7 @@ function Data_sort({
                 if (isRunning) return;
                 setType("custom");
                 setDraggedValue(num);
-                // 🎯 ส่งค่าและ index เข้าไปเพื่อใช้สุ่มใหม่
+                // ส่งค่าและ index เข้าไปเพื่อใช้สุ่มใหม่
                 onDragStart(event, createAddNewNode(num, index));
               }}
             >
@@ -268,6 +326,23 @@ function Data_sort({
             </div>
           ))}
         </div>
+
+        {/* Auto Sort */}
+        {algorithm === "binary-search" && (
+          <div
+            className={`flex justify-center px-2 pb-2 transition-all ${
+              isRunning ? "pointer-events-none opacity-50" : ""
+            }`}
+          >
+            <button
+              onClick={handleAutoSort}
+              disabled={isRunning}
+              className="w-full bg-[#222121] text-white text-center p-2 rounded-lg  font-medium"
+            >
+              Auto Sort Data
+            </button>
+          </div>
+        )}
 
         {/* Random generator */}
         <div
