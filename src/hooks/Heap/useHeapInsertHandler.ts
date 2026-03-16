@@ -119,8 +119,11 @@ export function useHeapInsertHandler(params: {
               );
               setNodes(highlighted);
               setEdges(highlightedEdges);
+              const visitedNodeValue =
+                (origRF.nodes as RFNode[]).find((n) => n.id === id)?.data
+                  .label ?? id;
               setDescription(
-                `Finding the next empty position in level order. Checking node ${id}.`,
+                `Finding the next empty position in level order. Checking node ${visitedNodeValue}.`,
               );
               setCodeStep?.(1);
             },

@@ -24,9 +24,15 @@ function collectBFs(
   return map;
 }
 
+function cloneAVL(node: AVLTreeNode | null): AVLTreeNode | null {
+  if (!node) return null;
+  return JSON.parse(JSON.stringify(node));
+}
+
 export function useAVLInsertHandler(params: {
   avlRoot: AVLTreeNode | null;
   setAVLRoot: (root: AVLTreeNode | null) => void;
+  nodeIdCounter: number;
   animationSpeed: number;
   rf: ReturnType<typeof useReactFlow>;
   animationCallbacks: AnimationCallbacks;
@@ -34,7 +40,6 @@ export function useAVLInsertHandler(params: {
   setIsAnimating: (v: boolean) => void;
   setAnimationDescription: (v: string) => void;
   setNodeIdCounter: (v: number) => void;
-  nodeIdCounter: number;
 }) {
   const {
     avlRoot,
@@ -228,11 +233,17 @@ export function useAVLInsertHandler(params: {
           animationCallbacks.setNodes(hl);
           const bf = bfMap.get(nodeId) ?? 0;
           if (nodeId === rotationNodeId) {
+            const nodeLabel = hl.find((n) => n.id === nodeId)?.data as
+              | Record<string, unknown>
+              | undefined;
             setAnimationDescription(
               `Balance factor is ${bf}. This node is imbalanced, so apply ${rotationType}.`,
             );
             animationCallbacks.setCodeStep?.(3);
           } else {
+            const nodeLabel = hl.find((n) => n.id === nodeId)?.data as
+              | Record<string, unknown>
+              | undefined;
             setAnimationDescription(
               `Balance factor is ${bf}. This node is balanced, continue upward.`,
             );

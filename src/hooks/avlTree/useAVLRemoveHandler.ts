@@ -24,6 +24,11 @@ function collectBFs(
   return map;
 }
 
+function cloneAVL(node: AVLTreeNode | null): AVLTreeNode | null {
+  if (!node) return null;
+  return JSON.parse(JSON.stringify(node));
+}
+
 export function useAVLRemoveHandler(params: {
   avlRoot: AVLTreeNode | null;
   setAVLRoot: (root: AVLTreeNode | null) => void;
@@ -232,11 +237,17 @@ export function useAVLRemoveHandler(params: {
             animationCallbacks.setNodes(hl);
             const bf = bfMap.get(id) ?? 0;
             if (id === rotationNodeId) {
+              const nodeLabel = (removedRF.nodes as RFNode[]).find(
+                (n) => n.id === id,
+              )?.data.label;
               animationCallbacks.setDescription(
                 `Balance factor is ${bf}. This node is imbalanced, so apply ${rotationType}.`,
               ); // Description for imbalance
               animationCallbacks.setCodeStep?.(4);
             } else {
+              const nodeLabel = (removedRF.nodes as RFNode[]).find(
+                (n) => n.id === id,
+              )?.data.label;
               animationCallbacks.setDescription(
                 `Balance factor is ${bf}. This node is balanced, continue upward.`,
               ); // Description for balanced node
