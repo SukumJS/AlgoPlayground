@@ -1,14 +1,20 @@
 "use client";
 
 import React from "react";
-import CodeBubbleSort from "./types/codalgo/codebubblesort";
-import CodeSelectionSort from "./types/codalgo/codeselectionsort";
-import CodeInsertionSort from "./types/codalgo/codeinsertingsort";
-import CodeMergeSort from "./types/codalgo/codemergesort";
-import CodeHeapTree from "./types/codalgo/codeheaptreeView";
-import CodeAVLTree from "./types/codalgo/codeavltreeView";
-import CodeBSTTree from "./types/codalgo/codebsttreeView";
-import CodeBinaryTree from "./types/codalgo/codebinarytreeView";
+import CodeBubbleSort from "./types/animationcodalgo/ani_codebubblesort";
+import CodeSelectionSort from "./types/animationcodalgo/ani_codeselectionsort";
+import CodeInsertionSort from "./types/animationcodalgo/ani_codeinsertingsort";
+import CodeMergeSort from "./types/animationcodalgo/ani_codemergesort";
+import CodeHeapTree from "./types/animationcodalgo/ani_codeheaptree";
+import CodeAVLTree from "./types/animationcodalgo/ani_codeavltree";
+import CodeBSTTree from "./types/animationcodalgo/ani_codebsttree";
+import CodeBinaryTree from "./types/animationcodalgo/ani_codebinarytree";
+import CodeBellmanGraph from "./types/animationcodalgo/ani_codebellmangraph";
+import CodeBFSGraph from "./types/animationcodalgo/ani_codebfsgraph";
+import CodeDFSGraph from "./types/animationcodalgo/ani_codedfsgraph";
+import CodeDijkstraGraph from "./types/animationcodalgo/ani_codedijkstragraph";
+import CodeKruskalGraph from "./types/animationcodalgo/ani_codekruskalgraph";
+import CodePrimGraph from "./types/animationcodalgo/ani_codeprimgraph";
 
 interface CodeAlgoProps {
   title?: string;
@@ -49,6 +55,20 @@ export default function CodeAlgo(props: CodeAlgoProps) {
     case "min-heap":
     case "max-heap":
       return <CodeHeapTree {...props} />;
+
+    // Graphs
+    case "breadth-first-search":
+      return <CodeBFSGraph {...props} />;
+    case "depth-first-search":
+      return <CodeDFSGraph {...props} />;
+    case "dijkstra":
+      return <CodeDijkstraGraph {...props} />;
+    case "bellman-ford":
+      return <CodeBellmanGraph {...props} />;
+    case "prims":
+      return <CodePrimGraph {...props} />;
+    case "kruskals":
+      return <CodeKruskalGraph {...props} />;
 
     default:
       return <CodeBubbleSort {...props} />;
