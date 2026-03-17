@@ -232,7 +232,9 @@ function Data_tree({
   useEffect(() => {
     if (isBST && !isAnimating) {
       setTimeout(() => {
-        setBSTRoot(rebuildBSTFromNodes(JSON.parse(nodesStr)));
+        setBSTRoot(
+          rebuildBSTFromNodes(JSON.parse(nodesStr), JSON.parse(edgesStr)),
+        );
       }, 0);
     }
   }, [isBST, isAnimating, nodesStr, edgesStr]);
@@ -240,7 +242,9 @@ function Data_tree({
   useEffect(() => {
     if (isAVL && !isAnimating) {
       setTimeout(() => {
-        setAVLRoot(rebuildAVLTreeFromNodes(JSON.parse(nodesStr)));
+        setAVLRoot(
+          rebuildAVLTreeFromNodes(JSON.parse(nodesStr), JSON.parse(edgesStr)),
+        );
       }, 0);
     }
   }, [isAVL, isAnimating, nodesStr, edgesStr]);
@@ -250,14 +254,63 @@ function Data_tree({
       setTimeout(() => {
         let root: HeapNode | null = null;
 
-        const numericNodes = JSON.parse(nodesStr).filter(
+        const nodes = JSON.parse(nodesStr);
+        const edges = JSON.parse(edgesStr);
+
+        const numericNodes = nodes.filter(
           (n: { id: string; data: { label: string } }) =>
             !isNaN(parseInt(n.data.label)),
         );
-        numericNodes.forEach((n: { id: string; data: { label: string } }) => {
-          const res = insertHeap(root, parseInt(n.data.label), n.id, isMinHeap);
-          root = res.root;
-        });
+
+        if (numericNodes.length > 0) {
+          if (edges.length === 0) {
+            const res = insertHeap(
+              root,
+              parseInt(numericNodes[0].data.label),
+              numericNodes[0].id,
+              isMinHeap,
+            );
+            root = res.root;
+          } else {
+            const targetIds = new Set(edges.map((e: RFEdge) => e.target));
+            let rootNode = numericNodes.find(
+              (n: RFNode) => !targetIds.has(n.id),
+            );
+            if (!rootNode) rootNode = numericNodes[0];
+
+            const reachedIds = new Set<string>();
+            const queue = [rootNode.id];
+            reachedIds.add(rootNode.id);
+
+            while (queue.length > 0) {
+              const curId = queue.shift()!;
+              const childEdges = edges.filter(
+                (e: RFEdge) => e.source === curId,
+              );
+              for (const edge of childEdges) {
+                if (!reachedIds.has(edge.target)) {
+                  reachedIds.add(edge.target);
+                  queue.push(edge.target);
+                }
+              }
+            }
+
+            const values = numericNodes
+              .filter((n: RFNode) => reachedIds.has(n.id))
+              .map((n: RFNode) => {
+                const nodeData = n.data as Record<string, string>;
+                return {
+                  value: parseInt(nodeData?.label || "0", 10),
+                  id: n.id,
+                };
+              });
+
+            values.forEach((v: { value: number; id: string }) => {
+              const res = insertHeap(root, v.value, v.id, isMinHeap);
+              root = res.root;
+            });
+          }
+        }
         setHeapRoot(root);
       }, 0);
     }

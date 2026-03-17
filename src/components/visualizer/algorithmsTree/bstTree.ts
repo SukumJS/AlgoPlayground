@@ -301,12 +301,51 @@ export function cloneBSTTree(root: BSTNode | null): BSTNode | null {
 
 export function rebuildBSTFromNodes(
   nodes: Array<{ id: string; data: { label: string } }>,
+  edges: Array<{
+    source: string;
+    target: string;
+    sourceHandle?: string | null;
+  }> = [], // default to empty array for backwards compatibility
 ): BSTNode | null {
-  let root: BSTNode | null = null;
+  if (!nodes || nodes.length === 0) return null;
 
-  const values = nodes
-    .map((n) => ({ value: parseInt(n.data.label), id: n.id }))
-    .filter((n) => !isNaN(n.value));
+  // Find valid numeric nodes
+  const validNodes = nodes.filter((node) => !isNaN(parseInt(node.data.label)));
+  if (validNodes.length === 0) return null;
+
+  // If no edges, it's either an empty tree or just the very first node.
+  if (edges.length === 0) {
+    const firstNode = validNodes[0];
+    return insertBST(null, parseInt(firstNode.data.label), firstNode.id);
+  }
+
+  // Determine root: the node that is NEVER a target
+  const targetIds = new Set(edges.map((e) => e.target));
+  let rootNode = validNodes.find((n) => !targetIds.has(n.id));
+  if (!rootNode) rootNode = validNodes[0]; // fallback
+
+  // Find all reachable nodes from the root using edges
+  const reachedIds = new Set<string>();
+  const queue = [rootNode.id];
+  reachedIds.add(rootNode.id);
+
+  while (queue.length > 0) {
+    const curId = queue.shift()!;
+    // Find all edges where curId is the source
+    const childEdges = edges.filter((e) => e.source === curId);
+    for (const edge of childEdges) {
+      if (!reachedIds.has(edge.target)) {
+        reachedIds.add(edge.target);
+        queue.push(edge.target);
+      }
+    }
+  }
+
+  // Only rebuild using reached nodes (ignore orphans)
+  let root: BSTNode | null = null;
+  const values = validNodes
+    .filter((n) => reachedIds.has(n.id))
+    .map((n) => ({ value: parseInt(n.data.label), id: n.id }));
 
   if (values.length === 0) return null;
 

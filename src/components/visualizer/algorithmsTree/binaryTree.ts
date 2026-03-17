@@ -266,44 +266,22 @@ export function rebuildBTFromReactFlow(
     mainRoot = nodeMap.get(validNodes[0].id) || null;
   }
 
-  // 4. Trace the tree from mainRoot to find all reached nodes
-  const reached = new Set<string>();
-  if (mainRoot) {
-    const queue = [mainRoot];
-    while (queue.length > 0) {
-      const cur = queue.shift()!;
-      reached.add(cur.id);
-      if (cur.left) queue.push(cur.left);
-      if (cur.right) queue.push(cur.right);
-    }
-  }
+  // 4. Trace the tree from mainRoot to find all reached nodes (optional, kept for debugging if needed, but we do not auto-attach anymore)
+  // const reached = new Set<string>();
+  // if (mainRoot) {
+  //   const queue = [mainRoot];
+  //   while (queue.length > 0) {
+  //     const cur = queue.shift()!;
+  //     reached.add(cur.id);
+  //     if (cur.left) queue.push(cur.left);
+  //     if (cur.right) queue.push(cur.right);
+  //   }
+  // }
 
   // 5. Any node in validNodes that is NOT reached by mainRoot is an orphan
-  // We simulate "inserting" them into the generic BT so they are assimilated natively.
-  const orphans = validNodes
-    .filter((n) => !reached.has(n.id))
-    .map((n) => nodeMap.get(n.id)!);
-
-  if (orphans.length > 0) {
-    // Sort orphans exactly by timestamp embedded in ID to preserve insertion order
-    orphans.sort((a, b) => {
-      const getTs = (id: string) => {
-        const match = id.match(/(\d{10,})/);
-        return match ? parseInt(match[1], 10) : 0;
-      };
-      return getTs(a.id) - getTs(b.id);
-    });
-
-    // Insert them into mainRoot
-    orphans.forEach((o) => {
-      if (!mainRoot) {
-        mainRoot = { id: o.id, value: o.value, left: null, right: null };
-        reached.add(o.id);
-      } else {
-        insertBT(mainRoot, o.value, o.id);
-      }
-    });
-  }
+  // We used to simulate "inserting" them into the generic BT so they are assimilated natively.
+  // HOWEVER, this causes a bug where dropped nodes automatically attach themselves as soon as animation triggers.
+  // We now simply ignore orphans during rebuild, meaning they won't participate in traversal unless user manually links them.
 
   return mainRoot;
 }
