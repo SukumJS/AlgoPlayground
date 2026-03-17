@@ -318,6 +318,14 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     return getDefaultGraphExplanation(prettyName);
   }, [isAnimationActive, animation.description, explanation, prettyName]);
 
+  // ── Track latest state to avoid callback recreation on drag ─────────────
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+  useEffect(() => {
+    nodesRef.current = nodes;
+    edgesRef.current = edges;
+  }, [nodes, edges]);
+
   // Callback from Data_graph "Search" button — stable identity via ref
   const handleAlgorithmSearch = useCallback(
     (startLabel: string, endLabel: string) => {
@@ -332,8 +340,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     (count: number) => {
       if (count <= 0) return;
 
-      const currentNodes = nodes;
-      const currentEdges = edges;
+      const currentNodes = nodesRef.current;
+      const currentEdges = edgesRef.current;
 
       // Circular layout helper: distribute nodes evenly around a center
       const centerX = 350;
@@ -534,7 +542,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       setNodes(allNodes);
       setEdges(allEdges);
     },
-    [nodes, edges, setNodes, setEdges, isDirectedGraph, isWeightedGraph],
+    [setNodes, setEdges, isDirectedGraph, isWeightedGraph],
   );
 
   // Reset graph: clear all nodes and edges
