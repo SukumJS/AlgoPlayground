@@ -797,27 +797,19 @@ export function rebuildAVLTreeFromNodes(
   let rootNode = validNodes.find((n) => !targetIds.has(n.id));
   if (!rootNode) rootNode = validNodes[0]; // fallback
 
-  // Find all reachable nodes from the root using edges
-  const reachedIds = new Set<string>();
-  const queue = [rootNode.id];
-  reachedIds.add(rootNode.id);
-
-  while (queue.length > 0) {
-    const curId = queue.shift()!;
-    // Find all edges where curId is the source
-    const childEdges = edges.filter((e) => e.source === curId);
-    for (const edge of childEdges) {
-      if (!reachedIds.has(edge.target)) {
-        reachedIds.add(edge.target);
-        queue.push(edge.target);
-      }
-    }
+  // Include all nodes that have at least one edge connection
+  // (connected clusters get auto-inserted into the main tree;
+  //  truly isolated nodes with zero edges are excluded)
+  const connectedIds = new Set<string>();
+  for (const e of edges) {
+    connectedIds.add(e.source);
+    connectedIds.add(e.target);
   }
 
   // Only rebuild using reached nodes (ignore orphans), sorting them by value
   let root: AVLTreeNode | null = null;
   const values = validNodes
-    .filter((n) => reachedIds.has(n.id))
+    .filter((n) => connectedIds.has(n.id))
     .map((node) => ({
       value: parseInt(node.data.label),
       id: node.id,

@@ -293,25 +293,16 @@ function Data_tree({
             );
             if (!rootNode) rootNode = numericNodes[0];
 
-            const reachedIds = new Set<string>();
-            const queue = [rootNode.id];
-            reachedIds.add(rootNode.id);
-
-            while (queue.length > 0) {
-              const curId = queue.shift()!;
-              const childEdges = edges.filter(
-                (e: RFEdge) => e.source === curId,
-              );
-              for (const edge of childEdges) {
-                if (!reachedIds.has(edge.target)) {
-                  reachedIds.add(edge.target);
-                  queue.push(edge.target);
-                }
-              }
+            // Include all nodes with at least one edge connection
+            // (connected clusters auto-inserted; truly isolated nodes excluded)
+            const connectedIds = new Set<string>();
+            for (const edge of edges) {
+              connectedIds.add(edge.source);
+              connectedIds.add(edge.target);
             }
 
             const values = numericNodes
-              .filter((n: RFNode) => reachedIds.has(n.id))
+              .filter((n: RFNode) => connectedIds.has(n.id))
               .map((n: RFNode) => {
                 const nodeData = n.data as Record<string, string>;
                 return {
@@ -803,11 +794,25 @@ function Data_tree({
     ],
   );
 
+  // Remove truly isolated nodes (zero edges) from the canvas before animation
+  const removeIsolatedNodes = useCallback(() => {
+    const allEdges = rf.getEdges();
+    const connectedIds = new Set<string>();
+    for (const e of allEdges) {
+      connectedIds.add(e.source);
+      connectedIds.add(e.target);
+    }
+    setNodes((nds) =>
+      nds.filter((n) => n.type !== "custom" || connectedIds.has(n.id)),
+    );
+  }, [rf, setNodes]);
+
   // Handle insert operation
   const handleInsert = useCallback(() => {
     if (tutorialMode || isAnimating || !inputValue) return;
     const v = parseInt(inputValue);
     if (isNaN(v)) return;
+    removeIsolatedNodes();
     let steps: TreeAnimationStep[] | undefined;
     if (algorithm === "avl-tree") steps = handleAVLInsert(v);
     else if (isBST) steps = bstInsert(v);
@@ -835,11 +840,13 @@ function Data_tree({
     onStepsGenerated,
     onAnimatingChange,
     setIsAnimating,
+    removeIsolatedNodes,
   ]);
   const handleSearch = useCallback(() => {
     if (tutorialMode || isAnimating) return;
     const v = searchValue ? parseInt(searchValue) : NaN;
     if (isNaN(v)) return;
+    removeIsolatedNodes();
     let steps: TreeAnimationStep[] | undefined;
     if (algorithm === "avl-tree") steps = handleAVLSearch(v);
     else if (isBST) steps = bstSearch(v);
@@ -867,13 +874,13 @@ function Data_tree({
     onStepsGenerated,
     onAnimatingChange,
     setIsAnimating,
+    removeIsolatedNodes,
   ]);
-
-  // Handle remove operation
   const handleRemove = useCallback(() => {
     if (tutorialMode || isAnimating) return;
     const v = removeValue ? parseInt(removeValue) : NaN;
     if (isNaN(v)) return;
+    removeIsolatedNodes();
     let steps: TreeAnimationStep[] | undefined;
     if (isAVL) steps = handleAVLRemove(v);
     else if (isBST) steps = bstRemove(v);
@@ -902,6 +909,7 @@ function Data_tree({
     onStepsGenerated,
     onAnimatingChange,
     setIsAnimating,
+    removeIsolatedNodes,
   ]);
   const handleBTRebalance = useCallback(() => {
     const root = btRoot;
