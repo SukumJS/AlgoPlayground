@@ -52,7 +52,7 @@ function Data_sort({
     }
   }
 
-  const { setNodes } = useReactFlow();
+  const { setNodes, getNodes } = useReactFlow();
   const { onDragStart, isDragging } = useDnD();
 
   const [type, setType] = useState<string | null>(null);
@@ -155,14 +155,22 @@ function Data_sort({
   };
 
   // ฟังก์ชันสุ่มตัวเลขสำหรับ Binary Search (ห้ามซ้ำ และ เรียงจากน้อยไปมาก)
-  const generateBinarySearchArray = (count: number) => {
+  // รับ existingValues มาเช็คด้วย
+  const generateBinarySearchArray = (
+    count: number,
+    existingValues: Set<number>,
+  ) => {
     const uniqueNumbers = new Set<number>();
 
     // สุ่มไปเรื่อยๆ จนกว่าจะได้เลขครบจำนวน
     while (uniqueNumbers.size < count) {
       // สุ่มเลข 1 - 100
       const randomNum = Math.floor(Math.random() * 100) + 1;
-      uniqueNumbers.add(randomNum);
+
+      // เช็คว่าเลขนี้ต้อง "ไม่ซ้ำกับของเก่าบนจอ" ถึงจะเอาเข้า Set ได้
+      if (!existingValues.has(randomNum)) {
+        uniqueNumbers.add(randomNum);
+      }
     }
 
     // แปลง Set เป็น Array แล้วเรียงจากน้อยไปมาก
@@ -177,21 +185,28 @@ function Data_sort({
       //ถ้าผู้ใช้พิมพ์มาเกิน 50 ให้ปรับลดลงมาเหลือแค่ 50 ตัว
       const safeCount = Math.min(count, 50);
 
-      // ใช้ safeCount แทน count
+      // ดึงกล่องที่มีอยู่บนจอตอนนี้มาทั้งหมด
+      const currentNodes = getNodes();
+
+      // ถ้ารวมของเก่าบนจอแล้วจะเกิน 50 ตัว ให้หยุดสร้างและเตือน
+      if (currentNodes.length + safeCount > 50) {
+        alert("หน้าจอรองรับกล่องได้สูงสุด 50 ตัวเท่านั้นครับ!");
+        return;
+      }
+
+      // สกัดเอาเฉพาะ "ตัวเลข" จากกล่องบนจอมาเก็บไว้ใน Set
+      const existingValues = new Set(
+        currentNodes.map((node) => Number(node.data.value)),
+      );
+
+      // ใช้ safeCount แทน count และส่ง existingValues ไปด้วย
       const randomNumbers =
         algorithm === "binary-search"
-          ? generateBinarySearchArray(safeCount)
+          ? generateBinarySearchArray(safeCount, existingValues)
           : generateDiverseArray(safeCount);
 
       // ดึงข้อมูลกล่องทั้งหมดที่มีอยู่บนจอตอนนี้
       setNodes((prev) => {
-        //ถ้ารวมของเก่าบนจอแล้วจะเกิน 50 ตัว ให้หยุดสร้างและคืนค่าเดิม
-        // (ถ้าไม่อยากดักชั้นนี้ สามารถลบ 3 บรรทัดนี้ทิ้งได้ครับ)
-        if (prev.length + safeCount > 50) {
-          alert("หน้าจอรองรับกล่องได้สูงสุด 50 ");
-          return prev;
-        }
-
         const startIndex = prev.length; // นับว่ามีกล่องอยู่แล้วกี่ใบ จะได้ไปต่อคิวถูก
 
         const newNodes: Node[] = randomNumbers.map((num, i) => {
@@ -212,7 +227,7 @@ function Data_sort({
         return [...prev, ...newNodes];
       });
     },
-    [setNodes, algorithm],
+    [setNodes, getNodes, algorithm], // 🎯 อย่าลืมเติม getNodes ตรงนี้
   );
 
   // reset nodes
