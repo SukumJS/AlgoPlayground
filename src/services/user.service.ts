@@ -1,13 +1,10 @@
 import api from "./api";
+import type { SyncUserResponse } from "./auth.service";
 
 // ── Types ─────────────────────────────────────────────────────────
 
-export interface UserProfile {
-  id: string;
-  email: string;
-  username: string;
-  avatar?: string;
-}
+/** Profile data from /auth/sync — use this as the source of truth for user info */
+export type UserProfile = SyncUserResponse;
 
 export interface UpdateProfilePayload {
   username?: string;
@@ -30,13 +27,15 @@ export const userService = {
   updateProfile: (id: string, payload: UpdateProfilePayload) =>
     api.put<UserProfile>(`/users/${id}`, payload),
 
-  /** PUT /users/:id/avatar — upload profile image */
-  updateProfileImage: (id: string, file: File) => {
+  /** PUT /user/profile-image — upload new profile picture */
+  updateProfileImage: (file: File) => {
     const formData = new FormData();
-    formData.append("avatar", file);
-    return api.put<UserProfile>(`/users/${id}/avatar`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    formData.append("profileImage", file);
+    return api.put<{ message: string; imageUrl: string }>(
+      "/user/profile-image",
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
   },
 
   /** PUT /users/:id/password — change password */

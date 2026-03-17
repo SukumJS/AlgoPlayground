@@ -1,11 +1,6 @@
 export { default as api } from "./api";
 export { authService } from "./auth.service";
-export type {
-  LoginPayload,
-  RegisterPayload,
-  AuthUser,
-  AuthResponse,
-} from "./auth.service";
+export type { SyncUserResponse } from "./auth.service";
 export { userService } from "./user.service";
 export type {
   UserProfile,

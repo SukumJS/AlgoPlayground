@@ -151,7 +151,7 @@ export function useHeapInsertHandler(params: {
       // Use a mutable ref so each step closure captures the CURRENT sifting node ID
       let currentSiftNodeId = nodeId;
 
-      siftPath.forEach((swapId) => {
+      siftPath.forEach((swapId, idx) => {
         // Capture the values for this step's closures
         const siftingId = currentSiftNodeId;
         const parentId = swapId;
@@ -296,7 +296,9 @@ export function useHeapInsertHandler(params: {
 
         setNodes(finalNode);
         setEdges(rfEdges as RFEdge[]);
-        setDescription(`Insertion complete. Heap property is restored for ${value}.`);
+        setDescription(
+          `Insertion complete. Heap property is restored for ${value}.`,
+        );
 
         controller.scheduleStep(() => {
           const cleanNodes = (rfNodes as RFNode[]).map((n: RFNode) => ({
