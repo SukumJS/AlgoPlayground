@@ -336,6 +336,14 @@ function Data_tree({
   // In tutorial mode default input to "3" so user can drag directly without typing
   const [nodeInput, setNodeInput] = useState<string>(tutorialMode ? "3" : "");
 
+  useEffect(() => {
+    if (tutorialMode) {
+      setNodeInput("3");
+    } else {
+      setNodeInput("");
+    }
+  }, [tutorialMode]);
+
   /** Called when any random panel node is dragged away: slide rest left, append new at end */
   const handlePanelNodeDragged = useCallback(
     (idx: number) => {
@@ -933,7 +941,9 @@ function Data_tree({
         className={`flex-col ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}
       >
         {/* Smart draggable node panel: input node + 4 random unique nodes */}
-        <div className="transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2 p-2">
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2 p-2 ${isAnimating ? "pointer-events-none opacity-60" : ""}`}
+        >
           {/* Input node — user types a custom value */}
           <div
             data-tutorial-target="sidebar-node-3"
@@ -948,7 +958,7 @@ function Data_tree({
             <input
               type="number"
               placeholder="0"
-              className="w-11 h-full bg-transparent text-center text-[#222121] font-semibold text-xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-11 h-full bg-transparent text-center text-[#222121] font-semibold text-xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-100 disabled:bg-transparent"
               value={nodeInput}
               onChange={(e) =>
                 setNodeInput(
@@ -956,6 +966,8 @@ function Data_tree({
                 )
               }
               onPointerDown={(e) => e.stopPropagation()}
+              disabled={tutorialMode || isAnimating}
+              readOnly={tutorialMode || isAnimating}
             />
           </div>
 
@@ -979,7 +991,7 @@ function Data_tree({
         </div>
 
         <div
-          className={`flex-col justify-center items-center text-center ${tutorialMode ? "pointer-events-none opacity-60" : ""}`}
+          className={`flex-col justify-center items-center text-center ${tutorialMode || isAnimating ? "pointer-events-none opacity-60" : ""}`}
         >
           {/* Traversal Buttons (เฉพาะ bt-* algorithms) */}
           {hasTraversal && (
