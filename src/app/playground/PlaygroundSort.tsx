@@ -305,7 +305,11 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
     () => (
       <SideTab title={prettyName}>
         <div>
-          <CodeAlgo />
+          <CodeAlgo
+            algoType={algorithm}
+            currentStep={controller.currentStep ?? 0}
+            stepToCodeLine={controller.stepToCodeLine}
+          />
           <ExplainAlgo explanation={explanation} />
           <Data_sort
             nodeInput={nodeInput}
@@ -331,6 +335,8 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
       showTutorial,
       handleTutorialDropSuccess,
       controller.isRunning,
+      controller.currentStep,
+      controller.stepToCodeLine,
     ],
   );
 

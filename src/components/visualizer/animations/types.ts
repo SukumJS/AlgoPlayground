@@ -8,6 +8,12 @@ export interface AnimationCallbacks {
   setNodes: (nodes: Node[] | ((prev: Node[]) => Node[])) => void;
   setEdges: (edges: Edge[] | ((prev: Edge[]) => Edge[])) => void;
   setDescription: (desc: string) => void;
+  /** Optional callbacks for driving pseudo code highlighting step-by-step */
+  setCodeStep?: (step: number) => void;
+  /** Optional mapping from step index -> code line number (1-based) */
+  setStepToCodeLine?: (map: number[]) => void;
+  /** Optional high-level tree action identifier (insert/search/remove/traversal-*) */
+  setTreeAction?: (action: string | null) => void;
   applyHighlighting: (
     nodes: Node[],
     edges: Edge[],

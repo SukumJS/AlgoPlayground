@@ -14,6 +14,7 @@ export interface AnimationStep {
   nodeStates: Record<string, NodeAnimationState>;
   /** Map from edge id → animation state for this step */
   edgeStates: Record<string, EdgeAnimationState>;
+  codeLine?: number;
   /** Human-readable description of what happens in this step */
   description: string;
 }

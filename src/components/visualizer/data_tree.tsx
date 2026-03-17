@@ -105,6 +105,10 @@ interface Data_treeProps {
   onAutoInsertReady?: (fn: (value: number) => void) => void;
   // explanation callback lifted from PlaygroundTree
   setExplanation?: React.Dispatch<React.SetStateAction<string>>;
+  // code-highlighting callbacks lifted from PlaygroundTree
+  setCodeStep?: React.Dispatch<React.SetStateAction<number>>;
+  setStepToCodeLine?: React.Dispatch<React.SetStateAction<number[]>>;
+  setTreeAction?: React.Dispatch<React.SetStateAction<string | null>>;
   // Notifies parent when avlRoot changes so BF overlay can be applied at the always-mounted level
   onAVLRootChange?: (root: AVLTreeNode | null) => void;
   // When true, BF badges are preserved on every animation frame (set by parent)
@@ -128,6 +132,9 @@ function Data_tree({
   onHeapRebalanceReady,
   onAutoInsertReady,
   setExplanation,
+  setCodeStep,
+  setStepToCodeLine,
+  setTreeAction,
   onAVLRootChange,
   showAVLBalance = false,
 }: Data_treeProps) {
@@ -390,6 +397,15 @@ function Data_tree({
           }
         }
       },
+      setCodeStep: (step: number) => {
+        setCodeStep?.(step);
+      },
+      setStepToCodeLine: (map: number[]) => {
+        setStepToCodeLine?.(map);
+      },
+      setTreeAction: (action: string | null) => {
+        setTreeAction?.(action);
+      },
       applyHighlighting: (
         nodes: RFNode[],
         edges: RFEdge[],
@@ -438,7 +454,9 @@ function Data_tree({
       setNodes,
       setEdges,
       setExplanation,
-      algorithm,
+      setCodeStep,
+      setStepToCodeLine,
+      setTreeAction,
       isBST,
       isBT,
       isAVL,
@@ -495,6 +513,9 @@ function Data_tree({
     setNodes,
     setEdges,
     setDescription: animationCallbacks.setDescription,
+    setCodeStep: animationCallbacks.setCodeStep,
+    setStepToCodeLine: animationCallbacks.setStepToCodeLine,
+    setTreeAction: animationCallbacks.setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
@@ -504,6 +525,9 @@ function Data_tree({
     setNodes,
     setEdges,
     setDescription: animationCallbacks.setDescription,
+    setCodeStep: animationCallbacks.setCodeStep,
+    setStepToCodeLine: animationCallbacks.setStepToCodeLine,
+    setTreeAction: animationCallbacks.setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
@@ -514,6 +538,9 @@ function Data_tree({
     setNodes,
     setEdges,
     setDescription: animationCallbacks.setDescription,
+    setCodeStep: animationCallbacks.setCodeStep,
+    setStepToCodeLine: animationCallbacks.setStepToCodeLine,
+    setTreeAction: animationCallbacks.setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
@@ -529,6 +556,9 @@ function Data_tree({
     setEdges,
     setDescription: animationCallbacks.setDescription,
     applyHighlighting: animationCallbacks.applyHighlighting,
+    setCodeStep: animationCallbacks.setCodeStep,
+    setStepToCodeLine: animationCallbacks.setStepToCodeLine,
+    setTreeAction: animationCallbacks.setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
@@ -541,6 +571,9 @@ function Data_tree({
     setEdges,
     setDescription: animationCallbacks.setDescription,
     applyHighlighting: animationCallbacks.applyHighlighting,
+    setCodeStep: animationCallbacks.setCodeStep,
+    setStepToCodeLine: animationCallbacks.setStepToCodeLine,
+    setTreeAction: animationCallbacks.setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
@@ -554,6 +587,9 @@ function Data_tree({
     setEdges,
     setDescription: animationCallbacks.setDescription,
     applyHighlighting: animationCallbacks.applyHighlighting,
+    setCodeStep: animationCallbacks.setCodeStep,
+    setStepToCodeLine: animationCallbacks.setStepToCodeLine,
+    setTreeAction: animationCallbacks.setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
@@ -567,6 +603,9 @@ function Data_tree({
       setEdges,
       setDescription: animationCallbacks.setDescription,
       applyHighlighting: animationCallbacks.applyHighlighting,
+      setCodeStep: animationCallbacks.setCodeStep,
+      setStepToCodeLine: animationCallbacks.setStepToCodeLine,
+      setTreeAction: animationCallbacks.setTreeAction,
       animationSpeed,
       isPausedRef,
       setIsAnimating,
@@ -582,6 +621,9 @@ function Data_tree({
     setNodes,
     setEdges,
     setDescription: animationCallbacks.setDescription,
+    setCodeStep: animationCallbacks.setCodeStep,
+    setStepToCodeLine: animationCallbacks.setStepToCodeLine,
+    setTreeAction: animationCallbacks.setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
@@ -591,6 +633,9 @@ function Data_tree({
     setNodes,
     setEdges,
     setDescription: animationCallbacks.setDescription,
+    setCodeStep: animationCallbacks.setCodeStep,
+    setStepToCodeLine: animationCallbacks.setStepToCodeLine,
+    setTreeAction: animationCallbacks.setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
@@ -602,6 +647,9 @@ function Data_tree({
     setNodes,
     setEdges,
     setDescription: animationCallbacks.setDescription,
+    setCodeStep: animationCallbacks.setCodeStep,
+    setStepToCodeLine: animationCallbacks.setStepToCodeLine,
+    setTreeAction: animationCallbacks.setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
