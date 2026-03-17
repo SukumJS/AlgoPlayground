@@ -96,6 +96,7 @@ export const dijkstraRunner: AlgorithmRunner = {
       const s = snap(allNodeIds, allEdgeIds, nOver, {}, prevNode, prevEdge);
       steps.push({
         ...s,
+        codeLine: 6,
         description: `Initialize distances: ${startLabel} = 0, all other nodes = infinity.`,
       });
       prevNode = s.nodeStates;
@@ -141,6 +142,7 @@ export const dijkstraRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
+          codeLine: 9,
           description: `Pick the unvisited node with the smallest distance: ${currentLabel} (${currentDist}). Mark it visited.`,
         });
         prevNode = s.nodeStates;
@@ -179,6 +181,7 @@ export const dijkstraRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
+          codeLine: 21,
           description: `Target ${endLabel} is finalized. The shortest distance is ${currentDist}.`,
         });
         prevNode = s.nodeStates;
@@ -217,6 +220,7 @@ export const dijkstraRunner: AlgorithmRunner = {
           );
           steps.push({
             ...s,
+            codeLine: 15,
             description: `Check ${currentLabel} -> ${targetLabel}. This route is shorter, so update distance to ${newDist}.`,
           });
           prevNode = s.nodeStates;
@@ -232,6 +236,7 @@ export const dijkstraRunner: AlgorithmRunner = {
           );
           steps.push({
             ...s,
+            codeLine: 15,
             description: `Check ${currentLabel} -> ${targetLabel}. No update, because current best is already smaller (${dist.get(targetId)!}).`,
           });
           prevNode = s.nodeStates;

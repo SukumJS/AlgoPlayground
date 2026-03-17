@@ -676,7 +676,12 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     () => (
       <SideTab title={sideTabTitle}>
         <div>
-          <CodeAlgo tutorialMode={graphTutorial.showTutorial} />
+          <CodeAlgo
+            tutorialMode={graphTutorial.showTutorial}
+            algoType={algorithm}
+            currentStep={animation.currentStep}
+            stepToCodeLine={animation.stepToCodeLine}
+          />
           <ExplainAlgo explanation={effectiveExplanation} />
           <Data_graph
             onSearch={handleAlgorithmSearch}
@@ -696,6 +701,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     [
       graphTutorial.showTutorial,
       algorithm,
+      animation.currentStep,
+      animation.stepToCodeLine,
       handleAlgorithmSearch,
       handleRandomGraphGenerate,
       handleResetGraph,

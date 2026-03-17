@@ -17,6 +17,9 @@ interface UseBTTraversalHandlerProps {
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
   applyHighlighting: AnimationCallbacks["applyHighlighting"];
+  setCodeStep?: AnimationCallbacks["setCodeStep"];
+  setStepToCodeLine?: AnimationCallbacks["setStepToCodeLine"];
+  setTreeAction?: AnimationCallbacks["setTreeAction"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (val: boolean) => void;
@@ -28,6 +31,9 @@ export function useBTTraversalHandler({
   setEdges,
   setDescription,
   applyHighlighting,
+  setCodeStep,
+  setStepToCodeLine,
+  setTreeAction,
   animationSpeed,
   isPausedRef,
   setIsAnimating,
@@ -49,6 +55,9 @@ export function useBTTraversalHandler({
         setNodes,
         setEdges,
         setDescription,
+        setCodeStep,
+        setStepToCodeLine,
+        setTreeAction,
         applyHighlighting,
       };
 
@@ -70,6 +79,9 @@ export function useBTTraversalHandler({
       setDescription,
       setIsAnimating,
       applyHighlighting,
+      setCodeStep,
+      setStepToCodeLine,
+      setTreeAction,
       btRootRef,
     ],
   );
