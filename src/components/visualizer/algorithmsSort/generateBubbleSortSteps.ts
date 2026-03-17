@@ -36,6 +36,7 @@ export const generateBubbleSortSteps = (
   const n = arr.length;
 
   for (let i = 0; i < n; i++) {
+    let swappedInPass = false;
     for (let j = 0; j < n - i - 1; j++) {
       const a = arr[j];
       const b = arr[j + 1];
@@ -49,6 +50,7 @@ export const generateBubbleSortSteps = (
       pushStep();
 
       if (a.data.value > b.data.value) {
+        swappedInPass = true;
         arr = swapByIndex(arr, j, j + 1, positionFromIndex);
 
         arr = arr.map((node) =>
@@ -79,6 +81,16 @@ export const generateBubbleSortSteps = (
         : node,
     );
     pushStep();
+
+    // Early exit: ถ้าในรอบนี้ไม่มีการสลับเลย แปลว่าเรียงครบแล้ว → หยุด progress
+    if (!swappedInPass) {
+      arr = arr.map((node) => ({
+        ...node,
+        data: { ...node.data, status: "sorted" as const },
+      }));
+      pushStep();
+      break;
+    }
   }
 
   return steps;

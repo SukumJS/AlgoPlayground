@@ -97,6 +97,7 @@ export const primsRunner: AlgorithmRunner = {
       const s = snap(allNodeIds, allEdgeIds, nOver, {}, prevNode, prevEdge);
       steps.push({
         ...s,
+        codeLine: 3,
         description: `Start Prim's algorithm from node ${startLabel}. This is the first node in the MST.`,
       });
       prevNode = s.nodeStates;
@@ -148,6 +149,7 @@ export const primsRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
+          codeLine: 5,
           description: `Choose the lightest edge crossing the cut: ${sourceLabel} - ${targetLabel} (weight ${bestWeight}).`,
         });
         prevNode = s.nodeStates;
@@ -176,6 +178,7 @@ export const primsRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
+          codeLine: 6,
           description: `Add ${sourceLabel} - ${targetLabel} to the MST and include node ${targetLabel}. Total weight is now ${totalWeight}.`,
         });
         prevNode = s.nodeStates;
@@ -193,6 +196,7 @@ export const primsRunner: AlgorithmRunner = {
       const s = snap(allNodeIds, allEdgeIds, nOver, eOver, prevNode, prevEdge);
       steps.push({
         ...s,
+        codeLine: 9,
         description: `MST complete. All reachable nodes are connected with minimum total weight ${totalWeight}.`,
       });
     }

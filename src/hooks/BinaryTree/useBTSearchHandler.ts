@@ -17,6 +17,9 @@ interface UseBTSearchHandlerProps {
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
   applyHighlighting: AnimationCallbacks["applyHighlighting"];
+  setCodeStep?: AnimationCallbacks["setCodeStep"];
+  setStepToCodeLine?: AnimationCallbacks["setStepToCodeLine"];
+  setTreeAction?: AnimationCallbacks["setTreeAction"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
@@ -32,11 +35,15 @@ export function useBTSearchHandler({
   setNodes,
   setEdges,
   setDescription,
-  applyHighlighting,
+  applyHighlighting: _applyHighlighting,
+  setCodeStep,
+  setStepToCodeLine,
+  setTreeAction,
   animationSpeed,
   isPausedRef,
   setIsAnimating,
 }: UseBTSearchHandlerProps) {
+  void _applyHighlighting;
   const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
   btRootRef.current = btRoot;
@@ -46,6 +53,8 @@ export function useBTSearchHandler({
       const root = btRootRef.current;
       if (!root) {
         setDescription("The tree is empty. Insert a node first.");
+        setCodeStep?.(0);
+        setTreeAction?.(null);
         return;
       }
 
@@ -53,6 +62,11 @@ export function useBTSearchHandler({
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
       setIsAnimating(true);
+
+      const stepToLine = [1, 2, 5, 6, 7, 10, 11];
+      setTreeAction?.("bt-search");
+      setStepToCodeLine?.(stepToLine);
+      setCodeStep?.(0);
 
       const { found, nodeId, path } = searchBT(root, value);
       const positions = calculateBTPositions(root);
@@ -96,6 +110,7 @@ export function useBTSearchHandler({
             setDescription(
               `Searching for ${value}. Check node ${currentNode?.data.label} in level order.`,
             );
+            setCodeStep?.(3);
           },
           animationSpeed * (globalOffset + 1),
         );
@@ -129,9 +144,13 @@ export function useBTSearchHandler({
             }));
             setNodes(highlighted);
             setDescription(`Value ${value} found. This is the matching node.`);
+            setCodeStep?.(5);
           } else {
             setNodes(rfNodes as RFNode[]);
-            setDescription(`Value ${value} was not found after visiting all reachable nodes.`);
+            setDescription(
+              `Value ${value} was not found after visiting all reachable nodes.`,
+            );
+            setCodeStep?.(6);
           }
           setEdges(rfEdges as RFEdge[]);
 
@@ -145,6 +164,8 @@ export function useBTSearchHandler({
             setNodes(clean as RFNode[]);
             setEdges(cleanE as RFEdge[]);
             setDescription("");
+            setCodeStep?.(0);
+            setTreeAction?.(null);
             setIsAnimating(false);
           }, animationSpeed * 4); // Longer delay for final state
         },
@@ -159,6 +180,9 @@ export function useBTSearchHandler({
       setEdges,
       setDescription,
       setIsAnimating,
+      setCodeStep,
+      setStepToCodeLine,
+      setTreeAction,
     ],
   );
 

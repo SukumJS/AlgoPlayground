@@ -18,6 +18,9 @@ export function useHeapInsertHandler(params: {
   setNodes: (nodes: RFNode[] | ((prev: RFNode[]) => RFNode[])) => void;
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
+  setCodeStep?: (step: number) => void;
+  setStepToCodeLine?: (map: number[]) => void;
+  setTreeAction?: (action: string | null) => void;
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
@@ -29,6 +32,9 @@ export function useHeapInsertHandler(params: {
     setNodes,
     setEdges,
     setDescription,
+    setCodeStep,
+    setStepToCodeLine,
+    setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
@@ -40,6 +46,12 @@ export function useHeapInsertHandler(params: {
     (value: number) => {
       const controller = new AnimationController(isPausedRef);
       setIsAnimating(true);
+
+      const stepToLine = [1, 2, 4, 5, 6, 7];
+      setTreeAction?.("heap-insert");
+      setStepToCodeLine?.(stepToLine);
+      setCodeStep?.(0);
+
       const nodeId = `heap_${Date.now()}_${counterRef.current++}`;
       const rootCopy = cloneHeap(heapRoot);
 
@@ -111,8 +123,9 @@ export function useHeapInsertHandler(params: {
                 (origRF.nodes as RFNode[]).find((n) => n.id === id)?.data
                   .label ?? id;
               setDescription(
-                `Finding the next empty position in level order. Checking node ${id}.`,
+                `Finding the next empty position in level order. Checking node ${visitedNodeValue}.`,
               );
+              setCodeStep?.(1);
             },
             animationSpeed * (idx + 1),
           );
@@ -145,6 +158,7 @@ export function useHeapInsertHandler(params: {
         setDescription(
           `Inserted ${value}. ${siftPath.length > 0 ? "Now restore heap order by sifting up." : "Heap property is already satisfied."}`,
         );
+        setCodeStep?.(2);
       }, animationSpeed * globalOffset);
 
       // Step 3: Animate sift-up swaps smoothly
@@ -181,8 +195,9 @@ export function useHeapInsertHandler(params: {
           setNodes(highlighted);
           setEdges(rfEdges as RFEdge[]);
           setDescription(
-            `Sift up step ${idx + 1} of ${siftPath.length}: swap with parent node ${swapId}.`,
+            `Sift up step ${stepNum} of ${siftPath.length}: swap with parent node ${swapId}.`,
           );
+          setCodeStep?.(3);
         }, animationSpeed * globalOffset);
 
         // Interpolation frames for smooth node sliding
@@ -245,6 +260,33 @@ export function useHeapInsertHandler(params: {
         }
         globalOffset++; // Advance time for interpolation
 
+        // After interpolation finishes, commit the swap in the simTree
+        globalOffset++;
+        controller.scheduleStep(() => {
+          const positions = calculateHeapPositions(simTree);
+          const { nodes: rfNodes, edges: rfEdges } = heapToReactFlow(
+            simTree,
+            [],
+            [],
+            positions,
+            "heap-edge",
+          );
+
+          const highlighted = (rfNodes as RFNode[]).map((n: RFNode) => ({
+            ...n,
+            data: {
+              ...n.data,
+              isHighlighted: n.id === siftingId || n.id === parentId,
+              highlightColor:
+                n.id === siftingId || n.id === parentId ? "#F7AD45" : undefined,
+            },
+          }));
+          setNodes(highlighted);
+          setEdges(rfEdges as RFEdge[]);
+          setDescription(`Swap complete. Continue sifting if needed.`);
+          setCodeStep?.(4);
+        }, animationSpeed * globalOffset);
+
         // Snap simulation tree to new layout state
         controller.scheduleStep(() => {
           let nodeA: HeapNode | null = null;
@@ -296,7 +338,10 @@ export function useHeapInsertHandler(params: {
 
         setNodes(finalNode);
         setEdges(rfEdges as RFEdge[]);
-        setDescription(`Insertion complete. Heap property is restored for ${value}.`);
+        setDescription(
+          `Insertion complete. Heap property is restored for ${value}.`,
+        );
+        setCodeStep?.(5);
 
         controller.scheduleStep(() => {
           const cleanNodes = (rfNodes as RFNode[]).map((n: RFNode) => ({
@@ -305,6 +350,8 @@ export function useHeapInsertHandler(params: {
           }));
           setNodes(cleanNodes);
           setDescription("");
+          setCodeStep?.(0);
+          setTreeAction?.(null);
           setIsAnimating(false);
         }, animationSpeed * 2);
       }, animationSpeed * globalOffset);
@@ -319,6 +366,9 @@ export function useHeapInsertHandler(params: {
       animationSpeed,
       isPausedRef,
       setIsAnimating,
+      setCodeStep,
+      setStepToCodeLine,
+      setTreeAction,
     ],
   );
 

@@ -17,6 +17,9 @@ export function useHeapRemoveHandler(params: {
   setNodes: (nodes: RFNode[] | ((prev: RFNode[]) => RFNode[])) => void;
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
+  setCodeStep?: (step: number) => void;
+  setStepToCodeLine?: (map: number[]) => void;
+  setTreeAction?: (action: string | null) => void;
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
@@ -28,6 +31,9 @@ export function useHeapRemoveHandler(params: {
     setNodes,
     setEdges,
     setDescription,
+    setCodeStep,
+    setStepToCodeLine,
+    setTreeAction,
     animationSpeed,
     isPausedRef,
     setIsAnimating,
@@ -39,9 +45,16 @@ export function useHeapRemoveHandler(params: {
       setIsAnimating(true);
       if (!heapRoot) {
         setDescription("The heap is empty. There is nothing to remove.");
+        setCodeStep?.(0);
+        setTreeAction?.(null);
         setIsAnimating(false);
         return;
       }
+
+      const stepToLine = [1, 2, 3, 4, 5, 6, 8];
+      setTreeAction?.("heap-remove");
+      setStepToCodeLine?.(stepToLine);
+      setCodeStep?.(0);
 
       const { found, nodeId, path } = searchHeap(heapRoot, value);
       const positions = calculateHeapPositions(heapRoot);
@@ -78,7 +91,10 @@ export function useHeapRemoveHandler(params: {
             }));
             setNodes(highlighted);
             setEdges(highlightedEdges);
-            setDescription(`Searching for ${value}. Visiting node ${id} in level order.`);
+            setDescription(
+              `Searching for ${value}. Visiting node ${id} in level order.`,
+            );
+            setCodeStep?.(1);
           },
           animationSpeed * (idx + 1),
         );
@@ -91,6 +107,8 @@ export function useHeapRemoveHandler(params: {
           setNodes(rfNodes as RFNode[]);
           setEdges(rfEdges as RFEdge[]);
           setDescription(`Value ${value} was not found in the heap.`);
+          setCodeStep?.(0);
+          setTreeAction?.(null);
           controller.scheduleStep(() => {
             setDescription("");
             setIsAnimating(false);
@@ -115,6 +133,7 @@ export function useHeapRemoveHandler(params: {
         setDescription(
           `Found ${value}. Locate the deepest rightmost node to replace it.`,
         );
+        setCodeStep?.(2);
       }, animationSpeed * globalOffset);
 
       // Calculate actual removal to get animation path
@@ -134,6 +153,7 @@ export function useHeapRemoveHandler(params: {
           setNodes([]);
           setEdges([]);
           setDescription(`Removed ${value}. The heap is now empty.`);
+          setCodeStep?.(6);
           setTimeout(() => setIsAnimating(false), animationSpeed * 2);
         }, animationSpeed * globalOffset);
         return;
@@ -271,6 +291,7 @@ export function useHeapRemoveHandler(params: {
         setDescription(
           `Replacement complete. Check heap property and apply sift operations if needed.`,
         );
+        setCodeStep?.(3);
       }, animationSpeed * globalOffset);
 
       // Step 5: Sift Swaps
@@ -309,8 +330,9 @@ export function useHeapRemoveHandler(params: {
           setNodes(snHigh);
           setEdges(se as RFEdge[]);
           setDescription(
-            `Sift step ${idx + 1} of ${siftPath.length}: swap with node ${swapId}.`,
+            `Sift step ${stepNum} of ${siftPath.length}: swap with node ${swapId}.`,
           );
+          setCodeStep?.(4);
         }, animationSpeed * globalOffset);
 
         // Interpolation frames for smooth node sliding
@@ -419,9 +441,12 @@ export function useHeapRemoveHandler(params: {
           setEdges([]);
         }
         setDescription(`Removal complete. Heap property is restored.`);
+        setCodeStep?.(6);
 
         controller.scheduleStep(() => {
           setDescription("");
+          setCodeStep?.(0);
+          setTreeAction?.(null);
           setIsAnimating(false);
         }, animationSpeed * 2);
       }, animationSpeed * globalOffset);
@@ -436,6 +461,9 @@ export function useHeapRemoveHandler(params: {
       animationSpeed,
       isPausedRef,
       setIsAnimating,
+      setCodeStep,
+      setStepToCodeLine,
+      setTreeAction,
     ],
   );
 

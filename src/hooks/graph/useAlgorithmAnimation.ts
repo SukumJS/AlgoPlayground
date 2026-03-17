@@ -25,6 +25,8 @@ export interface UseAlgorithmAnimationReturn {
   currentStep: number;
   /** Total number of steps */
   totalSteps: number;
+  /** Optional mapping from step index -> code line number (1-based) */
+  stepToCodeLine?: number[];
   /** Whether the animation is currently auto-playing */
   isPlaying: boolean;
   /** Description of the current step */
@@ -326,9 +328,15 @@ export function useAlgorithmAnimation(
       ? steps[currentStep].description
       : "";
 
+  const stepToCodeLineRaw = steps.map((s) => s.codeLine ?? 0);
+  const stepToCodeLine = steps.some((s) => typeof s.codeLine === "number")
+    ? stepToCodeLineRaw
+    : undefined;
+
   return {
     currentStep,
     totalSteps: steps.length,
+    stepToCodeLine,
     isPlaying,
     description,
     start,
