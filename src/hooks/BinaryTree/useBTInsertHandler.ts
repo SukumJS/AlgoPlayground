@@ -1,7 +1,6 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
-import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
-import type { AnimationCallbacks } from "@/src/components/visualizer/animations/types";
+import type { TreeAnimationStep } from "@/src/hooks/tree/useStepTreeEngine";
 import {
   insertBT,
   calculateBTPositions,
@@ -17,10 +16,17 @@ interface UseBTInsertHandlerProps {
   setNodes: (nodes: RFNode[] | ((prev: RFNode[]) => RFNode[])) => void;
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
-  applyHighlighting: AnimationCallbacks["applyHighlighting"];
-  setCodeStep?: AnimationCallbacks["setCodeStep"];
-  setStepToCodeLine?: AnimationCallbacks["setStepToCodeLine"];
-  setTreeAction?: AnimationCallbacks["setTreeAction"];
+  applyHighlighting: (
+    nodes: RFNode[],
+    edges: RFEdge[],
+    highlightedNodeIds: Set<string>,
+    highlightedEdgeIds: Set<string>,
+    color: string,
+    edgeColor?: string,
+  ) => { highlightedNodes: RFNode[]; highlightedEdges: RFEdge[] };
+  setCodeStep?: (step: number) => void;
+  setStepToCodeLine?: (map: number[]) => void;
+  setTreeAction?: (action: string | null) => void;
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
@@ -29,38 +35,25 @@ interface UseBTInsertHandlerProps {
 export function useBTInsertHandler({
   btRoot,
   setBTRoot,
-  setNodes,
-  setEdges,
-  setDescription,
-  applyHighlighting: _applyHighlighting,
-  setCodeStep,
-  setStepToCodeLine,
-  setTreeAction,
-  animationSpeed,
-  isPausedRef,
-  setIsAnimating,
 }: UseBTInsertHandlerProps) {
-  void _applyHighlighting;
-  const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
-  btRootRef.current = btRoot;
+  useEffect(() => {
+    btRootRef.current = btRoot;
+  }, [btRoot]);
 
+  /**
+   * Generate animation steps for BT Insert and return them.
+   * Also performs the actual tree mutation (setBTRoot) at the end.
+   */
   const handleInsert = useCallback(
-    (value: number) => {
-      controllerRef.current?.clearAll();
-      const controller = new AnimationController(isPausedRef);
-      controllerRef.current = controller;
-      setIsAnimating(true);
-
+    (value: number): TreeAnimationStep[] => {
       const stepToLine = [1, 2, 6, 7, 8, 12, 15];
-      setTreeAction?.("bt-insert");
-      setStepToCodeLine?.(stepToLine);
-      setCodeStep?.(0);
-
+      const treeAction = "bt-insert";
       const newNodeId = `bt-node-${Date.now()}`;
       const rootAtInsertTime = btRootRef.current;
+      const steps: TreeAnimationStep[] = [];
 
-      // animate: สร้าง BFS path ก่อน insert เพื่อโชว์ว่าหาที่ว่างอย่างไร
+      // Pre-compute BFS path to find empty slot
       const searchPath: string[] = [];
       const edgePath: string[] = [];
       let parentId: string | null = null;
@@ -89,66 +82,29 @@ export function useBTInsertHandler({
         }
       }
 
-      // Step 1: Animate Traversal (Blue nodes, Orange edges)
-      let globalOffset = 0;
-      if (rootAtInsertTime && searchPath.length > 0) {
-        searchPath.forEach((id, idx) => {
-          controller.scheduleStep(
-            () => {
-              const positions = calculateBTPositions(rootAtInsertTime);
-              const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(
-                rootAtInsertTime,
-                [],
-                [],
-                positions,
-                "bt-edge",
-              );
-
-              const highlightedNodes = (rfNodes as RFNode[]).map(
-                (n: RFNode) => ({
-                  ...n,
-                  data: {
-                    ...n.data,
-                    isHighlighted: n.id === id,
-                    highlightColor: n.id === id ? "#62A2F7" : undefined,
-                  },
-                }),
-              );
-
-              const highlightedEdges = (rfEdges as RFEdge[]).map(
-                (e: RFEdge) => {
-                  const isHighlightedEdge = edgePath
-                    .slice(0, idx)
-                    .includes(e.id);
-                  return {
-                    ...e,
-                    style: isHighlightedEdge
-                      ? { stroke: "#F7AD45", strokeWidth: 3 }
-                      : { stroke: "#999", strokeWidth: 2 },
-                  };
-                },
-              );
-
-              setNodes(highlightedNodes);
-              setEdges(highlightedEdges);
-              const currentNode = (rfNodes as RFNode[]).find(
-                (n) => n.id === id,
-              );
-              setDescription(
-                `Finding the next empty position in level order. Checking node ${currentNode?.data.label}.`,
-              );
-              setCodeStep?.(3);
-            },
-            animationSpeed * (idx + 1),
-          );
-          globalOffset = idx + 1;
+      // Step 0: Initial state (before anything happens)
+      if (rootAtInsertTime) {
+        const positions = calculateBTPositions(rootAtInsertTime);
+        const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(
+          rootAtInsertTime,
+          [],
+          [],
+          positions,
+          "bt-edge",
+        );
+        steps.push({
+          nodes: rfNodes as RFNode[],
+          edges: rfEdges as RFEdge[],
+          description: `Starting insertion of ${value}. Will search for the next empty position in level order.`,
+          codeStep: 0,
+          treeAction,
+          stepToCodeLine: stepToLine,
         });
       }
 
-      // Step 2: Highlight Parent (Yellow)
-      if (parentId) {
-        globalOffset++;
-        controller.scheduleStep(() => {
+      // Steps: Traverse search path (Blue highlight)
+      if (rootAtInsertTime && searchPath.length > 0) {
+        searchPath.forEach((id, idx) => {
           const positions = calculateBTPositions(rootAtInsertTime);
           const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(
             rootAtInsertTime,
@@ -162,34 +118,38 @@ export function useBTInsertHandler({
             ...n,
             data: {
               ...n.data,
-              isHighlighted: n.id === parentId,
-              highlightColor: n.id === parentId ? "#F7AD45" : undefined,
+              isHighlighted: n.id === id,
+              highlightColor: n.id === id ? "#62A2F7" : undefined,
             },
           }));
-          setNodes(highlightedNodes);
-          setEdges(rfEdges as RFEdge[]);
-          const parentNode = (rfNodes as RFNode[]).find(
-            (n) => n.id === parentId,
-          ); // Find parent node for description
-          setDescription(
-            `Found an empty ${parentDir} child slot under node ${parentNode?.data.label}.`,
-          );
-          setCodeStep?.(4);
-        }, animationSpeed * globalOffset);
-        globalOffset++; // Pause after description
-        controller.scheduleStep(() => {}, animationSpeed * globalOffset);
+
+          const highlightedEdges = (rfEdges as RFEdge[]).map((e: RFEdge) => {
+            const isHighlightedEdge = edgePath.slice(0, idx).includes(e.id);
+            return {
+              ...e,
+              style: isHighlightedEdge
+                ? { stroke: "#F7AD45", strokeWidth: 3 }
+                : { stroke: "#999", strokeWidth: 2 },
+            };
+          });
+
+          const currentNode = (rfNodes as RFNode[]).find((n) => n.id === id);
+          steps.push({
+            nodes: highlightedNodes,
+            edges: highlightedEdges,
+            description: `Finding the next empty position in level order. Checking node ${currentNode?.data.label}.`,
+            codeStep: 3,
+            treeAction,
+            stepToCodeLine: stepToLine,
+          });
+        });
       }
 
-      // Step 3: Insert & return to green
-      globalOffset++;
-      controller.scheduleStep(() => {
-        // จริงๆ insert ตรงนี้เพื่อให้ UI เปลี่ยน
-        const newRoot = insertBT(rootAtInsertTime, value, newNodeId);
-        setBTRoot(newRoot);
-
-        const positions = calculateBTPositions(newRoot);
+      // Step: Highlight Parent (Yellow)
+      if (parentId && rootAtInsertTime) {
+        const positions = calculateBTPositions(rootAtInsertTime);
         const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(
-          newRoot,
+          rootAtInsertTime,
           [],
           [],
           positions,
@@ -200,54 +160,80 @@ export function useBTInsertHandler({
           ...n,
           data: {
             ...n.data,
-            isHighlighted: n.id === newNodeId,
-            highlightColor: n.id === newNodeId ? "#4CAF7D" : undefined,
+            isHighlighted: n.id === parentId,
+            highlightColor: n.id === parentId ? "#F7AD45" : undefined,
           },
         }));
 
-        setNodes(highlightedNodes);
-        setEdges(rfEdges as RFEdge[]);
-        setDescription(
-          `Inserted ${value} into the next available position and updated links.`,
-        );
-        setCodeStep?.(5);
+        const parentNode = (rfNodes as RFNode[]).find((n) => n.id === parentId);
+        steps.push({
+          nodes: highlightedNodes,
+          edges: rfEdges as RFEdge[],
+          description: `Found an empty ${parentDir} child slot under node ${parentNode?.data.label}.`,
+          codeStep: 4,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
+      }
 
-        // clear highlight
-        controller.scheduleStep(() => {
-          const finalPositions = calculateBTPositions(newRoot);
-          const { nodes: finalNodes, edges: finalEdges } = btToReactFlow(
-            newRoot,
-            [],
-            [],
-            finalPositions,
-            "bt-edge",
-          );
-          setNodes(finalNodes as RFNode[]);
-          setEdges(finalEdges as RFEdge[]);
-          setDescription("");
-          setCodeStep?.(0);
-          setTreeAction?.(null);
-          setIsAnimating(false);
-        }, animationSpeed * 4); // Longer delay for final state
-      }, animationSpeed * globalOffset);
+      // Step: Insert & show green highlight
+      const newRoot = insertBT(rootAtInsertTime, value, newNodeId);
+      const positions = calculateBTPositions(newRoot);
+      const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(
+        newRoot,
+        [],
+        [],
+        positions,
+        "bt-edge",
+      );
+
+      const highlightedNodes = (rfNodes as RFNode[]).map((n: RFNode) => ({
+        ...n,
+        data: {
+          ...n.data,
+          isHighlighted: n.id === newNodeId,
+          highlightColor: n.id === newNodeId ? "#4CAF7D" : undefined,
+        },
+      }));
+
+      steps.push({
+        nodes: highlightedNodes,
+        edges: rfEdges as RFEdge[],
+        description: `Inserted ${value} into the next available position and updated links.`,
+        codeStep: 5,
+        treeAction,
+        stepToCodeLine: stepToLine,
+      });
+
+      // Final step: Clear highlights
+      const finalPositions = calculateBTPositions(newRoot);
+      const { nodes: finalNodes, edges: finalEdges } = btToReactFlow(
+        newRoot,
+        [],
+        [],
+        finalPositions,
+        "bt-edge",
+      );
+
+      steps.push({
+        nodes: finalNodes as RFNode[],
+        edges: finalEdges as RFEdge[],
+        description: "",
+        codeStep: 0,
+        treeAction: null,
+        stepToCodeLine: stepToLine,
+      });
+
+      // Perform actual tree mutation
+      setBTRoot(newRoot);
+
+      return steps;
     },
-
-    [
-      animationSpeed,
-      isPausedRef,
-      setBTRoot,
-      setNodes,
-      setEdges,
-      setDescription,
-      setIsAnimating,
-      setCodeStep,
-      setStepToCodeLine,
-      setTreeAction,
-    ],
+    [setBTRoot],
   );
 
   const cancelAnimation = useCallback(() => {
-    controllerRef.current?.clearAll();
+    // No-op: step engine handles cancellation
   }, []);
 
   return { handleInsert, cancelAnimation };

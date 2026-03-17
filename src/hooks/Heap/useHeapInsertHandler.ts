@@ -1,6 +1,6 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
-import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
+import type { TreeAnimationStep } from "@/src/hooks/tree/useStepTreeEngine";
 import {
   insertHeap,
   cloneHeap,
@@ -25,47 +25,30 @@ export function useHeapInsertHandler(params: {
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
 }) {
-  const {
-    heapRoot,
-    setHeapRoot,
-    isMinHeap,
-    setNodes,
-    setEdges,
-    setDescription,
-    setCodeStep,
-    setStepToCodeLine,
-    setTreeAction,
-    animationSpeed,
-    isPausedRef,
-    setIsAnimating,
-  } = params;
-
+  const { heapRoot, setHeapRoot, isMinHeap } = params;
   const counterRef = useRef(0);
+  const heapRootRef = useRef<HeapNode | null>(heapRoot);
+  useEffect(() => {
+    heapRootRef.current = heapRoot;
+  }, [heapRoot]);
 
   const handleInsert = useCallback(
-    (value: number) => {
-      const controller = new AnimationController(isPausedRef);
-      setIsAnimating(true);
-
+    (value: number): TreeAnimationStep[] => {
       const stepToLine = [1, 2, 4, 5, 6, 7];
-      setTreeAction?.("heap-insert");
-      setStepToCodeLine?.(stepToLine);
-      setCodeStep?.(0);
+      const treeAction = "heap-insert";
+      const steps: TreeAnimationStep[] = [];
+      const root = heapRootRef.current;
 
       const nodeId = `heap_${Date.now()}_${counterRef.current++}`;
-      const rootCopy = cloneHeap(heapRoot);
-
-      // Get the final result and paths
+      const rootCopy = cloneHeap(root);
       const {
         root: newRoot,
         path,
         siftPath,
       } = insertHeap(rootCopy, value, nodeId, isMinHeap);
 
-      let globalOffset = 0;
-
-      // Build a simulation tree that represents the state BEFORE sift-up starts
-      let simTree = cloneHeap(heapRoot);
+      // Build simulation tree (state BEFORE sift-up)
+      let simTree = cloneHeap(root);
       const newNode: HeapNode = { id: nodeId, value, left: null, right: null };
       if (!simTree) {
         simTree = newNode;
@@ -86,56 +69,61 @@ export function useHeapInsertHandler(params: {
         }
       }
 
-      // Step 1: Highlight BFS traversal path (finding next empty position)
-      if (path.length > 0) {
-        const origPositions = calculateHeapPositions(heapRoot);
-        const origRF = heapRoot
-          ? heapToReactFlow(heapRoot, [], [], origPositions, "heap-edge")
-          : { nodes: [], edges: [] };
+      // Step 0: Initial state
+      if (root) {
+        const origPositions = calculateHeapPositions(root);
+        const origRF = heapToReactFlow(
+          root,
+          [],
+          [],
+          origPositions,
+          "heap-edge",
+        );
+        steps.push({
+          nodes: origRF.nodes as RFNode[],
+          edges: origRF.edges as RFEdge[],
+          description: `Starting insertion of ${value} into heap.`,
+          codeStep: 0,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
 
+        // Steps: BFS traversal path
         path.forEach((id, idx) => {
-          controller.scheduleStep(
-            () => {
-              const highlighted = (origRF.nodes as RFNode[]).map(
-                (n: RFNode) => ({
-                  ...n,
-                  data: {
-                    ...n.data,
-                    isHighlighted: n.id === id,
-                    highlightColor: n.id === id ? "#62A2F7" : undefined,
-                  },
-                }),
-              );
-              // Accumulate highlighted edges using Set
-              const visitedIds = new Set(path.slice(0, idx + 1));
-              const highlightedEdges = (origRF.edges as RFEdge[]).map(
-                (e: RFEdge) => ({
-                  ...e,
-                  style:
-                    visitedIds.has(e.source) && visitedIds.has(e.target)
-                      ? { stroke: "#F7AD45", strokeWidth: 3 }
-                      : { stroke: "#999", strokeWidth: 2 },
-                }),
-              );
-              setNodes(highlighted);
-              setEdges(highlightedEdges);
-              const visitedNodeValue =
-                (origRF.nodes as RFNode[]).find((n) => n.id === id)?.data
-                  .label ?? id;
-              setDescription(
-                `Finding the next empty position in level order. Checking node ${visitedNodeValue}.`,
-              );
-              setCodeStep?.(1);
+          const highlighted = (origRF.nodes as RFNode[]).map((n: RFNode) => ({
+            ...n,
+            data: {
+              ...n.data,
+              isHighlighted: n.id === id,
+              highlightColor: n.id === id ? "#62A2F7" : undefined,
             },
-            animationSpeed * (idx + 1),
+          }));
+          const visitedIds = new Set(path.slice(0, idx + 1));
+          const highlightedEdges = (origRF.edges as RFEdge[]).map(
+            (e: RFEdge) => ({
+              ...e,
+              style:
+                visitedIds.has(e.source) && visitedIds.has(e.target)
+                  ? { stroke: "#F7AD45", strokeWidth: 3 }
+                  : { stroke: "#999", strokeWidth: 2 },
+            }),
           );
-          globalOffset = idx + 1;
+          const visitedNodeValue =
+            (origRF.nodes as RFNode[]).find((n) => n.id === id)?.data.label ??
+            id;
+          steps.push({
+            nodes: highlighted,
+            edges: highlightedEdges,
+            description: `Finding the next empty position in level order. Checking node ${visitedNodeValue}.`,
+            codeStep: 1,
+            treeAction,
+            stepToCodeLine: stepToLine,
+          });
         });
       }
 
-      // Step 2: Show inserted node (green) at the bottom
-      globalOffset++;
-      controller.scheduleStep(() => {
+      // Step: Show inserted node at bottom (green)
+      {
         const positions = calculateHeapPositions(simTree);
         const { nodes: rfNodes, edges: rfEdges } = heapToReactFlow(
           simTree,
@@ -144,7 +132,6 @@ export function useHeapInsertHandler(params: {
           positions,
           "heap-edge",
         );
-
         const highlighted = (rfNodes as RFNode[]).map((n: RFNode) => ({
           ...n,
           data: {
@@ -153,27 +140,24 @@ export function useHeapInsertHandler(params: {
             highlightColor: n.id === nodeId ? "#4CAF7D" : undefined,
           },
         }));
-        setNodes(highlighted);
-        setEdges(rfEdges as RFEdge[]);
-        setDescription(
-          `Inserted ${value}. ${siftPath.length > 0 ? "Now restore heap order by sifting up." : "Heap property is already satisfied."}`,
-        );
-        setCodeStep?.(2);
-      }, animationSpeed * globalOffset);
+        steps.push({
+          nodes: highlighted,
+          edges: rfEdges as RFEdge[],
+          description: `Inserted ${value}. ${siftPath.length > 0 ? "Now restore heap order by sifting up." : "Heap property is already satisfied."}`,
+          codeStep: 2,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
+      }
 
-      // Step 3: Animate sift-up swaps smoothly
-      // Use a mutable ref so each step closure captures the CURRENT sifting node ID
+      // Steps: Sift-up swaps
       let currentSiftNodeId = nodeId;
-
-      siftPath.forEach((swapId) => {
-        // Capture the values for this step's closures
+      siftPath.forEach((swapId, siftIdx) => {
         const siftingId = currentSiftNodeId;
         const parentId = swapId;
-        const stepNum = siftPath.indexOf(swapId) + 1;
 
-        // First highlight the two nodes about to swap
-        globalOffset++;
-        controller.scheduleStep(() => {
+        // Pre-swap highlight
+        {
           const positions = calculateHeapPositions(simTree);
           const { nodes: rfNodes, edges: rfEdges } = heapToReactFlow(
             simTree,
@@ -182,7 +166,6 @@ export function useHeapInsertHandler(params: {
             positions,
             "heap-edge",
           );
-
           const highlighted = (rfNodes as RFNode[]).map((n: RFNode) => ({
             ...n,
             data: {
@@ -192,77 +175,38 @@ export function useHeapInsertHandler(params: {
                 n.id === siftingId || n.id === parentId ? "#F7AD45" : undefined,
             },
           }));
-          setNodes(highlighted);
-          setEdges(rfEdges as RFEdge[]);
-          setDescription(
-            `Sift up step ${stepNum} of ${siftPath.length}: swap with parent node ${swapId}.`,
-          );
-          setCodeStep?.(3);
-        }, animationSpeed * globalOffset);
-
-        // Interpolation frames for smooth node sliding
-        const INTERP_FRAMES = 15;
-        for (let frame = 1; frame <= INTERP_FRAMES; frame++) {
-          controller.scheduleStep(
-            () => {
-              const positions = calculateHeapPositions(simTree);
-              const { nodes: rfNodes, edges: rfEdges } = heapToReactFlow(
-                simTree,
-                [],
-                [],
-                positions,
-                "heap-edge",
-              );
-
-              const posA = positions.get(siftingId);
-              const posB = positions.get(parentId);
-
-              if (posA && posB) {
-                const t = frame / INTERP_FRAMES;
-                const currAX = posA.x + (posB.x - posA.x) * t;
-                const currAY = posA.y + (posB.y - posA.y) * t;
-                const currBX = posB.x + (posA.x - posB.x) * t;
-                const currBY = posB.y + (posA.y - posB.y) * t;
-
-                const movingNodes = (rfNodes as RFNode[]).map((n: RFNode) => {
-                  if (n.id === siftingId) {
-                    return {
-                      ...n,
-                      position: { x: currAX, y: currAY },
-                      data: {
-                        ...n.data,
-                        isHighlighted: true,
-                        highlightColor: "#F7AD45",
-                      },
-                    };
-                  }
-                  if (n.id === parentId) {
-                    return {
-                      ...n,
-                      position: { x: currBX, y: currBY },
-                      data: {
-                        ...n.data,
-                        isHighlighted: true,
-                        highlightColor: "#F7AD45",
-                      },
-                    };
-                  }
-                  return n;
-                });
-
-                setNodes(movingNodes);
-                setEdges(rfEdges as RFEdge[]);
-              }
-            },
-            animationSpeed * globalOffset +
-              (animationSpeed / INTERP_FRAMES) * frame,
-          );
+          steps.push({
+            nodes: highlighted,
+            edges: rfEdges as RFEdge[],
+            description: `Sift up step ${siftIdx + 1} of ${siftPath.length}: swap with parent node.`,
+            codeStep: 3,
+            treeAction,
+            stepToCodeLine: stepToLine,
+          });
         }
-        globalOffset++; // Advance time for interpolation
 
-        // After interpolation finishes, commit the swap in the simTree
-        globalOffset++;
-        controller.scheduleStep(() => {
+        // Perform swap in sim tree
+        const sq = [simTree];
+        let nodeA: HeapNode | null = null;
+        let nodeB: HeapNode | null = null;
+        while (sq.length > 0) {
+          const c = sq.shift()!;
+          if (c.id === siftingId) nodeA = c;
+          if (c.id === parentId) nodeB = c;
+          if (c.left) sq.push(c.left);
+          if (c.right) sq.push(c.right);
+        }
+        if (nodeA && nodeB) {
+          const tmpV = nodeA.value;
+          const tmpI = nodeA.id;
+          nodeA.value = nodeB.value;
+          nodeA.id = nodeB.id;
+          nodeB.value = tmpV;
+          nodeB.id = tmpI;
+        }
+
+        // Post-swap state
+        {
           const positions = calculateHeapPositions(simTree);
           const { nodes: rfNodes, edges: rfEdges } = heapToReactFlow(
             simTree,
@@ -271,7 +215,6 @@ export function useHeapInsertHandler(params: {
             positions,
             "heap-edge",
           );
-
           const highlighted = (rfNodes as RFNode[]).map((n: RFNode) => ({
             ...n,
             data: {
@@ -281,42 +224,21 @@ export function useHeapInsertHandler(params: {
                 n.id === siftingId || n.id === parentId ? "#F7AD45" : undefined,
             },
           }));
-          setNodes(highlighted);
-          setEdges(rfEdges as RFEdge[]);
-          setDescription(`Swap complete. Continue sifting if needed.`);
-          setCodeStep?.(4);
-        }, animationSpeed * globalOffset);
+          steps.push({
+            nodes: highlighted,
+            edges: rfEdges as RFEdge[],
+            description: `Swap complete. Continue sifting if needed.`,
+            codeStep: 4,
+            treeAction,
+            stepToCodeLine: stepToLine,
+          });
+        }
 
-        // Snap simulation tree to new layout state
-        controller.scheduleStep(() => {
-          let nodeA: HeapNode | null = null;
-          let nodeB: HeapNode | null = null;
-          const sq = [simTree];
-          while (sq.length > 0) {
-            const c = sq.shift()!;
-            if (c.id === siftingId) nodeA = c;
-            if (c.id === parentId) nodeB = c;
-            if (c.left) sq.push(c.left);
-            if (c.right) sq.push(c.right);
-          }
-          if (nodeA && nodeB) {
-            const tmpV = nodeA.value;
-            const tmpI = nodeA.id;
-            nodeA.value = nodeB.value;
-            nodeA.id = nodeB.id;
-            nodeB.value = tmpV;
-            nodeB.id = tmpI;
-          }
-        }, animationSpeed * globalOffset);
-
-        // After this swap our node moved to parentId position
         currentSiftNodeId = parentId;
       });
 
-      // Step 4: Final state — currentSiftNodeId now holds the final resting node ID
-      globalOffset++;
-      controller.scheduleStep(() => {
-        setHeapRoot(newRoot);
+      // Step: Final state (green highlight on settled node)
+      {
         const positions = calculateHeapPositions(newRoot);
         const { nodes: rfNodes, edges: rfEdges } = heapToReactFlow(
           newRoot,
@@ -325,8 +247,6 @@ export function useHeapInsertHandler(params: {
           positions,
           "heap-edge",
         );
-
-        // Highlight the final settled node one last time
         const finalNode = (rfNodes as RFNode[]).map((n: RFNode) => ({
           ...n,
           data: {
@@ -335,41 +255,40 @@ export function useHeapInsertHandler(params: {
             highlightColor: n.id === currentSiftNodeId ? "#4CAF7D" : undefined,
           },
         }));
+        steps.push({
+          nodes: finalNode,
+          edges: rfEdges as RFEdge[],
+          description: `Insertion complete. Heap property is restored for ${value}.`,
+          codeStep: 5,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
+      }
 
-        setNodes(finalNode);
-        setEdges(rfEdges as RFEdge[]);
-        setDescription(
-          `Insertion complete. Heap property is restored for ${value}.`,
+      // Clean step
+      {
+        const positions = calculateHeapPositions(newRoot);
+        const { nodes: rfNodes, edges: rfEdges } = heapToReactFlow(
+          newRoot,
+          [],
+          [],
+          positions,
+          "heap-edge",
         );
-        setCodeStep?.(5);
+        steps.push({
+          nodes: rfNodes as RFNode[],
+          edges: rfEdges as RFEdge[],
+          description: "",
+          codeStep: 0,
+          treeAction: null,
+          stepToCodeLine: stepToLine,
+        });
+      }
 
-        controller.scheduleStep(() => {
-          const cleanNodes = (rfNodes as RFNode[]).map((n: RFNode) => ({
-            ...n,
-            data: { ...n.data, isHighlighted: false },
-          }));
-          setNodes(cleanNodes);
-          setDescription("");
-          setCodeStep?.(0);
-          setTreeAction?.(null);
-          setIsAnimating(false);
-        }, animationSpeed * 2);
-      }, animationSpeed * globalOffset);
+      setHeapRoot(newRoot);
+      return steps;
     },
-    [
-      heapRoot,
-      setHeapRoot,
-      isMinHeap,
-      setNodes,
-      setEdges,
-      setDescription,
-      animationSpeed,
-      isPausedRef,
-      setIsAnimating,
-      setCodeStep,
-      setStepToCodeLine,
-      setTreeAction,
-    ],
+    [isMinHeap, setHeapRoot],
   );
 
   return { handleInsert };

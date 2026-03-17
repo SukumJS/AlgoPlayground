@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
+import type { TreeAnimationStep } from "@/src/hooks/tree/useStepTreeEngine";
 import React, {
   useState,
   useCallback,
@@ -113,6 +114,12 @@ interface Data_treeProps {
   onAVLRootChange?: (root: AVLTreeNode | null) => void;
   // When true, BF badges are preserved on every animation frame (set by parent)
   showAVLBalance?: boolean;
+  // Step engine callback: called with generated animation steps
+  onStepsGenerated?: (steps: TreeAnimationStep[]) => void;
+  // Callback to notify parent of animation state changes (for step engine teardown)
+  onAnimatingChange?: (v: boolean) => void;
+  // Controlled animation state from parent
+  isAnimating?: boolean;
 }
 
 function Data_tree({
@@ -137,6 +144,9 @@ function Data_tree({
   setTreeAction,
   onAVLRootChange,
   showAVLBalance = false,
+  onStepsGenerated,
+  onAnimatingChange,
+  isAnimating: externalIsAnimating,
 }: Data_treeProps) {
   const [isDataSortOpen, setIsDataSortOpen] = useState(true);
   const { onDragStart, isDragging } = useDnD();
@@ -152,7 +162,12 @@ function Data_tree({
   const [nodeIdCounter, setNodeIdCounter] = useState(5);
 
   // Animation states
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [internalIsAnimating, setInternalIsAnimating] = useState(false);
+  const isAnimating =
+    externalIsAnimating !== undefined
+      ? externalIsAnimating
+      : internalIsAnimating;
+  const setIsAnimating = setInternalIsAnimating;
   const [animationSpeed] = useState(1200);
   const isPausedRef = useRef<boolean>(false);
 
@@ -793,11 +808,17 @@ function Data_tree({
     if (tutorialMode || isAnimating || !inputValue) return;
     const v = parseInt(inputValue);
     if (isNaN(v)) return;
-    if (algorithm === "avl-tree") handleAVLInsert(v);
-    else if (isBST) bstInsert(v);
-    else if (isBT) btInsert(v);
-    else if (isHeap) heapInsert(v);
+    let steps: TreeAnimationStep[] | undefined;
+    if (algorithm === "avl-tree") steps = handleAVLInsert(v);
+    else if (isBST) steps = bstInsert(v);
+    else if (isBT) steps = btInsert(v);
+    else if (isHeap) steps = heapInsert(v);
     else console.warn(`Insert not implemented for ${algorithm}`);
+    if (steps && onStepsGenerated) {
+      setIsAnimating(true);
+      onAnimatingChange?.(true);
+      onStepsGenerated(steps);
+    }
     setInputValue("");
   }, [
     tutorialMode,
@@ -811,18 +832,25 @@ function Data_tree({
     bstInsert,
     btInsert,
     heapInsert,
+    onStepsGenerated,
+    onAnimatingChange,
+    setIsAnimating,
   ]);
-
-  // Handle search operation
   const handleSearch = useCallback(() => {
     if (tutorialMode || isAnimating) return;
     const v = searchValue ? parseInt(searchValue) : NaN;
     if (isNaN(v)) return;
-    if (algorithm === "avl-tree") handleAVLSearch(v);
-    else if (isBST) bstSearch(v);
-    else if (isBT) btSearch(v);
-    else if (isHeap) heapSearch(v);
+    let steps: TreeAnimationStep[] | undefined;
+    if (algorithm === "avl-tree") steps = handleAVLSearch(v);
+    else if (isBST) steps = bstSearch(v);
+    else if (isBT) steps = btSearch(v);
+    else if (isHeap) steps = heapSearch(v);
     else console.warn(`Search not implemented for ${algorithm}`);
+    if (steps && onStepsGenerated) {
+      setIsAnimating(true);
+      onAnimatingChange?.(true);
+      onStepsGenerated(steps);
+    }
     setSearchValue("");
   }, [
     tutorialMode,
@@ -836,6 +864,9 @@ function Data_tree({
     bstSearch,
     btSearch,
     heapSearch,
+    onStepsGenerated,
+    onAnimatingChange,
+    setIsAnimating,
   ]);
 
   // Handle remove operation
@@ -843,11 +874,17 @@ function Data_tree({
     if (tutorialMode || isAnimating) return;
     const v = removeValue ? parseInt(removeValue) : NaN;
     if (isNaN(v)) return;
-    if (isAVL) handleAVLRemove(v);
-    else if (isBST) bstRemove(v);
-    else if (isBT) btRemove(v);
-    else if (isHeap) heapRemove(v);
+    let steps: TreeAnimationStep[] | undefined;
+    if (isAVL) steps = handleAVLRemove(v);
+    else if (isBST) steps = bstRemove(v);
+    else if (isBT) steps = btRemove(v);
+    else if (isHeap) steps = heapRemove(v);
     else console.warn(`Remove not implemented for ${algorithm}`);
+    if (steps && onStepsGenerated) {
+      setIsAnimating(true);
+      onAnimatingChange?.(true);
+      onStepsGenerated(steps);
+    }
     setRemoveValue("");
   }, [
     tutorialMode,
@@ -862,9 +899,10 @@ function Data_tree({
     bstRemove,
     btRemove,
     heapRemove,
+    onStepsGenerated,
+    onAnimatingChange,
+    setIsAnimating,
   ]);
-
-  // Handle rebalance operation
   const handleBTRebalance = useCallback(() => {
     const root = btRoot;
     if (!root) return;
