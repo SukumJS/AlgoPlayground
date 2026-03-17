@@ -737,10 +737,8 @@ function Data_tree({
 
   // Handle insert operation
   const handleInsert = useCallback(() => {
-    if (tutorialMode || isAnimating) return;
-    const v = inputValue
-      ? parseInt(inputValue)
-      : Math.floor(Math.random() * 100) + 1;
+    if (tutorialMode || isAnimating || !inputValue) return;
+    const v = parseInt(inputValue);
     if (isNaN(v)) return;
     if (algorithm === "avl-tree") handleAVLInsert(v);
     else if (isBST) bstInsert(v);
