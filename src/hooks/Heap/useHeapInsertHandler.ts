@@ -165,7 +165,7 @@ export function useHeapInsertHandler(params: {
       // Use a mutable ref so each step closure captures the CURRENT sifting node ID
       let currentSiftNodeId = nodeId;
 
-      siftPath.forEach((swapId) => {
+      siftPath.forEach((swapId, idx) => {
         // Capture the values for this step's closures
         const siftingId = currentSiftNodeId;
         const parentId = swapId;
