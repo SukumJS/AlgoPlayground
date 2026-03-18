@@ -298,6 +298,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
 
   // True when the animation pipeline has generated steps (playing, paused, or finished)
   const isAnimationActive = animation.totalSteps > 0;
+  // True only while auto-play is running — used to lock UI interactions
+  const isAnimationPlaying = animation.isPlaying;
 
   // Keep a ref to animation so the search callback has a stable identity
   const animationRef = useRef(animation);
@@ -316,6 +318,14 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     return getDefaultGraphExplanation(prettyName);
   }, [isAnimationActive, animation.description, explanation, prettyName]);
 
+  // ── Track latest state to avoid callback recreation on drag ─────────────
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+  useEffect(() => {
+    nodesRef.current = nodes;
+    edgesRef.current = edges;
+  }, [nodes, edges]);
+
   // Callback from Data_graph "Search" button — stable identity via ref
   const handleAlgorithmSearch = useCallback(
     (startLabel: string, endLabel: string) => {
@@ -324,6 +334,222 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     },
     [],
   );
+
+  // ── Random Graph Generation ────────────────────────────────────────────────
+  const handleRandomGraphGenerate = useCallback(
+    (count: number) => {
+      if (count <= 0) return;
+
+      const currentNodes = nodesRef.current;
+      const currentEdges = edgesRef.current;
+
+      // Circular layout helper: distribute nodes evenly around a center
+      const centerX = 350;
+      const centerY = 280;
+      const totalCount = currentNodes.length + count;
+      const baseRadius = Math.max(120, totalCount * 30); // scale radius with total node count
+
+      const circularPosition = (index: number, total: number) => ({
+        x: Math.round(
+          centerX +
+            baseRadius * Math.cos((2 * Math.PI * index) / total - Math.PI / 2),
+        ),
+        y: Math.round(
+          centerY +
+            baseRadius * Math.sin((2 * Math.PI * index) / total - Math.PI / 2),
+        ),
+      });
+
+      // Always KEEP existing nodes, add `count` more nodes
+      const existingLabels = new Set(
+        currentNodes.map((n) => String(n.data.label)),
+      );
+      const addedNodes: Node[] = [];
+
+      // Place new nodes in remaining slots around the circle based on totalCount
+      for (let i = 0; i < count; i++) {
+        let label: number;
+        let tries = 0;
+        do {
+          label = Math.floor(Math.random() * 99) + 1;
+          tries++;
+        } while (existingLabels.has(String(label)) && tries < 200);
+        existingLabels.add(String(label));
+
+        addedNodes.push({
+          id: `g_rand_${Date.now()}_${i}`,
+          type: "custom",
+          data: { label: String(label), variant: "circle" },
+          position: circularPosition(currentNodes.length + i, totalCount),
+        });
+      }
+
+      const allNodes: Node[] = [...currentNodes, ...addedNodes];
+
+      // Keep existing edges, and add new random edges for the new nodes
+      const newEdges: Edge[] = [];
+      const edgeSet = new Set<string>();
+
+      // Record existing edges to prevent exact duplicates
+      for (const edge of currentEdges) {
+        edgeSet.add(`${edge.source}-${edge.target}`);
+        if (!isDirectedGraph) {
+          edgeSet.add(`${edge.target}-${edge.source}`);
+        }
+      }
+
+      // For every newly added node, give it a chance to connect to ANY node in allNodes
+      for (let i = 0; i < addedNodes.length; i++) {
+        const src = addedNodes[i];
+        for (let j = 0; j < allNodes.length; j++) {
+          const tgt = allNodes[j];
+          if (src.id === tgt.id) continue;
+
+          if (Math.random() < 0.3) {
+            const edgeKey = `${src.id}-${tgt.id}`;
+            const reverseKey = `${tgt.id}-${src.id}`;
+
+            if (edgeSet.has(edgeKey)) continue;
+            if (!isDirectedGraph && edgeSet.has(reverseKey)) continue;
+
+            edgeSet.add(edgeKey);
+            if (!isDirectedGraph) edgeSet.add(reverseKey);
+
+            const weight = isWeightedGraph
+              ? Math.floor(Math.random() * 10) + 1
+              : undefined;
+
+            const edge: Edge = {
+              id: `e-${src.data.label}-${tgt.data.label}-${Date.now()}-${newEdges.length}`,
+              source: src.id,
+              target: tgt.id,
+              type: "floatingEdge",
+              ...(isWeightedGraph && {
+                label: String(weight),
+                data: {
+                  weight,
+                  ...(isDirectedGraph ? {} : { directed: false }),
+                },
+              }),
+              ...(!isWeightedGraph && {
+                data: { directed: false },
+              }),
+              style: { stroke: "#222121", strokeWidth: 1 },
+              ...(isDirectedGraph && {
+                markerEnd: {
+                  type: "arrowclosed" as const,
+                  width: 25,
+                  height: 25,
+                  color: "#222121",
+                },
+              }),
+            };
+
+            newEdges.push(edge);
+          }
+        }
+      }
+
+      const allEdges = [...currentEdges, ...newEdges];
+
+      // Ensure graph is connected: explicitly check addedNodes to see if they are connected
+      // to the largest component (or just ensuring the whole graph is 1 component)
+      const connected = new Set<string>();
+      if (allNodes.length > 0) {
+        // Find existing nodes' component to use as the root of connectivity, or use first node
+        connected.add(allNodes[0].id);
+        const edgeMap = new Map<string, Set<string>>();
+        for (const e of allEdges) {
+          if (!edgeMap.has(e.source)) edgeMap.set(e.source, new Set());
+          if (!edgeMap.has(e.target)) edgeMap.set(e.target, new Set());
+          edgeMap.get(e.source)!.add(e.target);
+          edgeMap.get(e.target)!.add(e.source);
+        }
+
+        // BFS to find connected component
+        const queue = [allNodes[0].id];
+        while (queue.length > 0) {
+          const curr = queue.shift()!;
+          for (const neighbor of edgeMap.get(curr) ?? []) {
+            if (!connected.has(neighbor)) {
+              connected.add(neighbor);
+              queue.push(neighbor);
+            }
+          }
+        }
+
+        // Connect any disconnected nodes (especially the new ones) to the connected component
+        for (const node of allNodes) {
+          if (!connected.has(node.id)) {
+            const connectedArr = Array.from(connected);
+            const targetId =
+              connectedArr[Math.floor(Math.random() * connectedArr.length)];
+            const targetNode = allNodes.find((n) => n.id === targetId)!;
+            const weight = isWeightedGraph
+              ? Math.floor(Math.random() * 10) + 1
+              : undefined;
+
+            const edge: Edge = {
+              id: `e-${node.data.label}-${targetNode.data.label}-${Date.now()}-conn`,
+              source: node.id,
+              target: targetId,
+              type: "floatingEdge",
+              ...(isWeightedGraph && {
+                label: String(weight),
+                data: {
+                  weight,
+                  ...(isDirectedGraph ? {} : { directed: false }),
+                },
+              }),
+              ...(!isWeightedGraph && {
+                data: { directed: false },
+              }),
+              style: { stroke: "#222121", strokeWidth: 1 },
+              ...(isDirectedGraph && {
+                markerEnd: {
+                  type: "arrowclosed" as const,
+                  width: 25,
+                  height: 25,
+                  color: "#222121",
+                },
+              }),
+            };
+
+            allEdges.push(edge);
+
+            // Mark node and its sub-component as connected
+            connected.add(node.id);
+            if (!edgeMap.has(node.id)) edgeMap.set(node.id, new Set());
+            if (!edgeMap.has(targetId)) edgeMap.set(targetId, new Set());
+            edgeMap.get(node.id)!.add(targetId);
+            edgeMap.get(targetId)!.add(node.id);
+
+            // Sub-BFS to connect its whole isolated component
+            const subQueue = [node.id];
+            while (subQueue.length > 0) {
+              const subCurr = subQueue.shift()!;
+              for (const neighbor of edgeMap.get(subCurr) ?? []) {
+                if (!connected.has(neighbor)) {
+                  connected.add(neighbor);
+                  subQueue.push(neighbor);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      setNodes(allNodes);
+      setEdges(allEdges);
+    },
+    [setNodes, setEdges, isDirectedGraph, isWeightedGraph],
+  );
+
+  // Reset graph: clear all nodes and edges
+  const handleResetGraph = useCallback(() => {
+    setNodes([]);
+    setEdges([]);
+  }, [setNodes, setEdges]);
 
   // ── Custom Hooks ───────────────────────────────────────────────────────────
   // Graph Tutorial hook
@@ -371,48 +597,48 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
 
   const onDragOver = useCallback(
     (event: DragEvent<HTMLDivElement>) => {
-      if (isAnimationActive) return; // lock during animation
+      if (isAnimationPlaying) return; // lock during animation
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
     },
-    [isAnimationActive],
+    [isAnimationPlaying],
   );
 
   // ── Custom Interaction Handlers ────────────────────────────────────────────
   // Edge click handler (for weight editing)
   const handleEdgeClick = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
-      if (isAnimationActive) return; // lock during animation
+      if (isAnimationPlaying) return; // lock during animation
       if (graphTutorial.showTutorial) {
         graphTutorial.handleWeightClick(edge.id);
       } else {
         nodeInteraction.handleEdgeClick(event, edge.id);
       }
     },
-    [isAnimationActive, graphTutorial, nodeInteraction],
+    [isAnimationPlaying, graphTutorial, nodeInteraction],
   );
 
   // Combined node click handler
   const handleNodeClick = useCallback(
     (event: React.MouseEvent, node: Node) => {
-      if (isAnimationActive) return; // lock during animation
+      if (isAnimationPlaying) return; // lock during animation
       if (graphTutorial.showTutorial) {
         graphTutorial.handleNodeClick(event, node);
       } else {
         nodeInteraction.handleNodeClick(event, node);
       }
     },
-    [isAnimationActive, graphTutorial, nodeInteraction],
+    [isAnimationPlaying, graphTutorial, nodeInteraction],
   );
 
   // Combined node drag handlers
   const handleNodeDragStart = useCallback(
     (event: React.MouseEvent, node: Node) => {
-      if (isAnimationActive) return; // lock during animation
+      if (isAnimationPlaying) return; // lock during animation
       if (graphTutorial.showTutorial) return;
       nodeInteraction.handleNodeDragStart(event, node);
     },
-    [isAnimationActive, graphTutorial.showTutorial, nodeInteraction],
+    [isAnimationPlaying, graphTutorial.showTutorial, nodeInteraction],
   );
 
   const handleNodeDrag = useCallback(
@@ -462,6 +688,9 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
             algorithm={algorithm}
             tutorialMode={graphTutorial.showTutorial}
             setExplanation={setExplanation}
+            isAnimating={isAnimationPlaying}
+            onRandomGenerate={handleRandomGraphGenerate}
+            onResetGraph={handleResetGraph}
           />
         </div>
         <div>
@@ -475,9 +704,12 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       animation.currentStep,
       animation.stepToCodeLine,
       handleAlgorithmSearch,
+      handleRandomGraphGenerate,
+      handleResetGraph,
       sideTabTitle,
       effectiveExplanation,
       setExplanation,
+      isAnimationPlaying,
     ],
   );
 
@@ -487,7 +719,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         nodes={nodes}
         edges={edges}
         onNodesChange={
-          isAnimationActive
+          isAnimationPlaying
             ? undefined
             : graphTutorial.showTutorial
               ? graphTutorial.tutorialStep === graphTutorial.dragDeleteStep
@@ -496,11 +728,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               : onNodesChange
         }
         onEdgesChange={
-          graphTutorial.showTutorial || isAnimationActive
+          graphTutorial.showTutorial || isAnimationPlaying
             ? undefined
             : onEdgesChange
         }
-        onConnect={isAnimationActive ? undefined : onConnect}
+        onConnect={isAnimationPlaying ? undefined : onConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onDragOver={onDragOver}
@@ -513,7 +745,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         zoomOnPinch={!graphTutorial.showTutorial}
         zoomOnDoubleClick={!graphTutorial.showTutorial}
         nodesDraggable={
-          !isAnimationActive &&
+          !isAnimationPlaying &&
           (!graphTutorial.showTutorial ||
             (graphTutorial.showTutorial &&
               graphTutorial.tutorialStep === graphTutorial.dragDeleteStep))
