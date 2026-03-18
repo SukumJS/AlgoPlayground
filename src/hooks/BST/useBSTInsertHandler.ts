@@ -159,7 +159,6 @@ export function useBSTInsertHandler({
         setDescription(
           `Inserted ${value} and updated links to keep BST order.`,
         );
-
         setCodeStep?.(4);
       }, animationSpeed * globalOffset);
 

@@ -298,7 +298,7 @@ export function useHeapRemoveHandler(params: {
       // Use a mutable variable so each step closure captures the CURRENT sifting node ID
       let currentSiftNodeId = lastNodeId;
 
-      siftPath.forEach((swapId) => {
+      siftPath.forEach((swapId, idx) => {
         // Capture current values for this step's closures
         const siftingId = currentSiftNodeId;
         const partnerId = swapId;

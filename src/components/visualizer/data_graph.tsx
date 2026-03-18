@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import React, { useState, useCallback, useRef,useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useReactFlow, XYPosition } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
