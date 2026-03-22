@@ -91,6 +91,7 @@ export const bfsRunner: AlgorithmRunner = {
       const s = snap(allNodeIds, allEdgeIds, nOver, {}, prevNode, prevEdge);
       steps.push({
         ...s,
+        codeLine: 2,
         description: `Start BFS from node ${startLabel}. Put it into the queue.`,
       });
       prevNode = s.nodeStates;
@@ -123,6 +124,7 @@ export const bfsRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
+          codeLine: 5,
           description: `Take node ${currentLabel} from the front of the queue and mark it as visited.`,
         });
         prevNode = s.nodeStates;
@@ -161,6 +163,7 @@ export const bfsRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
+          codeLine: 7,
           description: `Target node ${endLabel} is reached. Trace back through parents to highlight the path.`,
         });
         break;
@@ -195,6 +198,7 @@ export const bfsRunner: AlgorithmRunner = {
         );
         steps.push({
           ...s,
+          codeLine: 12,
           description: `Explore ${currentLabel} -> ${targetLabel}. ${targetLabel} is unvisited, so add it to the queue.`,
         });
         prevNode = s.nodeStates;

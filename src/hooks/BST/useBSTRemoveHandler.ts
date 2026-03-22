@@ -18,6 +18,9 @@ interface UseBSTRemoveHandlerProps {
   setNodes: (nodes: RFNode[] | ((prev: RFNode[]) => RFNode[])) => void;
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
+  setCodeStep?: AnimationCallbacks["setCodeStep"];
+  setStepToCodeLine?: AnimationCallbacks["setStepToCodeLine"];
+  setTreeAction?: AnimationCallbacks["setTreeAction"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
@@ -29,6 +32,9 @@ export function useBSTRemoveHandler({
   setNodes,
   setEdges,
   setDescription,
+  setCodeStep,
+  setStepToCodeLine,
+  setTreeAction,
   animationSpeed,
   isPausedRef,
   setIsAnimating,
@@ -45,6 +51,19 @@ export function useBSTRemoveHandler({
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
       setIsAnimating(true);
+
+      // Lines in CodeBSTTreeView for bst-remove
+      // 1 ALGORITHM
+      // 3 WHILE node...
+      // 13 IF node has 0 or 1 child THEN
+      // 10 IF node IS null THEN
+      // 16 successor = MIN(node.right)
+      // 14 REPLACE node by its child
+      // 20 END ALGORITHM
+      const codeMap = [1, 3, 13, 10, 16, 14, 20];
+      setTreeAction?.("bst-remove");
+      setStepToCodeLine?.(codeMap);
+      setCodeStep?.(0);
 
       const root = bstRootRef.current;
       if (!root) {
@@ -93,6 +112,7 @@ export function useBSTRemoveHandler({
             setDescription(
               `Searching for ${value} to remove. Compare with node ${currentNode?.data.label} and continue down the BST path.`,
             );
+            setCodeStep?.(1);
           },
           animationSpeed * (idx * 2 + 1),
         );
@@ -117,6 +137,8 @@ export function useBSTRemoveHandler({
           setDescription(
             `Value ${value} was not found, so no node is removed.`,
           );
+          setCodeStep?.(0);
+          setTreeAction?.(null);
           controller.scheduleStep(() => setDescription(""), animationSpeed * 4); // Longer delay for final state
         }, animationSpeed * globalOffset);
         return;
@@ -138,6 +160,7 @@ export function useBSTRemoveHandler({
         setDescription(
           `Found ${value}. Prepare to remove this node and reconnect the tree.`,
         );
+        setCodeStep?.(2);
       }, animationSpeed * globalOffset);
       globalOffset++; // Pause after description
       controller.scheduleStep(() => {}, animationSpeed * globalOffset);
@@ -164,6 +187,7 @@ export function useBSTRemoveHandler({
           setDescription(
             `This node has two children. Find the inorder successor to replace it safely.`,
           );
+          setCodeStep?.(4);
         }, animationSpeed * globalOffset);
         globalOffset++; // Pause after description
         controller.scheduleStep(() => {}, animationSpeed * globalOffset);
@@ -222,6 +246,7 @@ export function useBSTRemoveHandler({
           setDescription(
             "Update parent and child links to remove the target node.",
           );
+          setCodeStep?.(5);
         }, animationSpeed * globalOffset);
 
         globalOffset++; // Pause after description
@@ -282,6 +307,8 @@ export function useBSTRemoveHandler({
             setNodes(finalRF.nodes as RFNode[]);
             setEdges(finalRF.edges as RFEdge[]);
             setDescription("");
+            setCodeStep?.(0);
+            setTreeAction?.(null);
             setIsAnimating(false);
           }, animationSpeed * 4);
         }, animationSpeed * globalOffset);
@@ -295,6 +322,8 @@ export function useBSTRemoveHandler({
           setDescription(`Removed ${value}. The tree is now empty.`);
           controller.scheduleStep(() => {
             setDescription("");
+            setCodeStep?.(0);
+            setTreeAction?.(null);
             setIsAnimating(false);
           }, animationSpeed * 4);
         }, animationSpeed * globalOffset);
@@ -309,6 +338,9 @@ export function useBSTRemoveHandler({
       setEdges,
       setDescription,
       setIsAnimating,
+      setCodeStep,
+      setStepToCodeLine,
+      setTreeAction,
     ],
   );
 

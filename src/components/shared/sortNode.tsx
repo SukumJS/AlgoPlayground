@@ -5,7 +5,15 @@ import type { NodeProps, Node } from "@xyflow/react";
 export type SortNodeData = {
   value: number;
   index: number;
-  status: "idle" | "compare" | "swap" | "merge" | "sorted";
+  status:
+    | "idle"
+    | "compare"
+    | "swap"
+    | "merge"
+    | "sorted"
+    | "found"
+    | "processing"
+    | "discarded";
   level?: number;
   currentLevel?: number;
 };
@@ -17,17 +25,23 @@ const STATUS_BG: Record<SortNodeData["status"], string> = {
   swap: "#F19F72",
   sorted: "#D9E363",
   merge: "#F19F72",
+  found: "#4CAF7D",
+  processing: "#F19F72",
+  discarded: "#E5E7EB",
 };
 
 export default function SortNode({ data }: NodeProps<Node<SortNodeData>>) {
+  const isDiscarded = data.status === "discarded";
+
   return (
     <div
-      className="
-        flex text-[#222121] text-2xl font-semibold
+      className={`
+        flex text-2xl font-semibold
         justify-center items-center border-2 border-[#5D5D5D]
         w-14 h-14 rounded-lg cursor-grab
-        transition-transform duration-300 ease-in-out
-      "
+        transition-colors duration-300 ease-in-out
+        ${isDiscarded ? "text-gray-400 border-gray-300" : "text-[#222121]"}
+      `}
       style={{
         backgroundColor: STATUS_BG[data.status],
       }}

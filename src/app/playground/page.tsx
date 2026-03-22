@@ -6,6 +6,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import PlaygroundTree from "./PlaygroundTree";
 import PlaygroundGraph from "./PlaygroundGraph";
 import PlaygroundSort from "./PlaygroundSort";
+import PlaygroundSearch from "./PlaygroundSearch";
 import { algorithmCatalog } from "@/src/data/algorithmCatalog";
 
 function PlaygroundRouter() {
@@ -17,6 +18,7 @@ function PlaygroundRouter() {
     tree: "tree",
     graph: "graph",
     sort: "sorting",
+    search: "searching",
   };
 
   if (!algoType || !algorithm || !typeToCatalogId[algoType]) {
@@ -36,6 +38,8 @@ function PlaygroundRouter() {
     return <PlaygroundGraph algorithm={algorithm} />;
   } else if (algoType === "sort") {
     return <PlaygroundSort algorithm={algorithm} />;
+  } else if (algoType === "search") {
+    return <PlaygroundSearch algorithm={algorithm} />;
   }
 
   return notFound();

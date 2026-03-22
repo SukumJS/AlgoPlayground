@@ -25,6 +25,8 @@ export interface UseAlgorithmAnimationReturn {
   currentStep: number;
   /** Total number of steps */
   totalSteps: number;
+  /** Optional mapping from step index -> code line number (1-based) */
+  stepToCodeLine?: number[];
   /** Whether the animation is currently auto-playing */
   isPlaying: boolean;
   /** Description of the current step */
@@ -170,15 +172,13 @@ export function useAlgorithmAnimation(
       const next = currentStepRef.current + 1;
       if (next >= stepsRef.current.length) {
         setIsPlaying(false);
-        // Auto-reset after a delay so the user can see the final result
-        // then return to the original state for continued interaction
+        isPlayingRef.current = false;
+        // Restore original node/edge appearance after a short delay
+        // so the user can see the final result, but keep steps intact
+        // for ControlPanel navigation (Prev Step, Skip Back, etc.).
         clearAutoResetTimer();
         autoResetTimerRef.current = setTimeout(() => {
           restoreOriginal();
-          setCurrentStep(-1);
-          setSteps([]);
-          stepsRef.current = [];
-          currentStepRef.current = -1;
         }, 2000);
         return;
       }
@@ -288,6 +288,7 @@ export function useAlgorithmAnimation(
     clearTimer();
     clearAutoResetTimer();
     setIsPlaying(false);
+    isPlayingRef.current = false;
   }, [clearTimer, clearAutoResetTimer]);
 
   const nextStep = useCallback(() => {
@@ -326,9 +327,15 @@ export function useAlgorithmAnimation(
       ? steps[currentStep].description
       : "";
 
+  const stepToCodeLineRaw = steps.map((s) => s.codeLine ?? 0);
+  const stepToCodeLine = steps.some((s) => typeof s.codeLine === "number")
+    ? stepToCodeLineRaw
+    : undefined;
+
   return {
     currentStep,
     totalSteps: steps.length,
+    stepToCodeLine,
     isPlaying,
     description,
     start,

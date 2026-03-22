@@ -14,6 +14,9 @@ interface UseBSTSearchHandlerProps {
   setNodes: (nodes: RFNode[] | ((prev: RFNode[]) => RFNode[])) => void;
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
+  setCodeStep?: AnimationCallbacks["setCodeStep"];
+  setStepToCodeLine?: AnimationCallbacks["setStepToCodeLine"];
+  setTreeAction?: AnimationCallbacks["setTreeAction"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
@@ -24,6 +27,9 @@ export function useBSTSearchHandler({
   setNodes,
   setEdges,
   setDescription,
+  setCodeStep,
+  setStepToCodeLine,
+  setTreeAction,
   animationSpeed,
   isPausedRef,
   setIsAnimating,
@@ -32,12 +38,26 @@ export function useBSTSearchHandler({
   const bstRootRef = useRef<BSTNode | null>(bstRoot);
   bstRootRef.current = bstRoot;
 
+  // Lines in CodeBSTTreeView for bst-search
+  // 1 ALGORITHM
+  // 3 WHILE...
+  // 4 IF value == node.value THEN
+  // 6 ELSE IF value < node.value THEN
+  // 5 RETURN FOUND
+  // 12 RETURN NOT_FOUND
+  // 13 END ALGORITHM
+  const codeMap = useRef<number[]>([1, 3, 4, 6, 5, 12, 13]);
+
   const handleSearch = useCallback(
     (value: number) => {
       controllerRef.current?.clearAll();
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
       setIsAnimating(true);
+
+      setTreeAction?.("bst-search");
+      setStepToCodeLine?.(codeMap.current);
+      setCodeStep?.(0);
 
       const root = bstRootRef.current;
       if (!root) {
@@ -82,6 +102,7 @@ export function useBSTSearchHandler({
           setDescription(
             `Searching for ${value}. Compare with node ${currentNode?.data.label} and choose left or right branch.`,
           );
+          setCodeStep?.(3);
         }, animationSpeed * globalOffset);
 
         globalOffset++; // Increment offset for the pause after description
@@ -104,11 +125,13 @@ export function useBSTSearchHandler({
             }));
             setNodes(highlighted);
             setDescription(`Value ${value} found. This is the target node.`);
+            setCodeStep?.(4);
           } else {
             setNodes(rfNodes);
             setDescription(
               `Value ${value} was not found after reaching the end of the search path.`,
             );
+            setCodeStep?.(5);
           }
           setEdges(rfEdges);
 
@@ -117,6 +140,8 @@ export function useBSTSearchHandler({
             setNodes(rfNodes);
             setEdges(rfEdges);
             setDescription("");
+            setCodeStep?.(0);
+            setTreeAction?.(null);
             setIsAnimating(false);
           }, animationSpeed * 4);
         },
@@ -131,6 +156,9 @@ export function useBSTSearchHandler({
       setEdges,
       setDescription,
       setIsAnimating,
+      setCodeStep,
+      setStepToCodeLine,
+      setTreeAction,
     ],
   );
 

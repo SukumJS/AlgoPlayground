@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 export default function StatusNode() {
   const searchParams = useSearchParams();
   const isTree = searchParams.get("type") === "tree";
+  const isSearch = searchParams.get("type") === "search";
 
   return (
     <div className="bg-white border border-gray-100 shadow-lg w-auto h-auto flex rounded-2xl gap-4 p-2 flex-wrap">
@@ -32,6 +33,13 @@ export default function StatusNode() {
             <p className="text-gray-500 font-medium">Success</p>
           </div>
         </>
+      )}
+      {/* Search-specific */}
+      {isSearch && (
+        <div className="flex items-center gap-2">
+          <div className="rounded-full bg-[#4CAF7D] w-3 h-3 mx-auto" />
+          <p className="text-gray-500 font-medium">Found</p>
+        </div>
       )}
     </div>
   );

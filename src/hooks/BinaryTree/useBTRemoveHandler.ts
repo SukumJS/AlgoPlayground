@@ -20,6 +20,9 @@ interface UseBTRemoveHandlerProps {
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
   applyHighlighting: AnimationCallbacks["applyHighlighting"];
+  setCodeStep?: AnimationCallbacks["setCodeStep"];
+  setStepToCodeLine?: AnimationCallbacks["setStepToCodeLine"];
+  setTreeAction?: AnimationCallbacks["setTreeAction"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
@@ -31,11 +34,15 @@ export function useBTRemoveHandler({
   setNodes,
   setEdges,
   setDescription,
-  applyHighlighting,
+  applyHighlighting: _applyHighlighting,
+  setCodeStep,
+  setStepToCodeLine,
+  setTreeAction,
   animationSpeed,
   isPausedRef,
   setIsAnimating,
 }: UseBTRemoveHandlerProps) {
+  void _applyHighlighting;
   const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
   btRootRef.current = btRoot;
@@ -45,12 +52,16 @@ export function useBTRemoveHandler({
       const root = btRootRef.current;
       if (!root) {
         setDescription("The tree is empty. There is nothing to remove.");
+        setCodeStep?.(0);
+        setTreeAction?.(null);
         return;
       }
 
       const { found, nodeId, path } = searchBT(root, value);
       if (!found) {
         setDescription(`Value ${value} was not found, so no node is removed.`);
+        setCodeStep?.(0);
+        setTreeAction?.(null);
         const tempController = new AnimationController(isPausedRef);
         tempController.scheduleStep(
           () => setDescription(""),
@@ -63,6 +74,11 @@ export function useBTRemoveHandler({
       const controller = new AnimationController(isPausedRef);
       controllerRef.current = controller;
       setIsAnimating(true);
+
+      const stepToLine = [1, 2, 4, 5, 6];
+      setTreeAction?.("bt-remove");
+      setStepToCodeLine?.(stepToLine);
+      setCodeStep?.(0);
 
       // animate: BFS path
       const positions = calculateBTPositions(root);
@@ -104,6 +120,7 @@ export function useBTRemoveHandler({
             setDescription(
               `Searching for ${value} to remove. Visiting node ${currentNode?.data.label} in level order.`,
             );
+            setCodeStep?.(1);
           }, animationSpeed * globalOffset);
 
           globalOffset++; // Increment offset for the pause after description
@@ -128,8 +145,9 @@ export function useBTRemoveHandler({
         setNodes(highlighted);
         setEdges(rfEdges); // Ensure edges are reset to original state
         setDescription(
-          `Found ${value}. Prepare to remove the node and reconnect the tree.`,
+          `Found ${value}. This node will be removed by replacing it with the deepest rightmost node.`,
         );
+        setCodeStep?.(2);
       }, animationSpeed * globalOffset);
       globalOffset++; // Pause after description
       controller.scheduleStep(() => {}, animationSpeed * globalOffset);
@@ -270,7 +288,12 @@ export function useBTRemoveHandler({
           setNodes(finalRF.nodes as RFNode[]);
           setEdges(finalRF.edges as RFEdge[]);
           setDescription(`Removed ${value}. Binary tree structure is updated.`);
-          controller.scheduleStep(() => setDescription(""), animationSpeed * 2);
+          controller.scheduleStep(() => {
+            setDescription("");
+            setCodeStep?.(0);
+            setTreeAction?.(null);
+            setIsAnimating(false);
+          }, animationSpeed * 2);
         }, animationSpeed * globalOffset);
       } else {
         // Tree is completely empty
@@ -282,6 +305,8 @@ export function useBTRemoveHandler({
           setDescription(`Removed ${value}. The tree is now empty.`);
           controller.scheduleStep(() => {
             setDescription("");
+            setCodeStep?.(0);
+            setTreeAction?.(null);
             setIsAnimating(false);
           }, animationSpeed * 4);
         }, animationSpeed * globalOffset);
@@ -296,6 +321,9 @@ export function useBTRemoveHandler({
       setEdges,
       setDescription,
       setIsAnimating,
+      setCodeStep,
+      setStepToCodeLine,
+      setTreeAction,
     ],
   );
 

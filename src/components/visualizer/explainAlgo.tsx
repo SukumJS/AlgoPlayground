@@ -22,7 +22,9 @@ export default function ExplainAlgo({
   useEffect(() => {
     if (explanation === displayedExplanation) return;
 
-    setTransitionState("exiting");
+    const startExitTimer = setTimeout(() => {
+      setTransitionState("exiting");
+    }, 0);
 
     const swapTimer = setTimeout(() => {
       setDisplayedExplanation(explanation);
@@ -35,7 +37,10 @@ export default function ExplainAlgo({
       });
     }, 170);
 
-    return () => clearTimeout(swapTimer);
+    return () => {
+      clearTimeout(startExitTimer);
+      clearTimeout(swapTimer);
+    };
   }, [explanation, displayedExplanation]);
 
   return (
