@@ -114,7 +114,9 @@ export function useBSTRemoveHandler({
         controller.scheduleStep(() => {
           setNodes(rfNodes); // Ensure nodes are reset to original state
           setEdges(rfEdges); // Ensure edges are reset to original state
-          setDescription(`Value ${value} was not found, so no node is removed.`);
+          setDescription(
+            `Value ${value} was not found, so no node is removed.`,
+          );
           controller.scheduleStep(() => setDescription(""), animationSpeed * 4); // Longer delay for final state
         }, animationSpeed * globalOffset);
         return;
@@ -133,7 +135,9 @@ export function useBSTRemoveHandler({
         }));
         setNodes(highlighted);
         setEdges(rfEdges);
-        setDescription(`Found ${value}. Prepare to remove this node and reconnect the tree.`);
+        setDescription(
+          `Found ${value}. Prepare to remove this node and reconnect the tree.`,
+        );
       }, animationSpeed * globalOffset);
       globalOffset++; // Pause after description
       controller.scheduleStep(() => {}, animationSpeed * globalOffset);
@@ -215,7 +219,9 @@ export function useBSTRemoveHandler({
 
           setNodes(tangledNodes);
           setEdges(hlEdges);
-          setDescription("Update parent and child links to remove the target node.");
+          setDescription(
+            "Update parent and child links to remove the target node.",
+          );
         }, animationSpeed * globalOffset);
 
         globalOffset++; // Pause after description
@@ -257,7 +263,9 @@ export function useBSTRemoveHandler({
 
             setNodes(interpolated);
             setEdges(finalRF.edges as RFEdge[]);
-            setDescription("Move nodes into their new positions after removal.");
+            setDescription(
+              "Move nodes into their new positions after removal.",
+            );
           }, animationSpeed * fractionOffset);
         }
         globalOffset++;

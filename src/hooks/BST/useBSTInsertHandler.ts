@@ -42,7 +42,9 @@ export function useBSTInsertHandler({
       // Duplicate check
       const { found, path } = searchBST(bstRoot, value);
       if (found) {
-        setDescription(`Value ${value} already exists. BST does not insert duplicates.`);
+        setDescription(
+          `Value ${value} already exists. BST does not insert duplicates.`,
+        );
         controller.scheduleStep(() => setDescription(""), animationSpeed * 2); // Keep for 2 seconds
         return;
       }
@@ -131,7 +133,9 @@ export function useBSTInsertHandler({
         }));
         setNodes(highlighted);
         setEdges(newRF.edges as RFEdge[]);
-        setDescription(`Inserted ${value} and updated links to keep BST order.`);
+        setDescription(
+          `Inserted ${value} and updated links to keep BST order.`,
+        );
       }, animationSpeed * globalOffset);
 
       // Step 3: Final clean state

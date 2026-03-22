@@ -127,7 +127,9 @@ export function useBTRemoveHandler({
         }));
         setNodes(highlighted);
         setEdges(rfEdges); // Ensure edges are reset to original state
-        setDescription(`Found ${value}. Prepare to remove the node and reconnect the tree.`);
+        setDescription(
+          `Found ${value}. Prepare to remove the node and reconnect the tree.`,
+        );
       }, animationSpeed * globalOffset);
       globalOffset++; // Pause after description
       controller.scheduleStep(() => {}, animationSpeed * globalOffset);
@@ -253,7 +255,9 @@ export function useBTRemoveHandler({
 
             setNodes(interpolated);
             setEdges(finalRF.edges as RFEdge[]);
-            setDescription("Move nodes into their new positions after restructuring.");
+            setDescription(
+              "Move nodes into their new positions after restructuring.",
+            );
           }, animationSpeed * fractionOffset);
         }
         globalOffset++;

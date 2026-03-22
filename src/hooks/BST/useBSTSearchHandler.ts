@@ -106,7 +106,9 @@ export function useBSTSearchHandler({
             setDescription(`Value ${value} found. This is the target node.`);
           } else {
             setNodes(rfNodes);
-            setDescription(`Value ${value} was not found after reaching the end of the search path.`);
+            setDescription(
+              `Value ${value} was not found after reaching the end of the search path.`,
+            );
           }
           setEdges(rfEdges);
 

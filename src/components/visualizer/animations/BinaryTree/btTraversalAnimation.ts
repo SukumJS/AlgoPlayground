@@ -65,7 +65,9 @@ function animateTraversal(
     const { nodes, edges } = btToReactFlow(root, [], [], positions);
     callbacks.setNodes(nodes as RFNode[]);
     callbacks.setEdges(edges as never[]);
-    callbacks.setDescription(`Start ${label}. Follow the highlighted node order.`);
+    callbacks.setDescription(
+      `Start ${label}. Follow the highlighted node order.`,
+    );
   }, animationSpeed * 0.5);
 
   order.forEach((nodeId, idx) => {

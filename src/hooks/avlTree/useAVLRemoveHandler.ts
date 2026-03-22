@@ -55,7 +55,9 @@ export function useAVLRemoveHandler(params: {
       setIsAnimating(true);
 
       if (!avlRoot) {
-        animationCallbacks.setDescription("The tree is empty. There is nothing to remove.");
+        animationCallbacks.setDescription(
+          "The tree is empty. There is nothing to remove.",
+        );
         setIsAnimating(false);
         controller.scheduleStep(
           () => animationCallbacks.setDescription(""),

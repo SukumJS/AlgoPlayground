@@ -193,7 +193,9 @@ export function useBTInsertHandler({
 
         setNodes(highlightedNodes);
         setEdges(rfEdges as RFEdge[]);
-        setDescription(`Inserted ${value} into the next available position and updated links.`);
+        setDescription(
+          `Inserted ${value} into the next available position and updated links.`,
+        );
 
         // clear highlight
         controller.scheduleStep(() => {

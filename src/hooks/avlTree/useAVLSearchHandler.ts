@@ -39,7 +39,9 @@ export function useAVLSearchHandler(params: {
       setIsAnimating(true);
 
       if (!avlRoot) {
-        animationCallbacks.setDescription("The tree is empty. Insert a node first.");
+        animationCallbacks.setDescription(
+          "The tree is empty. Insert a node first.",
+        );
         setIsAnimating(false);
         controller.scheduleStep(
           () => animationCallbacks.setDescription(""),
@@ -100,10 +102,14 @@ export function useAVLSearchHandler(params: {
               },
             }));
             animationCallbacks.setNodes(highlighted);
-            animationCallbacks.setDescription(`Value ${value} found. This is the target node.`);
+            animationCallbacks.setDescription(
+              `Value ${value} found. This is the target node.`,
+            );
           } else {
             animationCallbacks.setNodes(rfNodes);
-            animationCallbacks.setDescription(`Value ${value} was not found in the AVL tree.`);
+            animationCallbacks.setDescription(
+              `Value ${value} was not found in the AVL tree.`,
+            );
           }
           animationCallbacks.setEdges(rfEdges);
 

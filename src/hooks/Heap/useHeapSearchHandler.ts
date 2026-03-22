@@ -97,7 +97,9 @@ export function useHeapSearchHandler(params: {
               },
             }));
             setNodes(highlighted);
-            setDescription(`Value ${value} found. This is the matching heap node.`);
+            setDescription(
+              `Value ${value} found. This is the matching heap node.`,
+            );
           } else {
             setNodes(rfNodes as RFNode[]);
             setDescription(`Value ${value} was not found in the heap.`);

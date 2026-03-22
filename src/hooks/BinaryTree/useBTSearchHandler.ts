@@ -131,7 +131,9 @@ export function useBTSearchHandler({
             setDescription(`Value ${value} found. This is the matching node.`);
           } else {
             setNodes(rfNodes as RFNode[]);
-            setDescription(`Value ${value} was not found after visiting all reachable nodes.`);
+            setDescription(
+              `Value ${value} was not found after visiting all reachable nodes.`,
+            );
           }
           setEdges(rfEdges as RFEdge[]);
 

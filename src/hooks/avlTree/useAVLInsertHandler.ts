@@ -305,7 +305,9 @@ export function useAVLInsertHandler(params: {
 
           animationCallbacks.setNodes(tangledNodes);
           animationCallbacks.setEdges(hlEdges);
-          setAnimationDescription("Update child links for the rotation topology.");
+          setAnimationDescription(
+            "Update child links for the rotation topology.",
+          );
         }, animationSpeed * offset);
 
         offset++; // Pause after description
