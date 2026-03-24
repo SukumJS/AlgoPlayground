@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import type { Node } from "@xyflow/react";
 import type { SortNodeData } from "@/src/components/shared/sortNode";
 import { generateSearchStepsByType } from "@/src/components/visualizer/algorithmsSearch/generateSearchSteps";
+import type { SearchStep } from "@/src/components/visualizer/algorithmsSearch/generateSearchSteps";
 
 type Params = {
   algoType: string | null;
@@ -18,7 +19,7 @@ export function useStepSearchEngine({
   target,
   delayRef,
 }: Params) {
-  const [steps, setSteps] = useState<Node<SortNodeData>[][]>([]);
+  const [steps, setSteps] = useState<SearchStep[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -30,7 +31,8 @@ export function useStepSearchEngine({
   useEffect(() => {
     if (steps.length === 0) return;
 
-    const nextNodes = steps[currentStep];
+    const nextNodes = steps[currentStep]?.nodes;
+    if (!nextNodes) return;
     isInternalUpdateRef.current = true;
 
     setNodes((prev) =>
@@ -176,5 +178,8 @@ export function useStepSearchEngine({
     skipBack,
     skipForward,
     isRunning,
+    currentStep,
+    steps,
+    stepToCodeLine: steps.map((s) => s.codeLine),
   };
 }
