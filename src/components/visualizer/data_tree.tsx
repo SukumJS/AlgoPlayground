@@ -1098,7 +1098,14 @@ function Data_tree({
                 {traversalType === "binary-tree-inorder" && (
                   <button
                     className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 transition-colors"
-                    onClick={handleInorder}
+                    onClick={() => {
+                      const steps = handleInorder();
+                      if (steps && onStepsGenerated) {
+                        setIsAnimating(true);
+                        onAnimatingChange?.(true);
+                        onStepsGenerated(steps);
+                      }
+                    }}
                     disabled={isAnimating}
                     title="Left → Root → Right"
                   >
@@ -1108,7 +1115,14 @@ function Data_tree({
                 {traversalType === "binary-tree-preorder" && (
                   <button
                     className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 transition-colors"
-                    onClick={handlePreorder}
+                    onClick={() => {
+                      const steps = handlePreorder();
+                      if (steps && onStepsGenerated) {
+                        setIsAnimating(true);
+                        onAnimatingChange?.(true);
+                        onStepsGenerated(steps);
+                      }
+                    }}
                     disabled={isAnimating}
                     title="Root → Left → Right"
                   >
@@ -1118,7 +1132,14 @@ function Data_tree({
                 {traversalType === "binary-tree-postorder" && (
                   <button
                     className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 transition-colors"
-                    onClick={handlePostorder}
+                    onClick={() => {
+                      const steps = handlePostorder();
+                      if (steps && onStepsGenerated) {
+                        setIsAnimating(true);
+                        onAnimatingChange?.(true);
+                        onStepsGenerated(steps);
+                      }
+                    }}
                     disabled={isAnimating}
                     title="Left → Right → Root"
                   >
