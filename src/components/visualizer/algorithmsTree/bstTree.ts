@@ -301,12 +301,42 @@ export function cloneBSTTree(root: BSTNode | null): BSTNode | null {
 
 export function rebuildBSTFromNodes(
   nodes: Array<{ id: string; data: { label: string } }>,
+  edges: Array<{
+    source: string;
+    target: string;
+    sourceHandle?: string | null;
+  }> = [], // default to empty array for backwards compatibility
 ): BSTNode | null {
-  let root: BSTNode | null = null;
+  if (!nodes || nodes.length === 0) return null;
 
-  const values = nodes
-    .map((n) => ({ value: parseInt(n.data.label), id: n.id }))
-    .filter((n) => !isNaN(n.value));
+  // Find valid numeric nodes
+  const validNodes = nodes.filter((node) => !isNaN(parseInt(node.data.label)));
+  if (validNodes.length === 0) return null;
+
+  // If no edges, it's either an empty tree or just the very first node.
+  if (edges.length === 0) {
+    const firstNode = validNodes[0];
+    return insertBST(null, parseInt(firstNode.data.label), firstNode.id);
+  }
+
+  // Determine root: the node that is NEVER a target
+  const targetIds = new Set(edges.map((e) => e.target));
+  let rootNode = validNodes.find((n) => !targetIds.has(n.id));
+  if (!rootNode) rootNode = validNodes[0]; // fallback
+
+  // Include all nodes that have at least one edge connection
+  // (connected clusters get auto-inserted into the main tree;
+  //  truly isolated nodes with zero edges are excluded)
+  const connectedIds = new Set<string>();
+  for (const e of edges) {
+    connectedIds.add(e.source);
+    connectedIds.add(e.target);
+  }
+
+  let root: BSTNode | null = null;
+  const values = validNodes
+    .filter((n) => connectedIds.has(n.id))
+    .map((n) => ({ value: parseInt(n.data.label), id: n.id }));
 
   if (values.length === 0) return null;
 

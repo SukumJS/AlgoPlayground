@@ -1,7 +1,6 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
-import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
-import type { AnimationCallbacks } from "@/src/components/visualizer/animations/types";
+import type { TreeAnimationStep } from "@/src/hooks/tree/useStepTreeEngine";
 import {
   removeBT,
   searchBT,
@@ -19,10 +18,17 @@ interface UseBTRemoveHandlerProps {
   setNodes: (nodes: RFNode[] | ((prev: RFNode[]) => RFNode[])) => void;
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
-  applyHighlighting: AnimationCallbacks["applyHighlighting"];
-  setCodeStep?: AnimationCallbacks["setCodeStep"];
-  setStepToCodeLine?: AnimationCallbacks["setStepToCodeLine"];
-  setTreeAction?: AnimationCallbacks["setTreeAction"];
+  applyHighlighting: (
+    nodes: RFNode[],
+    edges: RFEdge[],
+    highlightedNodeIds: Set<string>,
+    highlightedEdgeIds: Set<string>,
+    color: string,
+    edgeColor?: string,
+  ) => { highlightedNodes: RFNode[]; highlightedEdges: RFEdge[] };
+  setCodeStep?: (step: number) => void;
+  setStepToCodeLine?: (map: number[]) => void;
+  setTreeAction?: (action: string | null) => void;
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
@@ -31,109 +37,99 @@ interface UseBTRemoveHandlerProps {
 export function useBTRemoveHandler({
   btRoot,
   setBTRoot,
-  setNodes,
-  setEdges,
-  setDescription,
-  applyHighlighting: _applyHighlighting,
-  setCodeStep,
-  setStepToCodeLine,
-  setTreeAction,
-  animationSpeed,
-  isPausedRef,
-  setIsAnimating,
 }: UseBTRemoveHandlerProps) {
-  void _applyHighlighting;
-  const controllerRef = useRef<AnimationController | null>(null);
   const btRootRef = useRef<BTNode | null>(btRoot);
-  btRootRef.current = btRoot;
+  useEffect(() => {
+    btRootRef.current = btRoot;
+  }, [btRoot]);
 
   const handleRemove = useCallback(
-    (value: number) => {
+    (value: number): TreeAnimationStep[] => {
       const root = btRootRef.current;
+      const stepToLine = [1, 2, 4, 5, 6];
+      const treeAction = "bt-remove";
+      const steps: TreeAnimationStep[] = [];
+
       if (!root) {
-        setDescription("The tree is empty. There is nothing to remove.");
-        setCodeStep?.(0);
-        setTreeAction?.(null);
-        return;
+        steps.push({
+          nodes: [],
+          edges: [],
+          description: "The tree is empty. There is nothing to remove.",
+          codeStep: 0,
+          treeAction: null,
+          stepToCodeLine: stepToLine,
+        });
+        return steps;
       }
 
       const { found, nodeId, path } = searchBT(root, value);
       if (!found) {
-        setDescription(`Value ${value} was not found, so no node is removed.`);
-        setCodeStep?.(0);
-        setTreeAction?.(null);
-        const tempController = new AnimationController(isPausedRef);
-        tempController.scheduleStep(
-          () => setDescription(""),
-          animationSpeed * 4,
+        const positions = calculateBTPositions(root);
+        const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(
+          root,
+          [],
+          [],
+          positions,
         );
-        return;
+        steps.push({
+          nodes: rfNodes as RFNode[],
+          edges: rfEdges as RFEdge[],
+          description: `Value ${value} was not found, so no node is removed.`,
+          codeStep: 0,
+          treeAction: null,
+          stepToCodeLine: stepToLine,
+        });
+        return steps;
       }
 
-      controllerRef.current?.clearAll();
-      const controller = new AnimationController(isPausedRef);
-      controllerRef.current = controller;
-      setIsAnimating(true);
-
-      const stepToLine = [1, 2, 4, 5, 6];
-      setTreeAction?.("bt-remove");
-      setStepToCodeLine?.(stepToLine);
-      setCodeStep?.(0);
-
-      // animate: BFS path
       const positions = calculateBTPositions(root);
       const rfData = btToReactFlow(root, [], [], positions);
       const rfNodes = rfData.nodes as RFNode[];
       const rfEdges = rfData.edges as RFEdge[];
 
-      let globalOffset = 0;
+      // Step 0: Initial state
+      steps.push({
+        nodes: rfNodes,
+        edges: rfEdges,
+        description: `Starting removal of ${value}. Will search in level order.`,
+        codeStep: 0,
+        treeAction,
+        stepToCodeLine: stepToLine,
+      });
 
-      // Step 1: Traverse search path
-      if (root && path.length > 0) {
-        path.forEach((id, idx) => {
-          globalOffset++; // Increment offset for each node visit
-          controller.scheduleStep(() => {
-            const highlightedNodes = rfNodes.map((n: RFNode) => ({
-              ...n,
-              data: {
-                ...n.data,
-                isHighlighted: n.id === id,
-                highlightColor: n.id === id ? "#62A2F7" : undefined,
-              },
-            }));
+      // Steps: Traverse search path (Blue highlight)
+      path.forEach((id, idx) => {
+        const highlightedNodes = rfNodes.map((n: RFNode) => ({
+          ...n,
+          data: {
+            ...n.data,
+            isHighlighted: n.id === id,
+            highlightColor: n.id === id ? "#62A2F7" : undefined,
+          },
+        }));
 
-            const highlightedEdges = rfEdges.map((e: RFEdge) => {
-              const visitedNodeIds = new Set(path.slice(0, idx + 1));
-              const isHighlightedEdge =
-                visitedNodeIds.has(e.source) && visitedNodeIds.has(e.target);
-              return {
-                ...e,
-                style: isHighlightedEdge
-                  ? { stroke: "#F7AD45", strokeWidth: 3 }
-                  : { stroke: "#999", strokeWidth: 2 },
-              };
-            });
+        const visitedNodeIds = new Set(path.slice(0, idx + 1));
+        const highlightedEdges = rfEdges.map((e: RFEdge) => ({
+          ...e,
+          style:
+            visitedNodeIds.has(e.source) && visitedNodeIds.has(e.target)
+              ? { stroke: "#F7AD45", strokeWidth: 3 }
+              : { stroke: "#999", strokeWidth: 2 },
+        }));
 
-            setNodes(highlightedNodes);
-            setEdges(highlightedEdges);
-            const currentNode = rfNodes.find((n) => n.id === id); // Find current node for description
-            setDescription(
-              `Searching for ${value} to remove. Visiting node ${currentNode?.data.label} in level order.`,
-            );
-            setCodeStep?.(1);
-          }, animationSpeed * globalOffset);
-
-          globalOffset++; // Increment offset for the pause after description
-          controller.scheduleStep(() => {
-            // Keep description visible for a short duration
-            // No visual change, just a pause
-          }, animationSpeed * globalOffset);
+        const currentNode = rfNodes.find((n) => n.id === id);
+        steps.push({
+          nodes: highlightedNodes,
+          edges: highlightedEdges,
+          description: `Searching for ${value} to remove. Visiting node ${currentNode?.data.label} in level order.`,
+          codeStep: 1,
+          treeAction,
+          stepToCodeLine: stepToLine,
         });
-      }
+      });
 
-      // Step 2: Highlight node to delete (Red)
-      globalOffset++;
-      controller.scheduleStep(() => {
+      // Step: Highlight node to delete (Red)
+      {
         const highlighted = rfNodes.map((n: RFNode) => ({
           ...n,
           data: {
@@ -142,50 +138,49 @@ export function useBTRemoveHandler({
             highlightColor: n.id === nodeId ? "#EF4444" : undefined,
           },
         }));
-        setNodes(highlighted);
-        setEdges(rfEdges); // Ensure edges are reset to original state
-        setDescription(
-          `Found ${value}. This node will be removed by replacing it with the deepest rightmost node.`,
-        );
-        setCodeStep?.(2);
-      }, animationSpeed * globalOffset);
-      globalOffset++; // Pause after description
-      controller.scheduleStep(() => {}, animationSpeed * globalOffset);
+        steps.push({
+          nodes: highlighted,
+          edges: rfEdges,
+          description: `Found ${value}. This node will be removed by replacing it with the deepest rightmost node.`,
+          codeStep: 2,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
+      }
 
-      // --- Pre-compute removal and new state ---
+      // Pre-compute removal
       const rootCopy = cloneBT(root);
       const { newRoot, deepestId } = removeBT(rootCopy, value);
 
-      // Step 3: Highlight the deepest rightmost node (Replacement) if it exists
+      // Step: Highlight replacement node if exists
       if (deepestId && nodeId !== deepestId) {
-        globalOffset++;
-        controller.scheduleStep(() => {
-          const highlighted = rfNodes.map((n: RFNode) => ({
-            ...n,
-            data: {
-              ...n.data,
-              isHighlighted: n.id === nodeId || n.id === deepestId,
-              highlightColor:
-                n.id === nodeId
-                  ? "#EF4444"
-                  : n.id === deepestId
-                    ? "#F7AD45"
-                    : undefined,
-            },
-          }));
-          setNodes(highlighted);
-          setEdges(rfEdges);
-          const deepestNode = rfNodes.find((n) => n.id === deepestId);
-          setDescription(
-            `Use the deepest rightmost node (${deepestNode?.data.label}) to replace the removed value.`,
-          );
-        }, animationSpeed * globalOffset);
+        const highlighted = rfNodes.map((n: RFNode) => ({
+          ...n,
+          data: {
+            ...n.data,
+            isHighlighted: n.id === nodeId || n.id === deepestId,
+            highlightColor:
+              n.id === nodeId
+                ? "#EF4444"
+                : n.id === deepestId
+                  ? "#F7AD45"
+                  : undefined,
+          },
+        }));
+        const deepestNode = rfNodes.find((n) => n.id === deepestId);
+        steps.push({
+          nodes: highlighted,
+          edges: rfEdges,
+          description: `Use the deepest rightmost node (${deepestNode?.data.label}) to replace the removed value.`,
+          codeStep: 2,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
       }
 
-      // Step 4: Perform Removal and Animate Structural Shift
+      // Step: Final state after removal
       if (newRoot) {
         const finalPositions = calculateBTPositions(newRoot);
-        // Use prefix 'bt-edge' to match what's expected for binary trees in btToReactFlow
         const finalRF = btToReactFlow(
           newRoot,
           [],
@@ -194,142 +189,62 @@ export function useBTRemoveHandler({
           "bt-edge",
         );
 
-        const beforePosMap = new Map<string, { x: number; y: number }>();
-        rfNodes.forEach((n) => {
-          beforePosMap.set(n.id, { x: n.position.x, y: n.position.y });
+        // Show with green highlight on the replacement node
+        const finalNodes = (finalRF.nodes as RFNode[]).map((n: RFNode) => ({
+          ...n,
+          data: {
+            ...n.data,
+            isHighlighted: n.id === nodeId,
+            highlightColor: n.id === nodeId ? "#4CAF7D" : undefined,
+          },
+        }));
+        steps.push({
+          nodes: finalNodes,
+          edges: finalRF.edges as RFEdge[],
+          description: `Removed ${value}. Binary tree structure is updated.`,
+          codeStep: 3,
+          treeAction,
+          stepToCodeLine: stepToLine,
         });
-        const afterPosMap = new Map<string, { x: number; y: number }>();
-        (finalRF.nodes as RFNode[]).forEach((n) => {
-          afterPosMap.set(n.id, { x: n.position.x, y: n.position.y });
+
+        // Clean step
+        steps.push({
+          nodes: finalRF.nodes as RFNode[],
+          edges: finalRF.edges as RFEdge[],
+          description: "",
+          codeStep: 0,
+          treeAction: null,
+          stepToCodeLine: stepToLine,
         });
-
-        // Step 4a: Topology Re-wire
-        globalOffset++;
-        controller.scheduleStep(() => {
-          const tangledNodes = (finalRF.nodes as RFNode[]).map((n: RFNode) => {
-            // The node taking the target's place (which took target's ID) comes from the deepest node's old position
-            const isReplacement = deepestId && n.id === nodeId;
-            const beforePosId = isReplacement ? deepestId : n.id;
-            const before = beforePosMap.get(beforePosId) || n.position;
-
-            return {
-              ...n,
-              position: before,
-              data: {
-                ...n.data,
-                isHighlighted: n.id === nodeId,
-                highlightColor: n.id === nodeId ? "#F7AD45" : undefined,
-              },
-            };
-          });
-
-          const hlEdges = (finalRF.edges as RFEdge[]).map((e: RFEdge) => ({
-            ...e,
-            style:
-              e.source === nodeId || e.target === nodeId
-                ? { stroke: "#F7AD45", strokeWidth: 3 }
-                : { stroke: "#999", strokeWidth: 2 },
-          }));
-
-          setNodes(tangledNodes);
-          setEdges(hlEdges);
-          setDescription("Update parent and child links after deletion.");
-        }, animationSpeed * globalOffset);
-
-        // Step 4b: Geometry Untangle (15 frames)
-        const INTERP_FRAMES = 15;
-        for (let frame = 1; frame <= INTERP_FRAMES; frame++) {
-          const t = frame / INTERP_FRAMES;
-          const fractionOffset = globalOffset + frame / INTERP_FRAMES;
-
-          controller.scheduleStep(() => {
-            const interpolated = (finalRF.nodes as RFNode[]).map(
-              (n: RFNode) => {
-                const isReplacement = deepestId && n.id === nodeId;
-                const beforePosId = isReplacement ? deepestId : n.id;
-
-                const before = beforePosMap.get(beforePosId);
-                const after = afterPosMap.get(n.id);
-
-                let pos = n.position;
-                if (before && after) {
-                  pos = {
-                    x: before.x + (after.x - before.x) * t,
-                    y: before.y + (after.y - before.y) * t,
-                  };
-                }
-
-                return {
-                  ...n,
-                  position: pos,
-                  data: {
-                    ...n.data,
-                    isHighlighted: n.id === nodeId,
-                    highlightColor: n.id === nodeId ? "#4CAF7D" : undefined,
-                  },
-                };
-              },
-            );
-
-            setNodes(interpolated);
-            setEdges(finalRF.edges as RFEdge[]);
-            setDescription(
-              "Move nodes into their new positions after restructuring.",
-            );
-          }, animationSpeed * fractionOffset);
-        }
-        globalOffset++;
-
-        // Step 4c: Final State Update
-        globalOffset++;
-        controller.scheduleStep(() => {
-          // This step is for the final description and cleanup
-          setBTRoot(newRoot);
-          setNodes(finalRF.nodes as RFNode[]);
-          setEdges(finalRF.edges as RFEdge[]);
-          setDescription(`Removed ${value}. Binary tree structure is updated.`);
-          controller.scheduleStep(() => {
-            setDescription("");
-            setCodeStep?.(0);
-            setTreeAction?.(null);
-            setIsAnimating(false);
-          }, animationSpeed * 2);
-        }, animationSpeed * globalOffset);
       } else {
-        // Tree is completely empty
-        globalOffset++;
-        controller.scheduleStep(() => {
-          setBTRoot(null);
-          setNodes([]);
-          setEdges([]);
-          setDescription(`Removed ${value}. The tree is now empty.`);
-          controller.scheduleStep(() => {
-            setDescription("");
-            setCodeStep?.(0);
-            setTreeAction?.(null);
-            setIsAnimating(false);
-          }, animationSpeed * 4);
-        }, animationSpeed * globalOffset);
+        // Tree is empty after removal
+        steps.push({
+          nodes: [],
+          edges: [],
+          description: `Removed ${value}. The tree is now empty.`,
+          codeStep: 3,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
+        steps.push({
+          nodes: [],
+          edges: [],
+          description: "",
+          codeStep: 0,
+          treeAction: null,
+          stepToCodeLine: stepToLine,
+        });
       }
-    },
 
-    [
-      animationSpeed,
-      isPausedRef,
-      setBTRoot,
-      setNodes,
-      setEdges,
-      setDescription,
-      setIsAnimating,
-      setCodeStep,
-      setStepToCodeLine,
-      setTreeAction,
-    ],
+      // Perform actual tree mutation
+      setBTRoot(newRoot);
+
+      return steps;
+    },
+    [setBTRoot],
   );
 
-  const cancelAnimation = useCallback(() => {
-    controllerRef.current?.clearAll();
-  }, []);
+  const cancelAnimation = useCallback(() => {}, []);
 
   return { handleRemove, cancelAnimation };
 }

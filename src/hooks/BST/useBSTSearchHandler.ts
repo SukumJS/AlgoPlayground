@@ -1,6 +1,6 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
-import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
+import type { TreeAnimationStep } from "@/src/hooks/tree/useStepTreeEngine";
 import type { AnimationCallbacks } from "@/src/components/visualizer/animations/types";
 import {
   searchBST,
@@ -22,149 +22,121 @@ interface UseBSTSearchHandlerProps {
   setIsAnimating: (v: boolean) => void;
 }
 
-export function useBSTSearchHandler({
-  bstRoot,
-  setNodes,
-  setEdges,
-  setDescription,
-  setCodeStep,
-  setStepToCodeLine,
-  setTreeAction,
-  animationSpeed,
-  isPausedRef,
-  setIsAnimating,
-}: UseBSTSearchHandlerProps) {
-  const controllerRef = useRef<AnimationController | null>(null);
+export function useBSTSearchHandler({ bstRoot }: UseBSTSearchHandlerProps) {
   const bstRootRef = useRef<BSTNode | null>(bstRoot);
-  bstRootRef.current = bstRoot;
+  useEffect(() => {
+    bstRootRef.current = bstRoot;
+  }, [bstRoot]);
 
-  // Lines in CodeBSTTreeView for bst-search
-  // 1 ALGORITHM
-  // 3 WHILE...
-  // 4 IF value == node.value THEN
-  // 6 ELSE IF value < node.value THEN
-  // 5 RETURN FOUND
-  // 12 RETURN NOT_FOUND
-  // 13 END ALGORITHM
-  const codeMap = useRef<number[]>([1, 3, 4, 6, 5, 12, 13]);
+  const handleSearch = useCallback((value: number): TreeAnimationStep[] => {
+    const codeMap = [1, 3, 4, 6, 5, 12, 13];
+    const root = bstRootRef.current;
+    const treeAction = "bst-search";
+    const steps: TreeAnimationStep[] = [];
 
-  const handleSearch = useCallback(
-    (value: number) => {
-      controllerRef.current?.clearAll();
-      const controller = new AnimationController(isPausedRef);
-      controllerRef.current = controller;
-      setIsAnimating(true);
-
-      setTreeAction?.("bst-search");
-      setStepToCodeLine?.(codeMap.current);
-      setCodeStep?.(0);
-
-      const root = bstRootRef.current;
-      if (!root) {
-        setDescription("The tree is empty. Insert a node first.");
-        controller.scheduleStep(() => setDescription(""), animationSpeed * 2); // Keep for 2 seconds
-      }
-
-      // Pre-compute
-      const { found, nodeId, path } = searchBST(root, value);
-      const positions = calculateBSTPositions(root);
-      const rfData = bstToReactFlow(root, [], [], positions);
-      const rfNodes = rfData.nodes as RFNode[];
-      const rfEdges = rfData.edges as RFEdge[];
-
-      let globalOffset = 0;
-
-      // Step 1: Animate traversal
-      path.forEach((id, idx) => {
-        controller.scheduleStep(() => {
-          const highlighted = rfNodes.map((n: RFNode) => ({
-            ...n,
-            data: {
-              ...n.data,
-              isHighlighted: n.id === id,
-              highlightColor: n.id === id ? "#62A2F7" : undefined,
-            },
-          }));
-          const highlightedEdges = rfEdges.map((e: RFEdge) => {
-            const visitedIds = new Set(path.slice(0, idx + 1));
-            const isEdgeHighlighted =
-              visitedIds.has(e.source) && visitedIds.has(e.target);
-            return {
-              ...e,
-              style: isEdgeHighlighted
-                ? { stroke: "#F7AD45", strokeWidth: 3 }
-                : { stroke: "#999", strokeWidth: 2 },
-            };
-          });
-          setNodes(highlighted);
-          setEdges(highlightedEdges);
-          const currentNode = rfNodes.find((n) => n.id === id); // Find current node for description
-          setDescription(
-            `Searching for ${value}. Compare with node ${currentNode?.data.label} and choose left or right branch.`,
-          );
-          setCodeStep?.(3);
-        }, animationSpeed * globalOffset);
-
-        globalOffset++; // Increment offset for the pause after description
-        controller.scheduleStep(() => {
-          // Keep description visible for a short duration
-          // No visual change, just a pause
-        }, animationSpeed * globalOffset);
+    if (!root) {
+      steps.push({
+        nodes: [],
+        edges: [],
+        description: "The tree is empty. Insert a node first.",
+        codeStep: 0,
+        treeAction: null,
+        stepToCodeLine: codeMap,
       });
-      // Step 2: Show result
-      controller.scheduleStep(
-        () => {
-          if (found && nodeId) {
-            const highlighted = rfNodes.map((n: RFNode) => ({
-              ...n,
-              data: {
-                ...n.data,
-                isHighlighted: n.id === nodeId,
-                highlightColor: n.id === nodeId ? "#4CAF7D" : undefined,
-              },
-            }));
-            setNodes(highlighted);
-            setDescription(`Value ${value} found. This is the target node.`);
-            setCodeStep?.(4);
-          } else {
-            setNodes(rfNodes);
-            setDescription(
-              `Value ${value} was not found after reaching the end of the search path.`,
-            );
-            setCodeStep?.(5);
-          }
-          setEdges(rfEdges);
+      return steps;
+    }
 
-          // Step 3: Clean up
-          controller.scheduleStep(() => {
-            setNodes(rfNodes);
-            setEdges(rfEdges);
-            setDescription("");
-            setCodeStep?.(0);
-            setTreeAction?.(null);
-            setIsAnimating(false);
-          }, animationSpeed * 4);
+    const { found, nodeId, path } = searchBST(root, value);
+    const positions = calculateBSTPositions(root);
+    const rfData = bstToReactFlow(root, [], [], positions);
+    const rfNodes = rfData.nodes as RFNode[];
+    const rfEdges = rfData.edges as RFEdge[];
+
+    // Step 0: Initial state
+    steps.push({
+      nodes: rfNodes,
+      edges: rfEdges,
+      description: `Starting search for ${value}. Will compare and traverse BST path.`,
+      codeStep: 0,
+      treeAction,
+      stepToCodeLine: codeMap,
+    });
+
+    // Steps: Animate traversal
+    path.forEach((id, idx) => {
+      const highlighted = rfNodes.map((n: RFNode) => ({
+        ...n,
+        data: {
+          ...n.data,
+          isHighlighted: n.id === id,
+          highlightColor: n.id === id ? "#62A2F7" : undefined,
         },
-        animationSpeed * (globalOffset + 1),
-      );
-    },
+      }));
+      const highlightedEdges = rfEdges.map((e: RFEdge) => {
+        const visitedIds = new Set(path.slice(0, idx + 1));
+        const isEdgeHighlighted =
+          visitedIds.has(e.source) && visitedIds.has(e.target);
+        return {
+          ...e,
+          style: isEdgeHighlighted
+            ? { stroke: "#F7AD45", strokeWidth: 3 }
+            : { stroke: "#999", strokeWidth: 2 },
+        };
+      });
+      const currentNode = rfNodes.find((n) => n.id === id);
+      steps.push({
+        nodes: highlighted,
+        edges: highlightedEdges,
+        description: `Searching for ${value}. Compare with node ${currentNode?.data.label} and choose left or right branch.`,
+        codeStep: 3,
+        treeAction,
+        stepToCodeLine: codeMap,
+      });
+    });
 
-    [
-      animationSpeed,
-      isPausedRef,
-      setNodes,
-      setEdges,
-      setDescription,
-      setIsAnimating,
-      setCodeStep,
-      setStepToCodeLine,
-      setTreeAction,
-    ],
-  );
+    // Result step
+    if (found && nodeId) {
+      const highlighted = rfNodes.map((n: RFNode) => ({
+        ...n,
+        data: {
+          ...n.data,
+          isHighlighted: n.id === nodeId,
+          highlightColor: n.id === nodeId ? "#4CAF7D" : undefined,
+        },
+      }));
+      steps.push({
+        nodes: highlighted,
+        edges: rfEdges,
+        description: `Value ${value} found. This is the target node.`,
+        codeStep: 4,
+        treeAction,
+        stepToCodeLine: codeMap,
+      });
+    } else {
+      steps.push({
+        nodes: rfNodes,
+        edges: rfEdges,
+        description: `Value ${value} was not found after reaching the end of the search path.`,
+        codeStep: 5,
+        treeAction,
+        stepToCodeLine: codeMap,
+      });
+    }
 
-  const cancelAnimation = useCallback(() => {
-    controllerRef.current?.clearAll();
+    // Final clean step
+    steps.push({
+      nodes: rfNodes,
+      edges: rfEdges,
+      description: "",
+      codeStep: 0,
+      treeAction: null,
+      stepToCodeLine: codeMap,
+    });
+
+    return steps;
   }, []);
+
+  const cancelAnimation = useCallback(() => {}, []);
 
   return { handleSearch, cancelAnimation };
 }

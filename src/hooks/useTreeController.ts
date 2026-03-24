@@ -1,56 +1,49 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { AlgoController } from "@/types/AlgoController";
 
-// กำหนดโครงสร้างที่เพื่อนต้องส่งมาให้เรา
+/**
+ * Interface for the step-based tree animation engine.
+ * useStepTreeEngine returns an object matching this shape.
+ */
 export interface TreeAnimationEngine {
-  play: () => void;
-  pause: () => void;
+  run: () => void;
+  stop: () => void;
   nextStep: () => void;
   prevStep: () => void;
+  skipForward: () => void;
+  skipBack: () => void;
   reset: () => void;
+  isRunning: boolean;
 }
 
 export function useTreeController(
   engine: TreeAnimationEngine | null,
+  speed: "1x" | "2x" | "5x",
+  setSpeed: (s: "1x" | "2x" | "5x") => void,
 ): AlgoController {
-  const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState<"1x" | "2x" | "5x">("1x");
-
   const run = useCallback(() => {
-    if (!engine) return;
-    setIsRunning(true);
-    engine.play();
+    engine?.run();
   }, [engine]);
 
   const stop = useCallback(() => {
-    if (!engine) return;
-    setIsRunning(false);
-    engine.pause();
+    engine?.stop();
   }, [engine]);
 
   const nextStep = useCallback(() => {
-    if (!engine) return;
-    stop();
-    engine.nextStep();
-  }, [engine, stop]);
+    engine?.nextStep();
+  }, [engine]);
 
   const prevStep = useCallback(() => {
-    if (!engine) return;
-    stop();
-    engine.prevStep();
-  }, [engine, stop]);
+    engine?.prevStep();
+  }, [engine]);
 
   const skipForward = useCallback(() => {
-    if (!engine) return;
-    stop();
-    // ถ้าทำฟังก์ชันข้ามไปตอนจบ ค่อยมาใส่ตรงนี้
-  }, [engine, stop]);
+    engine?.skipForward();
+  }, [engine]);
 
   const skipBack = useCallback(() => {
-    if (!engine) return;
-    stop();
-    engine.reset();
-  }, [engine, stop]);
+    engine?.skipBack();
+  }, [engine]);
 
   return {
     run,
@@ -61,6 +54,6 @@ export function useTreeController(
     skipBack,
     speed,
     setSpeed,
-    isRunning,
+    isRunning: engine?.isRunning ?? false,
   };
 }
