@@ -1,8 +1,9 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Node } from "@xyflow/react";
 import type { SortNodeData } from "@/src/components/shared/sortNode";
 import { generateStepsByType } from "@/src/components/visualizer/algorithmsSort/generateSteps";
 import { getExplanation } from "@/src/components/visualizer/explanations";
+import { makeContext } from "@/src/components/visualizer/explanations/explanationUtils";
 type Params = {
   algoType: string | null;
   nodes: Node<SortNodeData>[];
@@ -24,10 +25,12 @@ export function useStepSortEngine({
   const [steps, setSteps] = useState<Node<SortNodeData>[][]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
+  const [stepToCodeLine, setStepToCodeLine] = useState<number[]>([]);
 
   const autoPlayRef = useRef<number | null>(null);
   const isRunningRef = useRef(false);
   const isInternalUpdateRef = useRef(false);
+  const [hasUserChanged, setHasUserChanged] = useState(false);
 
   // Sync nodes กับ step ปัจจุบัน
   useEffect(() => {
@@ -61,6 +64,9 @@ export function useStepSortEngine({
     // user เปลี่ยนข้อมูล → reset steps
     setSteps([]);
     setCurrentStep(0);
+
+    // mark ว่า user เปลี่ยน data
+    setHasUserChanged(true);
   }, [nodes]);
 
   // Cleanup animation
@@ -78,6 +84,7 @@ export function useStepSortEngine({
 
     setSteps(generated);
     setCurrentStep(0);
+    setStepToCodeLine(buildStepToCodeLineMap(algoType, generated));
 
     return generated;
   };
@@ -122,7 +129,22 @@ export function useStepSortEngine({
 
   // Run (Auto Play)
   const run = () => {
-    const workingSteps = generateSteps();
+    // กันการกด Run ซ้ำ
+    if (isRunningRef.current) return;
+
+    // เผื่อมี animation เก่าค้าง
+    if (autoPlayRef.current !== null) {
+      cancelAnimationFrame(autoPlayRef.current);
+      autoPlayRef.current = null;
+    }
+
+    let workingSteps = steps;
+
+    // ถ้า user เปลี่ยน node → generate ใหม่
+    if (workingSteps.length === 0 || hasUserChanged) {
+      workingSteps = generateSteps();
+      setHasUserChanged(false);
+    }
 
     if (!workingSteps || workingSteps.length === 0) return;
 
@@ -160,6 +182,7 @@ export function useStepSortEngine({
 
     if (autoPlayRef.current !== null) {
       cancelAnimationFrame(autoPlayRef.current);
+      autoPlayRef.current = null;
     }
 
     setIsRunning(false);
@@ -189,5 +212,238 @@ export function useStepSortEngine({
     skipForward,
     isRunning,
     currentStep,
+    stepToCodeLine,
   };
+}
+
+function buildStepToCodeLineMap(
+  algoType: string | null,
+  steps: Node<SortNodeData>[][],
+): number[] {
+  if (!algoType || steps.length === 0) return [];
+
+  switch (algoType) {
+    case "bubble-sort":
+      return mapBubbleSortStepsToLines(steps);
+    case "selection-sort":
+      return mapSelectionSortStepsToLines(steps);
+    case "insertion-sort":
+      return mapInsertionSortStepsToLines(steps);
+    case "merge-sort":
+      return mapMergeSortStepsToLines(steps);
+    default:
+      return [];
+  }
+}
+
+/**
+ * BubbleSort pseudocode lines (1-based) expected in `codebubblesort.tsx`:
+ * 1  ALGORITHM BubbleSort(list)
+ * 2    n = length of list
+ * 3    FOR i FROM 0 TO n - 1 DO
+ * 4        FOR j FROM 0 TO n - i - 2 DO
+ * 5            IF list[j] > list[j + 1] THEN
+ * 6                SWAP list[j] WITH list[j + 1]
+ * 7            END IF
+ * 8        END FOR
+ * 9    END FOR
+ * 10 END ALGORITHM
+ */
+function mapBubbleSortStepsToLines(steps: Node<SortNodeData>[][]): number[] {
+  const out: number[] = [];
+
+  for (let idx = 0; idx < steps.length; idx++) {
+    if (idx === 0) {
+      out.push(1);
+      continue;
+    }
+
+    const ctx = makeContext(steps[idx], steps[idx - 1]);
+
+    if (ctx.newlyComparing.length === 2) {
+      // just started a comparison => corresponds to the IF condition line
+      out.push(5);
+      continue;
+    }
+
+    if (ctx.newlySwapping.length === 2) {
+      // swap animation step
+      out.push(6);
+      continue;
+    }
+
+    if (ctx.justResetToIdle.length === 2) {
+      // finished IF (either swapped or not)
+      out.push(7);
+      continue;
+    }
+
+    if (ctx.newlySorted.length > 0) {
+      // end of inner loop / bubbling largest to final position
+      out.push(8);
+      continue;
+    }
+
+    // default: we are iterating in loops
+    out.push(4);
+  }
+
+  return out;
+}
+
+/**
+ * SelectionSort pseudocode lines (1-based) expected in `codeselectionsort.tsx`
+ */
+function mapSelectionSortStepsToLines(steps: Node<SortNodeData>[][]): number[] {
+  const out: number[] = [];
+
+  for (let idx = 0; idx < steps.length; idx++) {
+    if (idx === 0) {
+      out.push(1);
+      continue;
+    }
+
+    const ctx = makeContext(steps[idx], steps[idx - 1]);
+
+    if (ctx.newlyComparing.length > 0) {
+      out.push(6);
+      continue;
+    }
+
+    if (ctx.newlySwapping.length === 2) {
+      out.push(11);
+      continue;
+    }
+
+    if (ctx.newlySorted.length > 0) {
+      out.push(13);
+      continue;
+    }
+
+    if (ctx.justResetToIdle.length > 0) {
+      // finished IF compare block
+      out.push(8);
+      continue;
+    }
+
+    out.push(5);
+  }
+
+  return out;
+}
+
+/**
+ * InsertionSort pseudocode lines (1-based) expected in `codeinsertingsort.tsx`
+ */
+function mapInsertionSortStepsToLines(steps: Node<SortNodeData>[][]): number[] {
+  const out: number[] = [];
+
+  for (let idx = 0; idx < steps.length; idx++) {
+    if (idx === 0) {
+      out.push(1);
+      continue;
+    }
+
+    const current = steps[idx];
+    const prev = steps[idx - 1];
+    const ctx = makeContext(current, prev);
+
+    const compareNodes = current.filter((n) => n.data.status === "compare");
+    const swapNodes = current.filter((n) => n.data.status === "swap");
+
+    // Lift: picked one item (compare) before while loop shifts
+    if (compareNodes.length === 1 && swapNodes.length === 0) {
+      out.push(4);
+      continue;
+    }
+
+    // While compare step
+    if (compareNodes.length === 2) {
+      out.push(6);
+      continue;
+    }
+
+    // Shift step (our animation marks both nodes as swap)
+    if (swapNodes.length === 2) {
+      out.push(7);
+      continue;
+    }
+
+    // Drop/insert key back into array (prev had lifted compare at y<0, now idle)
+    const prevLifted = prev.find(
+      (n) => n.data.status === "compare" && n.position.y < 0,
+    );
+    if (prevLifted) {
+      const nowIdleSame = current.find(
+        (n) => n.id === prevLifted.id && n.data.status === "idle",
+      );
+      if (nowIdleSame) {
+        out.push(10);
+        continue;
+      }
+    }
+
+    // also use generic reset-to-idle as end of while iteration
+    if (ctx.justResetToIdle.length > 0) {
+      out.push(9);
+      continue;
+    }
+
+    out.push(3);
+  }
+
+  return out;
+}
+
+/**
+ * Merge pseudocode lines (1-based) expected in `codemergesort.tsx`
+ *
+ * 1  ALGORITHM Merge(left, right)
+ * 2      result = empty list
+ * 3      WHILE left not empty AND right not empty DO
+ * 4          IF left[0] <= right[0] THEN
+ * 5              append left[0] to result; remove left[0]
+ * 6          ELSE
+ * 7              append right[0] to result; remove right[0]
+ * 8          END IF
+ * 9      END WHILE
+ * 10     append remaining items of left/right to result
+ * 11     RETURN result
+ * 12 END ALGORITHM
+ */
+function mapMergeSortStepsToLines(steps: Node<SortNodeData>[][]): number[] {
+  const out: number[] = [];
+
+  for (let idx = 0; idx < steps.length; idx++) {
+    if (idx === 0) {
+      // initial unsorted state
+      out.push(1);
+      continue;
+    }
+
+    const ctx = makeContext(steps[idx], steps[idx - 1]);
+
+    if (ctx.newlyComparing.length === 2) {
+      // เรากำลังตัดสินใจว่าจะหยิบจากซ้ายหรือขวา → IF เงื่อนไข
+      out.push(4);
+      continue;
+    }
+
+    if (ctx.newlyMerging.length > 0) {
+      // กำลังย้าย element หนึ่งตัวลง subarray ที่ merge อยู่ → append
+      out.push(5);
+      continue;
+    }
+
+    if (ctx.justResetToIdle.length > 0) {
+      // จบรอบของ IF / WHILE หนึ่งครั้ง
+      out.push(9);
+      continue;
+    }
+
+    // สถานะอื่น ๆ: ถือว่าอยู่ในลูป WHILE รวมๆ
+    out.push(3);
+  }
+
+  return out;
 }

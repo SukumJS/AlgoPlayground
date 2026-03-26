@@ -38,13 +38,30 @@ export function useAVLSearchHandler(params: {
       const controller = new AnimationController(isPausedRef);
       setIsAnimating(true);
 
+      // Pseudo code drive: CodeAVLTreeView (avl-search)
+      // 1 ALGORITHM
+      // 3 WHILE...
+      // 4 IF value == node.value THEN
+      // 5 RETURN FOUND
+      // 12 RETURN NOT_FOUND
+      // 13 END ALGORITHM
+      const stepToLine = [1, 3, 4, 5, 12, 13];
+      animationCallbacks.setTreeAction?.("avl-search");
+      animationCallbacks.setStepToCodeLine?.(stepToLine);
+      animationCallbacks.setCodeStep?.(0);
+
       if (!avlRoot) {
-        animationCallbacks.setDescription("The tree is empty. Insert a node first.");
+        animationCallbacks.setDescription(
+          "The tree is empty. Insert a node first.",
+        );
+        animationCallbacks.setCodeStep?.(0);
+        animationCallbacks.setTreeAction?.(null);
         setIsAnimating(false);
         controller.scheduleStep(
           () => animationCallbacks.setDescription(""),
           animationSpeed * 2,
         ); // Keep for 2 seconds
+        return;
       }
 
       const { found, nodeId, path } = searchAVL(avlRoot, value);
@@ -55,7 +72,6 @@ export function useAVLSearchHandler(params: {
 
       // Step 1: Animate traversal — only current node highlighted, edges accumulated
       path.forEach((id, idx) => {
-        const globalOffset = idx; // Use idx as base offset for traversal steps
         controller.scheduleStep(
           () => {
             // Node: highlight ONLY current node
@@ -82,6 +98,7 @@ export function useAVLSearchHandler(params: {
             animationCallbacks.setDescription(
               `Searching for ${value}. Compare with node ${currentNode?.data.label} and follow the AVL search path.`,
             );
+            animationCallbacks.setCodeStep?.(1);
           },
           animationSpeed * (idx + 1),
         );
@@ -100,10 +117,16 @@ export function useAVLSearchHandler(params: {
               },
             }));
             animationCallbacks.setNodes(highlighted);
-            animationCallbacks.setDescription(`Value ${value} found. This is the target node.`);
+            animationCallbacks.setDescription(
+              `Value ${value} found. This is the target node.`,
+            );
+            animationCallbacks.setCodeStep?.(3);
           } else {
             animationCallbacks.setNodes(rfNodes);
-            animationCallbacks.setDescription(`Value ${value} was not found in the AVL tree.`);
+            animationCallbacks.setDescription(
+              `Value ${value} was not found in the AVL tree.`,
+            );
+            animationCallbacks.setCodeStep?.(4);
           }
           animationCallbacks.setEdges(rfEdges);
 
@@ -112,6 +135,8 @@ export function useAVLSearchHandler(params: {
             animationCallbacks.setNodes(rfNodes);
             animationCallbacks.setEdges(rfEdges);
             animationCallbacks.setDescription("");
+            animationCallbacks.setCodeStep?.(0);
+            animationCallbacks.setTreeAction?.(null);
             setIsAnimating(false);
             setSearchValue("");
           }, animationSpeed * 4); // Longer delay for final state

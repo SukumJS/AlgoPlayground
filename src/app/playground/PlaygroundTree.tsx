@@ -240,6 +240,33 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
   const [explanation, setExplanation] = useState<string>(
     getDefaultTreeExplanation(defaultPrettyName),
   );
+
+  // Pseudo code highlighting state (driven by tree animations)
+  const [codeStep, setCodeStep] = useState<number>(0);
+  const [stepToCodeLine, setStepToCodeLine] = useState<number[]>([]);
+  const [treeAction, setTreeAction] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (algorithm === "avl-tree") setTreeAction("avl-insert");
+    else if (algorithm === "binary-search-tree") setTreeAction("bst-insert");
+    else if (algorithm === "min-heap" || algorithm === "max-heap")
+      setTreeAction("heap-insert");
+    else if (
+      algorithm === "binary-tree-inorder" ||
+      algorithm === "binary-tree-preorder" ||
+      algorithm === "binary-tree-postorder"
+    ) {
+      const action =
+        algorithm === "binary-tree-inorder"
+          ? "bt-traversal-inorder"
+          : algorithm === "binary-tree-preorder"
+            ? "bt-traversal-preorder"
+            : "bt-traversal-postorder";
+      setTreeAction(action);
+    } else {
+      setTreeAction(null);
+    }
+  }, [algorithm]);
   const { flowToScreenPosition } = useReactFlow();
 
   const rebalanceRef = useRef<(() => void) | null>(null);
@@ -463,7 +490,13 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       // เปลี่ยน title ตรงนี้ให้ใช้ prettyName
       <SideTab title={prettyName}>
         <div>
-          <CodeAlgo tutorialMode={tutorial.showTutorial} />
+          <CodeAlgo
+            tutorialMode={tutorial.showTutorial}
+            algoType={algorithm}
+            currentStep={codeStep}
+            stepToCodeLine={stepToCodeLine}
+            treeAction={treeAction}
+          />
           <ExplainAlgo explanation={effectiveExplanation} />
           {/* Display Data Input for Tree Algorithms */}
           <Data_tree
@@ -511,6 +544,9 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
               autoInsertRef.current = fn;
             }}
             setExplanation={setExplanation}
+            setCodeStep={setCodeStep}
+            setStepToCodeLine={setStepToCodeLine}
+            setTreeAction={setTreeAction}
             onAVLRootChange={onAVLRootChangeRef.current}
             showAVLBalance={algorithm === "avl-tree" && showAVLBalance}
           />
@@ -527,6 +563,9 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       treeNodes,
       edges,
       algorithm,
+      codeStep,
+      stepToCodeLine,
+      treeAction,
       effectiveExplanation,
       setExplanation,
       persistedAVLRoot,

@@ -17,6 +17,9 @@ interface UseBSTInsertHandlerProps {
   setNodes: (nodes: RFNode[] | ((prev: RFNode[]) => RFNode[])) => void;
   setEdges: (edges: RFEdge[] | ((prev: RFEdge[]) => RFEdge[])) => void;
   setDescription: (desc: string) => void;
+  setCodeStep?: AnimationCallbacks["setCodeStep"];
+  setStepToCodeLine?: AnimationCallbacks["setStepToCodeLine"];
+  setTreeAction?: AnimationCallbacks["setTreeAction"];
   animationSpeed: number;
   isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
@@ -28,21 +31,40 @@ export function useBSTInsertHandler({
   setNodes,
   setEdges,
   setDescription,
+  setCodeStep,
+  setStepToCodeLine,
+  setTreeAction,
   animationSpeed,
   isPausedRef,
   setIsAnimating,
 }: UseBSTInsertHandlerProps) {
   const counterRef = useRef(0);
 
+  // Lines in CodeBSTTreeView for bst-insert
+  // 1 ALGORITHM
+  // 3 WHILE...
+  // 4 IF value < node.value THEN
+  // 5 node = node.left
+  // 12 INSERT new node...
+  // 13 END ALGORITHM
+  const codeMap = useRef<number[]>([1, 3, 4, 5, 12, 13]);
+
   const handleInsert = useCallback(
     (value: number) => {
       const controller = new AnimationController(isPausedRef);
       setIsAnimating(true);
 
+      // pseudo code init
+      setTreeAction?.("bst-insert");
+      setStepToCodeLine?.(codeMap.current);
+      setCodeStep?.(0);
+
       // Duplicate check
       const { found, path } = searchBST(bstRoot, value);
       if (found) {
-        setDescription(`Value ${value} already exists. BST does not insert duplicates.`);
+        setDescription(
+          `Value ${value} already exists. BST does not insert duplicates.`,
+        );
         controller.scheduleStep(() => setDescription(""), animationSpeed * 2); // Keep for 2 seconds
         return;
       }
@@ -102,6 +124,9 @@ export function useBSTInsertHandler({
               setDescription(
                 `Finding where to insert ${value}. Compare with node ${currentNode?.data.label} and move left or right.`,
               );
+
+              // BST insert: compare + move
+              setCodeStep?.(3);
             },
             animationSpeed * (idx * 2 + 1),
           );
@@ -131,7 +156,10 @@ export function useBSTInsertHandler({
         }));
         setNodes(highlighted);
         setEdges(newRF.edges as RFEdge[]);
-        setDescription(`Inserted ${value} and updated links to keep BST order.`);
+        setDescription(
+          `Inserted ${value} and updated links to keep BST order.`,
+        );
+        setCodeStep?.(4);
       }, animationSpeed * globalOffset);
 
       // Step 3: Final clean state
@@ -141,6 +169,8 @@ export function useBSTInsertHandler({
         setNodes(newRF.nodes as RFNode[]);
         setEdges(newRF.edges as RFEdge[]);
         setDescription("");
+        setCodeStep?.(0);
+        setTreeAction?.(null);
         setIsAnimating(false);
       }, animationSpeed * globalOffset);
     },
@@ -153,6 +183,9 @@ export function useBSTInsertHandler({
       setEdges,
       setDescription,
       setIsAnimating,
+      setCodeStep,
+      setStepToCodeLine,
+      setTreeAction,
     ],
   );
 
