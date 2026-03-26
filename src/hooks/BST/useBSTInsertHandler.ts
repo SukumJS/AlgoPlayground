@@ -1,6 +1,6 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
-import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
+import type { TreeAnimationStep } from "@/src/hooks/tree/useStepTreeEngine";
 import type { AnimationCallbacks } from "@/src/components/visualizer/animations/types";
 import {
   insertBST,
@@ -28,165 +28,132 @@ interface UseBSTInsertHandlerProps {
 export function useBSTInsertHandler({
   bstRoot,
   setBSTRoot,
-  setNodes,
-  setEdges,
-  setDescription,
-  setCodeStep,
-  setStepToCodeLine,
-  setTreeAction,
-  animationSpeed,
-  isPausedRef,
-  setIsAnimating,
 }: UseBSTInsertHandlerProps) {
   const counterRef = useRef(0);
-
-  // Lines in CodeBSTTreeView for bst-insert
-  // 1 ALGORITHM
-  // 3 WHILE...
-  // 4 IF value < node.value THEN
-  // 5 node = node.left
-  // 12 INSERT new node...
-  // 13 END ALGORITHM
-  const codeMap = useRef<number[]>([1, 3, 4, 5, 12, 13]);
+  const bstRootRef = useRef<BSTNode | null>(bstRoot);
+  useEffect(() => {
+    bstRootRef.current = bstRoot;
+  }, [bstRoot]);
 
   const handleInsert = useCallback(
-    (value: number) => {
-      const controller = new AnimationController(isPausedRef);
-      setIsAnimating(true);
-
-      // pseudo code init
-      setTreeAction?.("bst-insert");
-      setStepToCodeLine?.(codeMap.current);
-      setCodeStep?.(0);
+    (value: number): TreeAnimationStep[] => {
+      const codeMap = [1, 3, 4, 5, 12, 13];
+      const root = bstRootRef.current;
+      const treeAction = "bst-insert";
+      const steps: TreeAnimationStep[] = [];
 
       // Duplicate check
-      const { found, path } = searchBST(bstRoot, value);
+      const { found, path } = searchBST(root, value);
       if (found) {
-        setDescription(
-          `Value ${value} already exists. BST does not insert duplicates.`,
-        );
-        controller.scheduleStep(() => setDescription(""), animationSpeed * 2); // Keep for 2 seconds
-        return;
+        const positions = calculateBSTPositions(root);
+        const rfData = root
+          ? bstToReactFlow(root, [], [], positions)
+          : { nodes: [], edges: [] };
+        steps.push({
+          nodes: rfData.nodes as RFNode[],
+          edges: rfData.edges as RFEdge[],
+          description: `Value ${value} already exists. BST does not insert duplicates.`,
+          codeStep: 0,
+          treeAction,
+          stepToCodeLine: codeMap,
+        });
+        return steps;
       }
 
       const newNodeId = `bst-node-${Date.now()}_${counterRef.current++}`;
 
       // Pre-compute final tree
-      const rootCopy = cloneBSTTree(bstRoot);
+      const rootCopy = cloneBSTTree(root);
       const newRoot = insertBST(rootCopy, value, newNodeId);
 
-      // Build ReactFlow for old tree (traversal animation)
-      const oldPositions = calculateBSTPositions(bstRoot);
-      const oldRF = bstRoot
-        ? bstToReactFlow(bstRoot, [], [], oldPositions)
+      // Build ReactFlow for old tree
+      const oldPositions = calculateBSTPositions(root);
+      const oldRF = root
+        ? bstToReactFlow(root, [], [], oldPositions)
         : { nodes: [], edges: [] };
 
-      // Build ReactFlow for new tree (post-insert)
+      // Build ReactFlow for new tree
       const newPositions = calculateBSTPositions(newRoot);
       const newRF = bstToReactFlow(newRoot, [], [], newPositions);
 
-      let globalOffset = 0;
+      // Step 0: Initial state
+      steps.push({
+        nodes: oldRF.nodes as RFNode[],
+        edges: oldRF.edges as RFEdge[],
+        description: `Starting insertion of ${value}. Will traverse BST to find correct position.`,
+        codeStep: 0,
+        treeAction,
+        stepToCodeLine: codeMap,
+      });
 
-      // Step 1: Animate traversal path on OLD tree
-      if (path.length > 0) {
-        path.forEach((nodeId, idx) => {
-          controller.scheduleStep(
-            () => {
-              // Description step
-              const highlighted = (oldRF.nodes as RFNode[]).map(
-                (n: RFNode) => ({
-                  ...n,
-                  data: {
-                    ...n.data,
-                    isHighlighted: n.id === nodeId,
-                    highlightColor: n.id === nodeId ? "#62A2F7" : undefined,
-                  },
-                }),
-              );
-              const highlightedEdges = (oldRF.edges as RFEdge[]).map(
-                (e: RFEdge) => {
-                  const visitedIds = new Set(path.slice(0, idx + 1));
-                  const isEdgeHighlighted =
-                    visitedIds.has(e.source) && visitedIds.has(e.target);
-                  return {
-                    ...e,
-                    style: isEdgeHighlighted
-                      ? { stroke: "#F7AD45", strokeWidth: 3 }
-                      : { stroke: "#999", strokeWidth: 2 },
-                  };
-                },
-              );
-              setNodes(highlighted);
-              setEdges(highlightedEdges);
-              const currentNode = (oldRF.nodes as RFNode[]).find(
-                (n) => n.id === nodeId,
-              ); // Find current node for description
-              setDescription(
-                `Finding where to insert ${value}. Compare with node ${currentNode?.data.label} and move left or right.`,
-              );
-
-              // BST insert: compare + move
-              setCodeStep?.(3);
-            },
-            animationSpeed * (idx * 2 + 1),
-          );
-
-          controller.scheduleStep(
-            () => {
-              // Pause step
-              // Keep description visible for a short duration
-              // No visual change, just a pause
-            },
-            animationSpeed * (idx * 2 + 2),
-          );
-        });
-        globalOffset = path.length * 2;
-      }
-
-      // Step 2: Show new tree with inserted node highlighted (green)
-      globalOffset++;
-      controller.scheduleStep(() => {
-        const highlighted = (newRF.nodes as RFNode[]).map((n: RFNode) => ({
+      // Steps: Animate traversal path on OLD tree
+      path.forEach((nodeId, idx) => {
+        const highlighted = (oldRF.nodes as RFNode[]).map((n: RFNode) => ({
           ...n,
           data: {
             ...n.data,
-            isHighlighted: n.id === newNodeId,
-            highlightColor: n.id === newNodeId ? "#4CAF7D" : undefined,
+            isHighlighted: n.id === nodeId,
+            highlightColor: n.id === nodeId ? "#62A2F7" : undefined,
           },
         }));
-        setNodes(highlighted);
-        setEdges(newRF.edges as RFEdge[]);
-        setDescription(
-          `Inserted ${value} and updated links to keep BST order.`,
+        const highlightedEdges = (oldRF.edges as RFEdge[]).map((e: RFEdge) => {
+          const visitedIds = new Set(path.slice(0, idx + 1));
+          const isEdgeHighlighted =
+            visitedIds.has(e.source) && visitedIds.has(e.target);
+          return {
+            ...e,
+            style: isEdgeHighlighted
+              ? { stroke: "#F7AD45", strokeWidth: 3 }
+              : { stroke: "#999", strokeWidth: 2 },
+          };
+        });
+        const currentNode = (oldRF.nodes as RFNode[]).find(
+          (n) => n.id === nodeId,
         );
-        setCodeStep?.(4);
-      }, animationSpeed * globalOffset);
+        steps.push({
+          nodes: highlighted,
+          edges: highlightedEdges,
+          description: `Finding where to insert ${value}. Compare with node ${currentNode?.data.label} and move left or right.`,
+          codeStep: 3,
+          treeAction,
+          stepToCodeLine: codeMap,
+        });
+      });
 
-      // Step 3: Final clean state
-      globalOffset++;
-      controller.scheduleStep(() => {
-        setBSTRoot(newRoot);
-        setNodes(newRF.nodes as RFNode[]);
-        setEdges(newRF.edges as RFEdge[]);
-        setDescription("");
-        setCodeStep?.(0);
-        setTreeAction?.(null);
-        setIsAnimating(false);
-      }, animationSpeed * globalOffset);
+      // Step: Show new tree with inserted node highlighted (green)
+      const highlighted = (newRF.nodes as RFNode[]).map((n: RFNode) => ({
+        ...n,
+        data: {
+          ...n.data,
+          isHighlighted: n.id === newNodeId,
+          highlightColor: n.id === newNodeId ? "#4CAF7D" : undefined,
+        },
+      }));
+      steps.push({
+        nodes: highlighted,
+        edges: newRF.edges as RFEdge[],
+        description: `Inserted ${value} and updated links to keep BST order.`,
+        codeStep: 4,
+        treeAction,
+        stepToCodeLine: codeMap,
+      });
+
+      // Final clean step
+      steps.push({
+        nodes: newRF.nodes as RFNode[],
+        edges: newRF.edges as RFEdge[],
+        description: "",
+        codeStep: 0,
+        treeAction: null,
+        stepToCodeLine: codeMap,
+      });
+
+      // Perform actual tree mutation
+      setBSTRoot(newRoot);
+
+      return steps;
     },
-    [
-      bstRoot,
-      setBSTRoot,
-      animationSpeed,
-      isPausedRef,
-      setNodes,
-      setEdges,
-      setDescription,
-      setIsAnimating,
-      setCodeStep,
-      setStepToCodeLine,
-      setTreeAction,
-    ],
+    [setBSTRoot],
   );
 
   const cancelAnimation = useCallback(() => {}, []);
