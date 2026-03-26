@@ -335,7 +335,7 @@ function Data_sort({
                   : "cursor-grab border-[#5D5D5D]"
               }`}
               onPointerDown={(event) => {
-                if (disableDrag) return; // 🎯 กันไม่ให้คลิกลาก
+                if (disableDrag) return;
                 setType("custom");
                 setDraggedValue(num);
                 onDragStart(event, createAddNewNode(num, index));

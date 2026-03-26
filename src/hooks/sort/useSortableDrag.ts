@@ -7,7 +7,7 @@ const NODE_WIDTH = 65;
 export function useSortableDrag(
   setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>,
   positionFromIndex: (index: number) => { x: number; y: number },
-  isLinkedList: boolean = false, // 🎯 1. เพิ่ม parameter นี้เพื่อบอกโหมด
+  isLinkedList: boolean = false,
 ) {
   const [isDraggingNode, setIsDraggingNode] = useState(false);
   const [isTrashActive, setIsTrashActive] = useState(false);
@@ -47,7 +47,7 @@ export function useSortableDrag(
         const draggedNode = prev.find((n) => n.id === dragged.id);
         if (!draggedNode) return prev;
 
-        // 🎯 2. คำนวณระยะห่าง (spacing) ตามโหมดจริงๆ
+        // คำนวณระยะห่าง (spacing) ตามโหมดจริงๆ
         const spacing =
           positionFromIndex(1).x - positionFromIndex(0).x || NODE_WIDTH;
 
@@ -55,7 +55,7 @@ export function useSortableDrag(
         let newIndex = Math.floor((dragged.position.x + spacing / 2) / spacing);
         newIndex = Math.max(0, Math.min(prev.length - 1, newIndex));
 
-        // 🎯 3. หา Slot ปัจจุบันบนหน้าจอ (เรียงตามพิกัด X ไม่ใช่ Index)
+        // หา Slot ปัจจุบันบนหน้าจอ (เรียงตามพิกัด X ไม่ใช่ Index)
         const sortedByX = [...prev].sort((a, b) => a.position.x - b.position.x);
         const currentIndex = sortedByX.findIndex((n) => n.id === dragged.id);
 
@@ -66,7 +66,7 @@ export function useSortableDrag(
           );
         }
 
-        // 🎯 4. เอา node ออกก่อน แล้วจัดเรียงตัวที่เหลือตามพิกัด X
+        // เอา node ออกก่อน แล้วจัดเรียงตัวที่เหลือตามพิกัด X
         const filtered = prev
           .filter((n) => n.id !== dragged.id)
           .sort((a, b) => a.position.x - b.position.x);
@@ -76,7 +76,7 @@ export function useSortableDrag(
 
         return filtered.map((node, visualSlot) => ({
           ...node,
-          // 🎯 5. จุดสำคัญที่สุด: ถ้าเป็น Linked List ห้ามแก้ Index! ให้แก้เฉพาะโหมด Array
+          //  ถ้าเป็น Linked List ห้ามแก้ Index! ให้แก้เฉพาะโหมด Array
           data: isLinkedList ? node.data : { ...node.data, index: visualSlot },
           position:
             node.id === dragged.id
@@ -123,21 +123,21 @@ export function useSortableDrag(
         setNodes((prev) => {
           const remainingNodes = prev.filter((n) => n.id !== dragged.id);
 
-          // 🎯 6. เรียงตามพิกัด X เสมอเวลาโดนลบ
+          // เรียงตามพิกัด X เสมอเวลาโดนลบ
           remainingNodes.sort((a, b) => a.position.x - b.position.x);
 
           return remainingNodes.map((n, visualSlot) => ({
             ...n,
             selected: false,
             dragging: false,
-            // 🎯 ห้ามรีเซ็ต Index ถ้าเป็น Linked List
+            // ห้ามรีเซ็ต Index ถ้าเป็น Linked List
             data: isLinkedList ? n.data : { ...n.data, index: visualSlot },
             position: positionFromIndex(visualSlot),
           }));
         });
       } else {
         setNodes((prev) => {
-          // 🎯 7. ตอนปล่อยเมาส์ ให้กล่อง Snap เข้า Grid ตามตำแหน่ง X (Visual Slot) ล่าสุด
+          // ตอนปล่อยเมาส์ ให้กล่อง Snap เข้า Grid ตามตำแหน่ง X (Visual Slot) ล่าสุด
           const sortedByX = [...prev].sort(
             (a, b) => a.position.x - b.position.x,
           );
@@ -146,7 +146,7 @@ export function useSortableDrag(
               const visualSlot = sortedByX.findIndex((s) => s.id === n.id);
               return {
                 ...n,
-                position: positionFromIndex(visualSlot), // ล็อกเข้า Grid
+                position: positionFromIndex(visualSlot),
                 selected: false,
                 dragging: false,
               };
