@@ -86,7 +86,7 @@ export const useArrayEngine = (
       setNodes([...currentNodes]);
 
       // รอให้แอนิเมชันลอยลงมาเสร็จสมบูรณ์ก่อน ค่อยปลดล็อก
-      await sleep(speed * 1.5);
+      await sleep(speed);
 
       setIsAnimating(false);
     },
@@ -119,7 +119,7 @@ export const useArrayEngine = (
       });
       setNodes([...currentNodes]);
 
-      await sleep(speed * 1.5);
+      await sleep(speed);
 
       // ลบกล่องนั้นทิ้งออกจาก Array และขยับซ้าย
       currentNodes = currentNodes.filter(
@@ -138,7 +138,7 @@ export const useArrayEngine = (
       });
       setNodes([...currentNodes]);
 
-      await sleep(speed * 1.5);
+      await sleep(speed);
 
       setIsAnimating(false);
     },

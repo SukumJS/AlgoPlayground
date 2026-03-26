@@ -1,5 +1,12 @@
 "use client";
-import React, { useState, useCallback, DragEvent, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  DragEvent,
+  useMemo,
+  useRef,
+  useEffect,
+} from "react";
 import SideTab from "../../components/shared/sideTab";
 import ExplainAlgo from "../../components/visualizer/explainAlgo";
 import CodeAlgo from "../../components/visualizer/codeAlgo";
@@ -24,6 +31,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "@xyflow/react/dist/base.css";
+
 import LinearDSNode, {
   type LinearNodeData,
 } from "@/src/components/shared/linearDSNode";
@@ -37,6 +45,11 @@ import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 import { useArrayEngine } from "@/src/hooks/linear_ds/useArrayEngine";
 import { useLinkedListEngine } from "@/src/hooks/linear_ds/useLinkedListEngine";
 
+// --- TUTORIAL IMPORTS ---
+import { useLinearDSTutorial } from "@/src/hooks/useLinearTutorial";
+import TutorialLinearDS from "@/src/components/visualizer/tutorial_linearDS";
+import Tutorial_modal from "@/src/components/shared/tutorial_modal";
+
 const nodeTypes = {
   custom: LinearDSNode,
 };
@@ -47,6 +60,7 @@ const positionFromIndex = (index: number) => ({
   y: 5,
 });
 
+// ค่าตั้งต้นมาตรฐาน (จะถูก Override ใน useEffect เมื่อ algorithm เปลี่ยน)
 const initialNodes: Node<LinearNodeData>[] = [
   {
     id: "1",
@@ -97,34 +111,67 @@ export default function PlaygroundLinearDS({
 }: {
   algorithm: string;
 }) {
-  const [nodes, setNodes] = useState<Node<LinearNodeData>[]>(initialNodes);
+  const [nodes, setNodes] = useState<Node<LinearNodeData>[]>(() => {
+    const isLL =
+      algorithm === "singly-linked-list" || algorithm === "doubly-linked-list";
+
+    const spacing = isLL ? 120 : NODE_WIDTH;
+    const initialValues = isLL ? [1, 2, 3] : [1, 2, 3, 4, 5];
+
+    return initialValues.map((val, i) => ({
+      id: `${i + 1}`,
+      type: "custom",
+      position: { x: i * spacing, y: 5 },
+      data: { value: val, index: i, status: "idle" },
+    }));
+  });
   const [nodeInput, setNodeInput] = useState<number | string>("6");
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
-
   const [explanation, setExplanation] = useState<string>(
     "This section will explain the data structure operations.",
   );
   const [showInfo, setShowInfo] = useState(false);
 
+  const { setCenter, getZoom, flowToScreenPosition } = useReactFlow();
+
   const prettyName = algorithm
     ? algorithmNames[algorithm] || "Linear Data Structures"
     : "Linear Data Structures";
+  const isLinkedList =
+    algorithm === "singly-linked-list" || algorithm === "doubly-linked-list";
 
-  React.useEffect(() => {
+  // --- 1. INITIALIZE TUTORIAL HOOK ---
+  const tutorial = useLinearDSTutorial({
+    nodes,
+    flowToScreenPosition,
+    setNodes,
+    isLinearDS: true,
+    isLinkedList,
+  });
+
+  useEffect(() => {
     if (algorithm) {
-      setExplanation(
-        `This section will explain ${prettyName} operations. Click 'Run' to start.`,
-      );
+      queueMicrotask(() => {
+        setExplanation(
+          `This section will explain ${prettyName} operations. Click 'Run' to start.`,
+        );
+      });
     }
   }, [algorithm, prettyName]);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    if (!algorithm) return;
+
     const isLL =
       algorithm === "singly-linked-list" || algorithm === "doubly-linked-list";
+
     const isDLL = algorithm === "doubly-linked-list";
     const spacing = isLL ? 120 : NODE_WIDTH;
 
-    const defaultNodes: Node<LinearNodeData>[] = [1, 2, 3, 4, 5].map(
+    // ตั้งค่าเริ่มต้นตามประเภท Algorithm
+    const initialValues = isLL ? [1, 2, 3] : [1, 2, 3, 4, 5];
+
+    const defaultNodes: Node<LinearNodeData>[] = initialValues.map(
       (val, i) => ({
         id: `${i + 1}`,
         type: "custom",
@@ -133,65 +180,57 @@ export default function PlaygroundLinearDS({
       }),
     );
 
-    setNodes(defaultNodes);
+    queueMicrotask(() => {
+      setNodes(defaultNodes);
 
-    if (isLL) {
-      const defaultEdges: Edge[] = [];
-      for (let i = 0; i < defaultNodes.length - 1; i++) {
-        defaultEdges.push({
-          id: `edge_${defaultNodes[i].id}_to_${defaultNodes[i + 1].id}_next`,
-          source: defaultNodes[i].id,
-          sourceHandle: "s-next",
-          target: defaultNodes[i + 1].id,
-          targetHandle: "t-next",
-          type: "smoothstep",
-          animated: false,
-          style: { stroke: "#5D5D5D", strokeWidth: 2 },
-          markerEnd: { type: MarkerType.ArrowClosed, color: "#5D5D5D" },
-        });
-
-        if (isDLL) {
+      if (isLL) {
+        const defaultEdges: Edge[] = [];
+        for (let i = 0; i < defaultNodes.length - 1; i++) {
           defaultEdges.push({
-            id: `edge_${defaultNodes[i + 1].id}_to_${defaultNodes[i].id}_prev`,
-            source: defaultNodes[i + 1].id,
-            sourceHandle: "s-prev",
-            target: defaultNodes[i].id,
-            targetHandle: "t-prev",
+            id: `edge_${defaultNodes[i].id}_to_${defaultNodes[i + 1].id}_next`,
+            source: defaultNodes[i].id,
+            sourceHandle: "s-next",
+            target: defaultNodes[i + 1].id,
+            targetHandle: "t-next",
             type: "smoothstep",
             animated: false,
-            style: { stroke: "#3182CE", strokeWidth: 2 },
-            markerEnd: { type: MarkerType.ArrowClosed, color: "#3182CE" },
+            style: { stroke: "#5D5D5D", strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#5D5D5D" },
           });
-        }
-      }
-      setEdges(defaultEdges);
-    } else {
-      setEdges([]);
-    }
-  }, [algorithm, setNodes, setEdges]);
 
-  const { setCenter, getZoom } = useReactFlow();
+          if (isDLL) {
+            defaultEdges.push({
+              id: `edge_${defaultNodes[i + 1].id}_to_${defaultNodes[i].id}_prev`,
+              source: defaultNodes[i + 1].id,
+              sourceHandle: "s-prev",
+              target: defaultNodes[i].id,
+              targetHandle: "t-prev",
+              type: "smoothstep",
+              animated: false,
+              style: { stroke: "#3182CE", strokeWidth: 2 },
+              markerEnd: { type: MarkerType.ArrowClosed, color: "#3182CE" },
+            });
+          }
+        }
+        setEdges(defaultEdges);
+      } else {
+        setEdges([]);
+      }
+    });
+  }, [algorithm]);
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
       setNodes((nds) => {
-        const isLL =
-          algorithm === "singly-linked-list" ||
-          algorithm === "doubly-linked-list";
-
         const lockedChanges = changes.map((change) => {
-          if (isLL && change.type === "position" && change.position) {
-            return {
-              ...change,
-              position: { x: change.position.x, y: 5 },
-            };
+          if (isLinkedList && change.type === "position" && change.position) {
+            return { ...change, position: { x: change.position.x, y: 5 } };
           }
           return change;
         });
-
         return applyNodeChanges(lockedChanges, nds) as Node<LinearNodeData>[];
       }),
-    [algorithm],
+    [isLinkedList],
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
@@ -207,23 +246,14 @@ export default function PlaygroundLinearDS({
     event.dataTransfer.dropEffect = "move";
   }, []);
 
-  const { delayRef, setSpeed, speed } = useExecutionSpeed();
-
-  const getNumericSpeed = (speedStr: string | number) => {
-    if (speedStr === "5x") return 200;
-    if (speedStr === "2x") return 500;
-    return 1000;
-  };
+  const { speed, setSpeed } = useExecutionSpeed();
+  const getNumericSpeed = (speedStr: string | number) =>
+    speedStr === "5x" ? 200 : speedStr === "2x" ? 500 : 1000;
   const numericSpeed = getNumericSpeed(speed);
 
-  const isLinkedList =
-    algorithm === "singly-linked-list" || algorithm === "doubly-linked-list";
   const nodeSpacing = isLinkedList ? 120 : NODE_WIDTH;
   const dynamicPositionFromIndex = useCallback(
-    (index: number) => ({
-      x: index * nodeSpacing,
-      y: 5,
-    }),
+    (index: number) => ({ x: index * nodeSpacing, y: 5 }),
     [nodeSpacing],
   );
 
@@ -251,46 +281,38 @@ export default function PlaygroundLinearDS({
 
   const activeEngine = isLinkedList ? linkedListEngine : arrayEngine;
   const { insertAtIndex, deleteAtIndex, isAnimating } = activeEngine;
-  const isUserPanning = React.useRef(false);
-  const lastPannedPosition = React.useRef<{ id: string; x: number } | null>(
-    null,
-  );
 
-  React.useEffect(() => {
-    if (!isAnimating) {
-      lastPannedPosition.current = null;
+  const isUserPanning = useRef(false);
+  const lastPannedPosition = useRef<{ id: string; x: number } | null>(null);
+
+  // Smart Camera logic (จากไฟล์ที่ 1)
+  useEffect(() => {
+    if (!isAnimating || isUserPanning.current) {
+      if (!isAnimating) lastPannedPosition.current = null;
       return;
     }
-
-    if (isUserPanning.current) return;
-
     const activeNode = nodes.find(
       (n) => n.data.status === "compare" || n.data.status === "processing",
     );
-
     if (activeNode) {
       const isSameNode = lastPannedPosition.current?.id === activeNode.id;
       const isSamePos = lastPannedPosition.current?.x === activeNode.position.x;
-
       if (!isSameNode || !isSamePos) {
         lastPannedPosition.current = {
           id: activeNode.id,
           x: activeNode.position.x,
         };
-
         setCenter(activeNode.position.x + 32.5, activeNode.position.y + 25, {
           zoom: 1.5,
           duration: 600,
         });
       }
     }
-  }, [nodes, isAnimating, setCenter, getZoom]);
+  }, [nodes, isAnimating, setCenter]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isLinkedList || isAnimating) return;
-
     const isDLL = algorithm === "doubly-linked-list";
-
     const sortedNodes = [...nodes].sort(
       (a, b) => (a.data.index as number) - (b.data.index as number),
     );
@@ -308,7 +330,6 @@ export default function PlaygroundLinearDS({
         style: { stroke: "#5D5D5D", strokeWidth: 2 },
         markerEnd: { type: MarkerType.ArrowClosed, color: "#5D5D5D" },
       });
-
       if (isDLL) {
         expectedEdges.push({
           id: `edge_${sortedNodes[i + 1].id}_to_${sortedNodes[i].id}_prev`,
@@ -333,44 +354,76 @@ export default function PlaygroundLinearDS({
       .sort()
       .join(",");
 
+    // แก้ไข Error Cascading Renders ตรงนี้
     if (currentEdgeIds !== expectedEdgeIds) {
-      setEdges(expectedEdges);
+      queueMicrotask(() => {
+        setEdges(expectedEdges);
+      });
     }
   }, [nodes, edges, isLinkedList, algorithm, isAnimating, setEdges]);
 
+  // --- 3. DRAG HANDLERS (Merged with Tutorial) ---
   const handleNodeDragStart = useCallback(
     (event: React.MouseEvent, node: Node, allNodes: Node[]) => {
       onNodeDragStart?.(event, node, allNodes);
+      if (tutorial.showTutorial)
+        tutorial.onNodeDragStart(event, node as Node<LinearNodeData>);
     },
-    [onNodeDragStart],
+    [onNodeDragStart, tutorial],
   );
 
   const handleNodeDrag = useCallback(
     (event: React.MouseEvent, node: Node, allNodes: Node[]) => {
       onNodeDrag(event, node, allNodes);
+      if (tutorial.showTutorial)
+        tutorial.onNodeDrag(event, node as Node<LinearNodeData>);
     },
-    [onNodeDrag],
+    [onNodeDrag, tutorial],
   );
 
   const handleNodeDragStop = useCallback(
     (event: React.MouseEvent, node: Node, allNodes: Node[]) => {
       onNodeDragStop(event, node, allNodes);
+      if (tutorial.showTutorial)
+        tutorial.onNodeDragStop(event, node as Node<LinearNodeData>);
     },
-    [onNodeDragStop],
+    [onNodeDragStop, tutorial],
   );
 
+  // --- 4. TUTORIAL MASKING LOGIC ---
   const displayNodes = useMemo(() => {
-    return nodes.map((node) => ({
-      ...node,
-      draggable: !isAnimating,
-      style: {
-        transition: isAnimating
-          ? `transform ${numericSpeed}ms ease-in-out`
-          : "none",
-      },
-      data: { ...node.data, hideIndex: isLinkedList },
-    }));
-  }, [nodes, isAnimating, numericSpeed, isLinkedList]);
+    return nodes.map((node) => {
+      let canDrag = !isAnimating;
+      if (tutorial.showTutorial) {
+        canDrag = false;
+        const val = String(node.data.value);
+        // อนุญาตให้ลากเฉพาะโหนดที่ Tutorial กำหนดในแต่ละ Step
+        if (tutorial.tutorialStep === 1 && val === "2") canDrag = true;
+        if (
+          (tutorial.tutorialStep === 3 || tutorial.tutorialStep === 4) &&
+          val === "1"
+        )
+          canDrag = true;
+      }
+      return {
+        ...node,
+        draggable: canDrag,
+        style: {
+          transition: isAnimating
+            ? `transform ${numericSpeed}ms ease-in-out`
+            : "none",
+        },
+        data: { ...node.data, hideIndex: isLinkedList },
+      };
+    });
+  }, [
+    nodes,
+    isAnimating,
+    numericSpeed,
+    isLinkedList,
+    tutorial.showTutorial,
+    tutorial.tutorialStep,
+  ]);
 
   const sideTabMemo = useMemo(
     () => (
@@ -386,6 +439,11 @@ export default function PlaygroundLinearDS({
             onInsert={insertAtIndex}
             onDelete={deleteAtIndex}
             isAnimating={isAnimating}
+            tutorialMode={tutorial.showTutorial}
+            onTutorialDropSuccess={() => {
+              tutorial.handleTutorialDropSuccess();
+              setNodeInput("");
+            }}
           />
         </div>
         <div>
@@ -401,6 +459,7 @@ export default function PlaygroundLinearDS({
       algorithm,
       insertAtIndex,
       deleteAtIndex,
+      tutorial,
     ],
   );
 
@@ -414,11 +473,7 @@ export default function PlaygroundLinearDS({
           if (event) isUserPanning.current = true;
         }}
         onMoveEnd={(event) => {
-          if (event) {
-            setTimeout(() => {
-              isUserPanning.current = false;
-            }, 1500);
-          }
+          if (event) setTimeout(() => (isUserPanning.current = false), 1500);
         }}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -428,12 +483,16 @@ export default function PlaygroundLinearDS({
         onNodeDragStart={handleNodeDragStart}
         onNodeDrag={handleNodeDrag}
         onNodeDragStop={handleNodeDragStop}
+        panOnDrag={!tutorial.showTutorial}
+        zoomOnScroll={!tutorial.showTutorial}
+        zoomOnPinch={!tutorial.showTutorial}
+        zoomOnDoubleClick={!tutorial.showTutorial}
         fitView
         fitViewOptions={fitViewOptions}
         defaultEdgeOptions={defaultEdgeOptions}
       >
         <Background />
-        <Controls />
+        {!tutorial.showTutorial && <Controls />}
       </ReactFlow>
 
       {sideTabMemo}
@@ -445,18 +504,16 @@ export default function PlaygroundLinearDS({
             e.stopPropagation();
             setShowInfo(true);
           }}
-          className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
+          className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:bg-gray-100 transition cursor-pointer"
         >
           <Info color="#000000" />
         </button>
         <StatusNode />
       </div>
 
-      {isDraggingNode && (
+      {!tutorial.showTutorial && isDraggingNode && (
         <div
-          className={`fixed z-[65] flex items-center justify-center w-16 h-16 rounded-full bg-[#E53E3E] shadow-lg border-2 border-[#5D5D5D] transition-transform duration-200 ${
-            isTrashActive ? "scale-125" : ""
-          }`}
+          className={`fixed z-[65] flex items-center justify-center w-16 h-16 rounded-full bg-[#E53E3E] shadow-lg border-2 border-[#5D5D5D] transition-transform duration-200 ${isTrashActive ? "scale-125" : ""}`}
           style={{
             bottom: "140px",
             left: "50%",
@@ -471,6 +528,38 @@ export default function PlaygroundLinearDS({
       )}
 
       <Reading_modal isOpen={showInfo} onClose={() => setShowInfo(false)} />
+
+      {/* --- TUTORIAL COMPONENTS --- */}
+      {tutorial.showTutorial && (
+        <TutorialLinearDS
+          onComplete={tutorial.handleTutorialComplete}
+          currentStep={tutorial.tutorialStep}
+          setCurrentStep={tutorial.setTutorialStep}
+          droppedNodeScreenPos={tutorial.droppedNodeScreenPos}
+          node2ScreenPos={tutorial.node2ScreenPos}
+          node3ScreenPos={tutorial.node3ScreenPos}
+          node1ScreenPos={tutorial.node1ScreenPos}
+          sidebarNodePos={tutorial.sidebarNodePos}
+          dropZoneScreenPos={tutorial.dropZoneScreenPos}
+          isTrashActive={tutorial.isTrashActive}
+          trashBinPos={tutorial.trashBinPos}
+          nodeMaskSize={tutorial.nodeMaskSize}
+        />
+      )}
+
+      {tutorial.showCompletionModal && (
+        <Tutorial_modal
+          showModal={tutorial.showCompletionModal}
+          onClose={() => tutorial.setShowCompletionModal(false)}
+          tutorialContent={[
+            {
+              title: "Tutorial Complete!",
+              description:
+                "You are now ready to explore Linear Data Structures.",
+            },
+          ]}
+        />
+      )}
     </div>
   );
 }

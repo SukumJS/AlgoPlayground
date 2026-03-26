@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react"; // ลบ useEffect ออก
 import { useReactFlow, XYPosition, Node, useNodes } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
@@ -20,6 +20,12 @@ type DataLinearProps = {
   onInsert?: (index: number, value: number) => void;
   onDelete?: (index: number) => void;
   isAnimating?: boolean;
+
+  // 🎯 เพิ่ม Props สำหรับ Tutorial
+  tutorialMode?: boolean;
+  onTutorialDropSuccess?: () => void;
+  onTutorialInsert?: () => void;
+  onTutorialDelete?: () => void;
 };
 
 function Data_Linear_DS({
@@ -30,15 +36,21 @@ function Data_Linear_DS({
   onInsert,
   onDelete,
   isAnimating,
+  tutorialMode,
+  onTutorialDropSuccess,
+  onTutorialInsert,
+  onTutorialDelete,
 }: DataLinearProps) {
+  // เริ่มต้นเป็น false เสมอ
   const [isOpen, setIsOpen] = useState(false);
+
+  const isPanelOpen = tutorialMode || isOpen;
 
   const { setNodes, getNodes } = useReactFlow();
   const { onDragStart, isDragging } = useDnD();
 
   const nodes = useNodes();
   const isFull = nodes.length >= 50;
-  // ล็อกปุ่มถ้ากำลังรันแอนิเมชันอยู่ หรือกล่องเต็ม
   const disableDrag = isRunning || isAnimating || isFull;
 
   const [type, setType] = useState<string | null>(null);
@@ -46,7 +58,6 @@ function Data_Linear_DS({
 
   const [sampleNodes, setSampleNodes] = useState<number[]>([1, 2, 3, 4, 5]);
 
-  //State สำหรับเก็บค่าตอนพิมพ์ Insert/Delete
   const [insertIndex, setInsertIndex] = useState<number | string>("");
   const [insertValue, setInsertValue] = useState<number | string>("");
   const [deleteIndex, setDeleteIndex] = useState<number | string>("");
@@ -58,8 +69,6 @@ function Data_Linear_DS({
           if (prev.length >= 50) return prev;
 
           const currentIndex = prev.length;
-
-          // เช็คว่าโหมดอะไร เพื่อคำนวณระยะตกของกล่องให้ตรงกับระยะที่แสดงผล
           const isLL =
             algorithm === "singly-linked-list" ||
             algorithm === "doubly-linked-list";
@@ -89,9 +98,14 @@ function Data_Linear_DS({
 
         setType(null);
         setDraggedValue(null);
+
+        // 🎯 แจ้ง Hook ว่าลากกล่องลงไปสำเร็จแล้ว
+        if (onTutorialDropSuccess) {
+          onTutorialDropSuccess();
+        }
       };
     },
-    [setNodes, algorithm],
+    [setNodes, algorithm, onTutorialDropSuccess],
   );
 
   const handleGenerateRandomNodes = useCallback(
@@ -111,8 +125,6 @@ function Data_Linear_DS({
 
       setNodes((prev) => {
         const startIndex = prev.length;
-
-        //เผื่อระยะการ Generate สุ่มกล่อง
         const isLL =
           algorithm === "singly-linked-list" ||
           algorithm === "doubly-linked-list";
@@ -149,31 +161,36 @@ function Data_Linear_DS({
 
       <button
         className={`border-b border-black flex items-center justify-between w-full transition-all duration-300 ease-in-out ${
-          isOpen ? "bg-gray-200 h-12" : "bg-white"
+          isPanelOpen ? "bg-gray-200 h-12" : "bg-white"
         }`}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!tutorialMode) {
+            setIsOpen(!isOpen);
+          }
+        }}
       >
         <div className="flex items-center">
           <div
             className={`bg-blue-600 w-2 h-12 transition-all duration-300 ease-in-out z-50 ${
-              isOpen ? "" : "hidden opacity-0"
+              isPanelOpen ? "" : "hidden opacity-0"
             }`}
           ></div>
-          <div className="flex text-lg p-2">Data Operations</div>
+          <div className="flex text-lg p-2">Data</div>
         </div>
         <div className="mr-2 flex justify-end">
-          {isOpen ? <ChevronUp /> : <ChevronDown />}
+          {isPanelOpen ? <ChevronUp /> : <ChevronDown />}
         </div>
       </button>
 
       <div
-        className={`flex-col transition-opacity duration-300 ${
-          isOpen ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"
+        className={`tutorial-data-panel flex-col transition-opacity duration-300 ${
+          isPanelOpen ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"
         }`}
       >
         <div className="overflow-x-auto flex gap-2 mb-2 p-2">
           {/* Input Node */}
           <div
+            data-tutorial-target="sidebar-linear-node"
             className={`shrink-0 flex justify-center items-center border-2 bg-[#D9E363] w-14 h-14 rounded-lg transition-all ${
               disableDrag
                 ? "cursor-not-allowed opacity-50 grayscale border-gray-400"
@@ -240,7 +257,7 @@ function Data_Linear_DS({
           />
         </div>
 
-        {/*UI ของ Array และ Linked List*/}
+        {/* UI ของ Array และ Linked List */}
         {(algorithm === "array" ||
           algorithm === "singly-linked-list" ||
           algorithm === "doubly-linked-list") && (
@@ -281,6 +298,7 @@ function Data_Linear_DS({
                     if (onInsert)
                       onInsert(Number(insertIndex), Number(insertValue));
                     setInsertValue("");
+                    if (onTutorialInsert) onTutorialInsert();
                   }}
                   disabled={
                     isAnimating ||
@@ -288,7 +306,7 @@ function Data_Linear_DS({
                     insertIndex === "" ||
                     insertValue === ""
                   }
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+                  className="bg-[#222121] text-white px-4 py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50 "
                 >
                   Insert
                 </button>
@@ -317,9 +335,10 @@ function Data_Linear_DS({
                   onClick={() => {
                     if (onDelete) onDelete(Number(deleteIndex));
                     setDeleteIndex("");
+                    if (onTutorialDelete) onTutorialDelete();
                   }}
                   disabled={isAnimating || deleteIndex === ""}
-                  className="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  className="flex-1 bg-[#222121] text-white py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50 "
                 >
                   Delete
                 </button>
@@ -353,9 +372,10 @@ function Data_Linear_DS({
                   onClick={() => {
                     if (onInsert) onInsert(nodes.length, Number(insertValue));
                     setInsertValue("");
+                    if (onTutorialInsert) onTutorialInsert();
                   }}
                   disabled={isAnimating || disableDrag || insertValue === ""}
-                  className="flex-1 bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                  className="flex-1 bg-[#222121] text-white py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50 "
                 >
                   Push
                 </button>
@@ -363,9 +383,10 @@ function Data_Linear_DS({
                   onClick={() => {
                     if (onDelete && nodes.length > 0)
                       onDelete(nodes.length - 1);
+                    if (onTutorialDelete) onTutorialDelete();
                   }}
                   disabled={isAnimating || nodes.length === 0}
-                  className="flex-1 bg-gray-600 text-white py-2 rounded-lg font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                  className="flex-1 bg-[#222121] text-white py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50 "
                 >
                   Pop
                 </button>
@@ -374,7 +395,7 @@ function Data_Linear_DS({
           </div>
         )}
 
-        {/*UI ของ Queue (FIFO)*/}
+        {/* UI ของ Queue (FIFO) */}
         {algorithm === "queue" && (
           <div className="p-4 border-t border-gray-300 flex flex-col gap-4">
             <div>
@@ -399,18 +420,20 @@ function Data_Linear_DS({
                   onClick={() => {
                     if (onInsert) onInsert(nodes.length, Number(insertValue));
                     setInsertValue("");
+                    if (onTutorialInsert) onTutorialInsert();
                   }}
                   disabled={isAnimating || disableDrag || insertValue === ""}
-                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="flex-1 bg-[#222121] text-white py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50"
                 >
                   Enqueue
                 </button>
                 <button
                   onClick={() => {
                     if (onDelete && nodes.length > 0) onDelete(0);
+                    if (onTutorialDelete) onTutorialDelete();
                   }}
                   disabled={isAnimating || nodes.length === 0}
-                  className="flex-1 bg-gray-600 text-white py-2 rounded-lg font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                  className="flex-1 bg-[#222121] text-white py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50"
                 >
                   Dequeue
                 </button>
