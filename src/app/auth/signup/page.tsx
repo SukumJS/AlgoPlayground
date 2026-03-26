@@ -44,10 +44,28 @@ export default function RegisterPage() {
       }
       router.push("/");
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message || "Failed to create an account.");
+      const firebaseError = err as { code?: string };
+      if (firebaseError.code) {
+        switch (firebaseError.code) {
+          case "auth/email-already-in-use":
+            setError("Email is already in use.");
+            break;
+          case "auth/invalid-email":
+            setError("Invalid email format.");
+            break;
+          case "auth/weak-password":
+            setError("Password must be at least 6 characters long.");
+            break;
+          default:
+            setError("An error occurred during sign up. Please try again.");
+            break;
+        }
+      } else if (err instanceof Error) {
+        setError(
+          err.message || "An error occurred during sign up. Please try again.",
+        );
       } else {
-        setError("Failed to create an account.");
+        setError("An error occurred during sign up. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -66,10 +84,23 @@ export default function RegisterPage() {
       } catch {}
       router.push("/");
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message || "Failed to sign up with Google.");
+      const firebaseError = err as { code?: string };
+      if (firebaseError.code) {
+        switch (firebaseError.code) {
+          case "auth/popup-closed-by-user":
+            setError("You closed the sign-in window.");
+            break;
+          case "auth/popup-blocked":
+            setError("Sign-in window was blocked by the browser.");
+            break;
+          default:
+            setError("An error occurred during Google sign-in.");
+            break;
+        }
+      } else if (err instanceof Error) {
+        setError(err.message || "An error occurred during Google sign-in.");
       } else {
-        setError("Failed to sign up with Google.");
+        setError("An error occurred during Google sign-in.");
       }
     } finally {
       setLoading(false);
