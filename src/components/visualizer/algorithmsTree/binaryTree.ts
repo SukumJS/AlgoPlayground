@@ -266,10 +266,10 @@ export function rebuildBTFromReactFlow(
     mainRoot = nodeMap.get(validNodes[0].id) || null;
   }
 
-  // 4. Trace the tree from mainRoot to find all reached nodes
+  // 4. Find all nodes reachable from mainRoot
   const reached = new Set<string>();
   if (mainRoot) {
-    const queue = [mainRoot];
+    const queue: BTNode[] = [mainRoot];
     while (queue.length > 0) {
       const cur = queue.shift()!;
       reached.add(cur.id);
@@ -278,31 +278,44 @@ export function rebuildBTFromReactFlow(
     }
   }
 
-  // 5. Any node in validNodes that is NOT reached by mainRoot is an orphan
-  // We simulate "inserting" them into the generic BT so they are assimilated natively.
-  const orphans = validNodes
-    .filter((n) => !reached.has(n.id))
-    .map((n) => nodeMap.get(n.id)!);
+  // 5. Auto-attach connected-cluster nodes (nodes that have at least one edge
+  //    but are NOT reachable from mainRoot) into the main tree via level-order insertion.
+  //    Truly isolated nodes (zero edges) are ignored entirely.
+  const connectedIds = new Set<string>();
+  for (const edge of edges) {
+    connectedIds.add(edge.source);
+    connectedIds.add(edge.target);
+  }
 
-  if (orphans.length > 0) {
-    // Sort orphans exactly by timestamp embedded in ID to preserve insertion order
-    orphans.sort((a, b) => {
-      const getTs = (id: string) => {
-        const match = id.match(/(\d{10,})/);
-        return match ? parseInt(match[1], 10) : 0;
-      };
-      return getTs(a.id) - getTs(b.id);
-    });
-
-    // Insert them into mainRoot
-    orphans.forEach((o) => {
-      if (!mainRoot) {
-        mainRoot = { id: o.id, value: o.value, left: null, right: null };
-        reached.add(o.id);
-      } else {
-        insertBT(mainRoot, o.value, o.id);
+  if (mainRoot) {
+    for (const n of validNodes) {
+      if (!reached.has(n.id) && connectedIds.has(n.id)) {
+        // Auto-insert this orphan cluster node into the main tree
+        const orphanNode = nodeMap.get(n.id);
+        if (orphanNode) {
+          // Detach from any sub-cluster links to avoid corrupting the tree
+          orphanNode.left = null;
+          orphanNode.right = null;
+          // Insert via level-order (find first null slot)
+          const queue: BTNode[] = [mainRoot];
+          let inserted = false;
+          while (queue.length > 0 && !inserted) {
+            const cur = queue.shift()!;
+            if (!cur.left) {
+              cur.left = orphanNode;
+              inserted = true;
+            } else if (!cur.right) {
+              cur.right = orphanNode;
+              inserted = true;
+            } else {
+              queue.push(cur.left);
+              queue.push(cur.right);
+            }
+          }
+          reached.add(n.id);
+        }
       }
-    });
+    }
   }
 
   return mainRoot;

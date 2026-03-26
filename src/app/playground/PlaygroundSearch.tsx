@@ -171,6 +171,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
     algoType: algorithm,
     nodes,
     setNodes,
+    setExplanation,
     target: Number(targetValue) || 0,
     delayRef,
   });

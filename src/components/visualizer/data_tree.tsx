@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
+import type { TreeAnimationStep } from "@/src/hooks/tree/useStepTreeEngine";
 import React, {
   useState,
   useCallback,
@@ -113,6 +114,12 @@ interface Data_treeProps {
   onAVLRootChange?: (root: AVLTreeNode | null) => void;
   // When true, BF badges are preserved on every animation frame (set by parent)
   showAVLBalance?: boolean;
+  // Step engine callback: called with generated animation steps
+  onStepsGenerated?: (steps: TreeAnimationStep[]) => void;
+  // Callback to notify parent of animation state changes (for step engine teardown)
+  onAnimatingChange?: (v: boolean) => void;
+  // Controlled animation state from parent
+  isAnimating?: boolean;
 }
 
 function Data_tree({
@@ -137,6 +144,9 @@ function Data_tree({
   setTreeAction,
   onAVLRootChange,
   showAVLBalance = false,
+  onStepsGenerated,
+  onAnimatingChange,
+  isAnimating: externalIsAnimating,
 }: Data_treeProps) {
   const [isDataSortOpen, setIsDataSortOpen] = useState(true);
   const { onDragStart, isDragging } = useDnD();
@@ -152,7 +162,12 @@ function Data_tree({
   const [nodeIdCounter, setNodeIdCounter] = useState(5);
 
   // Animation states
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [internalIsAnimating, setInternalIsAnimating] = useState(false);
+  const isAnimating =
+    externalIsAnimating !== undefined
+      ? externalIsAnimating
+      : internalIsAnimating;
+  const setIsAnimating = setInternalIsAnimating;
   const [animationSpeed] = useState(1200);
   const isPausedRef = useRef<boolean>(false);
 
@@ -232,7 +247,9 @@ function Data_tree({
   useEffect(() => {
     if (isBST && !isAnimating) {
       setTimeout(() => {
-        setBSTRoot(rebuildBSTFromNodes(JSON.parse(nodesStr)));
+        setBSTRoot(
+          rebuildBSTFromNodes(JSON.parse(nodesStr), JSON.parse(edgesStr)),
+        );
       }, 0);
     }
   }, [isBST, isAnimating, nodesStr, edgesStr]);
@@ -240,7 +257,9 @@ function Data_tree({
   useEffect(() => {
     if (isAVL && !isAnimating) {
       setTimeout(() => {
-        setAVLRoot(rebuildAVLTreeFromNodes(JSON.parse(nodesStr)));
+        setAVLRoot(
+          rebuildAVLTreeFromNodes(JSON.parse(nodesStr), JSON.parse(edgesStr)),
+        );
       }, 0);
     }
   }, [isAVL, isAnimating, nodesStr, edgesStr]);
@@ -250,14 +269,54 @@ function Data_tree({
       setTimeout(() => {
         let root: HeapNode | null = null;
 
-        const numericNodes = JSON.parse(nodesStr).filter(
+        const nodes = JSON.parse(nodesStr);
+        const edges = JSON.parse(edgesStr);
+
+        const numericNodes = nodes.filter(
           (n: { id: string; data: { label: string } }) =>
             !isNaN(parseInt(n.data.label)),
         );
-        numericNodes.forEach((n: { id: string; data: { label: string } }) => {
-          const res = insertHeap(root, parseInt(n.data.label), n.id, isMinHeap);
-          root = res.root;
-        });
+
+        if (numericNodes.length > 0) {
+          if (edges.length === 0) {
+            const res = insertHeap(
+              root,
+              parseInt(numericNodes[0].data.label),
+              numericNodes[0].id,
+              isMinHeap,
+            );
+            root = res.root;
+          } else {
+            const targetIds = new Set(edges.map((e: RFEdge) => e.target));
+            let rootNode = numericNodes.find(
+              (n: RFNode) => !targetIds.has(n.id),
+            );
+            if (!rootNode) rootNode = numericNodes[0];
+
+            // Include all nodes with at least one edge connection
+            // (connected clusters auto-inserted; truly isolated nodes excluded)
+            const connectedIds = new Set<string>();
+            for (const edge of edges) {
+              connectedIds.add(edge.source);
+              connectedIds.add(edge.target);
+            }
+
+            const values = numericNodes
+              .filter((n: RFNode) => connectedIds.has(n.id))
+              .map((n: RFNode) => {
+                const nodeData = n.data as Record<string, string>;
+                return {
+                  value: parseInt(nodeData?.label || "0", 10),
+                  id: n.id,
+                };
+              });
+
+            values.forEach((v: { value: number; id: string }) => {
+              const res = insertHeap(root, v.value, v.id, isMinHeap);
+              root = res.root;
+            });
+          }
+        }
         setHeapRoot(root);
       }, 0);
     }
@@ -335,6 +394,14 @@ function Data_tree({
 
   // In tutorial mode default input to "3" so user can drag directly without typing
   const [nodeInput, setNodeInput] = useState<string>(tutorialMode ? "3" : "");
+
+  useEffect(() => {
+    if (tutorialMode) {
+      setNodeInput("3");
+    } else {
+      setNodeInput("");
+    }
+  }, [tutorialMode]);
 
   /** Called when any random panel node is dragged away: slide rest left, append new at end */
   const handlePanelNodeDragged = useCallback(
@@ -727,18 +794,36 @@ function Data_tree({
     ],
   );
 
+  // Remove truly isolated nodes (zero edges) from the canvas before animation
+  const removeIsolatedNodes = useCallback(() => {
+    const allEdges = rf.getEdges();
+    const connectedIds = new Set<string>();
+    for (const e of allEdges) {
+      connectedIds.add(e.source);
+      connectedIds.add(e.target);
+    }
+    setNodes((nds) =>
+      nds.filter((n) => n.type !== "custom" || connectedIds.has(n.id)),
+    );
+  }, [rf, setNodes]);
+
   // Handle insert operation
   const handleInsert = useCallback(() => {
-    if (tutorialMode || isAnimating) return;
-    const v = inputValue
-      ? parseInt(inputValue)
-      : Math.floor(Math.random() * 100) + 1;
+    if (tutorialMode || isAnimating || !inputValue) return;
+    const v = parseInt(inputValue);
     if (isNaN(v)) return;
-    if (algorithm === "avl-tree") handleAVLInsert(v);
-    else if (isBST) bstInsert(v);
-    else if (isBT) btInsert(v);
-    else if (isHeap) heapInsert(v);
+    removeIsolatedNodes();
+    let steps: TreeAnimationStep[] | undefined;
+    if (algorithm === "avl-tree") steps = handleAVLInsert(v);
+    else if (isBST) steps = bstInsert(v);
+    else if (isBT) steps = btInsert(v);
+    else if (isHeap) steps = heapInsert(v);
     else console.warn(`Insert not implemented for ${algorithm}`);
+    if (steps && onStepsGenerated) {
+      setIsAnimating(true);
+      onAnimatingChange?.(true);
+      onStepsGenerated(steps);
+    }
     setInputValue("");
   }, [
     tutorialMode,
@@ -752,18 +837,27 @@ function Data_tree({
     bstInsert,
     btInsert,
     heapInsert,
+    onStepsGenerated,
+    onAnimatingChange,
+    setIsAnimating,
+    removeIsolatedNodes,
   ]);
-
-  // Handle search operation
   const handleSearch = useCallback(() => {
     if (tutorialMode || isAnimating) return;
     const v = searchValue ? parseInt(searchValue) : NaN;
     if (isNaN(v)) return;
-    if (algorithm === "avl-tree") handleAVLSearch(v);
-    else if (isBST) bstSearch(v);
-    else if (isBT) btSearch(v);
-    else if (isHeap) heapSearch(v);
+    removeIsolatedNodes();
+    let steps: TreeAnimationStep[] | undefined;
+    if (algorithm === "avl-tree") steps = handleAVLSearch(v);
+    else if (isBST) steps = bstSearch(v);
+    else if (isBT) steps = btSearch(v);
+    else if (isHeap) steps = heapSearch(v);
     else console.warn(`Search not implemented for ${algorithm}`);
+    if (steps && onStepsGenerated) {
+      setIsAnimating(true);
+      onAnimatingChange?.(true);
+      onStepsGenerated(steps);
+    }
     setSearchValue("");
   }, [
     tutorialMode,
@@ -777,18 +871,27 @@ function Data_tree({
     bstSearch,
     btSearch,
     heapSearch,
+    onStepsGenerated,
+    onAnimatingChange,
+    setIsAnimating,
+    removeIsolatedNodes,
   ]);
-
-  // Handle remove operation
   const handleRemove = useCallback(() => {
     if (tutorialMode || isAnimating) return;
     const v = removeValue ? parseInt(removeValue) : NaN;
     if (isNaN(v)) return;
-    if (isAVL) handleAVLRemove(v);
-    else if (isBST) bstRemove(v);
-    else if (isBT) btRemove(v);
-    else if (isHeap) heapRemove(v);
+    removeIsolatedNodes();
+    let steps: TreeAnimationStep[] | undefined;
+    if (isAVL) steps = handleAVLRemove(v);
+    else if (isBST) steps = bstRemove(v);
+    else if (isBT) steps = btRemove(v);
+    else if (isHeap) steps = heapRemove(v);
     else console.warn(`Remove not implemented for ${algorithm}`);
+    if (steps && onStepsGenerated) {
+      setIsAnimating(true);
+      onAnimatingChange?.(true);
+      onStepsGenerated(steps);
+    }
     setRemoveValue("");
   }, [
     tutorialMode,
@@ -803,9 +906,11 @@ function Data_tree({
     bstRemove,
     btRemove,
     heapRemove,
+    onStepsGenerated,
+    onAnimatingChange,
+    setIsAnimating,
+    removeIsolatedNodes,
   ]);
-
-  // Handle rebalance operation
   const handleBTRebalance = useCallback(() => {
     const root = btRoot;
     if (!root) return;
@@ -933,7 +1038,9 @@ function Data_tree({
         className={`flex-col ${isDataSortOpen ? "opacity-100" : "opacity-0"}`}
       >
         {/* Smart draggable node panel: input node + 4 random unique nodes */}
-        <div className="transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2 p-2">
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-x-auto flex gap-2 mb-2 p-2 ${isAnimating ? "pointer-events-none opacity-60" : ""}`}
+        >
           {/* Input node — user types a custom value */}
           <div
             data-tutorial-target="sidebar-node-3"
@@ -948,7 +1055,7 @@ function Data_tree({
             <input
               type="number"
               placeholder="0"
-              className="w-11 h-full bg-transparent text-center text-[#222121] font-semibold text-xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-11 h-full bg-transparent text-center text-[#222121] font-semibold text-xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-100 disabled:bg-transparent"
               value={nodeInput}
               onChange={(e) =>
                 setNodeInput(
@@ -956,6 +1063,8 @@ function Data_tree({
                 )
               }
               onPointerDown={(e) => e.stopPropagation()}
+              disabled={tutorialMode || isAnimating}
+              readOnly={tutorialMode || isAnimating}
             />
           </div>
 
@@ -979,7 +1088,7 @@ function Data_tree({
         </div>
 
         <div
-          className={`flex-col justify-center items-center text-center ${tutorialMode ? "pointer-events-none opacity-60" : ""}`}
+          className={`flex-col justify-center items-center text-center ${tutorialMode || isAnimating ? "pointer-events-none opacity-60" : ""}`}
         >
           {/* Traversal Buttons (เฉพาะ bt-* algorithms) */}
           {hasTraversal && (
@@ -989,7 +1098,14 @@ function Data_tree({
                 {traversalType === "binary-tree-inorder" && (
                   <button
                     className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 transition-colors"
-                    onClick={handleInorder}
+                    onClick={() => {
+                      const steps = handleInorder();
+                      if (steps && onStepsGenerated) {
+                        setIsAnimating(true);
+                        onAnimatingChange?.(true);
+                        onStepsGenerated(steps);
+                      }
+                    }}
                     disabled={isAnimating}
                     title="Left → Root → Right"
                   >
@@ -999,7 +1115,14 @@ function Data_tree({
                 {traversalType === "binary-tree-preorder" && (
                   <button
                     className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 transition-colors"
-                    onClick={handlePreorder}
+                    onClick={() => {
+                      const steps = handlePreorder();
+                      if (steps && onStepsGenerated) {
+                        setIsAnimating(true);
+                        onAnimatingChange?.(true);
+                        onStepsGenerated(steps);
+                      }
+                    }}
                     disabled={isAnimating}
                     title="Root → Left → Right"
                   >
@@ -1009,7 +1132,14 @@ function Data_tree({
                 {traversalType === "binary-tree-postorder" && (
                   <button
                     className="flex-1 bg-[#222121] text-white rounded-lg p-2 text-sm font-semibold disabled:opacity-50 transition-colors"
-                    onClick={handlePostorder}
+                    onClick={() => {
+                      const steps = handlePostorder();
+                      if (steps && onStepsGenerated) {
+                        setIsAnimating(true);
+                        onAnimatingChange?.(true);
+                        onStepsGenerated(steps);
+                      }
+                    }}
                     disabled={isAnimating}
                     title="Left → Right → Root"
                   >
