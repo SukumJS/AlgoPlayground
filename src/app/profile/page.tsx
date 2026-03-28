@@ -51,7 +51,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-white p-6 text-black">
-      <Navbar onSelectCategory={setSelectedCategory} isLoggedIn={isLoggedIn} />
+      <Navbar onSelectCategory={setSelectedCategory} />
 
       <div className="mt-6 grid grid-cols-12 mt-18 px-20">
         {/* LEFT: PROFILE */}

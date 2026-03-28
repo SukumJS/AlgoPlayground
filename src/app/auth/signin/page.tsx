@@ -2,35 +2,118 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/src/config/firebase";
+import { authService } from "@/src/services/auth.service";
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    if (!identifier || !password) {
-      setError("Please enter your email/username and password");
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError("Please enter your email and password");
       return;
     }
     setError("");
-    router.push("/");
+    setLoading(true);
+    try {
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCred.user.getIdToken();
+      localStorage.setItem("access_token", idToken);
+      try {
+        await authService.sync();
+      } catch {}
+      router.push("/");
+    } catch (err) {
+      const firebaseError = err as { code?: string };
+      if (firebaseError.code) {
+        switch (firebaseError.code) {
+          case "auth/invalid-credential":
+          case "auth/invalid-login-credentials":
+          case "auth/user-not-found":
+          case "auth/wrong-password":
+            setError("Invalid email or password.");
+            break;
+          case "auth/invalid-email":
+            setError("Invalid email format.");
+            break;
+          case "auth/user-disabled":
+            setError("This account has been disabled.");
+            break;
+          case "auth/too-many-requests":
+            setError("Too many sign-in attempts. Please try again later.");
+            break;
+          default:
+            setError("An error occurred during sign in. Please try again.");
+            break;
+        }
+      } else if (err instanceof Error) {
+        setError(
+          err.message || "An error occurred during sign in. Please try again.",
+        );
+      } else {
+        setError("An error occurred during sign in. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const userCred = await signInWithPopup(auth, googleProvider);
+      const idToken = await userCred.user.getIdToken();
+      localStorage.setItem("access_token", idToken);
+      // sync is best-effort — don't block login if backend is down
+      try {
+        await authService.sync();
+      } catch {
+        /* ignore backend error */
+      }
+      router.push("/");
+    } catch (err) {
+      const firebaseError = err as { code?: string };
+      if (firebaseError.code) {
+        switch (firebaseError.code) {
+          case "auth/popup-closed-by-user":
+            setError("You closed the sign-in window.");
+            break;
+          case "auth/popup-blocked":
+            setError("Sign-in window was blocked by the browser.");
+            break;
+          default:
+            setError("An error occurred during Google sign-in.");
+            break;
+        }
+      } else if (err instanceof Error) {
+        setError(err.message || "An error occurred during Google sign-in.");
+      } else {
+        setError("An error occurred during Google sign-in.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="flex flex-col items-center gap-6">
-      {/* Email / Username */}
+      {/* Email */}
       <div className="w-[454px] flex flex-col gap-2">
         <label className="text-lg font-semibold text-[#222121] capitalize">
-          Email or username
+          Email
         </label>
 
         <input
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="
             h-12
             border border-[#222121]
@@ -90,16 +173,18 @@ export default function LoginPage() {
       {/* Login Button */}
       <button
         onClick={handleLogin}
+        disabled={loading}
         className="
           w-[454px] h-12
           rounded-md
           bg-[#0066CC]
           hover:bg-[#014C97]
+          disabled:bg-gray-400
           transition-colors
           text-white text-lg font-medium capitalize
         "
       >
-        Login
+        {loading ? "Logging in..." : "Login"}
       </button>
 
       {/* Divider */}
@@ -111,6 +196,7 @@ export default function LoginPage() {
 
       {/* Google Button */}
       <button
+        onClick={handleGoogleLogin}
         className="
           w-[454px]
           rounded-md border border-[#222121]
