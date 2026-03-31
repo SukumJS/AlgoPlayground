@@ -28,7 +28,13 @@ export default function LoginPage() {
       localStorage.setItem("access_token", idToken);
       try {
         await authService.sync();
-      } catch {}
+      } catch (err) {
+        console.error("SYNC ERROR:", err);
+
+        setError("Server error. Please try again.");
+        setLoading(false);
+        return;
+      }
       router.push("/");
     } catch (err) {
       const firebaseError = err as { code?: string };
@@ -75,8 +81,12 @@ export default function LoginPage() {
       // sync is best-effort — don't block login if backend is down
       try {
         await authService.sync();
-      } catch {
-        /* ignore backend error */
+      } catch (err) {
+        console.error("SYNC ERROR:", err);
+
+        setError("Server error. Please try again.");
+        setLoading(false);
+        return;
       }
       router.push("/");
     } catch (err) {

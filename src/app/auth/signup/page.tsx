@@ -39,8 +39,14 @@ export default function RegisterPage() {
       // sync is best-effort — don't block signup if backend is down
       try {
         await authService.sync();
-      } catch {
-        /* ignore backend error */
+      } catch (err) {
+        await userCred.user.delete();
+
+        localStorage.removeItem("access_token");
+
+        setError("Signup failed. Please try again.");
+        setLoading(false);
+        return;
       }
       router.push("/");
     } catch (err) {
