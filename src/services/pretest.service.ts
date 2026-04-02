@@ -13,6 +13,7 @@ export interface PretestQuizData {
     questionImage?: string;
     choices: { id: string; label: string; text: string }[];
   }[];
+  savedAnswers?: { questionId: string; selectedChoiceId: string }[];
 }
 
 /** Response from POST /pretests/:algorithm/submit */
@@ -25,8 +26,10 @@ export interface PretestGradingResult {
 /** Response from GET /pretests/:algorithm/status */
 export interface PretestStatus {
   completed: boolean;
+  inProgress: boolean;
   score?: number;
   total?: number;
+  answeredCount?: number;
 }
 
 // ── API response wrapper ─────────────────────────────────────────
@@ -38,7 +41,7 @@ interface ApiResponse<T> {
 // ── Service ──────────────────────────────────────────────────────
 
 export const pretestService = {
-  /** GET /pretests/:algorithm — fetch pretest questions (no answers) */
+  /** GET /pretests/:algorithm — fetch pretest questions (resumes progress) */
   getPretestByAlgorithm: (algorithm: string) =>
     api.get<ApiResponse<PretestQuizData>>(`/pretests/${algorithm}`),
 
@@ -54,7 +57,19 @@ export const pretestService = {
       },
     ),
 
-  /** GET /pretests/:algorithm/status — check if pretest already completed */
+  /** GET /pretests/:algorithm/status — check pretest state */
   checkPretestStatus: (algorithm: string) =>
     api.get<ApiResponse<PretestStatus>>(`/pretests/${algorithm}/status`),
+
+  /** PUT /pretests/:algorithm/progress — auto-save partial answers */
+  savePretestProgress: (algorithm: string, answers: UserAnswer[]) =>
+    api.put<ApiResponse<{ saved: boolean }>>(
+      `/pretests/${algorithm}/progress`,
+      {
+        answers: answers.map((a) => ({
+          questionId: a.questionId,
+          selectedChoiceId: a.selectedChoiceId || "",
+        })),
+      },
+    ),
 };

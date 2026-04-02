@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, Suspense } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  Suspense,
+} from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import TrackProgress from "@/src/components/pretest/TrackProgress";
 import QuestionCard from "@/src/components/pretest/QuestionCard";
@@ -31,6 +37,10 @@ function PretestContent() {
   const [gradingResult, setGradingResult] =
     useState<PretestGradingResult | null>(null);
 
+  // Ref to track the latest answers for auto-save (avoids stale closure)
+  const answersRef = useRef<UserAnswer[]>([]);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Check if user already completed pretest → redirect to playground
   useEffect(() => {
     if (!algorithm) return;
@@ -42,14 +52,14 @@ function PretestContent() {
           router.replace(`/playground?type=${algoType}&algorithm=${algorithm}`);
         }
       } catch {
-        // If status check fails (e.g. not logged in), continue to pretest
+        // If status check fails, continue to pretest
       }
     };
 
     checkStatus();
   }, [algorithm, algoType, router]);
 
-  // Fetch pretest questions from API
+  // Fetch pretest questions from API (resumes progress if exists)
   useEffect(() => {
     if (!algorithm) {
       setIsLoading(false);
@@ -75,12 +85,27 @@ function PretestContent() {
         }
 
         setQuizData(data);
-        setUserAnswers(
-          data.questions.map((q) => ({
+
+        // Restore saved answers if they exist, otherwise create empty answers
+        let initialAnswers: UserAnswer[];
+        if (data.savedAnswers && data.savedAnswers.length > 0) {
+          // Map saved answers back to UserAnswer format
+          const savedMap = new Map(
+            data.savedAnswers.map((a) => [a.questionId, a.selectedChoiceId]),
+          );
+          initialAnswers = data.questions.map((q) => ({
+            questionId: q.id,
+            selectedChoiceId: savedMap.get(q.id) || null,
+          }));
+        } else {
+          initialAnswers = data.questions.map((q) => ({
             questionId: q.id,
             selectedChoiceId: null,
-          })),
-        );
+          }));
+        }
+
+        setUserAnswers(initialAnswers);
+        answersRef.current = initialAnswers;
       } catch (err) {
         if (cancelled) return;
         setError(
@@ -94,6 +119,44 @@ function PretestContent() {
     fetchPretest();
     return () => {
       cancelled = true;
+    };
+  }, [algorithm]);
+
+  // Auto-save progress (debounced 1s after last answer change)
+  const scheduleAutoSave = useCallback(
+    (answers: UserAnswer[]) => {
+      if (!algorithm) return;
+
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+
+      saveTimerRef.current = setTimeout(async () => {
+        try {
+          await pretestService.savePretestProgress(algorithm, answers);
+        } catch {
+          // Silent fail — don't interrupt the user
+        }
+      }, 1000);
+    },
+    [algorithm],
+  );
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+      // Final save on unmount with latest answers
+      if (
+        algorithm &&
+        answersRef.current.some((a) => a.selectedChoiceId !== null)
+      ) {
+        pretestService
+          .savePretestProgress(algorithm, answersRef.current)
+          .catch(() => {});
+      }
     };
   }, [algorithm]);
 
@@ -111,15 +174,18 @@ function PretestContent() {
     (choiceId: string) => {
       if (gradingResult || !currentQuestion) return;
 
-      setUserAnswers((prev) =>
-        prev.map((answer) =>
+      setUserAnswers((prev) => {
+        const updated = prev.map((answer) =>
           answer.questionId === currentQuestion.id
             ? { ...answer, selectedChoiceId: choiceId }
             : answer,
-        ),
-      );
+        );
+        answersRef.current = updated;
+        scheduleAutoSave(updated);
+        return updated;
+      });
     },
-    [currentQuestion, gradingResult],
+    [currentQuestion, gradingResult, scheduleAutoSave],
   );
 
   const handleBack = useCallback(() => {
@@ -130,7 +196,11 @@ function PretestContent() {
 
   const handleNext = useCallback(async () => {
     if (isLastQuestion) {
-      // Submit answers to backend for grading
+      // Cancel any pending auto-save
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+
       setIsSubmitting(true);
       try {
         const res = await pretestService.submitPretestAnswers(
@@ -182,7 +252,7 @@ function PretestContent() {
     );
   }
 
-  // Show result page after grading completes
+  // Show result page after grading
   if (gradingResult && quizData) {
     return (
       <PretestResultPage
