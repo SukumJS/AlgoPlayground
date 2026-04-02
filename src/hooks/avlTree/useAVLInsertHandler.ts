@@ -1,7 +1,7 @@
-import { useCallback, useRef, MutableRefObject } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import type { Node as RFNode, Edge as RFEdge } from "@xyflow/react";
 import { useReactFlow } from "@xyflow/react";
-import { AnimationController } from "@/src/components/visualizer/animations/Tree/animationController";
+import type { TreeAnimationStep } from "@/src/hooks/tree/useStepTreeEngine";
 import type { AnimationCallbacks } from "@/src/components/visualizer/animations/types";
 import {
   findInsertionPosition,
@@ -12,7 +12,6 @@ import {
   type AVLTreeNode,
 } from "@/src/components/visualizer/algorithmsTree/avlTree";
 
-/** Collect balance factors for all nodes in an AVL tree */
 function collectBFs(
   node: AVLTreeNode | null,
   map: Map<string, number> = new Map(),
@@ -24,11 +23,6 @@ function collectBFs(
   return map;
 }
 
-function cloneAVL(node: AVLTreeNode | null): AVLTreeNode | null {
-  if (!node) return null;
-  return JSON.parse(JSON.stringify(node));
-}
-
 export function useAVLInsertHandler(params: {
   avlRoot: AVLTreeNode | null;
   setAVLRoot: (root: AVLTreeNode | null) => void;
@@ -36,59 +30,44 @@ export function useAVLInsertHandler(params: {
   animationSpeed: number;
   rf: ReturnType<typeof useReactFlow>;
   animationCallbacks: AnimationCallbacks;
-  isPausedRef: MutableRefObject<boolean>;
+  isPausedRef: React.MutableRefObject<boolean>;
   setIsAnimating: (v: boolean) => void;
   setAnimationDescription: (v: string) => void;
   setNodeIdCounter: (v: number) => void;
 }) {
-  const {
-    avlRoot,
-    setAVLRoot,
-    nodeIdCounter,
-    animationSpeed,
-    animationCallbacks,
-    isPausedRef,
-    setIsAnimating,
-    setAnimationDescription,
-    setNodeIdCounter,
-  } = params;
+  const { avlRoot, setAVLRoot, nodeIdCounter, setNodeIdCounter } = params;
 
   const counterRef = useRef(0);
+  const avlRootRef = useRef<AVLTreeNode | null>(avlRoot);
+  useEffect(() => {
+    avlRootRef.current = avlRoot;
+  }, [avlRoot]);
 
   const handleAVLInsert = useCallback(
-    (valueToInsert: number) => {
-      const controller = new AnimationController(isPausedRef);
-      setIsAnimating(true);
-
-      // Pseudo code drive: CodeAVLTreeView (avl-insert)
-      // 1 ALGORITHM
-      // 4 WHILE node...
-      // 6 bf = balanceFactor(node)
-      // 7 IF bf is -2 or +2 THEN
-      // 8 ROTATE...
-      // 13 END ALGORITHM
+    (valueToInsert: number): TreeAnimationStep[] => {
       const stepToLine = [1, 4, 6, 7, 8, 13];
-      animationCallbacks.setTreeAction?.("avl-insert");
-      animationCallbacks.setStepToCodeLine?.(stepToLine);
-      animationCallbacks.setCodeStep?.(0);
+      const treeAction = "avl-insert";
+      const steps: TreeAnimationStep[] = [];
+      const latestRoot = avlRootRef.current;
 
-      const latestRoot = avlRoot;
-
-      // --- Duplicate check ---
+      // Duplicate check
       const insertionPos = findInsertionPosition(latestRoot, valueToInsert);
       if (
         latestRoot &&
         insertionPos.parentId === null &&
         latestRoot.value === valueToInsert
       ) {
-        setIsAnimating(false);
-        animationCallbacks.setCodeStep?.(0);
-        animationCallbacks.setTreeAction?.(null);
-        setAnimationDescription(
-          `Value ${valueToInsert} already exists. AVL does not insert duplicates.`,
-        );
-        setTimeout(() => setAnimationDescription(""), 2000);
-        return;
+        const positions = calculateTreePositions(latestRoot);
+        const rfData = avlTreeToReactFlow(latestRoot, [], [], positions);
+        steps.push({
+          nodes: rfData.nodes as RFNode[],
+          edges: rfData.edges as RFEdge[],
+          description: `Value ${valueToInsert} already exists. AVL does not insert duplicates.`,
+          codeStep: 0,
+          treeAction: null,
+          stepToCodeLine: stepToLine,
+        });
+        return steps;
       }
 
       const newNodeId = `avl_${nodeIdCounter}_${counterRef.current++}`;
@@ -97,11 +76,11 @@ export function useAVLInsertHandler(params: {
       const parentValue = insertionPos.parentValue;
       const position = insertionPos.position;
 
-      // --- Pre-compute all intermediate states ---
+      // Pre-compute all intermediate states
       const { afterInsert, rotationType, rotationNodeId, afterRebalance } =
         insertAVLWithSteps(latestRoot, valueToInsert, newNodeId);
 
-      // --- Build ReactFlow for each state ---
+      // Build ReactFlow for each state
       const oldPositions = calculateTreePositions(latestRoot);
       const oldRF = latestRoot
         ? avlTreeToReactFlow(latestRoot, [], [], oldPositions)
@@ -123,73 +102,69 @@ export function useAVLInsertHandler(params: {
         finalPositions,
       );
 
-      let offset = 0;
+      // Step 0: Initial state
+      steps.push({
+        nodes: oldRF.nodes as RFNode[],
+        edges: oldRF.edges as RFEdge[],
+        description: `Starting insertion of ${valueToInsert} into AVL tree.`,
+        codeStep: 0,
+        treeAction,
+        stepToCodeLine: stepToLine,
+      });
 
-      // ── Step 1: Traverse path (highlight each node visited) ──
-      if (path.length > 0) {
-        path.forEach((nodeId, idx) => {
-          controller.scheduleStep(
-            () => {
-              // Node: highlight ONLY the current node being visited
-              const hl = (oldRF.nodes as RFNode[]).map((n: RFNode) => ({
-                ...n,
-                data: {
-                  ...n.data,
-                  isHighlighted: n.id === nodeId,
-                  highlightColor: n.id === nodeId ? "#62A2F7" : undefined,
-                },
-              }));
+      // Steps: Traverse path
+      path.forEach((nodeId, idx) => {
+        const hl = (oldRF.nodes as RFNode[]).map((n: RFNode) => ({
+          ...n,
+          data: {
+            ...n.data,
+            isHighlighted: n.id === nodeId,
+            highlightColor: n.id === nodeId ? "#62A2F7" : undefined,
+          },
+        }));
+        const visitedIds = new Set(path.slice(0, idx + 1));
+        const hlEdges = (oldRF.edges as RFEdge[]).map((e: RFEdge) => ({
+          ...e,
+          style:
+            visitedIds.has(e.source) && visitedIds.has(e.target)
+              ? { stroke: "#F7AD45", strokeWidth: 3 }
+              : { stroke: "#999", strokeWidth: 2 },
+        }));
+        const currentNode = (oldRF.nodes as RFNode[]).find(
+          (n) => n.id === nodeId,
+        );
+        steps.push({
+          nodes: hl,
+          edges: hlEdges,
+          description: `Finding where to insert ${valueToInsert}. Compare with node ${currentNode?.data.label} and move left or right.`,
+          codeStep: 1,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
+      });
 
-              // Edges: accumulate highlighted path
-              const visitedIds = new Set(path.slice(0, idx + 1));
-              const hlEdges = (oldRF.edges as RFEdge[]).map((e: RFEdge) => ({
-                ...e,
-                style:
-                  visitedIds.has(e.source) && visitedIds.has(e.target)
-                    ? { stroke: "#F7AD45", strokeWidth: 3 }
-                    : { stroke: "#999", strokeWidth: 2 },
-              }));
-
-              animationCallbacks.setNodes(hl);
-              animationCallbacks.setEdges(hlEdges);
-              const currentNode = (oldRF.nodes as RFNode[]).find(
-                (n) => n.id === nodeId,
-              );
-              setAnimationDescription(
-                `Finding where to insert ${valueToInsert}. Compare with node ${currentNode?.data.label} and move left or right.`,
-              );
-              animationCallbacks.setCodeStep?.(1);
-            },
-            animationSpeed * (idx + 1),
-          );
-          offset = idx + 1;
+      // Step: Highlight parent
+      if (parentId) {
+        const hl = (oldRF.nodes as RFNode[]).map((n: RFNode) => ({
+          ...n,
+          data: {
+            ...n.data,
+            isHighlighted: n.id === parentId,
+            highlightColor: n.id === parentId ? "#F7AD45" : undefined,
+          },
+        }));
+        steps.push({
+          nodes: hl,
+          edges: oldRF.edges as RFEdge[],
+          description: `Found an empty ${position} child slot under node ${parentValue}.`,
+          codeStep: 1,
+          treeAction,
+          stepToCodeLine: stepToLine,
         });
       }
 
-      // ── Step 2: Highlight parent (yellow) ──
-      if (parentId) {
-        offset++;
-        controller.scheduleStep(() => {
-          const hl = (oldRF.nodes as RFNode[]).map((n: RFNode) => ({
-            ...n,
-            data: {
-              ...n.data,
-              isHighlighted: n.id === parentId,
-              highlightColor: n.id === parentId ? "#F7AD45" : undefined,
-            },
-          }));
-          animationCallbacks.setNodes(hl);
-          setAnimationDescription(
-            `Found an empty ${position} child slot under node ${parentValue}.`,
-          );
-        }, animationSpeed * offset);
-        offset++; // Pause after description
-        controller.scheduleStep(() => {}, animationSpeed * offset);
-      }
-
-      // ── Step 3: Show tree after BST insert (before rebalance) ──
-      offset++;
-      controller.scheduleStep(() => {
+      // Step: Show tree after BST insert
+      {
         const hl = (insertedRF.nodes as RFNode[]).map((n: RFNode) => ({
           ...n,
           data: {
@@ -198,237 +173,150 @@ export function useAVLInsertHandler(params: {
             highlightColor: n.id === newNodeId ? "#4CAF7D" : undefined,
           },
         }));
-        animationCallbacks.setNodes(hl);
-        animationCallbacks.setEdges(insertedRF.edges as RFEdge[]);
-        setAnimationDescription(
-          `Inserted ${valueToInsert}. Move upward to check balance factors on ancestors.`,
-        );
-        animationCallbacks.setCodeStep?.(2);
-      }, animationSpeed * offset);
-      offset++; // Pause after description
-      controller.scheduleStep(() => {}, animationSpeed * offset);
+        steps.push({
+          nodes: hl,
+          edges: insertedRF.edges as RFEdge[],
+          description: `Inserted ${valueToInsert}. Move upward to check balance factors on ancestors.`,
+          codeStep: 2,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
+      }
 
-      // ── Step 4: Check balance — highlight path back up with BF badges ──
+      // Steps: Check balance going back up
       const bfMap = collectBFs(afterInsert);
       const reversePath = [...path].reverse();
       reversePath.forEach((nodeId) => {
-        offset++;
-        controller.scheduleStep(() => {
-          const hl = (insertedRF.nodes as RFNode[]).map((n: RFNode) => ({
-            ...n,
-            data: {
-              ...n.data,
-              isHighlighted: n.id === nodeId,
-              highlightColor:
-                n.id === nodeId
-                  ? nodeId === rotationNodeId
-                    ? "#EF4444"
-                    : "#F7AD45"
-                  : n.id === newNodeId
-                    ? "#4CAF7D"
-                    : undefined,
-              balanceFactor: bfMap.get(n.id),
-            },
-          }));
-          animationCallbacks.setNodes(hl);
-          const bf = bfMap.get(nodeId) ?? 0;
-          if (nodeId === rotationNodeId) {
-            const nodeLabel = hl.find((n) => n.id === nodeId)?.data as
-              | Record<string, unknown>
-              | undefined;
-            setAnimationDescription(
-              `Balance factor is ${bf}. This node is imbalanced, so apply ${rotationType}.`,
-            );
-            animationCallbacks.setCodeStep?.(3);
-          } else {
-            const nodeLabel = hl.find((n) => n.id === nodeId)?.data as
-              | Record<string, unknown>
-              | undefined;
-            setAnimationDescription(
-              `Balance factor is ${bf}. This node is balanced, continue upward.`,
-            );
-            animationCallbacks.setCodeStep?.(2);
-          }
-        }, animationSpeed * offset);
+        const hl = (insertedRF.nodes as RFNode[]).map((n: RFNode) => ({
+          ...n,
+          data: {
+            ...n.data,
+            isHighlighted: n.id === nodeId,
+            highlightColor:
+              n.id === nodeId
+                ? nodeId === rotationNodeId
+                  ? "#EF4444"
+                  : "#F7AD45"
+                : n.id === newNodeId
+                  ? "#4CAF7D"
+                  : undefined,
+            balanceFactor: bfMap.get(n.id),
+          },
+        }));
+        const bf = bfMap.get(nodeId) ?? 0;
+        steps.push({
+          nodes: hl,
+          edges: insertedRF.edges as RFEdge[],
+          description:
+            nodeId === rotationNodeId
+              ? `Balance factor is ${bf}. This node is imbalanced, so apply ${rotationType}.`
+              : `Balance factor is ${bf}. This node is balanced, continue upward.`,
+          codeStep: nodeId === rotationNodeId ? 3 : 2,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
       });
 
-      // ── Step 5: If rotation needed, animate the rotation ──
+      // Steps: Rotation animation (if needed)
       if (rotationType) {
-        // Build position maps: before-rotation → after-rotation
+        // Highlight rotation node
+        const hl = (insertedRF.nodes as RFNode[]).map((n: RFNode) => ({
+          ...n,
+          data: {
+            ...n.data,
+            isHighlighted: n.id === rotationNodeId,
+            highlightColor: n.id === rotationNodeId ? "#EF4444" : undefined,
+          },
+        }));
+        const hlEdges = (insertedRF.edges as RFEdge[]).map((e: RFEdge) => ({
+          ...e,
+          style:
+            e.source === rotationNodeId || e.target === rotationNodeId
+              ? { stroke: "#EF4444", strokeWidth: 3 }
+              : { stroke: "#999", strokeWidth: 2 },
+        }));
+        const nodeLabel = insertedRF.nodes.find((n) => n.id === rotationNodeId)
+          ?.data.label;
+        steps.push({
+          nodes: hl,
+          edges: hlEdges,
+          description: `Imbalance detected at node ${nodeLabel}. Perform ${rotationType}.`,
+          codeStep: 4,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
+
+        // Topology re-wire (old positions, new edges)
         const beforePosMap = new Map<string, { x: number; y: number }>();
         (insertedRF.nodes as RFNode[]).forEach((n) => {
           beforePosMap.set(n.id, { x: n.position.x, y: n.position.y });
         });
-        const afterPosMap = new Map<string, { x: number; y: number }>();
-        (finalRF.nodes as RFNode[]).forEach((n) => {
-          afterPosMap.set(n.id, { x: n.position.x, y: n.position.y });
-        });
 
-        // Step 5a: "About to rotate" — highlight rotation node on the unbalanced tree
-        offset++;
-        controller.scheduleStep(() => {
-          const hl = (insertedRF.nodes as RFNode[]).map((n: RFNode) => ({
+        const tangledNodes = (finalRF.nodes as RFNode[]).map((n: RFNode) => {
+          const before = beforePosMap.get(n.id) || n.position;
+          return {
             ...n,
+            position: before,
             data: {
               ...n.data,
               isHighlighted: n.id === rotationNodeId,
-              highlightColor: n.id === rotationNodeId ? "#EF4444" : undefined,
+              highlightColor: n.id === rotationNodeId ? "#F7AD45" : undefined,
             },
-          }));
-          // Highlight the edges connected to rotation node
-          const hlEdges = (insertedRF.edges as RFEdge[]).map((e: RFEdge) => ({
-            ...e,
-            style:
-              e.source === rotationNodeId || e.target === rotationNodeId
-                ? { stroke: "#EF4444", strokeWidth: 3 }
-                : { stroke: "#999", strokeWidth: 2 },
-          }));
-          animationCallbacks.setNodes(hl);
-          animationCallbacks.setEdges(hlEdges);
-          const nodeLabel = insertedRF.nodes.find(
-            (n) => n.id === rotationNodeId,
-          )?.data.label;
-          setAnimationDescription(
-            `Imbalance detected at node ${nodeLabel}. Perform ${rotationType}.`,
-          );
-          animationCallbacks.setCodeStep?.(4);
-        }, animationSpeed * offset);
-        offset++; // Pause after description
-        controller.scheduleStep(() => {}, animationSpeed * offset);
+          };
+        });
+        const tangledEdges = (finalRF.edges as RFEdge[]).map((e: RFEdge) => ({
+          ...e,
+          style:
+            e.source === rotationNodeId || e.target === rotationNodeId
+              ? { stroke: "#F7AD45", strokeWidth: 3 }
+              : { stroke: "#999", strokeWidth: 2 },
+        }));
+        steps.push({
+          nodes: tangledNodes,
+          edges: tangledEdges,
+          description: "Update child links for the rotation topology.",
+          codeStep: 4,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
 
-        // Step 5b: Reassign Edges (Topology Update)
-        offset++;
-        controller.scheduleStep(() => {
-          // Keep the nodes in their original (before-rotation) positions, but use finalRF edges
-          const tangledNodes = (finalRF.nodes as RFNode[]).map((n: RFNode) => {
-            const before = beforePosMap.get(n.id) || n.position;
-            return {
-              ...n,
-              position: before,
-              data: {
-                ...n.data,
-                isHighlighted: n.id === rotationNodeId,
-                highlightColor: n.id === rotationNodeId ? "#F7AD45" : undefined,
-              },
-            };
-          });
-
-          // Highlight the new final edges that involve the rotation node to show they changed
-          const hlEdges = (finalRF.edges as RFEdge[]).map((e: RFEdge) => ({
-            ...e,
-            style:
-              e.source === rotationNodeId || e.target === rotationNodeId
-                ? { stroke: "#F7AD45", strokeWidth: 3 }
-                : { stroke: "#999", strokeWidth: 2 },
-          }));
-
-          animationCallbacks.setNodes(tangledNodes);
-          animationCallbacks.setEdges(hlEdges);
-          setAnimationDescription(
-            "Update child links for the rotation topology.",
-          );
-        }, animationSpeed * offset);
-
-        offset++; // Pause after description
-        controller.scheduleStep(() => {}, animationSpeed * offset);
-
-        // Step 5c: Interpolation frames (Geometry Update)
-        const INTERP_FRAMES = 15;
-        for (let frame = 1; frame <= INTERP_FRAMES; frame++) {
-          const t = frame / INTERP_FRAMES; // 0→1 progress
-
-          // We add offsets fractionally so the total interpolation takes `animationSpeed` ms
-          const fractionOffset = offset + frame / INTERP_FRAMES;
-
-          controller.scheduleStep(() => {
-            const interpolated = (finalRF.nodes as RFNode[]).map(
-              (n: RFNode) => {
-                const before = beforePosMap.get(n.id);
-                const after = afterPosMap.get(n.id);
-
-                let pos = n.position;
-                if (before && after) {
-                  pos = {
-                    x: before.x + (after.x - before.x) * t,
-                    y: before.y + (after.y - before.y) * t,
-                  };
-                } else if (!before && after) {
-                  pos = after;
-                }
-
-                return {
-                  ...n,
-                  position: pos,
-                  data: {
-                    ...n.data,
-                    isHighlighted: n.id === rotationNodeId,
-                    highlightColor:
-                      n.id === rotationNodeId ? "#4CAF7D" : undefined,
-                  },
-                };
-              },
-            );
-            animationCallbacks.setNodes(interpolated);
-            animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
-            setAnimationDescription(
-              "Move rotated nodes into their new positions.",
-            );
-          }, animationSpeed * fractionOffset);
-        }
-        // Advance integer offset past the fractional frames
-        offset++;
-        // No explicit pause needed here, as the next step is the final rotation result.
-
-        // Step 5d: Final rotation result
-        offset++;
-        controller.scheduleStep(() => {
-          animationCallbacks.setNodes(finalRF.nodes as RFNode[]);
-          animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
-          setAnimationDescription(
-            `${rotationType} complete. AVL balance is restored.`,
-          );
-          animationCallbacks.setCodeStep?.(5);
-        }, animationSpeed * offset);
-        offset++; // Pause after description
-        controller.scheduleStep(() => {}, animationSpeed * offset);
+        // Final rotation result (nodes in final positions)
+        steps.push({
+          nodes: finalRF.nodes as RFNode[],
+          edges: finalRF.edges as RFEdge[],
+          description: `${rotationType} complete. AVL balance is restored.`,
+          codeStep: 5,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
       } else {
-        offset++;
-        controller.scheduleStep(() => {
-          animationCallbacks.setNodes(finalRF.nodes as RFNode[]);
-          animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
-          setAnimationDescription(
-            `All nodes are balanced. No rotation was needed.`,
-          );
-          animationCallbacks.setCodeStep?.(5);
-        }, animationSpeed * offset);
-        offset++;
-        controller.scheduleStep(() => {}, animationSpeed * offset);
+        steps.push({
+          nodes: finalRF.nodes as RFNode[],
+          edges: finalRF.edges as RFEdge[],
+          description: `All nodes are balanced. No rotation was needed.`,
+          codeStep: 5,
+          treeAction,
+          stepToCodeLine: stepToLine,
+        });
       }
 
-      // ── Step 6: Final clean state ──
-      offset++;
-      controller.scheduleStep(() => {
-        setAVLRoot(afterRebalance);
-        animationCallbacks.setNodes(finalRF.nodes as RFNode[]);
-        animationCallbacks.setEdges(finalRF.edges as RFEdge[]);
-        setAnimationDescription("");
-        animationCallbacks.setCodeStep?.(0);
-        animationCallbacks.setTreeAction?.(null);
-        setIsAnimating(false);
-        setNodeIdCounter(nodeIdCounter + 1);
-      }, animationSpeed * offset);
+      // Final clean step
+      steps.push({
+        nodes: finalRF.nodes as RFNode[],
+        edges: finalRF.edges as RFEdge[],
+        description: "",
+        codeStep: 0,
+        treeAction: null,
+        stepToCodeLine: stepToLine,
+      });
+
+      // Perform actual tree mutation
+      setAVLRoot(afterRebalance);
+      setNodeIdCounter(nodeIdCounter + 1);
+
+      return steps;
     },
-    [
-      avlRoot,
-      setAVLRoot,
-      nodeIdCounter,
-      animationSpeed,
-      animationCallbacks,
-      isPausedRef,
-      setIsAnimating,
-      setAnimationDescription,
-      setNodeIdCounter,
-    ],
+    [setAVLRoot, nodeIdCounter, setNodeIdCounter],
   );
 
   return handleAVLInsert;

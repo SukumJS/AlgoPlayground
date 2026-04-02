@@ -773,19 +773,50 @@ export function validateAVLTree(root: AVLTreeNode | null): boolean {
  */
 export function rebuildAVLTreeFromNodes(
   nodes: Array<{ id: string; data: { label: string } }>,
+  edges: Array<{
+    source: string;
+    target: string;
+    sourceHandle?: string | null;
+  }> = [], // default to empty array for backwards compatibility
 ): AVLTreeNode | null {
-  let root: AVLTreeNode | null = null;
+  if (!nodes || nodes.length === 0) return null;
 
-  // Extract values from nodes, sorted by value for optimal tree building
-  const values = nodes
+  // Find valid numeric nodes
+  const validNodes = nodes.filter((node) => !isNaN(parseInt(node.data.label)));
+  if (validNodes.length === 0) return null;
+
+  // If no edges, it's either an empty tree or just the very first node.
+  // Ignore disjointed nodes by just placing the first valid node
+  if (edges.length === 0) {
+    const firstNode = validNodes[0];
+    return insertAVL(null, parseInt(firstNode.data.label), firstNode.id);
+  }
+
+  // Determine root: the node that is NEVER a target
+  const targetIds = new Set(edges.map((e) => e.target));
+  let rootNode = validNodes.find((n) => !targetIds.has(n.id));
+  if (!rootNode) rootNode = validNodes[0]; // fallback
+
+  // Include all nodes that have at least one edge connection
+  // (connected clusters get auto-inserted into the main tree;
+  //  truly isolated nodes with zero edges are excluded)
+  const connectedIds = new Set<string>();
+  for (const e of edges) {
+    connectedIds.add(e.source);
+    connectedIds.add(e.target);
+  }
+
+  // Only rebuild using reached nodes (ignore orphans), sorting them by value
+  let root: AVLTreeNode | null = null;
+  const values = validNodes
+    .filter((n) => connectedIds.has(n.id))
     .map((node) => ({
       value: parseInt(node.data.label),
       id: node.id,
     }))
-    .filter((item) => !isNaN(item.value))
     .sort((a, b) => a.value - b.value);
 
-  // Rebuild tree by inserting each value in order
+  // Rebuild AVL tree by inserting each reached value in order
   values.forEach(({ value, id }) => {
     root = insertAVL(root, value, id);
   });

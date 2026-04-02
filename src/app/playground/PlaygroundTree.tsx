@@ -7,6 +7,8 @@ import React, {
   DragEvent,
   useMemo,
 } from "react";
+import { useStepTreeEngine } from "@/src/hooks/tree/useStepTreeEngine";
+import { useTreeController } from "@/src/hooks/useTreeController";
 import ControlPanel from "../../components/shared/controlPanel";
 import SideTab from "../../components/shared/sideTab";
 import ExplainAlgo from "../../components/visualizer/explainAlgo";
@@ -245,6 +247,29 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
   const [codeStep, setCodeStep] = useState<number>(0);
   const [stepToCodeLine, setStepToCodeLine] = useState<number[]>([]);
   const [treeAction, setTreeAction] = useState<string | null>(null);
+
+  // ── Step Engine for ControlPanel ──────────────────────────────────────────
+  const [speed, setSpeed] = useState<"1x" | "2x" | "5x">("1x");
+  const delayRef = useRef(1200);
+  useEffect(() => {
+    const map: Record<string, number> = { "1x": 1200, "2x": 600, "5x": 240 };
+    delayRef.current = map[speed];
+  }, [speed]);
+
+  const [isAnimatingLocal, setIsAnimatingLocal] = useState(false);
+
+  const stepEngine = useStepTreeEngine({
+    setNodes,
+    setEdges,
+    setDescription: setExplanation,
+    setCodeStep,
+    setTreeAction,
+    setStepToCodeLine,
+    setIsAnimating: setIsAnimatingLocal,
+    delayRef,
+  });
+
+  const controller = useTreeController(stepEngine, speed, setSpeed);
 
   useEffect(() => {
     if (algorithm === "avl-tree") setTreeAction("avl-insert");
@@ -549,6 +574,9 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
             setTreeAction={setTreeAction}
             onAVLRootChange={onAVLRootChangeRef.current}
             showAVLBalance={algorithm === "avl-tree" && showAVLBalance}
+            onStepsGenerated={(steps) => stepEngine.loadSteps(steps)}
+            onAnimatingChange={setIsAnimatingLocal}
+            isAnimating={isAnimatingLocal}
           />
         </div>
         <div>
@@ -571,6 +599,8 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       persistedAVLRoot,
       showAVLBalance,
       prettyName,
+      stepEngine,
+      isAnimatingLocal,
     ],
   );
 
@@ -608,7 +638,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       </ReactFlow>
 
       <div className="absolute bottom-4 w-full z-10">
-        <ControlPanel />
+        <ControlPanel controller={controller} />
       </div>
 
       {sideTabMemo}

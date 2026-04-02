@@ -8,18 +8,98 @@ type Params = {
   algoType: string | null;
   nodes: Node<SortNodeData>[];
   setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>;
+  setExplanation?: React.Dispatch<React.SetStateAction<string>>;
   target: number;
   delayRef: React.MutableRefObject<number>;
+};
+
+const getSearchAlgorithmName = (algoType: string | null) => {
+  if (algoType === "binary-search") return "Binary Search";
+  if (algoType === "linear-search") return "Linear Search";
+  return "Searching Algorithms";
+};
+
+const getDefaultSearchExplanation = (algoType: string | null) =>
+  `This section will explain ${getSearchAlgorithmName(algoType)}. Click 'Run' to start.`;
+
+const getNodesByNewStatus = (
+  prevNodes: Node<SortNodeData>[],
+  currNodes: Node<SortNodeData>[],
+  status: SortNodeData["status"],
+) => {
+  const prevById = new Map(prevNodes.map((node) => [node.id, node]));
+  return currNodes.filter((node) => {
+    const prevNode = prevById.get(node.id);
+    return node.data.status === status && prevNode?.data.status !== status;
+  });
+};
+
+const buildStepExplanations = (
+  algoType: string | null,
+  steps: Node<SortNodeData>[][],
+  target: number,
+) => {
+  if (steps.length === 0) return [];
+
+  const algoName = getSearchAlgorithmName(algoType);
+
+  return steps.map((currentNodes, index) => {
+    if (index === 0) {
+      return `Starting ${algoName}. Target value is ${target}.`;
+    }
+
+    const prevNodes = steps[index - 1];
+    const newCompared = getNodesByNewStatus(prevNodes, currentNodes, "compare");
+    const newProcessing = getNodesByNewStatus(
+      prevNodes,
+      currentNodes,
+      "processing",
+    );
+    const newDiscarded = getNodesByNewStatus(
+      prevNodes,
+      currentNodes,
+      "discarded",
+    );
+    const newFound = getNodesByNewStatus(prevNodes, currentNodes, "found");
+
+    if (newFound.length > 0) {
+      const foundValue = Number(newFound[0].data.value);
+      return `Found target ${target} at value ${foundValue}. Search completed.`;
+    }
+
+    if (newProcessing.length > 0) {
+      const processingValue = Number(newProcessing[0].data.value);
+      return `Processing value ${processingValue} to decide the next step.`;
+    }
+
+    if (newCompared.length > 0) {
+      const comparedValue = Number(newCompared[0].data.value);
+      return `Comparing target ${target} with value ${comparedValue}.`;
+    }
+
+    if (newDiscarded.length > 0) {
+      if (algoType === "binary-search" && newDiscarded.length > 1) {
+        return `Discarded ${newDiscarded.length} values that cannot contain target ${target}.`;
+      }
+
+      const discardedValue = Number(newDiscarded[0].data.value);
+      return `Value ${discardedValue} does not match target ${target}. Move to the next value.`;
+    }
+
+    return `Continue ${algoName}.`;
+  });
 };
 
 export function useStepSearchEngine({
   algoType,
   nodes,
   setNodes,
+  setExplanation,
   target,
   delayRef,
 }: Params) {
-  const [steps, setSteps] = useState<SearchStep[]>([]);
+  const [steps, setSteps] = useState<Node<SortNodeData>[][]>([]);
+  const [stepExplanations, setStepExplanations] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -47,7 +127,20 @@ export function useStepSearchEngine({
         };
       }),
     );
-  }, [currentStep, steps, setNodes]);
+
+    if (setExplanation) {
+      setExplanation(
+        stepExplanations[currentStep] ?? getDefaultSearchExplanation(algoType),
+      );
+    }
+  }, [
+    currentStep,
+    steps,
+    setNodes,
+    setExplanation,
+    stepExplanations,
+    algoType,
+  ]);
 
   const needsNewStepsRef = useRef(false);
 
@@ -70,6 +163,7 @@ export function useStepSearchEngine({
   const generateSteps = () => {
     const generated = generateSearchStepsByType(algoType, nodes, target);
     setSteps(generated);
+    setStepExplanations(buildStepExplanations(algoType, generated, target));
     setCurrentStep(0);
     return generated;
   };
@@ -88,6 +182,7 @@ export function useStepSearchEngine({
   const reset = () => {
     stop(); // หยุดแอนิเมชัน
     setSteps([]);
+    setStepExplanations([]);
     setCurrentStep(0);
     // เปลี่ยนสีกล่องทุกใบกลับเป็น idle
     setNodes((prev) =>
@@ -96,6 +191,10 @@ export function useStepSearchEngine({
         data: { ...n.data, status: "idle" },
       })),
     );
+
+    if (setExplanation) {
+      setExplanation(getDefaultSearchExplanation(algoType));
+    }
   };
 
   // Manual Controls (ปุ่มกดเอง)
