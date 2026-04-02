@@ -1,26 +1,60 @@
 import api from "./api";
-import type { QuizData, UserAnswer } from "@/src/app/types/quiz";
+import type { UserAnswer } from "@/src/app/types/quiz";
 
-// ── Types ─────────────────────────────────────────────────────────
+// ── Types matching backend response ──────────────────────────────
 
-export interface PretestResult {
-  score: number;
-  totalQuestions: number;
-  answers: UserAnswer[];
+/** Response from GET /pretests/:algorithm (no correct answers) */
+export interface PretestQuizData {
+  id: string;
+  title: string;
+  questions: {
+    id: string;
+    question: string;
+    questionImage?: string;
+    choices: { id: string; label: string; text: string }[];
+  }[];
 }
 
-// ── Service ───────────────────────────────────────────────────────
+/** Response from POST /pretests/:algorithm/submit */
+export interface PretestGradingResult {
+  score: number;
+  totalQuestions: number;
+  results: { questionId: string; isCorrect: boolean }[];
+}
+
+/** Response from GET /pretests/:algorithm/status */
+export interface PretestStatus {
+  completed: boolean;
+  score?: number;
+  total?: number;
+}
+
+// ── API response wrapper ─────────────────────────────────────────
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+// ── Service ──────────────────────────────────────────────────────
 
 export const pretestService = {
-  /** GET /pretests/:algorithm — fetch pretest questions */
+  /** GET /pretests/:algorithm — fetch pretest questions (no answers) */
   getPretestByAlgorithm: (algorithm: string) =>
-    api.get<QuizData>(`/pretests/${algorithm}`),
+    api.get<ApiResponse<PretestQuizData>>(`/pretests/${algorithm}`),
 
-  /** POST /pretests/:algorithm/answers — submit user answers */
+  /** POST /pretests/:algorithm/submit — submit answers for grading */
   submitPretestAnswers: (algorithm: string, answers: UserAnswer[]) =>
-    api.post<PretestResult>(`/pretests/${algorithm}/answers`, { answers }),
+    api.post<ApiResponse<PretestGradingResult>>(
+      `/pretests/${algorithm}/submit`,
+      {
+        answers: answers.map((a) => ({
+          questionId: a.questionId,
+          selectedChoiceId: a.selectedChoiceId || "",
+        })),
+      },
+    ),
 
-  /** PUT /pretests/:algorithm/result — save final result */
-  savePretestResult: (algorithm: string, result: PretestResult) =>
-    api.put(`/pretests/${algorithm}/result`, result),
+  /** GET /pretests/:algorithm/status — check if pretest already completed */
+  checkPretestStatus: (algorithm: string) =>
+    api.get<ApiResponse<PretestStatus>>(`/pretests/${algorithm}/status`),
 };

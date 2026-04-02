@@ -21,6 +21,7 @@ export default function Page() {
           ).map((section) => (
             <AlgorithmSection
               key={section.id}
+              sectionId={section.id}
               title={section.title}
               items={section.items}
             />
