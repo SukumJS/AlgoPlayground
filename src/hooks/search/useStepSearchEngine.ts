@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import type { Node } from "@xyflow/react";
 import type { SortNodeData } from "@/src/components/shared/sortNode";
 import { generateSearchStepsByType } from "@/src/components/visualizer/algorithmsSearch/generateSearchSteps";
+import type { SearchStep } from "@/src/components/visualizer/algorithmsSearch/generateSearchSteps";
 
 type Params = {
   algoType: string | null;
@@ -35,19 +36,20 @@ const getNodesByNewStatus = (
 
 const buildStepExplanations = (
   algoType: string | null,
-  steps: Node<SortNodeData>[][],
+  steps: SearchStep[],
   target: number,
 ) => {
   if (steps.length === 0) return [];
 
   const algoName = getSearchAlgorithmName(algoType);
 
-  return steps.map((currentNodes, index) => {
+  return steps.map((step, index) => {
+    const currentNodes = step.nodes;
     if (index === 0) {
       return `Starting ${algoName}. Target value is ${target}.`;
     }
 
-    const prevNodes = steps[index - 1];
+    const prevNodes = steps[index - 1]?.nodes;
     const newCompared = getNodesByNewStatus(prevNodes, currentNodes, "compare");
     const newProcessing = getNodesByNewStatus(
       prevNodes,
@@ -97,7 +99,7 @@ export function useStepSearchEngine({
   target,
   delayRef,
 }: Params) {
-  const [steps, setSteps] = useState<Node<SortNodeData>[][]>([]);
+  const [steps, setSteps] = useState<SearchStep[]>([]);
   const [stepExplanations, setStepExplanations] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -110,7 +112,8 @@ export function useStepSearchEngine({
   useEffect(() => {
     if (steps.length === 0) return;
 
-    const nextNodes = steps[currentStep];
+    const nextNodes = steps[currentStep]?.nodes;
+    if (!nextNodes) return;
     isInternalUpdateRef.current = true;
 
     setNodes((prev) =>
@@ -275,5 +278,8 @@ export function useStepSearchEngine({
     skipBack,
     skipForward,
     isRunning,
+    currentStep,
+    steps,
+    stepToCodeLine: steps.map((s) => s.codeLine),
   };
 }
