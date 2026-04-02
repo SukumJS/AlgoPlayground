@@ -36,19 +36,20 @@ const getNodesByNewStatus = (
 
 const buildStepExplanations = (
   algoType: string | null,
-  steps: Node<SortNodeData>[][],
+  steps: SearchStep[],
   target: number,
 ) => {
   if (steps.length === 0) return [];
 
   const algoName = getSearchAlgorithmName(algoType);
 
-  return steps.map((currentNodes, index) => {
+  return steps.map((step, index) => {
+    const currentNodes = step.nodes;
     if (index === 0) {
       return `Starting ${algoName}. Target value is ${target}.`;
     }
 
-    const prevNodes = steps[index - 1];
+    const prevNodes = steps[index - 1]?.nodes;
     const newCompared = getNodesByNewStatus(prevNodes, currentNodes, "compare");
     const newProcessing = getNodesByNewStatus(
       prevNodes,
@@ -98,7 +99,7 @@ export function useStepSearchEngine({
   target,
   delayRef,
 }: Params) {
-  const [steps, setSteps] = useState<Node<SortNodeData>[][]>([]);
+  const [steps, setSteps] = useState<SearchStep[]>([]);
   const [stepExplanations, setStepExplanations] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
