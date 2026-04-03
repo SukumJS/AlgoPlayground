@@ -1,22 +1,36 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, Suspense } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  Suspense,
+} from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import TrackProgress from "@/src/components/pretest/TrackProgress";
 import QuestionCard from "@/src/components/pretest/QuestionCard";
 import NavigationButtons from "@/src/components/pretest/NavigationButtons";
 import PosttestQuestionRenderer from "@/src/components/posttest/PosttestQuestionRenderer";
 import PosttestResultPage from "@/src/components/posttest/PosttestResultPage";
+import { PosttestUserAnswer } from "@/src/app/types/posttest";
 import {
-  PosttestQuestion,
-  PosttestUserAnswer,
-  PosttestData,
-} from "@/src/app/types/posttest";
-import { posttestService } from "@/src/services/posttest.service";
+  posttestService,
+  PosttestDataDTO,
+  PosttestGradingResult,
+} from "@/src/services/posttest.service";
 
-// ─── Initialize answers ──────────────────────────────────────────────
-function initAnswers(questions: PosttestQuestion[]): PosttestUserAnswer[] {
+// ─── Initialize answers from questions ───────────────────────────────
+function initAnswers(
+  questions: PosttestDataDTO["questions"],
+  saved?: PosttestUserAnswer[],
+): PosttestUserAnswer[] {
+  const savedMap = new Map((saved || []).map((a) => [a.questionId, a]));
+
   return questions.map((q) => {
+    const existing = savedMap.get(q.id);
+    if (existing) return existing;
+
     const base: PosttestUserAnswer = {
       questionId: q.id,
       type: q.type,
@@ -28,11 +42,8 @@ function initAnswers(questions: PosttestQuestion[]): PosttestUserAnswer[] {
       case "fill_blank":
         return { ...base, filledAnswer: "" };
       case "ordering": {
-        const hasCanvas = q.question.canvasData !== undefined;
-        if (hasCanvas) {
-          return { ...base, orderedItems: [] };
-        }
-        const shuffledIds = [...q.question.items]
+        const items = q.question.items || [];
+        const shuffledIds = [...items]
           .sort(() => Math.random() - 0.5)
           .map((item) => item.id);
         return { ...base, orderedItems: shuffledIds };
@@ -53,10 +64,8 @@ function hasAnswer(answer: PosttestUserAnswer): boolean {
       );
     case "fill_blank":
       return (answer.filledAnswer || "").trim().length > 0;
-    case "ordering": {
-      const items = answer.orderedItems || [];
-      return items.length > 0;
-    }
+    case "ordering":
+      return (answer.orderedItems || []).length > 0;
     default:
       return false;
   }
@@ -70,13 +79,20 @@ function PosttestContent() {
   const algoType = searchParams.get("type") || "sorting";
   const algorithm = searchParams.get("algorithm") || "";
 
-  const [posttest, setPosttest] = useState<PosttestData | null>(null);
+  const [posttest, setPosttest] = useState<PosttestDataDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<PosttestUserAnswer[]>([]);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [gradingResult, setGradingResult] =
+    useState<PosttestGradingResult | null>(null);
+
+  // Auto-save debounce
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const answersRef = useRef(userAnswers);
+  answersRef.current = userAnswers;
 
   // Fetch posttest questions from API
   useEffect(() => {
@@ -105,7 +121,7 @@ function PosttestContent() {
         }
 
         setPosttest(data);
-        setUserAnswers(initAnswers(data.questions));
+        setUserAnswers(initAnswers(data.questions, data.savedAnswers));
       } catch (err) {
         if (cancelled) return;
         setError(
@@ -122,6 +138,28 @@ function PosttestContent() {
     };
   }, [algorithm]);
 
+  // Auto-save progress when answers change
+  const saveProgress = useCallback(async () => {
+    if (!algorithm || answersRef.current.length === 0) return;
+    try {
+      await posttestService.savePosttestProgress(algorithm, answersRef.current);
+    } catch {
+      // Silent fail
+    }
+  }, [algorithm]);
+
+  // Save on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (algorithm && answersRef.current.length > 0) {
+        posttestService
+          .savePosttestProgress(algorithm, answersRef.current)
+          .catch(() => {});
+      }
+    };
+  }, [algorithm]);
+
   const currentQuestion = posttest?.questions[currentQuestionIndex];
   const totalQuestions = posttest?.questions.length ?? 0;
   const isFirstQuestion = currentQuestionIndex === 0;
@@ -132,25 +170,48 @@ function PosttestContent() {
   );
   const answered = currentAnswer ? hasAnswer(currentAnswer) : false;
 
-  const handleAnswer = useCallback((newAnswer: PosttestUserAnswer) => {
-    setUserAnswers((prev) =>
-      prev.map((a) => (a.questionId === newAnswer.questionId ? newAnswer : a)),
-    );
-  }, []);
+  const handleAnswer = useCallback(
+    (newAnswer: PosttestUserAnswer) => {
+      setUserAnswers((prev) =>
+        prev.map((a) =>
+          a.questionId === newAnswer.questionId ? newAnswer : a,
+        ),
+      );
+
+      // Debounced auto-save
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        saveProgress();
+      }, 1000);
+    },
+    [saveProgress],
+  );
 
   const handleBack = useCallback(() => {
-    if (!isFirstQuestion) {
-      setCurrentQuestionIndex((prev) => prev - 1);
-    }
+    if (!isFirstQuestion) setCurrentQuestionIndex((prev) => prev - 1);
   }, [isFirstQuestion]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback(async () => {
     if (isLastQuestion) {
-      setIsSubmitted(true);
+      // Submit for backend grading
+      setIsSubmitting(true);
+      try {
+        const response = await posttestService.submitPosttestAnswers(
+          algorithm,
+          userAnswers,
+        );
+        setGradingResult(response.data.data);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to submit posttest",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
       setCurrentQuestionIndex((prev) => prev + 1);
     }
-  }, [isLastQuestion]);
+  }, [isLastQuestion, algorithm, userAnswers]);
 
   const handleGoHome = useCallback(() => {
     router.push("/");
@@ -184,13 +245,23 @@ function PosttestContent() {
     );
   }
 
-  // Show result page after submission
-  if (isSubmitted) {
+  // Submitting state
+  if (isSubmitting) {
+    return (
+      <div className="bg-white min-h-screen w-full flex items-center justify-center">
+        <p className="text-lg text-gray-500">Submitting posttest...</p>
+      </div>
+    );
+  }
+
+  // Show result page after grading
+  if (gradingResult) {
     return (
       <PosttestResultPage
-        posttest={posttest}
-        selectedQuestions={posttest.questions}
+        title={posttest.title}
+        questions={posttest.questions}
         userAnswers={userAnswers}
+        gradingResult={gradingResult}
         onGoHome={handleGoHome}
         algoType={algoType}
       />
@@ -216,11 +287,11 @@ function PosttestContent() {
             Answer the question:
           </p>
 
-          {/* Question renderer */}
+          {/* Question renderer — cast to expected type */}
           {currentAnswer && (
             <div className="mb-10">
               <PosttestQuestionRenderer
-                question={currentQuestion}
+                question={currentQuestion as never}
                 answer={currentAnswer}
                 onAnswer={handleAnswer}
                 algoType={algoType}
