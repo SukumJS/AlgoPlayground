@@ -12,18 +12,16 @@ export interface PosttestResult {
   answers: PosttestUserAnswer[];
 }
 
+// ── API response wrapper ─────────────────────────────────────────
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
 // ── Service ───────────────────────────────────────────────────────
 
 export const posttestService = {
-  /** GET /posttests/:algorithm — fetch posttest questions */
+  /** GET /posttests/:algorithm — fetch posttest questions (random 5, ≥1 per type) */
   getPosttestByAlgorithm: (algorithm: string) =>
-    api.get<PosttestData>(`/posttests/${algorithm}`),
-
-  /** POST /posttests/:algorithm/answers — submit user answers */
-  submitPosttestAnswers: (algorithm: string, answers: PosttestUserAnswer[]) =>
-    api.post<PosttestResult>(`/posttests/${algorithm}/answers`, { answers }),
-
-  /** PUT /posttests/:algorithm/result — save final result */
-  savePosttestResult: (algorithm: string, result: PosttestResult) =>
-    api.put(`/posttests/${algorithm}/result`, result),
+    api.get<ApiResponse<PosttestData>>(`/posttests/${algorithm}`),
 };
