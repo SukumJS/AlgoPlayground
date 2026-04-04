@@ -15,6 +15,9 @@ import CodeDFSGraph from "./types/animationcodalgo/ani_codedfsgraph";
 import CodeDijkstraGraph from "./types/animationcodalgo/ani_codedijkstragraph";
 import CodeKruskalGraph from "./types/animationcodalgo/ani_codekruskalgraph";
 import CodePrimGraph from "./types/animationcodalgo/ani_codeprimgraph";
+import CodeBinarySearch from "./types/animationcodalgo/ani_codebinarysearch";
+import CodeLinearSearch from "./types/animationcodalgo/ani_codelinearsearch";
+import CodeGenerateSearch from "./types/animationcodalgo/ani_codegeneratesearch";
 
 interface CodeAlgoProps {
   title?: string;
@@ -69,6 +72,14 @@ export default function CodeAlgo(props: CodeAlgoProps) {
       return <CodePrimGraph {...props} />;
     case "kruskals":
       return <CodeKruskalGraph {...props} />;
+
+    // Search
+    case "binary-search":
+      return <CodeBinarySearch {...props} />;
+    case "linear-search":
+      return <CodeLinearSearch {...props} />;
+    case "generate-search":
+      return <CodeGenerateSearch {...props} />;
 
     default:
       return <CodeBubbleSort {...props} />;

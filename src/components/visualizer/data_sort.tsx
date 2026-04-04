@@ -2,7 +2,7 @@
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import React, { useState, useCallback } from "react";
-import { useReactFlow, XYPosition, Node } from "@xyflow/react";
+import { useReactFlow, XYPosition, Node, useNodes } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
 
@@ -55,6 +55,12 @@ function Data_sort({
   const { setNodes, getNodes } = useReactFlow();
   const { onDragStart, isDragging } = useDnD();
 
+  // ดึงข้อมูลกล่องแบบ Real-time มาเพื่อเช็คยอดรวม
+  const nodes = useNodes();
+  const isFull = nodes.length >= 50;
+  // ถ้ากำลังรันอัลกออยู่ หรือ กล่องเต็ม 50 แล้ว ให้ล็อกการลาก
+  const disableDrag = isRunning || isFull;
+
   const [type, setType] = useState<string | null>(null);
   const [draggedValue, setDraggedValue] = useState<number | null>(null);
 
@@ -65,13 +71,8 @@ function Data_sort({
     (sampleValue: number, sampleIndex?: number): OnDropAction => {
       return ({ position }: { position: XYPosition }) => {
         setNodes((prev) => {
-          //  เช็คว่ากล่องบนจอเต็ม 50 หรือยัง?
-          if (prev.length >= 50) {
-            alert(
-              "หน้าจอรองรับกล่องได้สูงสุด 50 ตัวเท่านั้น ไม่สามารถลากเพิ่มได้แล้ว!",
-            ); // ใส่ alert ไว้ก่อนยังไม่ได้คิดว่าจะให้เตือนยังไงดี
-            return prev; // ยกเลิกการวางกล่อง
-          }
+          // ถ้าเต็ม 50 แล้ว ให้ยกเลิกการวางกล่อง
+          if (prev.length >= 50) return prev;
 
           const currentIndex = prev.length;
 
@@ -182,28 +183,26 @@ function Data_sort({
     (count: number) => {
       if (count <= 0) return;
 
-      //ถ้าผู้ใช้พิมพ์มาเกิน 50 ให้ปรับลดลงมาเหลือแค่ 50 ตัว
-      const safeCount = Math.min(count, 50);
-
-      // ดึงกล่องที่มีอยู่บนจอตอนนี้มาทั้งหมด
       const currentNodes = getNodes();
 
-      // ถ้ารวมของเก่าบนจอแล้วจะเกิน 50 ตัว ให้หยุดสร้างและเตือน
-      if (currentNodes.length + safeCount > 50) {
-        alert("หน้าจอรองรับกล่องได้สูงสุด 50 ตัวเท่านั้นครับ!");
-        return;
-      }
+      // คำนวณพื้นที่ที่เหลืออยู่ (รับได้สูงสุด 50)
+      const availableSpace = 50 - currentNodes.length;
+
+      if (availableSpace <= 0) return;
+
+      // สร้างกล่องเท่าที่พื้นที่เหลือรับไหว (เช่น ขอ 10 แต่เหลือที่แค่ 2 ก็สร้าง 2)
+      const actualCount = Math.min(count, availableSpace);
 
       // สกัดเอาเฉพาะ "ตัวเลข" จากกล่องบนจอมาเก็บไว้ใน Set
       const existingValues = new Set(
         currentNodes.map((node) => Number(node.data.value)),
       );
 
-      // ใช้ safeCount แทน count และส่ง existingValues ไปด้วย
+      // ใช้ actualCount แทน
       const randomNumbers =
         algorithm === "binary-search"
-          ? generateBinarySearchArray(safeCount, existingValues)
-          : generateDiverseArray(safeCount);
+          ? generateBinarySearchArray(actualCount, existingValues)
+          : generateDiverseArray(actualCount);
 
       // ดึงข้อมูลกล่องทั้งหมดที่มีอยู่บนจอตอนนี้
       setNodes((prev) => {
@@ -227,7 +226,7 @@ function Data_sort({
         return [...prev, ...newNodes];
       });
     },
-    [setNodes, getNodes, algorithm], // 🎯 อย่าลืมเติม getNodes ตรงนี้
+    [setNodes, getNodes, algorithm],
   );
 
   // reset nodes
@@ -292,23 +291,26 @@ function Data_sort({
           {/* Input Node */}
           <div
             data-tutorial-target="sidebar-sort-node"
-            className={`shrink-0 flex justify-center items-center border-2 border-[#5D5D5D] bg-[#D9E363] w-14 h-14 rounded-lg transition-all ${
-              isRunning ? "cursor-not-allowed opacity-50" : "cursor-grab"
+            // ใช้ disableDrag เพื่อเปลี่ยนเป็นสีเทา (grayscale) กลืนไปกับพื้นหลังเวลากดไม่ได้
+            className={`shrink-0 flex justify-center items-center border-2 bg-[#D9E363] w-14 h-14 rounded-lg transition-all ${
+              disableDrag
+                ? "cursor-not-allowed opacity-50 grayscale border-gray-400"
+                : "cursor-grab border-[#5D5D5D]"
             }`}
             onPointerDown={(event) => {
-              if (isRunning) return;
+              if (disableDrag) return; // กันไม่ให้คลิกลาก
               const value = Number(nodeInput) || 0;
               setType("input");
               setDraggedValue(value);
-              onDragStart(event, createAddNewNode(value)); // ไม่ส่ง index เพราะอันนี้เป็นกล่อง input ไม่ต้องสุ่มใหม่
+              onDragStart(event, createAddNewNode(value));
             }}
           >
             <input
               type="number"
               placeholder="0"
-              disabled={isRunning}
+              disabled={disableDrag} //ปิดการพิมพ์ถ้าเต็ม
               className={`w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                isRunning ? "cursor-not-allowed" : ""
+                disableDrag ? "cursor-not-allowed" : ""
               }`}
               value={nodeInput}
               onChange={(e) => {
@@ -322,18 +324,20 @@ function Data_sort({
             />
           </div>
 
-          {/*Sample nodes (ลูปจาก State แทน) */}
+          {/* Sample nodes */}
           {sampleNodes.map((num, index) => (
             <div
               key={index}
-              className={`shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363] transition-all ${
-                isRunning ? "cursor-not-allowed opacity-50" : "cursor-grab"
+              //เปลี่ยนเป็นสีเทาเวลากดไม่ได้เหมือนกัน
+              className={`shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 bg-[#D9E363] transition-all ${
+                disableDrag
+                  ? "cursor-not-allowed opacity-50 grayscale border-gray-400"
+                  : "cursor-grab border-[#5D5D5D]"
               }`}
               onPointerDown={(event) => {
-                if (isRunning) return;
+                if (disableDrag) return;
                 setType("custom");
                 setDraggedValue(num);
-                // ส่งค่าและ index เข้าไปเพื่อใช้สุ่มใหม่
                 onDragStart(event, createAddNewNode(num, index));
               }}
             >
@@ -368,6 +372,7 @@ function Data_sort({
           <RandomSize
             onAdd={handleGenerateRandomNodes}
             onReset={handleResetNodes}
+            isDisabled={disableDrag}
           />
         </div>
 

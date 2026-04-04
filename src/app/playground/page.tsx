@@ -7,6 +7,7 @@ import PlaygroundTree from "./PlaygroundTree";
 import PlaygroundGraph from "./PlaygroundGraph";
 import PlaygroundSort from "./PlaygroundSort";
 import PlaygroundSearch from "./PlaygroundSearch";
+import PlaygroundLinearDS from "./PlaygroundLinearDS";
 import { algorithmCatalog } from "@/src/data/algorithmCatalog";
 import Post_Test_modal from "@/src/components/shared/post_Test_modal";
 import {
@@ -75,6 +76,7 @@ function PlaygroundRouter() {
     graph: "graph",
     sort: "sorting",
     search: "searching",
+    "linear-ds": "linear-ds",
   };
 
   if (!algoType || !algorithm || !typeToCatalogId[algoType]) {
@@ -98,8 +100,10 @@ function PlaygroundRouter() {
     content = <PlaygroundSort algorithm={algorithm} />;
   } else if (algoType === "search") {
     content = <PlaygroundSearch algorithm={algorithm} />;
+  } else if (algoType === "linear-ds") {
+    content = <PlaygroundLinearDS algorithm={algorithm} />;
   } else {
-    return notFound();
+    notFound();
   }
 
   return (

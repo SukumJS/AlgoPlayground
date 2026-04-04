@@ -174,6 +174,8 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
     delayRef,
   });
 
+  const stepToCodeLine = engine.stepToCodeLine;
+
   const controller = {
     ...engine,
     setSpeed,
@@ -298,7 +300,12 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
     () => (
       <SideTab title={prettyName}>
         <div>
-          <CodeAlgo />
+          <CodeAlgo
+            algoType={algorithm}
+            currentStep={engine.currentStep}
+            stepToCodeLine={stepToCodeLine}
+            tutorialMode={showTutorial}
+          />
           <ExplainAlgo explanation={explanation} />
           <Data_sort
             nodeInput={nodeInput}
@@ -327,6 +334,8 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
       algorithm,
       handleTargetChange,
       showTutorial,
+      engine.currentStep,
+      stepToCodeLine,
       handleTutorialDropSuccess,
       controller.isRunning,
     ],

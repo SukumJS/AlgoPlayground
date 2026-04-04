@@ -7,17 +7,20 @@ interface RandomSizeProps {
   inputValue?: string;
   onReset?: () => void;
   onAdd?: (value: number) => void;
+  isDisabled?: boolean; // 🎯 1. เพิ่ม Prop นี้เข้ามาเพื่อรับสถานะ "เต็ม/ล็อก"
 }
 
-const RandomSize = ({ onReset, onAdd }: RandomSizeProps) => {
+const RandomSize = ({ onReset, onAdd, isDisabled }: RandomSizeProps) => {
   const [inputValue, setInputValue] = useState<string>("");
 
   const handleRandomClick = () => {
+    if (isDisabled) return; // กันไว้เผื่อหลุด
     const randomNum = Math.floor(Math.random() * 30) + 1;
     setInputValue(randomNum.toString());
   };
 
   const handleAdd = () => {
+    if (isDisabled) return; // กันไม่ให้กดเพิ่มถ้าถูกล็อก
     if (onAdd && inputValue) {
       onAdd(parseInt(inputValue));
       setInputValue("");
@@ -33,21 +36,37 @@ const RandomSize = ({ onReset, onAdd }: RandomSizeProps) => {
 
   return (
     <>
-      <div className="grid-cols-1 grid gap-2 text-start m-1">
+      <div className="flex flex-col gap-2 text-start m-1 w-full">
         <p className="font-bold text-md">Random Size</p>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full">
           <input
             type="number"
-            className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            placeholder={isDisabled ? "Limit reached" : "Max 50"}
+            disabled={isDisabled}
+            className={`p-2 rounded-lg flex-1 min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all ${
+              isDisabled
+                ? "bg-gray-100 border-gray-100 text-gray-400 cursor-not-allowed"
+                : "border border-gray-200 placeholder:text-gray-300"
+            }`}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
           />
-          <button className="bg-[#222121] rounded-lg p-2" onClick={handleAdd}>
+          <button
+            disabled={isDisabled}
+            className={`rounded-lg p-2 shrink-0 transition-all ${
+              isDisabled
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-[#222121] hover:bg-black cursor-pointer"
+            }`}
+            onClick={handleAdd}
+          >
             <Plus color="white" />
           </button>
         </div>
+
+        {/* ปุ่ม Reset All*/}
         <button
-          className="bg-[#222121] text-white text-center p-2 rounded-lg mt-2"
+          className="w-full bg-[#222121] text-white text-center p-2 rounded-lg mt-1 hover:bg-black transition-colors"
           onClick={handleReset}
         >
           Reset All

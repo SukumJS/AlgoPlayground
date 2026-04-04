@@ -3,24 +3,19 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
-import { googleSignIn, login } from "../../../lib/auth.service";
-import { useAuth } from "@/src/components/shared/AuthProvider";
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/src/config/firebase";
+import { authService } from "@/src/services/auth.service";
 
 export default function LoginPage() {
   const router = useRouter();
   const { isLoggedIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  useEffect(() => {
-    if (isLoggedIn) {
-      window.location.replace("/");
-    }
-  }, [isLoggedIn, router]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -42,16 +37,95 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setError("");
+    setLoading(true);
     try {
-      setIsLoading(true);
-      const user = await googleSignIn();
-      if (user) {
-        router.push("/");
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCred.user.getIdToken();
+      localStorage.setItem("access_token", idToken);
+      try {
+        await authService.sync();
+      } catch (err) {
+        console.error("SYNC ERROR:", err);
+
+        setError("Server error. Please try again.");
+        setLoading(false);
+        return;
       }
+      router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Google login failed");
+      const firebaseError = err as { code?: string };
+      if (firebaseError.code) {
+        switch (firebaseError.code) {
+          case "auth/invalid-credential":
+          case "auth/invalid-login-credentials":
+          case "auth/user-not-found":
+          case "auth/wrong-password":
+            setError("Invalid email or password.");
+            break;
+          case "auth/invalid-email":
+            setError("Invalid email format.");
+            break;
+          case "auth/user-disabled":
+            setError("This account has been disabled.");
+            break;
+          case "auth/too-many-requests":
+            setError("Too many sign-in attempts. Please try again later.");
+            break;
+          default:
+            setError("An error occurred during sign in. Please try again.");
+            break;
+        }
+      } else if (err instanceof Error) {
+        setError(
+          err.message || "An error occurred during sign in. Please try again.",
+        );
+      } else {
+        setError("An error occurred during sign in. Please try again.");
+      }
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const userCred = await signInWithPopup(auth, googleProvider);
+      const idToken = await userCred.user.getIdToken();
+      localStorage.setItem("access_token", idToken);
+      // sync is best-effort — don't block login if backend is down
+      try {
+        await authService.sync();
+      } catch (err) {
+        console.error("SYNC ERROR:", err);
+
+        setError("Server error. Please try again.");
+        setLoading(false);
+        return;
+      }
+      router.push("/");
+    } catch (err) {
+      const firebaseError = err as { code?: string };
+      if (firebaseError.code) {
+        switch (firebaseError.code) {
+          case "auth/popup-closed-by-user":
+            setError("You closed the sign-in window.");
+            break;
+          case "auth/popup-blocked":
+            setError("Sign-in window was blocked by the browser.");
+            break;
+          default:
+            setError("An error occurred during Google sign-in.");
+            break;
+        }
+      } else if (err instanceof Error) {
+        setError(err.message || "An error occurred during Google sign-in.");
+      } else {
+        setError("An error occurred during Google sign-in.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,7 +138,6 @@ export default function LoginPage() {
         </label>
 
         <input
-          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="
@@ -126,18 +199,18 @@ export default function LoginPage() {
       {/* Login Button */}
       <button
         onClick={handleLogin}
-        disabled={isLoading}
+        disabled={loading}
         className="
           w-[454px] h-12
           rounded-md
           bg-[#0066CC]
           hover:bg-[#014C97]
-          disabled:bg-gray-400 disabled:cursor-not-allowed
+          disabled:bg-gray-400
           transition-colors
           text-white text-lg font-medium capitalize
         "
       >
-        {isLoading ? "Logging in..." : "Login"}
+        {loading ? "Logging in..." : "Login"}
       </button>
 
       {/* Divider */}
@@ -150,7 +223,6 @@ export default function LoginPage() {
       {/* Google Button */}
       <button
         onClick={handleGoogleLogin}
-        disabled={isLoading}
         className="
           w-[454px]
           rounded-md border border-[#222121]

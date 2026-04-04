@@ -1,24 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronUp } from "lucide-react";
-import { useAuth } from "@/src/components/shared/AuthProvider";
+import { signOut } from "firebase/auth";
+import { auth } from "@/src/config/firebase";
+import { useAuth } from "@/src/hooks/useAuth";
 
 interface NavbarProps {
   onSelectCategory: (category: string) => void;
-  isLoggedIn?: boolean;
 }
 
-export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
+export default function Navbar({ onSelectCategory }: NavbarProps) {
   const router = useRouter();
-  const { isLoggedIn: authLoggedIn, user, logout } = useAuth();
-  const isClient = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
+  const { user, profile } = useAuth();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("all");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -40,6 +36,12 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
     { label: "Sorting", value: "sorting" },
     { label: "Searching", value: "searching" },
   ];
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    setProfileOpen(false);
+    router.push("/auth/signin");
+  };
 
   return (
     <div className="sticky top-[30px] z-50 flex justify-center">
@@ -114,22 +116,26 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
           </button>
         </div>
 
-        {/*Sign in*/}
+        {/* Auth section */}
         <div className="ml-4">
-          {!resolvedLoggedIn ? (
+          {!user ? (
             <Link href="/auth/signin">
               <button className="px-6 py-2 rounded-full bg-[#1A75D1] text-[#F1F1F1] font-bold shadow-md">
                 Sign in
               </button>
             </Link>
           ) : (
-            <div className="relative ">
+            <div className="relative">
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="w-12 h-12 rounded-full overflow-hidden border border-[#5D5D5D]"
               >
                 <img
-                  src={user?.imageUrl || "https://i.pravatar.cc/150"}
+                  src={
+                    profile?.imageUrl ??
+                    user.photoURL ??
+                    "https://i.pravatar.cc/150"
+                  }
                   alt="profile"
                   className="w-full h-full object-cover"
                 />
@@ -138,18 +144,19 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
               {profileOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg">
                   <Link href="/profile">
-                    <button className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]">
+                    <button
+                      onClick={() => setProfileOpen(false)}
+                      className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
+                    >
                       Profile
                     </button>
                   </Link>
-                  <Link href="/">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
-                    >
-                      Log out
-                    </button>
-                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
+                  >
+                    Log out
+                  </button>
                 </div>
               )}
             </div>
