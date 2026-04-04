@@ -6,8 +6,12 @@ import ProgressRow from "../../components/profile/ProgressRow";
 import ChangePassword from "../../components/ChangePassword";
 import { useRef, useState } from "react";
 import { PencilLine } from "lucide-react";
-import { useAuth } from "@/src/components/shared/AuthProvider";
-import { updateProfileImage } from "@/src/lib/auth.service";
+import {
+  syncUserWithBackend,
+  updateProfileImage,
+} from "@/src/services/auth.service";
+import { useAuth } from "@/src/hooks/useAuth";
+import { saveAuthSession } from "@/src/lib/auth-storage";
 
 type ProgressItem = {
   name: string;
@@ -16,20 +20,29 @@ type ProgressItem = {
 };
 
 export default function Profile() {
-  const CROP_VIEW_SIZE = 280;
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
-  const { token, user, updateUser } = useAuth();
-  const profileAvatar = user?.imageUrl || "https://i.pravatar.cc/150";
-  const profileName = user?.uid || user?.email?.split("@")[0] || "Thunwa";
-  const profileEmail = user?.email || "thunwa@gmail.com";
+  const cropImageRef = useRef<HTMLImageElement | null>(null);
+  const { token, user, firebaseUser } = useAuth();
+  const [localUser, setLocalUser] = useState(user);
+  const isGoogleUser =
+    firebaseUser?.providerData?.some(
+      (provider) => provider.providerId === "google.com",
+    ) ?? false;
+  const profileAvatar = localUser?.imageUrl || "https://i.pravatar.cc/150";
+  const profileName =
+    localUser?.uid || localUser?.email?.split("@")[0] || "Thunwa";
+  const profileEmail = localUser?.email || "thunwa@gmail.com";
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState("");
   const [cropSource, setCropSource] = useState<string | null>(null);
   const [isCropOpen, setIsCropOpen] = useState(false);
-  const [cropZoom, setCropZoom] = useState(1);
-  const [cropX, setCropX] = useState(0);
-  const [cropY, setCropY] = useState(0);
+  const [cropRenderWidth, setCropRenderWidth] = useState(0);
+  const [cropRenderHeight, setCropRenderHeight] = useState(0);
+  const [cropCircleX, setCropCircleX] = useState(0);
+  const [cropCircleY, setCropCircleY] = useState(0);
+  const [cropCircleRadius, setCropCircleRadius] = useState(80);
+  const [isDraggingCircle, setIsDraggingCircle] = useState(false);
 
   const [totalProgress, setTotalProgress] = useState(73);
   const [pretestScore, setPretestScore] = useState(81);
@@ -51,22 +64,33 @@ export default function Profile() {
     avatarInputRef.current?.click();
   };
 
+  const clamp = (value: number, min: number, max: number) =>
+    Math.min(Math.max(value, min), max);
+
+  const getMaxCropRadius = (width: number, height: number) =>
+    Math.max(24, Math.floor(Math.min(width, height) / 2));
+
   const closeCropModal = () => {
     if (cropSource) {
       URL.revokeObjectURL(cropSource);
     }
     setCropSource(null);
     setIsCropOpen(false);
-    setCropZoom(1);
-    setCropX(0);
-    setCropY(0);
+    setCropRenderWidth(0);
+    setCropRenderHeight(0);
+    setCropCircleX(0);
+    setCropCircleY(0);
+    setCropCircleRadius(80);
+    setIsDraggingCircle(false);
   };
 
   const cropImageToFile = async (
     sourceUrl: string,
-    zoom: number,
-    offsetX: number,
-    offsetY: number,
+    renderWidth: number,
+    renderHeight: number,
+    circleX: number,
+    circleY: number,
+    circleRadius: number,
   ): Promise<File> => {
     const image = new Image();
     image.crossOrigin = "anonymous";
@@ -87,25 +111,28 @@ export default function Profile() {
       throw new Error("Canvas is not supported in this browser");
     }
 
-    const baseScale = Math.max(
-      CROP_VIEW_SIZE / image.naturalWidth,
-      CROP_VIEW_SIZE / image.naturalHeight,
-    );
-    const finalScale = baseScale * zoom;
+    if (!renderWidth || !renderHeight) {
+      throw new Error("Image is not ready for cropping");
+    }
 
-    const drawWidth = image.naturalWidth * finalScale;
-    const drawHeight = image.naturalHeight * finalScale;
+    const scaleX = image.naturalWidth / renderWidth;
+    const scaleY = image.naturalHeight / renderHeight;
 
-    const drawX = (CROP_VIEW_SIZE - drawWidth) / 2 + offsetX;
-    const drawY = (CROP_VIEW_SIZE - drawHeight) / 2 + offsetY;
+    const sourceX = (circleX - circleRadius) * scaleX;
+    const sourceY = (circleY - circleRadius) * scaleY;
+    const sourceWidth = circleRadius * 2 * scaleX;
+    const sourceHeight = circleRadius * 2 * scaleY;
 
-    const ratio = outputSize / CROP_VIEW_SIZE;
     ctx.drawImage(
       image,
-      drawX * ratio,
-      drawY * ratio,
-      drawWidth * ratio,
-      drawHeight * ratio,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      0,
+      0,
+      outputSize,
+      outputSize,
     );
 
     const blob = await new Promise<Blob | null>((resolve) => {
@@ -136,25 +163,49 @@ export default function Profile() {
 
       const croppedFile = await cropImageToFile(
         cropSource,
-        cropZoom,
-        cropX,
-        cropY,
+        cropRenderWidth,
+        cropRenderHeight,
+        cropCircleX,
+        cropCircleY,
+        cropCircleRadius,
       );
 
       localImageUrl = URL.createObjectURL(croppedFile);
-      const previousImageUrl = user?.imageUrl;
 
       setAvatarPreview(localImageUrl);
-      updateUser({
-        ...(user ?? {}),
-        imageUrl: localImageUrl,
-      });
 
-      const imageUrl = await updateProfileImage(croppedFile, token);
-      updateUser({
-        ...(user ?? {}),
-        imageUrl,
-      });
+      const imageUrl = await updateProfileImage(
+        croppedFile,
+        token,
+        localUser?.uid,
+      );
+      try {
+        const syncedUser = await syncUserWithBackend(token);
+        const updatedUser = {
+          id: syncedUser?.id,
+          uid: syncedUser?.uid,
+          email: syncedUser?.email,
+          imageUrl: syncedUser?.imageUrl || imageUrl,
+          updatedAt: syncedUser?.updatedAt,
+        };
+        setLocalUser(updatedUser);
+        // Save updated profile to localStorage
+        if (token) {
+          saveAuthSession(token, updatedUser);
+          // Trigger storage event for Navbar to listen
+          window.dispatchEvent(new Event("authProfileUpdated"));
+        }
+      } catch {
+        const updatedUser = {
+          ...(localUser ?? {}),
+          imageUrl,
+        };
+        setLocalUser(updatedUser);
+        // Save to localStorage
+        if (token) {
+          saveAuthSession(token, updatedUser);
+        }
+      }
       setAvatarPreview(null);
       closeCropModal();
 
@@ -171,10 +222,6 @@ export default function Profile() {
       if (localImageUrl) {
         URL.revokeObjectURL(localImageUrl);
       }
-      updateUser({
-        ...(user ?? {}),
-        imageUrl: user?.imageUrl,
-      });
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -190,9 +237,75 @@ export default function Profile() {
     setAvatarError("");
     setCropSource(localImageUrl);
     setIsCropOpen(true);
+    setCropRenderWidth(0);
+    setCropRenderHeight(0);
+    setCropCircleX(0);
+    setCropCircleY(0);
+    setCropCircleRadius(80);
+    setIsDraggingCircle(false);
 
     // Reset input value so selecting the same file again still triggers onChange
     event.target.value = "";
+  };
+
+  const handleCropImageLoad = () => {
+    const imageElement = cropImageRef.current;
+    if (!imageElement) return;
+
+    const width = imageElement.clientWidth;
+    const height = imageElement.clientHeight;
+    if (!width || !height) return;
+
+    const initialRadius = Math.max(40, Math.min(width, height) * 0.2);
+    const maxRadius = getMaxCropRadius(width, height);
+    setCropRenderWidth(width);
+    setCropRenderHeight(height);
+    setCropCircleX(width / 2);
+    setCropCircleY(height / 2);
+    setCropCircleRadius(clamp(initialRadius, 24, maxRadius));
+  };
+
+  const updateCirclePosition = (clientX: number, clientY: number) => {
+    const imageElement = cropImageRef.current;
+    if (!imageElement) return;
+
+    const rect = imageElement.getBoundingClientRect();
+    const relativeX = clamp(clientX - rect.left, 0, cropRenderWidth);
+    const relativeY = clamp(clientY - rect.top, 0, cropRenderHeight);
+
+    const boundedX = clamp(
+      relativeX,
+      cropCircleRadius,
+      cropRenderWidth - cropCircleRadius,
+    );
+    const boundedY = clamp(
+      relativeY,
+      cropCircleRadius,
+      cropRenderHeight - cropCircleRadius,
+    );
+
+    setCropCircleX(boundedX);
+    setCropCircleY(boundedY);
+  };
+
+  const handleCropPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!cropRenderWidth || !cropRenderHeight) return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsDraggingCircle(true);
+    updateCirclePosition(event.clientX, event.clientY);
+  };
+
+  const handleCropPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingCircle) return;
+    updateCirclePosition(event.clientX, event.clientY);
+  };
+
+  const handleCropPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setIsDraggingCircle(false);
   };
 
   return (
@@ -202,18 +315,20 @@ export default function Profile() {
       <div className="mt-6 grid grid-cols-12 mt-18 px-20">
         {/* LEFT: PROFILE */}
         <div className="col-span-3 rounded-xl p-6 text-center">
-          <div>
+          <div className="relative mx-auto mb-4 h-30 w-30">
             <img
               src={avatarPreview || profileAvatar}
               alt="profile"
-              className="w-28 h-28 rounded-full mx-auto mb-4 border object-cover"
+              className="h-30 w-30 rounded-full border object-cover"
             />
-            <div
+            <button
+              type="button"
               onClick={handleAvatarPick}
-              className="border border-black rounded-full w-auto h-auto p-2 absolute -mt-12 ml-52 bg-white cursor-pointer"
+              className="absolute bottom-2 right-2 translate-x-1/4 translate-y-1/4 rounded-full border border-black bg-white p-2 cursor-pointer hover:bg-gray-200 transition-colors"
+              aria-label="Change profile image"
             >
               <PencilLine size={16} />
-            </div>
+            </button>
             <input
               ref={avatarInputRef}
               type="file"
@@ -234,14 +349,16 @@ export default function Profile() {
             <span>{profileEmail}</span>
           </div>
 
-          <div className="flex flex-col items-center gap-3 mt-6">
-            <button
-              onClick={() => setOpenPassword(true)}
-              className="w-full max-w-40 py-1.5 border rounded-full text-sm hover:bg-gray-100 transition-colors"
-            >
-              Change Password
-            </button>
-          </div>
+          {!isGoogleUser && (
+            <div className="flex flex-col items-center gap-3 mt-6">
+              <button
+                onClick={() => setOpenPassword(true)}
+                className="w-full max-w-40 py-1.5 border rounded-full text-sm hover:bg-gray-100 transition-colors"
+              >
+                Change Password
+              </button>
+            </div>
+          )}
         </div>
 
         {/* RIGHT: STATS & PROGRESS */}
@@ -274,70 +391,87 @@ export default function Profile() {
       </div>
 
       {/* 3. เพิ่ม Modal ChangePassword */}
-      {openPassword && (
+      {!isGoogleUser && openPassword && (
         <ChangePassword onClose={() => setOpenPassword(false)} />
       )}
 
       {isCropOpen && cropSource && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-[420px] rounded-xl bg-white p-5 shadow-xl">
+          <div className="w-full max-w-[640px] rounded-xl bg-white p-5 shadow-xl">
             <h3 className="mb-4 text-lg font-semibold text-[#222121]">
               Crop profile image
             </h3>
 
-            <div className="mx-auto mb-4 flex h-[280px] w-[280px] items-center justify-center overflow-hidden rounded-full border border-[#D0D0D0] bg-[#F4F4F4]">
+            <p className="mb-3 text-sm text-[#5D5D5D]">
+              ลากวงกลมเพื่อเลือกตำแหน่งที่ต้องการ และปรับขนาดวงกลมก่อนกด Save
+            </p>
+
+            <div
+              className="relative mx-auto mb-4 max-h-[420px] w-full select-none touch-none overflow-hidden rounded-xl border border-[#D0D0D0] bg-[#F4F4F4]"
+              onPointerDown={handleCropPointerDown}
+              onPointerMove={handleCropPointerMove}
+              onPointerUp={handleCropPointerUp}
+              onPointerLeave={handleCropPointerUp}
+            >
               <img
+                ref={cropImageRef}
                 src={cropSource}
                 alt="Crop preview"
-                className="select-none"
+                className="mx-auto max-h-[420px] w-full object-contain"
                 draggable={false}
-                style={{
-                  transform: `translate(${cropX}px, ${cropY}px) scale(${cropZoom})`,
-                  transformOrigin: "center center",
-                  width: CROP_VIEW_SIZE,
-                  height: CROP_VIEW_SIZE,
-                  objectFit: "cover",
-                }}
+                onLoad={handleCropImageLoad}
               />
+
+              {cropRenderWidth > 0 && cropRenderHeight > 0 && (
+                <div
+                  className="pointer-events-none absolute border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]"
+                  style={{
+                    left: cropCircleX - cropCircleRadius,
+                    top: cropCircleY - cropCircleRadius,
+                    width: cropCircleRadius * 2,
+                    height: cropCircleRadius * 2,
+                    borderRadius: "9999px",
+                  }}
+                />
+              )}
             </div>
 
             <div className="space-y-3">
               <label className="block text-sm font-medium text-[#222121]">
-                Zoom
+                Circle Size
               </label>
               <input
                 type="range"
-                min={1}
-                max={3}
-                step={0.01}
-                value={cropZoom}
-                onChange={(e) => setCropZoom(Number(e.target.value))}
-                className="w-full"
-              />
-
-              <label className="block text-sm font-medium text-[#222121]">
-                Horizontal Position
-              </label>
-              <input
-                type="range"
-                min={-140}
-                max={140}
+                min={24}
+                max={getMaxCropRadius(
+                  cropRenderWidth || 1,
+                  cropRenderHeight || 1,
+                )}
                 step={1}
-                value={cropX}
-                onChange={(e) => setCropX(Number(e.target.value))}
-                className="w-full"
-              />
-
-              <label className="block text-sm font-medium text-[#222121]">
-                Vertical Position
-              </label>
-              <input
-                type="range"
-                min={-140}
-                max={140}
-                step={1}
-                value={cropY}
-                onChange={(e) => setCropY(Number(e.target.value))}
+                value={cropCircleRadius}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  const maxRadius = getMaxCropRadius(
+                    cropRenderWidth || 1,
+                    cropRenderHeight || 1,
+                  );
+                  const nextRadius = clamp(next, 24, maxRadius);
+                  setCropCircleRadius(nextRadius);
+                  setCropCircleX((prev) =>
+                    clamp(
+                      prev,
+                      nextRadius,
+                      Math.max(nextRadius, cropRenderWidth - nextRadius),
+                    ),
+                  );
+                  setCropCircleY((prev) =>
+                    clamp(
+                      prev,
+                      nextRadius,
+                      Math.max(nextRadius, cropRenderHeight - nextRadius),
+                    ),
+                  );
+                }}
                 className="w-full"
               />
             </div>

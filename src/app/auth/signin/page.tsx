@@ -1,15 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/src/config/firebase";
-import { authService } from "@/src/services/auth.service";
+import { syncUserWithBackend } from "@/src/services/auth.service";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { isLoggedIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,20 +20,6 @@ export default function LoginPage() {
       setError("Please enter your email and password");
       return;
     }
-
-    setError("");
-    try {
-      setIsLoading(true);
-      await login({ email, password });
-      router.push("/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
     setError("");
     setLoading(true);
     try {
@@ -43,7 +27,7 @@ export default function LoginPage() {
       const idToken = await userCred.user.getIdToken();
       localStorage.setItem("access_token", idToken);
       try {
-        await authService.sync();
+        await syncUserWithBackend(idToken);
       } catch (err) {
         console.error("SYNC ERROR:", err);
 
@@ -96,7 +80,7 @@ export default function LoginPage() {
       localStorage.setItem("access_token", idToken);
       // sync is best-effort — don't block login if backend is down
       try {
-        await authService.sync();
+        await syncUserWithBackend(idToken);
       } catch (err) {
         console.error("SYNC ERROR:", err);
 
@@ -230,7 +214,6 @@ export default function LoginPage() {
           flex items-center justify-center gap-2
           text-lg font-medium text-[#222121]
           bg-white hover:bg-[#D9D9D9]
-          disabled:bg-gray-100 disabled:cursor-not-allowed
           transition-colors
         "
       >
@@ -244,7 +227,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <div className="text-base font-bold capitalize">
-        <span className="text-[#222121]">don&apos;t have an account?</span>
+        <span className="text-[#222121]">don’t have an account?</span>
         <a href="/auth/signup" className="ml-1 text-[#0066CC]">
           Sign up
         </a>

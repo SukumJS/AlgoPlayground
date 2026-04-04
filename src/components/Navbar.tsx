@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronUp } from "lucide-react";
-import { signOut } from "firebase/auth";
-import { auth } from "@/src/config/firebase";
 import { useAuth } from "@/src/hooks/useAuth";
 
 interface NavbarProps {
@@ -14,19 +12,10 @@ interface NavbarProps {
 
 export default function Navbar({ onSelectCategory }: NavbarProps) {
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user, firebaseUser, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("all");
   const [profileOpen, setProfileOpen] = useState(false);
-
-  // Keep first server/client render identical to prevent hydration mismatch.
-  const resolvedLoggedIn = isClient ? (isLoggedIn ?? authLoggedIn) : false;
-
-  const handleLogout = async () => {
-    await logout();
-    setProfileOpen(false);
-    router.push("/");
-  };
 
   const items = [
     { label: "All", value: "all" },
@@ -38,7 +27,7 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
   ];
 
   const handleSignOut = async () => {
-    await signOut(auth);
+    await logout();
     setProfileOpen(false);
     router.push("/auth/signin");
   };
@@ -118,7 +107,7 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
 
         {/* Auth section */}
         <div className="ml-4">
-          {!user ? (
+          {!firebaseUser ? (
             <Link href="/auth/signin">
               <button className="px-6 py-2 rounded-full bg-[#1A75D1] text-[#F1F1F1] font-bold shadow-md">
                 Sign in
@@ -132,8 +121,8 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
               >
                 <img
                   src={
-                    profile?.imageUrl ??
-                    user.photoURL ??
+                    user?.imageUrl ??
+                    firebaseUser?.photoURL ??
                     "https://i.pravatar.cc/150"
                   }
                   alt="profile"

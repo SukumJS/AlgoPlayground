@@ -128,7 +128,6 @@ export default function RegisterPage() {
         <label className="text-lg font-semibold text-[#222121]">Email</label>
 
         <input
-          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="
@@ -248,7 +247,6 @@ export default function RegisterPage() {
           flex items-center justify-center gap-2
           text-lg font-medium text-[#222121]
           bg-white hover:bg-[#D9D9D9]
-          disabled:bg-gray-100 disabled:cursor-not-allowed
           transition-colors
         "
       >
