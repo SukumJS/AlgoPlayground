@@ -78,7 +78,7 @@ export default function ExercisesPage() {
 
   return (
     <main className="mx-auto max-w-12xl px-16 py-6">
-      <Navbar onSelectCategory={() => {}} isLoggedIn={true} />
+      <Navbar onSelectCategory={() => {}} />
       <div className="mx-4">
         <div className="mb-4 mt-15 flex items-center gap-2 text-base">
           <span className="flex items-center gap-1">

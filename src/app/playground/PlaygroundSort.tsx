@@ -22,8 +22,6 @@ import {
   type OnEdgesChange,
   type DefaultEdgeOptions,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import "@xyflow/react/dist/base.css";
 
 // นำเข้า SortNode และ Type ที่เราแยกไว้
 import SortNode, { type SortNodeData } from "@/src/components/shared/sortNode";
@@ -174,7 +172,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
     setExplanation,
   });
 
-  // เพิ่มระบบ Smart Camera (กล้องติดตามกล่องที่กำลังทำงาน)
+  // Smart camera follows the active node while the algorithm runs
   const isUserPanning = React.useRef(false);
   const lastPannedPosition = React.useRef<{ id: string; x: number } | null>(
     null,
@@ -386,7 +384,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
       {sideTabMemo}
 
       <div className="absolute top-4 left-8 z-10 flex gap-2">
-        <GoToHome_Portal />
+        <GoToHome_Portal algorithm={algorithm} algoType="sort" />
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -400,11 +398,12 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
       </div>
       {!tutorial.showTutorial && isDraggingNode && (
         <div
-          className={`fixed z-[65] flex items-center justify-center w-16 h-16 rounded-full bg-[#E53E3E] shadow-lg border-2 border-[#5D5D5D] transition-transform duration-200 ${isTrashActive ? "scale-125" : ""}`}
+          className={`fixed flex items-center justify-center w-16 h-16 rounded-full bg-[#E53E3E] shadow-lg border-2 border-[#5D5D5D] transition-transform duration-200 ${isTrashActive ? "scale-125" : ""}`}
           style={{
             bottom: "140px",
             left: "50%",
             transform: "translateX(-50%)",
+            zIndex: 65,
             boxShadow: isTrashActive
               ? "0 0 30px 10px rgba(229, 62, 62, 0.8)"
               : "0 10px 15px -3px rgba(0, 0, 0, 0.2)",

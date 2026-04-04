@@ -1,18 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronUp } from "lucide-react";
+import { useAuth } from "@/src/components/shared/AuthProvider";
 
 interface NavbarProps {
   onSelectCategory: (category: string) => void;
-  isLoggedIn: boolean;
+  isLoggedIn?: boolean;
 }
 
 export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
+  const router = useRouter();
+  const { isLoggedIn: authLoggedIn, user, logout } = useAuth();
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("all");
   const [profileOpen, setProfileOpen] = useState(false);
+
+  // Keep first server/client render identical to prevent hydration mismatch.
+  const resolvedLoggedIn = isClient ? (isLoggedIn ?? authLoggedIn) : false;
+
+  const handleLogout = async () => {
+    await logout();
+    setProfileOpen(false);
+    router.push("/");
+  };
 
   const items = [
     { label: "All", value: "all" },
@@ -98,7 +116,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
 
         {/*Sign in*/}
         <div className="ml-4">
-          {!isLoggedIn ? (
+          {!resolvedLoggedIn ? (
             <Link href="/auth/signin">
               <button className="px-6 py-2 rounded-full bg-[#1A75D1] text-[#F1F1F1] font-bold shadow-md">
                 Sign in
@@ -111,7 +129,7 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
                 className="w-12 h-12 rounded-full overflow-hidden border border-[#5D5D5D]"
               >
                 <img
-                  src="https://i.pravatar.cc/150"
+                  src={user?.imageUrl || "https://i.pravatar.cc/150"}
                   alt="profile"
                   className="w-full h-full object-cover"
                 />
@@ -125,7 +143,10 @@ export default function Navbar({ onSelectCategory, isLoggedIn }: NavbarProps) {
                     </button>
                   </Link>
                   <Link href="/">
-                    <button className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full h-10 flex items-center justify-center hover:bg-[#E6EEF7] text-[#222121]"
+                    >
                       Log out
                     </button>
                   </Link>

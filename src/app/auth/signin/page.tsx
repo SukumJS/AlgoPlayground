@@ -1,36 +1,72 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
+import { googleSignIn, login } from "../../../lib/auth.service";
+import { useAuth } from "@/src/components/shared/AuthProvider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { isLoggedIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    if (!identifier || !password) {
-      setError("Please enter your email/username and password");
+  useEffect(() => {
+    if (isLoggedIn) {
+      window.location.replace("/");
+    }
+  }, [isLoggedIn, router]);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      setError("Please enter your email and password");
       return;
     }
+
     setError("");
-    router.push("/");
+    try {
+      setIsLoading(true);
+      await login({ email, password });
+      router.push("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError("");
+    try {
+      setIsLoading(true);
+      const user = await googleSignIn();
+      if (user) {
+        router.push("/");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google login failed");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="flex flex-col items-center gap-6">
-      {/* Email / Username */}
+      {/* Email */}
       <div className="w-[454px] flex flex-col gap-2">
         <label className="text-lg font-semibold text-[#222121] capitalize">
-          Email or username
+          Email
         </label>
 
         <input
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="
             h-12
             border border-[#222121]
@@ -90,16 +126,18 @@ export default function LoginPage() {
       {/* Login Button */}
       <button
         onClick={handleLogin}
+        disabled={isLoading}
         className="
           w-[454px] h-12
           rounded-md
           bg-[#0066CC]
           hover:bg-[#014C97]
+          disabled:bg-gray-400 disabled:cursor-not-allowed
           transition-colors
           text-white text-lg font-medium capitalize
         "
       >
-        Login
+        {isLoading ? "Logging in..." : "Login"}
       </button>
 
       {/* Divider */}
@@ -111,6 +149,8 @@ export default function LoginPage() {
 
       {/* Google Button */}
       <button
+        onClick={handleGoogleLogin}
+        disabled={isLoading}
         className="
           w-[454px]
           rounded-md border border-[#222121]
@@ -118,6 +158,7 @@ export default function LoginPage() {
           flex items-center justify-center gap-2
           text-lg font-medium text-[#222121]
           bg-white hover:bg-[#D9D9D9]
+          disabled:bg-gray-100 disabled:cursor-not-allowed
           transition-colors
         "
       >
@@ -131,7 +172,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <div className="text-base font-bold capitalize">
-        <span className="text-[#222121]">don’t have an account?</span>
+        <span className="text-[#222121]">don&apos;t have an account?</span>
         <a href="/auth/signup" className="ml-1 text-[#0066CC]">
           Sign up
         </a>

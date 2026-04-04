@@ -184,7 +184,7 @@ export default function TutorialSort({
       {/*Step 0: Glow Zone */}
       {currentStep === 0 && dropZoneScreenPos && (
         <div
-          className="fixed z-[65] pointer-events-none"
+          className="fixed z-65 pointer-events-none"
           style={{
             left: `${dropZoneScreenPos.x}px`,
             top: `${dropZoneScreenPos.y}px`,
@@ -255,7 +255,7 @@ export default function TutorialSort({
       {/* Step 3*/}
       {(currentStep === 3 || currentStep === 4) && node3ScreenPos && (
         <div
-          className="fixed z-[65] pointer-events-none"
+          className="fixed z-65 pointer-events-none"
           style={{
             left: `${node3ScreenPos.x}px`,
             top: `${node3ScreenPos.y}px`,
@@ -321,7 +321,7 @@ export default function TutorialSort({
             />
           </div>
           <div
-            className={`trash-bin fixed z-[65] flex items-center justify-center w-16 h-16 rounded-full bg-[#E53E3E] shadow-lg border-2 border-[#5D5D5D] transition-transform duration-200 ${isTrashActive ? "scale-125" : ""}`}
+            className={`trash-bin fixed z-65 flex items-center justify-center w-16 h-16 rounded-full bg-[#E53E3E] shadow-lg border-2 border-[#5D5D5D] transition-transform duration-200 ${isTrashActive ? "scale-125" : ""}`}
             style={{
               bottom: "140px",
               left: "50%",

@@ -2,24 +2,49 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import { googleSignIn, signup } from "../../../lib/auth.service";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!email || !username || !password) {
       setError("Please fill in all fields");
       return;
     }
+
     setError("");
-    //redirect to login page
-    router.push("/auth/login");
+    try {
+      setIsLoading(true);
+      await signup({ email, password, username });
+      router.push("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Signup failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleRegister = async () => {
+    setError("");
+    try {
+      setIsLoading(true);
+      const user = await googleSignIn();
+      if (user) {
+        router.push("/");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google signup failed");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -29,6 +54,7 @@ export default function RegisterPage() {
         <label className="text-lg font-semibold text-[#222121]">Email</label>
 
         <input
+          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="
@@ -98,15 +124,17 @@ export default function RegisterPage() {
       {/* Register Button */}
       <button
         onClick={handleRegister}
+        disabled={isLoading}
         className="
           w-[454px] h-12
           rounded-md
           bg-[#0066CC] hover:bg-[#014C97]
+          disabled:bg-gray-400 disabled:cursor-not-allowed
           transition-colors
           text-white text-lg font-medium capitalize
         "
       >
-        Create Account
+        {isLoading ? "Creating Account..." : "Create Account"}
       </button>
       {/* Divider */}
       <div className="w-[465px] flex items-center gap-3">
@@ -117,6 +145,8 @@ export default function RegisterPage() {
 
       {/* Google Button */}
       <button
+        onClick={handleGoogleRegister}
+        disabled={isLoading}
         className="
           w-[454px]
           rounded-md border border-[#222121]
@@ -124,6 +154,7 @@ export default function RegisterPage() {
           flex items-center justify-center gap-2
           text-lg font-medium text-[#222121]
           bg-white hover:bg-[#D9D9D9]
+          disabled:bg-gray-100 disabled:cursor-not-allowed
           transition-colors
         "
       >

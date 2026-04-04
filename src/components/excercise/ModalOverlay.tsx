@@ -1,3 +1,7 @@
+"use client";
+
+import { createPortal } from "react-dom";
+
 type ModalOverlayProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -11,12 +15,13 @@ export default function ModalOverlay({
 }: ModalOverlayProps) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/40"
       onClick={onClose}
     >
       <div onClick={(e) => e.stopPropagation()}>{children}</div>
-    </div>
+    </div>,
+    document.body,
   );
 }
