@@ -31,7 +31,6 @@ export default function GoToHome_Portal({
       return;
     }
 
-    markPosttestReminderSeen(algoType, algorithm);
     setShowReminder(true);
   };
 
@@ -46,7 +45,10 @@ export default function GoToHome_Portal({
       </button>
       <Post_Test_modal
         showModal={showReminder}
-        onClose={() => setShowReminder(false)}
+        onClose={() => {
+          markPosttestReminderSeen(algoType, algorithm);
+          setShowReminder(false);
+        }}
         algorithm={algorithm}
         algoType={algoType}
       />

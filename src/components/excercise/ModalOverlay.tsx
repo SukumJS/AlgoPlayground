@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 type ModalOverlayProps = {
@@ -13,7 +14,13 @@ export default function ModalOverlay({
   onClose,
   children,
 }: ModalOverlayProps) {
-  if (!isOpen) return null;
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
+  if (!isOpen || !isClient) return null;
 
   return createPortal(
     <div

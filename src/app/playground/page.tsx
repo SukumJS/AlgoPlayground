@@ -25,13 +25,26 @@ function BrowserBackPosttestGuard({
   algoType,
   algorithm,
 }: BrowserBackPosttestGuardProps) {
-  const [showReminder, setShowReminder] = useState(false);
+  const [hasDeferredReminder, setHasDeferredReminder] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return hasSeenPosttestReminder(algoType, algorithm);
+  });
+
+  const [showReminder, setShowReminder] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      !hasCompletedPosttest(algoType, algorithm) &&
+      hasSeenPosttestReminder(algoType, algorithm)
+    );
+  });
 
   useEffect(() => {
-    if (
-      hasCompletedPosttest(algoType, algorithm) ||
-      hasSeenPosttestReminder(algoType, algorithm)
-    ) {
+    if (hasCompletedPosttest(algoType, algorithm)) {
+      return;
+    }
+
+    // After user chooses "Maybe Later" in this visit, allow leaving playground.
+    if (hasDeferredReminder) {
       return;
     }
 
@@ -47,19 +60,22 @@ function BrowserBackPosttestGuard({
     }
 
     const handlePopState = () => {
-      markPosttestReminderSeen(algoType, algorithm);
       setShowReminder(true);
       pushGuardState();
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [algoType, algorithm]);
+  }, [algoType, algorithm, hasDeferredReminder]);
 
   return (
     <Post_Test_modal
       showModal={showReminder}
-      onClose={() => setShowReminder(false)}
+      onClose={() => {
+        markPosttestReminderSeen(algoType, algorithm);
+        setHasDeferredReminder(true);
+        setShowReminder(false);
+      }}
       algorithm={algorithm}
       algoType={algoType}
     />
@@ -108,7 +124,11 @@ function PlaygroundRouter() {
 
   return (
     <>
-      <BrowserBackPosttestGuard algoType={algoType} algorithm={algorithm} />
+      <BrowserBackPosttestGuard
+        key={`${algoType}:${algorithm}`}
+        algoType={algoType}
+        algorithm={algorithm}
+      />
       {content}
     </>
   );
