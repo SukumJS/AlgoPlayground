@@ -179,7 +179,7 @@ export function useSortTutorial({
       if (!isNode3Alive) {
         const timer = setTimeout(() => {
           setIsTrashActive(false);
-          handleTutorialComplete();
+          setTutorialStep(5);
         }, 0);
 
         return () => clearTimeout(timer);
@@ -255,11 +255,11 @@ export function useSortTutorial({
           });
 
           setIsTrashActive(false);
-          handleTutorialComplete();
+          setTutorialStep(5);
         }
       }
     },
-    [showTutorial, tutorialStep, setNodes, handleTutorialComplete],
+    [showTutorial, tutorialStep, setNodes, setTutorialStep],
   );
   return {
     showTutorial,

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import React, { useState, useCallback } from "react"; // ลบ useEffect ออก
+import React, { useState, useCallback } from "react";
 import { useReactFlow, XYPosition, Node, useNodes } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
@@ -21,7 +21,6 @@ type DataLinearProps = {
   onDelete?: (index: number) => void;
   isAnimating?: boolean;
 
-  // เพิ่ม Props สำหรับ Tutorial
   tutorialMode?: boolean;
   onTutorialDropSuccess?: () => void;
   onTutorialInsert?: () => void;
@@ -41,7 +40,6 @@ function Data_Linear_DS({
   onTutorialInsert,
   onTutorialDelete,
 }: DataLinearProps) {
-  // เริ่มต้นเป็น false เสมอ
   const [isOpen, setIsOpen] = useState(false);
 
   const isPanelOpen = tutorialMode || isOpen;
@@ -99,7 +97,6 @@ function Data_Linear_DS({
         setType(null);
         setDraggedValue(null);
 
-        // 🎯 แจ้ง Hook ว่าลากกล่องลงไปสำเร็จแล้ว
         if (onTutorialDropSuccess) {
           onTutorialDropSuccess();
         }
@@ -206,7 +203,7 @@ function Data_Linear_DS({
           >
             <input
               type="number"
-              placeholder="0"
+              placeholder="N"
               disabled={disableDrag}
               className={`w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                 disableDrag ? "cursor-not-allowed" : ""
@@ -355,17 +352,17 @@ function Data_Linear_DS({
                 Stack Operations (LIFO)
               </h3>
 
-              {/* จัด Layout แนวนอน มีเส้นคั่นกลาง */}
               <div className="flex items-center gap-3">
-                {/* --- โซนซ้าย: Input (ลดขนาด) + Push --- */}
-                <div className="flex items-center gap-2">
+                <div
+                  id="tutorial-insert-zone"
+                  className="flex items-center gap-2"
+                >
                   <input
                     type="number"
                     placeholder="e.g. 99"
                     value={insertValue}
                     onChange={(e) => setInsertValue(e.target.value)}
                     disabled={isAnimating || isFull}
-                    // ลดความกว้างเป็น w-24 เพื่อไม่ให้กินพื้นที่
                     className="w-38 placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
@@ -375,18 +372,15 @@ function Data_Linear_DS({
                       if (onTutorialInsert) onTutorialInsert();
                     }}
                     disabled={isAnimating || disableDrag || insertValue === ""}
-                    // คงสีเดิม bg-[#222121] เอาไว้
                     className="bg-[#222121] text-white px-5 py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
                     Push
                   </button>
                 </div>
 
-                {/* เส้นคั่นกลาง */}
                 <div className="w-[2px] h-8 bg-[#222121] rounded-full flex-shrink-0 mx-1"></div>
-
-                {/*Pop*/}
                 <button
+                  id="tutorial-delete-zone"
                   onClick={() => {
                     if (onDelete && nodes.length > 0)
                       onDelete(nodes.length - 1);
@@ -410,17 +404,17 @@ function Data_Linear_DS({
                 Queue Operations (FIFO)
               </h3>
 
-              {/* จัด Layout แนวนอน มีเส้นคั่นกลาง (แบบเดียวกับ Stack) */}
               <div className="flex items-center gap-3">
-                {/* --- โซนซ้าย: Input (ลดขนาด) + Enqueue --- */}
-                <div className="flex items-center gap-2">
+                <div
+                  id="tutorial-insert-zone"
+                  className="flex items-center gap-2"
+                >
                   <input
                     type="number"
                     placeholder="e.g. 99"
                     value={insertValue}
                     onChange={(e) => setInsertValue(e.target.value)}
                     disabled={isAnimating || isFull}
-                    // ลดความกว้างเป็น w-24
                     className="w-24 placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:border-gray-500 transition-colors"
                   />
                   <button
@@ -436,13 +430,10 @@ function Data_Linear_DS({
                   </button>
                 </div>
 
-                {/* --- เส้นคั่นกลาง (Vertical Divider) --- */}
                 <div className="w-[2px] h-8 bg-[#222121] rounded-full flex-shrink-0 mx-1"></div>
-
-                {/* --- โซนขวา: Dequeue --- */}
                 <button
+                  id="tutorial-delete-zone"
                   onClick={() => {
-                    // Queue ลบตัวแรกเสมอ (Index 0)
                     if (onDelete && nodes.length > 0) onDelete(0);
                     if (onTutorialDelete) onTutorialDelete();
                   }}
