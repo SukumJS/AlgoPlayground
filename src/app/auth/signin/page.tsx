@@ -28,15 +28,43 @@ export default function LoginPage() {
       localStorage.setItem("access_token", idToken);
       try {
         await authService.sync();
-      } catch {}
+      } catch (err) {
+        console.error("SYNC ERROR:", err);
+
+        setError("Server error. Please try again.");
+        setLoading(false);
+        return;
+      }
       router.push("/");
     } catch (err) {
-      if (err instanceof Error) {
+      const firebaseError = err as { code?: string };
+      if (firebaseError.code) {
+        switch (firebaseError.code) {
+          case "auth/invalid-credential":
+          case "auth/invalid-login-credentials":
+          case "auth/user-not-found":
+          case "auth/wrong-password":
+            setError("Invalid email or password.");
+            break;
+          case "auth/invalid-email":
+            setError("Invalid email format.");
+            break;
+          case "auth/user-disabled":
+            setError("This account has been disabled.");
+            break;
+          case "auth/too-many-requests":
+            setError("Too many sign-in attempts. Please try again later.");
+            break;
+          default:
+            setError("An error occurred during sign in. Please try again.");
+            break;
+        }
+      } else if (err instanceof Error) {
         setError(
-          err.message || "Failed to sign in. Please check your credentials.",
+          err.message || "An error occurred during sign in. Please try again.",
         );
       } else {
-        setError("Failed to sign in. Please check your credentials.");
+        setError("An error occurred during sign in. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -53,15 +81,32 @@ export default function LoginPage() {
       // sync is best-effort — don't block login if backend is down
       try {
         await authService.sync();
-      } catch {
-        /* ignore backend error */
+      } catch (err) {
+        console.error("SYNC ERROR:", err);
+
+        setError("Server error. Please try again.");
+        setLoading(false);
+        return;
       }
       router.push("/");
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message || "Failed to sign in with Google.");
+      const firebaseError = err as { code?: string };
+      if (firebaseError.code) {
+        switch (firebaseError.code) {
+          case "auth/popup-closed-by-user":
+            setError("You closed the sign-in window.");
+            break;
+          case "auth/popup-blocked":
+            setError("Sign-in window was blocked by the browser.");
+            break;
+          default:
+            setError("An error occurred during Google sign-in.");
+            break;
+        }
+      } else if (err instanceof Error) {
+        setError(err.message || "An error occurred during Google sign-in.");
       } else {
-        setError("Failed to sign in with Google.");
+        setError("An error occurred during Google sign-in.");
       }
     } finally {
       setLoading(false);

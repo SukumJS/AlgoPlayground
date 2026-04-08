@@ -21,7 +21,7 @@ type DataLinearProps = {
   onDelete?: (index: number) => void;
   isAnimating?: boolean;
 
-  // 🎯 เพิ่ม Props สำหรับ Tutorial
+  // เพิ่ม Props สำหรับ Tutorial
   tutorialMode?: boolean;
   onTutorialDropSuccess?: () => void;
   onTutorialInsert?: () => void;
@@ -263,7 +263,7 @@ function Data_Linear_DS({
           algorithm === "doubly-linked-list") && (
           <div className="p-4 border-t border-gray-300 flex flex-col gap-4">
             <div>
-              <h3 className="font-bold text-sm mb-2 text-gray-800 flex items-center gap-2">
+              <h3 className="font-bold text-md mb-2 text-gray-800 flex items-center gap-2">
                 Insert Element
               </h3>
               <div className="flex gap-2 items-end">
@@ -277,7 +277,7 @@ function Data_Linear_DS({
                     value={insertIndex}
                     onChange={(e) => setInsertIndex(e.target.value)}
                     disabled={isAnimating}
-                    className="w-full border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <div className="flex-1">
@@ -290,7 +290,7 @@ function Data_Linear_DS({
                     value={insertValue}
                     onChange={(e) => setInsertValue(e.target.value)}
                     disabled={isAnimating}
-                    className="w-full border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <button
@@ -314,7 +314,7 @@ function Data_Linear_DS({
             </div>
 
             <div>
-              <h3 className="font-bold text-sm mb-2 text-gray-800 flex items-center gap-2">
+              <h3 className="font-bold text-md mb-2 text-gray-800 flex items-center gap-2">
                 Delete by Index
               </h3>
               <div className="flex gap-2 items-end">
@@ -328,7 +328,7 @@ function Data_Linear_DS({
                     value={deleteIndex}
                     onChange={(e) => setDeleteIndex(e.target.value)}
                     disabled={isAnimating}
-                    className="w-full border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <button
@@ -351,7 +351,7 @@ function Data_Linear_DS({
         {algorithm === "stack" && (
           <div className="p-4 border-t border-gray-300 flex flex-col gap-4">
             <div>
-              <h3 className="font-bold text-sm mb-2 text-gray-800 flex items-center gap-2">
+              <h3 className="font-bold text-md mb-2 text-gray-800 flex items-center gap-2">
                 Stack Operations (LIFO)
               </h3>
               <div className="flex gap-2 items-end">
@@ -365,7 +365,7 @@ function Data_Linear_DS({
                     value={insertValue}
                     onChange={(e) => setInsertValue(e.target.value)}
                     disabled={isAnimating || isFull}
-                    className="w-full border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <button
@@ -399,7 +399,7 @@ function Data_Linear_DS({
         {algorithm === "queue" && (
           <div className="p-4 border-t border-gray-300 flex flex-col gap-4">
             <div>
-              <h3 className="font-bold text-sm mb-2 text-gray-800 flex items-center gap-2">
+              <h3 className="font-bold text-md mb-2 text-gray-800 flex items-center gap-2">
                 Queue Operations (FIFO)
               </h3>
               <div className="flex gap-2 items-end">
@@ -413,7 +413,7 @@ function Data_Linear_DS({
                     value={insertValue}
                     onChange={(e) => setInsertValue(e.target.value)}
                     disabled={isAnimating || isFull}
-                    className="w-full border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-full placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <button

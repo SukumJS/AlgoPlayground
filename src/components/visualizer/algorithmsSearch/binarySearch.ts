@@ -1,16 +1,21 @@
 import type { Node } from "@xyflow/react";
 import type { SortNodeData } from "@/src/components/shared/sortNode";
 
+type SearchStep = {
+  nodes: Node<SortNodeData>[];
+  codeLine: number;
+};
+
 export function generateBinarySearchSteps(
   nodes: Node<SortNodeData>[],
   target: number,
 ) {
-  const steps: Node<SortNodeData>[][] = [];
+  const steps: SearchStep[] = [];
 
   let currentNodes = [...nodes].sort((a, b) => a.position.x - b.position.x);
   currentNodes = JSON.parse(JSON.stringify(currentNodes));
 
-  steps.push(JSON.parse(JSON.stringify(currentNodes)));
+  steps.push({ nodes: JSON.parse(JSON.stringify(currentNodes)), codeLine: 1 });
 
   let left = 0;
   let right = currentNodes.length - 1;
@@ -20,11 +25,17 @@ export function generateBinarySearchSteps(
 
     currentNodes = JSON.parse(JSON.stringify(currentNodes));
     currentNodes[mid].data.status = "compare";
-    steps.push(JSON.parse(JSON.stringify(currentNodes)));
+    steps.push({
+      nodes: JSON.parse(JSON.stringify(currentNodes)),
+      codeLine: 5,
+    });
 
     currentNodes = JSON.parse(JSON.stringify(currentNodes));
     currentNodes[mid].data.status = "processing";
-    steps.push(JSON.parse(JSON.stringify(currentNodes)));
+    steps.push({
+      nodes: JSON.parse(JSON.stringify(currentNodes)),
+      codeLine: 6,
+    });
 
     const midValue = Number(currentNodes[mid].data.value);
 
@@ -32,7 +43,10 @@ export function generateBinarySearchSteps(
 
     if (midValue === target) {
       currentNodes[mid].data.status = "found"; // สีเขียว
-      steps.push(JSON.parse(JSON.stringify(currentNodes)));
+      steps.push({
+        nodes: JSON.parse(JSON.stringify(currentNodes)),
+        codeLine: 7,
+      });
       break;
     } else if (midValue < target) {
       // ตัดครึ่งซ้ายเป็นสีเทา
@@ -40,14 +54,20 @@ export function generateBinarySearchSteps(
         currentNodes[i].data.status = "discarded";
       }
       left = mid + 1;
-      steps.push(JSON.parse(JSON.stringify(currentNodes)));
+      steps.push({
+        nodes: JSON.parse(JSON.stringify(currentNodes)),
+        codeLine: 10,
+      });
     } else {
       // ตัดครึ่งขวาเป็นสีเทา
       for (let i = mid; i <= right; i++) {
         currentNodes[i].data.status = "discarded";
       }
       right = mid - 1;
-      steps.push(JSON.parse(JSON.stringify(currentNodes)));
+      steps.push({
+        nodes: JSON.parse(JSON.stringify(currentNodes)),
+        codeLine: 12,
+      });
     }
   }
 
