@@ -219,18 +219,13 @@ export default function PlaygroundLinearDS({
     });
   }, [algorithm]);
 
+  // ปลดล็อคแกน Y เพื่อให้ Linked List ลากไปตรงไหนก็ได้
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
-      setNodes((nds) => {
-        const lockedChanges = changes.map((change) => {
-          if (isLinkedList && change.type === "position" && change.position) {
-            return { ...change, position: { x: change.position.x, y: 5 } };
-          }
-          return change;
-        });
-        return applyNodeChanges(lockedChanges, nds) as Node<LinearNodeData>[];
-      }),
-    [isLinkedList],
+      setNodes(
+        (nds) => applyNodeChanges(changes, nds) as Node<LinearNodeData>[],
+      ),
+    [],
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
@@ -365,35 +360,45 @@ export default function PlaygroundLinearDS({
   // --- 3. DRAG HANDLERS (Merged with Tutorial) ---
   const handleNodeDragStart = useCallback(
     (event: React.MouseEvent, node: Node, allNodes: Node[]) => {
-      onNodeDragStart?.(event, node, allNodes);
+      // ข้ามระบบ Snapping ของ Linked List
+      if (!isLinkedList && onNodeDragStart) {
+        onNodeDragStart(event, node, allNodes);
+      }
       if (tutorial.showTutorial)
         tutorial.onNodeDragStart(event, node as Node<LinearNodeData>);
     },
-    [onNodeDragStart, tutorial],
+    [onNodeDragStart, tutorial, isLinkedList],
   );
 
   const handleNodeDrag = useCallback(
     (event: React.MouseEvent, node: Node, allNodes: Node[]) => {
-      onNodeDrag(event, node, allNodes);
+      if (!isLinkedList && onNodeDrag) {
+        onNodeDrag(event, node, allNodes);
+      }
       if (tutorial.showTutorial)
         tutorial.onNodeDrag(event, node as Node<LinearNodeData>);
     },
-    [onNodeDrag, tutorial],
+    [onNodeDrag, tutorial, isLinkedList],
   );
 
   const handleNodeDragStop = useCallback(
     (event: React.MouseEvent, node: Node, allNodes: Node[]) => {
-      onNodeDragStop(event, node, allNodes);
+      if (!isLinkedList && onNodeDragStop) {
+        onNodeDragStop(event, node, allNodes);
+      }
       if (tutorial.showTutorial)
         tutorial.onNodeDragStop(event, node as Node<LinearNodeData>);
     },
-    [onNodeDragStop, tutorial],
+    [onNodeDragStop, tutorial, isLinkedList],
   );
 
   // --- 4. TUTORIAL MASKING LOGIC ---
+  const isStackOrQueue = algorithm === "stack" || algorithm === "queue";
+
   const displayNodes = useMemo(() => {
     return nodes.map((node) => {
-      let canDrag = !isAnimating;
+      // ปิดการ drag ถ้ากำลัง Animate หรือเป็น Stack / Queue
+      let canDrag = !isAnimating && !isStackOrQueue;
       if (tutorial.showTutorial) {
         canDrag = false;
         const val = String(node.data.value);
@@ -423,6 +428,7 @@ export default function PlaygroundLinearDS({
     isLinkedList,
     tutorial.showTutorial,
     tutorial.tutorialStep,
+    isStackOrQueue,
   ]);
 
   const sideTabMemo = useMemo(
@@ -532,6 +538,7 @@ export default function PlaygroundLinearDS({
       {/* --- TUTORIAL COMPONENTS --- */}
       {tutorial.showTutorial && (
         <TutorialLinearDS
+          algorithm={algorithm}
           onComplete={tutorial.handleTutorialComplete}
           currentStep={tutorial.tutorialStep}
           setCurrentStep={tutorial.setTutorialStep}
