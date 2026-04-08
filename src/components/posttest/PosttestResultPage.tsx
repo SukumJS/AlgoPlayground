@@ -4,7 +4,6 @@ import React from "react";
 import TrackProgress from "@/src/components/pretest/TrackProgress";
 import ChoiceCard from "@/src/components/pretest/ChoiceCard";
 import { OrderingResultDisplay } from "./OrderingQuestion";
-import { PlaygroundOrderingResult } from "./PlaygroundOrderingQuestion";
 import { PosttestUserAnswer } from "@/src/app/types/posttest";
 import {
   PosttestGradingResult,

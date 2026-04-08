@@ -8,7 +8,11 @@ export type {
   ChangePasswordPayload,
 } from "./user.service";
 export { progressService } from "./progress.service";
-export type { UserProgress, TestResultHistory } from "./progress.service";
+export type {
+  UserProgress,
+  TestResultHistory,
+  AllProgressData,
+} from "./progress.service";
 export { pretestService } from "./pretest.service";
 export type { PretestGradingResult, PretestStatus } from "./pretest.service";
 export { posttestService } from "./posttest.service";
