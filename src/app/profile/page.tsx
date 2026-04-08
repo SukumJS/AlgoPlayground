@@ -4,7 +4,7 @@ import Navbar from "../../components/Navbar";
 import StatCard from "../../components/profile/StatCard";
 import ProgressRow from "../../components/profile/ProgressRow";
 import ChangePassword from "../../components/ChangePassword";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PencilLine } from "lucide-react";
 import {
   syncUserWithBackend,
@@ -44,21 +44,45 @@ export default function Profile() {
   const [cropCircleRadius, setCropCircleRadius] = useState(80);
   const [isDraggingCircle, setIsDraggingCircle] = useState(false);
 
-  const [totalProgress, setTotalProgress] = useState(73);
-  const [pretestScore, setPretestScore] = useState(81);
-  const [posttestScore, setPosttestScore] = useState(64);
-
-  const [progressData, setProgressData] = useState<ProgressItem[]>([
-    { name: "Linear Data Structure", current: 2, total: 5 },
-    { name: "Trees", current: 2, total: 7 },
-    { name: "Graph", current: 2, total: 6 },
-    { name: "Sorting", current: 2, total: 5 },
-    { name: "Searching", current: 0, total: 2 },
-  ]);
-
   // MODAL STATES
   const [openPassword, setOpenPassword] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  useEffect(() => {
+    setLocalUser(user);
+  }, [user]);
+
+  const profileUser = localUser ?? user;
+  const totalProgress = profileUser?.progress?.totalProgress ?? 0;
+  const pretestScore = profileUser?.progress?.pretestScore ?? 0;
+  const posttestScore = profileUser?.progress?.posttestScore ?? 0;
+  const progressData = [
+    {
+      name: "Linear Data Structure",
+      current: profileUser?.categoryAlgoProgress?.linear ?? 0,
+      total: 5,
+    },
+    {
+      name: "Trees",
+      current: profileUser?.categoryAlgoProgress?.trees ?? 0,
+      total: 7,
+    },
+    {
+      name: "Graph",
+      current: profileUser?.categoryAlgoProgress?.graph ?? 0,
+      total: 6,
+    },
+    {
+      name: "Sorting",
+      current: profileUser?.categoryAlgoProgress?.sorting ?? 0,
+      total: 5,
+    },
+    {
+      name: "Searching",
+      current: profileUser?.categoryAlgoProgress?.searching ?? 0,
+      total: 2,
+    },
+  ];
 
   const handleAvatarPick = () => {
     avatarInputRef.current?.click();
@@ -187,6 +211,8 @@ export default function Profile() {
           email: syncedUser?.email,
           imageUrl: syncedUser?.imageUrl || imageUrl,
           updatedAt: syncedUser?.updatedAt,
+          progress: syncedUser?.progress,
+          categoryAlgoProgress: syncedUser?.categoryAlgoProgress,
         };
         setLocalUser(updatedUser);
         // Save updated profile to localStorage
@@ -309,22 +335,22 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-white p-6 text-black">
+    <div className="min-h-screen p-6 text-black bg-white">
       <Navbar onSelectCategory={setSelectedCategory} />
 
-      <div className="mt-6 grid grid-cols-12 mt-18 px-20">
+      <div className="grid grid-cols-12 px-20 mt-6 mt-18">
         {/* LEFT: PROFILE */}
-        <div className="col-span-3 rounded-xl p-6 text-center">
+        <div className="col-span-3 p-6 text-center rounded-xl">
           <div className="relative mx-auto mb-4 h-30 w-30">
             <img
               src={avatarPreview || profileAvatar}
               alt="profile"
-              className="h-30 w-30 rounded-full border object-cover"
+              className="object-cover border rounded-full h-30 w-30"
             />
             <button
               type="button"
               onClick={handleAvatarPick}
-              className="absolute bottom-2 right-2 translate-x-1/4 translate-y-1/4 rounded-full border border-black bg-white p-2 cursor-pointer hover:bg-gray-200 transition-colors"
+              className="absolute p-2 transition-colors bg-white border border-black rounded-full cursor-pointer bottom-2 right-2 translate-x-1/4 translate-y-1/4 hover:bg-gray-200"
               aria-label="Change profile image"
             >
               <PencilLine size={16} />
@@ -344,7 +370,7 @@ export default function Profile() {
             <p className="mt-3 text-sm text-gray-500">Uploading image...</p>
           )}
           <h2 className="text-xl font-semibold">{profileName}</h2>
-          <div className="flex justify-center items-center gap-2 text-sm mt-1 text-gray-600">
+          <div className="flex items-center justify-center gap-2 mt-1 text-sm text-gray-600">
             <span>✉</span>
             <span>{profileEmail}</span>
           </div>
@@ -362,27 +388,15 @@ export default function Profile() {
         </div>
 
         {/* RIGHT: STATS & PROGRESS */}
-        <div className="col-span-9 space-y-6 mr-4">
+        <div className="col-span-9 mr-4 space-y-6">
           <div className="grid grid-cols-3 gap-4">
-            <StatCard
-              title="Total Progress"
-              value={`${totalProgress}%`}
-              desc="Overall completion rate"
-            />
-            <StatCard
-              title="Pretest Score"
-              value={`${pretestScore}%`}
-              desc="Average across all tests"
-            />
-            <StatCard
-              title="Posttest Score"
-              value={`${posttestScore}%`}
-              desc="+30% improvement"
-            />
+            <StatCard title="Total Progress" value={`${totalProgress}%`} />
+            <StatCard title="Pretest Score" value={`${pretestScore}%`} />
+            <StatCard title="Posttest Score" value={`${posttestScore}%`} />
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h3 className="font-semibold mb-4">Algorithm Categories</h3>
+          <div className="p-6 bg-white border shadow-sm rounded-xl">
+            <h3 className="mb-4 font-semibold">Algorithm Categories</h3>
             {progressData.map((item) => (
               <ProgressRow key={item.name} item={item} />
             ))}
@@ -403,7 +417,8 @@ export default function Profile() {
             </h3>
 
             <p className="mb-3 text-sm text-[#5D5D5D]">
-              ลากวงกลมเพื่อเลือกตำแหน่งที่ต้องการ และปรับขนาดวงกลมก่อนกด Save
+              Drag the circle to choose the desired area, then adjust its size
+              before clicking Save.
             </p>
 
             <div
@@ -476,7 +491,7 @@ export default function Profile() {
               />
             </div>
 
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="flex justify-end gap-2 mt-5">
               <button
                 type="button"
                 onClick={closeCropModal}

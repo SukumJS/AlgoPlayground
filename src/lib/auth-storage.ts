@@ -1,12 +1,30 @@
 export const AUTH_TOKEN_KEY = "authToken";
 export const AUTH_USER_KEY = "authUser";
 
+export interface UserProgressSummary {
+  userId?: string;
+  totalProgress: number;
+  pretestScore: number;
+  posttestScore: number;
+}
+
+export interface UserCategoryAlgoProgressSummary {
+  userId?: string;
+  linear: number;
+  trees: number;
+  graph: number;
+  sorting: number;
+  searching: number;
+}
+
 export interface AuthUserProfile {
   id?: string;
   uid?: string;
   email?: string;
   imageUrl?: string;
   updatedAt?: string;
+  progress?: UserProgressSummary;
+  categoryAlgoProgress?: UserCategoryAlgoProgressSummary;
 }
 
 export function saveAuthSession(token: string, user?: AuthUserProfile) {

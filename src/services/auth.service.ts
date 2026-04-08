@@ -6,13 +6,7 @@ import { saveAuthSession, type AuthUserProfile } from "@/src/lib/auth-storage";
 // ── Responses ─────────────────────────────────────────────────────
 
 /** Shape returned by POST /auth/sync */
-export interface SyncUserResponse {
-  id?: string;
-  uid?: string;
-  imageUrl?: string;
-  updatedAt?: string;
-  email?: string;
-}
+export type SyncUserResponse = AuthUserProfile;
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
@@ -46,6 +40,8 @@ type SyncPayload = {
   email?: string;
   imageUrl?: string;
   updatedAt?: string;
+  progress?: SyncUserResponse["progress"];
+  categoryAlgoProgress?: SyncUserResponse["categoryAlgoProgress"];
 };
 
 function normalizeSyncUser(payload: SyncPayload): SyncUserResponse {
@@ -57,6 +53,8 @@ function normalizeSyncUser(payload: SyncPayload): SyncUserResponse {
       email: payload.email,
       imageUrl: payload.imageUrl,
       updatedAt: payload.updatedAt,
+      progress: payload.progress,
+      categoryAlgoProgress: payload.categoryAlgoProgress,
     }
   );
 }
