@@ -105,6 +105,34 @@ function PlaygroundOrderingQuestion({
     });
   }, [canvasData.nodes, selectedOrder]);
 
+  const decoratedEdges = useMemo(() => {
+    return canvasData.edges.map((edge) => {
+      if (canvasData.canvasType === "tree" && edge.type !== "tree") {
+        return {
+          ...edge,
+          type: "tree",
+          style: {
+            strokeWidth: 1.5,
+            stroke: "#5D5D5D",
+          },
+        };
+      }
+
+      if (canvasData.canvasType === "graph" && edge.type !== "floatingEdge") {
+        return {
+          ...edge,
+          type: "floatingEdge",
+          style: {
+            stroke: "#222121",
+            strokeWidth: 1,
+          },
+        };
+      }
+
+      return edge;
+    });
+  }, [canvasData.canvasType, canvasData.edges]);
+
   const handleNodeClick: NodeMouseHandler = useCallback(
     (_event, node) => {
       if (disabled) return;
@@ -130,16 +158,16 @@ function PlaygroundOrderingQuestion({
       {/* ReactFlow Canvas */}
       <div
         className="w-full rounded-xl border-2 border-gray-200 overflow-hidden bg-white mx-auto"
-        style={{ height: 400, maxWidth: 600 }}
+        style={{ height: 320, maxWidth: 540 }}
       >
         <ReactFlow
           nodes={decoratedNodes}
-          edges={canvasData.edges}
+          edges={decoratedEdges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onNodeClick={handleNodeClick}
           fitView
-          fitViewOptions={{ padding: 0.3 }}
+          fitViewOptions={{ padding: 0.45, maxZoom: 0.8 }}
           panOnDrag={false}
           zoomOnScroll={false}
           zoomOnPinch={false}

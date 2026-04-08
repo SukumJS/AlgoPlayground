@@ -42,6 +42,10 @@ function initAnswers(
       case "fill_blank":
         return { ...base, filledAnswer: "" };
       case "ordering": {
+        if (q.question.canvasData) {
+          // Canvas ordering should start with no selection; user must click nodes.
+          return { ...base, orderedItems: [] };
+        }
         const items = q.question.items || [];
         const shuffledIds = [...items]
           .sort(() => Math.random() - 0.5)

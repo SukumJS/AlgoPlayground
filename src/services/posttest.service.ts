@@ -1,5 +1,8 @@
 import api from "./api";
-import type { PosttestUserAnswer } from "@/src/app/types/posttest";
+import type {
+  PosttestUserAnswer,
+  OrderingCanvasData,
+} from "@/src/app/types/posttest";
 
 // ── Types matching backend response ──────────────────────────────
 
@@ -28,6 +31,7 @@ export interface PosttestQuestionDTO {
       choices: PosttestChoiceDTO[];
     };
     items?: PosttestOrderItemDTO[];
+    canvasData?: OrderingCanvasData;
   };
 }
 

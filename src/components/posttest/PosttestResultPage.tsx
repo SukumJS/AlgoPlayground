@@ -4,6 +4,7 @@ import React from "react";
 import TrackProgress from "@/src/components/pretest/TrackProgress";
 import ChoiceCard from "@/src/components/pretest/ChoiceCard";
 import { OrderingResultDisplay } from "./OrderingQuestion";
+import { PlaygroundOrderingResult } from "./PlaygroundOrderingQuestion";
 import { PosttestUserAnswer } from "@/src/app/types/posttest";
 import {
   PosttestGradingResult,
@@ -102,6 +103,29 @@ function PosttestResultPage({
         const userOrder = answer.orderedItems || [];
         const correctOrder = qResult?.correctOrder || [];
         const items = question.question.items || [];
+        const canvasData = question.question.canvasData;
+
+        // Canvas-based ordering (tree/graph)
+        if (canvasData) {
+          return (
+            <div className="space-y-3">
+              <PlaygroundOrderingResult
+                canvasData={canvasData}
+                items={items}
+                orderedIds={userOrder}
+                correctOrder={correctOrder}
+                label="Your answer:"
+              />
+              <PlaygroundOrderingResult
+                canvasData={canvasData}
+                items={items}
+                orderedIds={correctOrder}
+                correctOrder={correctOrder}
+                label="Correct order:"
+              />
+            </div>
+          );
+        }
 
         // Drag-and-drop ordering
         return (
