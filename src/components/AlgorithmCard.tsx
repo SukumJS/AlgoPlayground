@@ -5,6 +5,7 @@ import { Info } from "lucide-react";
 import { AlgorithmIcon } from "./AlgorithmIcon";
 
 interface Props {
+  sectionId: string;
   slug: string;
   title: string;
   shortTitle?: string;
@@ -20,6 +21,7 @@ interface Props {
   };
 }
 export default function AlgorithmCard({
+  sectionId,
   slug,
   title,
   shortTitle,
@@ -27,13 +29,8 @@ export default function AlgorithmCard({
 }: Props) {
   const router = useRouter();
 
-  //กดการ์ด = ไปหน้า pretest เสมอ
-  // const handleCardClick = () => {
-  //   router.push(`/pretest/${slug}`)
-  // }
-
   const handleCardClick = () => {
-    router.push(`/pretest`);
+    router.push(`/pretest?type=${sectionId}&algorithm=${slug}`);
   };
 
   // กด Info = ดูข้อมูล (ไม่เปลี่ยนหน้า)

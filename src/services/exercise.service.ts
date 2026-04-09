@@ -6,9 +6,5 @@ import type { Exercise } from "@/src/app/types/exercise";
 export const exerciseService = {
   /** GET /exercises — list exercises, optionally filtered by difficulty */
   getExercises: (filter?: { difficulty?: string }) =>
-    api.get<Exercise[]>("/exercises", { params: filter }),
-
-  /** GET /exercises/:algorithm — get exercises for a specific algorithm */
-  getExercisesByAlgorithm: (algorithm: string) =>
-    api.get<Exercise[]>(`/exercises/${algorithm}`),
+    api.get<Exercise[]>("/exercise", { params: filter }),
 };

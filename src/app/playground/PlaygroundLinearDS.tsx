@@ -447,7 +447,7 @@ export default function PlaygroundLinearDS({
           />
         </div>
         <div>
-          <PostTest_portal />
+          <PostTest_portal algorithm={algorithm} algoType="linear-ds" />
         </div>
       </SideTab>
     ),

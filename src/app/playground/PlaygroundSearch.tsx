@@ -324,7 +324,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
           />
         </div>
         <div>
-          <PostTest_portal />
+          <PostTest_portal algorithm={algorithm} algoType="search" />
         </div>
       </SideTab>
     ),
