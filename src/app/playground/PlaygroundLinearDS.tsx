@@ -126,6 +126,15 @@ export default function PlaygroundLinearDS({
     }));
   });
   const [nodeInput, setNodeInput] = useState<number | string>("6");
+  useEffect(() => {
+    queueMicrotask(() => {
+      if (algorithm === "stack" || algorithm === "queue") {
+        setNodeInput(""); // ถ้าเป็น Stack/Queue ให้ช่อง Drag กลายเป็นค่าว่าง เพื่อโชว์ตัว "N"
+      } else {
+        setNodeInput("6"); // ถ้าเป็น Array หรือ Linked List ให้กลับมาเป็น 6 สำหรับสอนลากวาง
+      }
+    });
+  }, [algorithm]);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [explanation, setExplanation] = useState<string>(
     "This section will explain the data structure operations.",
