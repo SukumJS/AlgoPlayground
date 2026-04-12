@@ -9,6 +9,7 @@ import PosttestQuestionRenderer from "@/src/components/posttest/PosttestQuestion
 import PosttestResultPage from "@/src/components/posttest/PosttestResultPage";
 import { PosttestQuestion, PosttestUserAnswer } from "@/src/app/types/posttest";
 import { posttestDataMap } from "@/src/data/posttestData";
+import { markPosttestCompleted } from "@/src/components/shared/posttestCompletion";
 
 // ─── Random question selection ───────────────────────────────────────
 // Select 5 questions ensuring at least 1 of each type
@@ -147,11 +148,12 @@ function PosttestContent() {
 
   const handleNext = useCallback(() => {
     if (isLastQuestion) {
+      markPosttestCompleted(algoType, algorithm);
       setIsSubmitted(true);
     } else {
       setCurrentQuestionIndex((prev) => prev + 1);
     }
-  }, [isLastQuestion]);
+  }, [isLastQuestion, algoType, algorithm]);
 
   const handleGoHome = useCallback(() => {
     router.push("/");

@@ -1,5 +1,5 @@
 "use client";
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams, notFound } from "next/navigation";
 import { DnDProvider } from "@/src/components/visualizer/useDnD";
 import { ReactFlowProvider } from "@xyflow/react";
@@ -9,6 +9,78 @@ import PlaygroundSort from "./PlaygroundSort";
 import PlaygroundSearch from "./PlaygroundSearch";
 import PlaygroundLinearDS from "./PlaygroundLinearDS";
 import { algorithmCatalog } from "@/src/data/algorithmCatalog";
+import Post_Test_modal from "@/src/components/shared/post_Test_modal";
+import {
+  hasCompletedPosttest,
+  hasSeenPosttestReminder,
+  markPosttestReminderSeen,
+} from "@/src/components/shared/posttestCompletion";
+
+type BrowserBackPosttestGuardProps = {
+  algoType: string;
+  algorithm: string;
+};
+
+function BrowserBackPosttestGuard({
+  algoType,
+  algorithm,
+}: BrowserBackPosttestGuardProps) {
+  const [hasDeferredReminder, setHasDeferredReminder] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return hasSeenPosttestReminder(algoType, algorithm);
+  });
+
+  const [showReminder, setShowReminder] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      !hasCompletedPosttest(algoType, algorithm) &&
+      hasSeenPosttestReminder(algoType, algorithm)
+    );
+  });
+
+  useEffect(() => {
+    if (hasCompletedPosttest(algoType, algorithm)) {
+      return;
+    }
+
+    // After user chooses "Maybe Later" in this visit, allow leaving playground.
+    if (hasDeferredReminder) {
+      return;
+    }
+
+    const GUARD_KEY = "posttestBackGuard";
+
+    const pushGuardState = () => {
+      const nextState = { ...(window.history.state ?? {}), [GUARD_KEY]: true };
+      window.history.pushState(nextState, "", window.location.href);
+    };
+
+    if (!window.history.state?.[GUARD_KEY]) {
+      pushGuardState();
+    }
+
+    const handlePopState = () => {
+      setShowReminder(true);
+      pushGuardState();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [algoType, algorithm, hasDeferredReminder]);
+
+  return (
+    <Post_Test_modal
+      showModal={showReminder}
+      onClose={() => {
+        markPosttestReminderSeen(algoType, algorithm);
+        setHasDeferredReminder(true);
+        setShowReminder(false);
+      }}
+      algorithm={algorithm}
+      algoType={algoType}
+    />
+  );
+}
 
 function PlaygroundRouter() {
   const searchParams = useSearchParams();
@@ -34,19 +106,32 @@ function PlaygroundRouter() {
     notFound();
   }
 
+  let content: React.ReactNode = null;
+
   if (algoType === "tree") {
-    return <PlaygroundTree algorithm={algorithm} />;
+    content = <PlaygroundTree algorithm={algorithm} />;
   } else if (algoType === "graph") {
-    return <PlaygroundGraph algorithm={algorithm} />;
+    content = <PlaygroundGraph algorithm={algorithm} />;
   } else if (algoType === "sort") {
-    return <PlaygroundSort algorithm={algorithm} />;
+    content = <PlaygroundSort algorithm={algorithm} />;
   } else if (algoType === "search") {
-    return <PlaygroundSearch algorithm={algorithm} />;
+    content = <PlaygroundSearch algorithm={algorithm} />;
   } else if (algoType === "linear-ds") {
-    return <PlaygroundLinearDS algorithm={algorithm} />;
+    content = <PlaygroundLinearDS algorithm={algorithm} />;
+  } else {
+    notFound();
   }
 
-  return notFound();
+  return (
+    <>
+      <BrowserBackPosttestGuard
+        key={`${algoType}:${algorithm}`}
+        algoType={algoType}
+        algorithm={algorithm}
+      />
+      {content}
+    </>
+  );
 }
 
 export default function Page() {
