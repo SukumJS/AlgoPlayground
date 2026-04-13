@@ -6,6 +6,16 @@ type PosttestStateDoc = {
   reminderShown?: boolean;
 };
 
+function getLocalCompletionKey(algoType?: string, algorithm?: string) {
+  if (!algoType || !algorithm) return null;
+  return `posttest-completed:${algoType}:${algorithm}`;
+}
+
+function getLocalReminderKey(algoType?: string, algorithm?: string) {
+  if (!algoType || !algorithm) return null;
+  return `posttest-reminder-shown:${algoType}:${algorithm}`;
+}
+
 function getPosttestStateDocId(algoType?: string, algorithm?: string) {
   if (!algoType || !algorithm) return null;
   return `${algoType}_${algorithm}`;
@@ -36,49 +46,75 @@ export async function hasCompletedPosttest(
   algoType?: string,
   algorithm?: string,
 ) {
-  const data = await readPosttestState(algoType, algorithm);
-  return data.completed === true;
+  try {
+    const data = await readPosttestState(algoType, algorithm);
+    return data.completed === true;
+  } catch {
+    if (typeof window === "undefined") return false;
+    const key = getLocalCompletionKey(algoType, algorithm);
+    return key ? window.localStorage.getItem(key) === "true" : false;
+  }
 }
 
 export async function markPosttestCompleted(
   algoType?: string,
   algorithm?: string,
 ) {
-  const ref = getPosttestStateDocRef(algoType, algorithm);
-  if (!ref) return;
+  try {
+    const ref = getPosttestStateDocRef(algoType, algorithm);
+    if (!ref) return;
 
-  await setDoc(
-    ref,
-    {
-      completed: true,
-      reminderShown: true,
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  );
+    await setDoc(
+      ref,
+      {
+        completed: true,
+        reminderShown: true,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch {
+    if (typeof window === "undefined") return;
+    const completionKey = getLocalCompletionKey(algoType, algorithm);
+    const reminderKey = getLocalReminderKey(algoType, algorithm);
+    if (completionKey) window.localStorage.setItem(completionKey, "true");
+    if (reminderKey) window.localStorage.setItem(reminderKey, "true");
+  }
 }
 
 export async function hasSeenPosttestReminder(
   algoType?: string,
   algorithm?: string,
 ) {
-  const data = await readPosttestState(algoType, algorithm);
-  return data.reminderShown === true;
+  try {
+    const data = await readPosttestState(algoType, algorithm);
+    return data.reminderShown === true;
+  } catch {
+    if (typeof window === "undefined") return false;
+    const key = getLocalReminderKey(algoType, algorithm);
+    return key ? window.localStorage.getItem(key) === "true" : false;
+  }
 }
 
 export async function markPosttestReminderSeen(
   algoType?: string,
   algorithm?: string,
 ) {
-  const ref = getPosttestStateDocRef(algoType, algorithm);
-  if (!ref) return;
+  try {
+    const ref = getPosttestStateDocRef(algoType, algorithm);
+    if (!ref) return;
 
-  await setDoc(
-    ref,
-    {
-      reminderShown: true,
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  );
+    await setDoc(
+      ref,
+      {
+        reminderShown: true,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch {
+    if (typeof window === "undefined") return;
+    const key = getLocalReminderKey(algoType, algorithm);
+    if (key) window.localStorage.setItem(key, "true");
+  }
 }

@@ -46,9 +46,12 @@ export default function GoToHome_Portal({
       <Post_Test_modal
         showModal={showReminder}
         onClose={async () => {
-          await markPosttestReminderSeen(algoType, algorithm);
-          setShowReminder(false);
-          router.push("/");
+          try {
+            await markPosttestReminderSeen(algoType, algorithm);
+          } finally {
+            setShowReminder(false);
+            router.push("/");
+          }
         }}
         algorithm={algorithm}
         algoType={algoType}

@@ -88,11 +88,14 @@ function BrowserBackPosttestGuard({
     <Post_Test_modal
       showModal={showReminder}
       onClose={async () => {
-        await markPosttestReminderSeen(algoType, algorithm);
-        setHasDeferredReminder(true);
-        setShowReminder(false);
-        if (reminderContext === "exit") {
-          window.location.assign("/");
+        try {
+          await markPosttestReminderSeen(algoType, algorithm);
+        } finally {
+          setHasDeferredReminder(true);
+          setShowReminder(false);
+          if (reminderContext === "exit") {
+            window.location.assign("/");
+          }
         }
       }}
       algorithm={algorithm}
