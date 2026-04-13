@@ -22,10 +22,10 @@ export default function GoToHome_Portal({
   const router = useRouter();
   const [showReminder, setShowReminder] = useState(false);
 
-  const handleGoHome = () => {
+  const handleGoHome = async () => {
     if (
-      hasCompletedPosttest(algoType, algorithm) ||
-      hasSeenPosttestReminder(algoType, algorithm)
+      (await hasCompletedPosttest(algoType, algorithm)) ||
+      (await hasSeenPosttestReminder(algoType, algorithm))
     ) {
       router.push("/");
       return;
@@ -45,9 +45,10 @@ export default function GoToHome_Portal({
       </button>
       <Post_Test_modal
         showModal={showReminder}
-        onClose={() => {
-          markPosttestReminderSeen(algoType, algorithm);
+        onClose={async () => {
+          await markPosttestReminderSeen(algoType, algorithm);
           setShowReminder(false);
+          router.push("/");
         }}
         algorithm={algorithm}
         algoType={algoType}

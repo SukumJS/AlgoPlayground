@@ -517,7 +517,7 @@ export default function PlaygroundLinearDS({
       {sideTabMemo}
 
       <div className="absolute top-4 left-8 z-10 flex gap-2">
-        <GoToHome_Portal />
+        <GoToHome_Portal algorithm={algorithm} algoType="linear-ds" />
         <button
           onClick={(e) => {
             e.stopPropagation();

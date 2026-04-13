@@ -25,23 +25,38 @@ function BrowserBackPosttestGuard({
   algoType,
   algorithm,
 }: BrowserBackPosttestGuardProps) {
-  const [hasDeferredReminder, setHasDeferredReminder] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return hasSeenPosttestReminder(algoType, algorithm);
-  });
-
-  const [showReminder, setShowReminder] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return (
-      !hasCompletedPosttest(algoType, algorithm) &&
-      hasSeenPosttestReminder(algoType, algorithm)
-    );
-  });
+  const [reminderContext, setReminderContext] = useState<"entry" | "exit">(
+    "entry",
+  );
+  const [hasDeferredReminder, setHasDeferredReminder] = useState(false);
+  const [showReminder, setShowReminder] = useState(false);
+  const [statusReady, setStatusReady] = useState(false);
 
   useEffect(() => {
-    if (hasCompletedPosttest(algoType, algorithm)) {
-      return;
-    }
+    let mounted = true;
+
+    const loadState = async () => {
+      const [completed, reminderSeen] = await Promise.all([
+        hasCompletedPosttest(algoType, algorithm),
+        hasSeenPosttestReminder(algoType, algorithm),
+      ]);
+
+      if (!mounted) return;
+
+      setHasDeferredReminder(reminderSeen);
+      setShowReminder(!completed && reminderSeen);
+      setStatusReady(true);
+    };
+
+    loadState();
+
+    return () => {
+      mounted = false;
+    };
+  }, [algoType, algorithm]);
+
+  useEffect(() => {
+    if (!statusReady || showReminder) return;
 
     // After user chooses "Maybe Later" in this visit, allow leaving playground.
     if (hasDeferredReminder) {
@@ -60,21 +75,25 @@ function BrowserBackPosttestGuard({
     }
 
     const handlePopState = () => {
+      setReminderContext("exit");
       setShowReminder(true);
       pushGuardState();
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [algoType, algorithm, hasDeferredReminder]);
+  }, [algoType, algorithm, hasDeferredReminder, showReminder, statusReady]);
 
   return (
     <Post_Test_modal
       showModal={showReminder}
-      onClose={() => {
-        markPosttestReminderSeen(algoType, algorithm);
+      onClose={async () => {
+        await markPosttestReminderSeen(algoType, algorithm);
         setHasDeferredReminder(true);
         setShowReminder(false);
+        if (reminderContext === "exit") {
+          window.location.assign("/");
+        }
       }}
       algorithm={algorithm}
       algoType={algoType}

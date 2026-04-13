@@ -148,7 +148,7 @@ function PosttestContent() {
 
   const handleNext = useCallback(() => {
     if (isLastQuestion) {
-      markPosttestCompleted(algoType, algorithm);
+      void markPosttestCompleted(algoType, algorithm);
       setIsSubmitted(true);
     } else {
       setCurrentQuestionIndex((prev) => prev + 1);
