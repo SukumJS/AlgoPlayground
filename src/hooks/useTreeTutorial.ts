@@ -276,12 +276,11 @@ export function useTreeTutorial({
         if (dist < dropTargetRadius) {
           // Delete the node
           setNodes((nds) => nds.filter((n) => n.id !== node.id));
-          // Complete tutorial
-          handleTutorialComplete();
+          setTutorialStep(6);
         }
       }
     },
-    [showTutorial, tutorialStep, setNodes, handleTutorialComplete],
+    [showTutorial, tutorialStep, setNodes, setTutorialStep],
   );
 
   return {

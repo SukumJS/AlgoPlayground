@@ -517,7 +517,6 @@ export function useGraphTutorial({
           );
           // Complete tutorial
           setTutorialStep(completedStep);
-          handleTutorialComplete();
         } else {
           // Clear danger state
           setNodes((nds) =>
@@ -538,7 +537,6 @@ export function useGraphTutorial({
       completedStep,
       setNodes,
       setEdges,
-      handleTutorialComplete,
     ],
   );
 
