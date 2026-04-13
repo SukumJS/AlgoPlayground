@@ -5,83 +5,57 @@ import TrackProgress from "@/src/components/pretest/TrackProgress";
 import ChoiceCard from "@/src/components/pretest/ChoiceCard";
 import { OrderingResultDisplay } from "./OrderingQuestion";
 import { PlaygroundOrderingResult } from "./PlaygroundOrderingQuestion";
+import { PosttestUserAnswer } from "@/src/app/types/posttest";
 import {
-  PosttestData,
-  PosttestQuestion,
-  PosttestUserAnswer,
-} from "@/src/app/types/posttest";
+  PosttestGradingResult,
+  PosttestDataDTO,
+} from "@/src/services/posttest.service";
 
 type PosttestResultPageProps = {
-  posttest: PosttestData;
-  selectedQuestions: PosttestQuestion[];
+  title: string;
+  questions: PosttestDataDTO["questions"];
   userAnswers: PosttestUserAnswer[];
+  gradingResult: PosttestGradingResult;
   onGoHome: () => void;
   algoType: string;
   className?: string;
 };
 
 function PosttestResultPage({
-  posttest,
-  selectedQuestions,
+  title,
+  questions,
   userAnswers,
+  gradingResult,
   onGoHome,
   algoType,
   className = "",
 }: PosttestResultPageProps) {
   const nodeVariant = algoType === "sorting" ? "square" : "circle";
 
-  // Calculate score per question
-  const getQuestionScore = (question: PosttestQuestion): number => {
-    const answer = userAnswers.find((a) => a.questionId === question.id);
-    if (!answer) return 0;
-
-    switch (question.type) {
-      case "multiple_choice":
-        return answer.selectedChoiceId ===
-          question.question.multipleChoice.correctChoiceId
-          ? 1
-          : 0;
-      case "fill_blank":
-        return (answer.filledAnswer || "").trim().toLowerCase() ===
-          question.question.correctAnswer.trim().toLowerCase()
-          ? 1
-          : 0;
-      case "ordering": {
-        const userOrder = answer.orderedItems || [];
-        const correctOrder = question.question.correctOrder;
-        if (userOrder.length !== correctOrder.length) return 0;
-        return userOrder.every((id, i) => id === correctOrder[i]) ? 1 : 0;
-      }
-      default:
-        return 0;
-    }
-  };
-
-  const totalScore = selectedQuestions.reduce(
-    (acc, q) => acc + getQuestionScore(q),
-    0,
+  // Build result lookup
+  const resultMap = new Map(
+    gradingResult.results.map((r) => [r.questionId, r]),
   );
-  const totalQuestions = selectedQuestions.length;
 
   // Render answer display per question type
   const renderAnswerDisplay = (
-    question: PosttestQuestion,
+    question: PosttestDataDTO["questions"][number],
     answer: PosttestUserAnswer,
   ) => {
+    const qResult = resultMap.get(question.id);
+    const isCorrect = qResult?.isCorrect ?? false;
+
     switch (question.type) {
       case "multiple_choice": {
-        const isCorrect =
-          answer.selectedChoiceId ===
-          question.question.multipleChoice.correctChoiceId;
-        const correctId = question.question.multipleChoice.correctChoiceId;
+        const choices = question.question.multipleChoice?.choices || [];
+        const correctId = qResult?.correctChoiceId;
 
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {question.question.multipleChoice.choices.map((choice) => {
+            {choices.map((choice) => {
               const isUserSelected = answer.selectedChoiceId === choice.id;
               const isCorrectChoice = choice.id === correctId;
 
-              // If user got it wrong, highlight correct answer green
               let extraClass = "";
               if (!isCorrect && isCorrectChoice) {
                 extraClass = "!bg-green-100 !border-green-400";
@@ -119,7 +93,7 @@ function PosttestResultPage({
                 Correct answer:
               </span>
               <span className="px-4 py-2 bg-green-50 border border-green-200 rounded-lg text-green-700 font-medium">
-                {question.question.correctAnswer}
+                {qResult?.correctAnswer || "—"}
               </span>
             </div>
           </div>
@@ -127,30 +101,33 @@ function PosttestResultPage({
 
       case "ordering": {
         const userOrder = answer.orderedItems || [];
+        const correctOrder = qResult?.correctOrder || [];
+        const items = question.question.items || [];
         const canvasData = question.question.canvasData;
 
-        // Canvas-type ordering (tree/graph) — show badge rows
+        // Canvas-based ordering (tree/graph)
         if (canvasData) {
           return (
             <div className="space-y-3">
               <PlaygroundOrderingResult
                 canvasData={canvasData}
-                items={question.question.items}
+                items={items}
                 orderedIds={userOrder}
-                correctOrder={question.question.correctOrder}
+                correctOrder={correctOrder}
                 label="Your answer:"
               />
               <PlaygroundOrderingResult
                 canvasData={canvasData}
-                items={question.question.items}
-                orderedIds={question.question.correctOrder}
+                items={items}
+                orderedIds={correctOrder}
+                correctOrder={correctOrder}
                 label="Correct order:"
               />
             </div>
           );
         }
 
-        // Drag-and-drop ordering (sorting) — show node rows
+        // Drag-and-drop ordering
         return (
           <div className="space-y-3">
             <div>
@@ -158,9 +135,9 @@ function PosttestResultPage({
                 Your answer:
               </span>
               <OrderingResultDisplay
-                items={question.question.items}
+                items={items}
                 orderedIds={userOrder}
-                correctOrder={question.question.correctOrder}
+                correctOrder={correctOrder}
                 variant={nodeVariant}
               />
             </div>
@@ -169,8 +146,9 @@ function PosttestResultPage({
                 Correct order:
               </span>
               <OrderingResultDisplay
-                items={question.question.items}
-                orderedIds={question.question.correctOrder}
+                items={items}
+                orderedIds={correctOrder}
+                correctOrder={correctOrder}
                 variant={nodeVariant}
               />
             </div>
@@ -188,9 +166,9 @@ function PosttestResultPage({
       <div className="max-w-[1440px] mx-auto sm:px-8 sm:py-8">
         {/* Progress Navbar - Complete */}
         <TrackProgress
-          current={totalQuestions}
-          total={totalQuestions}
-          title={posttest.title}
+          current={gradingResult.totalQuestions}
+          total={gradingResult.totalQuestions}
+          title={title}
           isComplete={true}
           className="mb-10"
         />
@@ -200,18 +178,19 @@ function PosttestResultPage({
           <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md px-6 py-4 text-center">
             <p className="text-sm text-gray-500 font-medium mb-1">Your Score</p>
             <p className="text-3xl font-bold text-[#222121]">
-              {totalScore}/{totalQuestions}
+              {gradingResult.score}/{gradingResult.totalQuestions}
             </p>
           </div>
         </div>
 
         {/* All Questions with Results */}
         <div className="space-y-10 px-8">
-          {selectedQuestions.map((question, questionIndex) => {
+          {questions.map((question, questionIndex) => {
             const answer = userAnswers.find(
               (a) => a.questionId === question.id,
             );
-            const score = getQuestionScore(question);
+            const qResult = resultMap.get(question.id);
+            const score = qResult?.isCorrect ? 1 : 0;
 
             return (
               <div key={question.id} className="space-y-4">

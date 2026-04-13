@@ -2,11 +2,12 @@ import AlgorithmCard from "./AlgorithmCard";
 import { TestProgress } from "../data/algorithmCatalog";
 
 interface Props {
+  sectionId: string;
   title: string;
   items: TestProgress[];
 }
 
-export default function AlgorithmSection({ title, items }: Props) {
+export default function AlgorithmSection({ sectionId, title, items }: Props) {
   return (
     <section className="mb-14">
       <h2 className="mb-6 text-3xl font-bold text-black">{title}</h2>
@@ -15,6 +16,7 @@ export default function AlgorithmSection({ title, items }: Props) {
         {items.map((item) => (
           <AlgorithmCard
             key={item.slug}
+            sectionId={sectionId}
             slug={item.slug}
             title={item.title}
             shortTitle={item.shortTitle || item.title}
