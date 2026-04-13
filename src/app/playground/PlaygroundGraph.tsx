@@ -562,6 +562,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     isGraph: true,
     directed: isDirectedGraph,
     weighted: isWeightedGraph,
+    algorithm,
   });
 
   // Node interaction (universal - works for graph interactions, active when NOT in tutorial)

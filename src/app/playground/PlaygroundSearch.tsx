@@ -120,6 +120,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
     flowToScreenPosition,
     setNodes,
     isSearch: true,
+    algorithm,
   });
 
   const onNodesChange: OnNodesChange = useCallback(

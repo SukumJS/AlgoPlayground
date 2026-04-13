@@ -156,6 +156,7 @@ export default function PlaygroundLinearDS({
     setNodes,
     isLinearDS: true,
     isLinkedList,
+    algorithm,
   });
 
   useEffect(() => {

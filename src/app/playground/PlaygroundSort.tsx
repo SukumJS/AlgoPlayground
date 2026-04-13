@@ -133,6 +133,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
     flowToScreenPosition,
     setNodes,
     isSort: true,
+    algorithm,
   });
 
   const onNodesChange: OnNodesChange = useCallback(

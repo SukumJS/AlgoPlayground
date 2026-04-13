@@ -357,6 +357,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
     setNodes,
     setEdges,
     isTree: true,
+    algorithm: algorithm,
   });
 
   // Node interaction (universal - works for all node types, only active when NOT in tutorial)

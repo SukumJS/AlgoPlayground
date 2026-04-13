@@ -22,6 +22,7 @@ interface UseGraphTutorialProps {
   directed?: boolean;
   /** true = weighted edges (Dijkstra, Prim, Kruskal), false = unweighted (BFS/DFS) */
   weighted?: boolean;
+  algorithm: string;
 }
 
 /**
@@ -70,9 +71,10 @@ export function useGraphTutorial({
   isGraph,
   directed = true,
   weighted = directed,
+  algorithm,
 }: UseGraphTutorialProps) {
   // Tutorial state
-  const [showTutorial, setShowTutorial] = useState(() => isGraph);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
@@ -193,6 +195,21 @@ export function useGraphTutorial({
       window.removeEventListener("resize", updateTutorialPositions);
     };
   }, [updateTutorialPositions]);
+  // localStorage เอาไว้เช็คว่าเคยผ่าน tutorial ของโครงสร้างข้อมูลนี้แล้วหรือยัง
+  useEffect(() => {
+    if (isGraph && algorithm) {
+      const timer = setTimeout(() => {
+        const hasCompleted = localStorage.getItem(
+          `tutorial_${algorithm}_completed`,
+        );
+
+        if (!hasCompleted) {
+          setShowTutorial(true);
+        }
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isGraph, algorithm]);
 
   // Trigger position update when tutorial becomes active.
   // Wait for ReactFlow's fitView to settle before marking positions as ready.
@@ -209,8 +226,11 @@ export function useGraphTutorial({
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
     setShowCompletionModal(true);
-    // TODO: POST to Firebase to mark tutorial as completed
-  }, []);
+    // มาร์คใน localStorage ว่า tutorial นี้ผ่านแล้ว (ใช้ algorithm เป็น key เพื่อแยกแต่ละ tutorial)
+    if (algorithm) {
+      localStorage.setItem(`tutorial_${algorithm}_completed`, "true");
+    }
+  }, [algorithm]);
 
   // Handle node click for tutorial
   const handleNodeClick = useCallback(

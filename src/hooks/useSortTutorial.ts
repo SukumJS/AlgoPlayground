@@ -15,6 +15,7 @@ interface UseSortTutorialProps {
   };
   setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>;
   isSort: boolean;
+  algorithm: string;
 }
 
 export function useSortTutorial({
@@ -22,6 +23,7 @@ export function useSortTutorial({
   flowToScreenPosition,
   setNodes,
   isSort,
+  algorithm,
 }: UseSortTutorialProps) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -138,13 +140,23 @@ export function useSortTutorial({
     };
   }, [updateTutorialPositions]);
 
-  // แก้บั๊กเปิด Tutorial โต้งๆ ด้วย setTimeout
+  // localStorage เอาไว้เช็คว่าเคยผ่าน tutorial ของโครงสร้างข้อมูลนี้แล้วหรือยัง
   useEffect(() => {
-    if (isSort) {
-      const timer = setTimeout(() => setShowTutorial(true), 0);
+    if (isSort && algorithm) {
+      const timer = setTimeout(() => {
+        // จะได้คีย์เช่น "tutorial_bst_completed" หรือ "tutorial_avl_completed"
+        const hasCompleted = localStorage.getItem(
+          `tutorial_${algorithm}_completed`,
+        );
+
+        if (!hasCompleted) {
+          setShowTutorial(true);
+        }
+      }, 0);
+
       return () => clearTimeout(timer);
     }
-  }, [isSort]);
+  }, [isSort, algorithm]);
 
   useEffect(() => {
     if (showTutorial) {
@@ -165,7 +177,11 @@ export function useSortTutorial({
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
     setShowCompletionModal(true);
-  }, []);
+    // มาร์คใน localStorage ว่า tutorial นี้ผ่านแล้ว (ใช้ algorithm เป็น key เพื่อแยกแต่ละ tutorial)
+    if (algorithm) {
+      localStorage.setItem(`tutorial_${algorithm}_completed`, "true");
+    }
+  }, [algorithm]);
 
   // เพิ่ม useEffect ตัวนี้เพื่อดักจับว่า "กล่องถูกลบไปจริงๆ หรือยัง"
   // และแก้บั๊ก Cascading Renders ด้วย setTimeout
@@ -185,7 +201,7 @@ export function useSortTutorial({
         return () => clearTimeout(timer);
       }
     }
-  }, [nodes, tutorialStep, showTutorial, handleTutorialComplete]);
+  }, [nodes, tutorialStep, showTutorial, setTutorialStep]);
 
   const handleTutorialDropSuccess = useCallback(() => {
     if (showTutorial && tutorialStep === 0) {

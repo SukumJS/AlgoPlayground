@@ -15,6 +15,7 @@ interface UseSearchTutorialProps {
   };
   setNodes: React.Dispatch<React.SetStateAction<Node<SortNodeData>[]>>;
   isSearch: boolean;
+  algorithm: string;
 }
 
 export function useSearchTutorial({
@@ -22,6 +23,7 @@ export function useSearchTutorial({
   flowToScreenPosition,
   setNodes,
   isSearch,
+  algorithm,
 }: UseSearchTutorialProps) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -136,13 +138,21 @@ export function useSearchTutorial({
     };
   }, [updateTutorialPositions]);
 
-  // แก้บั๊กเปิด Tutorial โต้งๆ ด้วย setTimeout
+  // localStorage เอาไว้เช็คว่าเคยผ่าน tutorial ของโครงสร้างข้อมูลนี้แล้วหรือยัง
   useEffect(() => {
-    if (isSearch) {
-      const timer = setTimeout(() => setShowTutorial(true), 0);
+    if (isSearch && algorithm) {
+      const timer = setTimeout(() => {
+        const hasCompleted = localStorage.getItem(
+          `tutorial_${algorithm}_completed`,
+        );
+
+        if (!hasCompleted) {
+          setShowTutorial(true);
+        }
+      }, 0);
       return () => clearTimeout(timer);
     }
-  }, [isSearch]);
+  }, [isSearch, algorithm]);
 
   useEffect(() => {
     if (showTutorial) {
@@ -161,7 +171,11 @@ export function useSearchTutorial({
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
     setShowCompletionModal(true);
-  }, []);
+    // มาร์คใน localStorage ว่า tutorial นี้ผ่านแล้ว (ใช้ algorithm เป็น key เพื่อแยกแต่ละ tutorial)
+    if (algorithm) {
+      localStorage.setItem(`tutorial_${algorithm}_completed`, "true");
+    }
+  }, [algorithm]);
 
   // เพิ่ม useEffect ตัวนี้เพื่อดักจับว่า "กล่องถูกลบไปจริงๆ หรือยัง"
   // และแก้บั๊ก Cascading Renders ด้วย setTimeout
