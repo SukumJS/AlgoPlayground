@@ -104,7 +104,7 @@ const algorithmNames: Record<string, string> = {
 
 export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
   const [nodes, setNodes] = useState<Node<SortNodeData>[]>(initialNodes);
-  const [nodeInput, setNodeInput] = useState<number | string>(11);
+  const [nodeInput, setNodeInput] = useState<number | string>("");
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [explanation, setExplanation] = useState<string>(
     "This section will explain the algorithm's steps. Click 'Run' to start.",
@@ -127,7 +127,6 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
 
   // ดึง setCenter กับ getZoom เพิ่มเข้ามา
   const { flowToScreenPosition, setCenter, getZoom, fitView } = useReactFlow();
-
   const tutorial = useSortTutorial({
     nodes,
     flowToScreenPosition,
@@ -135,7 +134,14 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
     isSort: true,
     algorithm,
   });
-
+  // Auto-fill เลข 11 ให้กล่อง Input เฉพาะตอนที่ Tutorial ทำงาน
+  React.useEffect(() => {
+    if (tutorial.showTutorial) {
+      setNodeInput(11);
+    } else {
+      setNodeInput(""); // เคลียร์กล่องเป็นค่าว่างเมื่อจบ Tutorial หรือไม่ได้อยู่ใน Tutorial
+    }
+  }, [tutorial.showTutorial]);
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
       setNodes((nds) => applyNodeChanges(changes, nds) as Node<SortNodeData>[]),

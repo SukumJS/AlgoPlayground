@@ -307,7 +307,7 @@ function Data_sort({
           >
             <input
               type="number"
-              placeholder="0"
+              placeholder="N"
               disabled={disableDrag} //ปิดการพิมพ์ถ้าเต็ม
               className={`w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                 disableDrag ? "cursor-not-allowed" : ""
