@@ -125,7 +125,7 @@ export default function PlaygroundLinearDS({
       data: { value: val, index: i, status: "idle" },
     }));
   });
-  const [nodeInput, setNodeInput] = useState<number | string>("6");
+  const [nodeInput, setNodeInput] = useState<number | string>("");
   useEffect(() => {
     queueMicrotask(() => {
       if (algorithm === "stack" || algorithm === "queue") {
@@ -158,7 +158,14 @@ export default function PlaygroundLinearDS({
     isLinkedList,
     algorithm,
   });
-
+  // Auto-fill เลข 11 ให้กล่อง Input เฉพาะตอนที่ Tutorial ทำงาน
+  React.useEffect(() => {
+    if (tutorial.showTutorial) {
+      setNodeInput(6);
+    } else {
+      setNodeInput(""); // เคลียร์กล่องเป็นค่าว่างเมื่อจบ Tutorial หรือไม่ได้อยู่ใน Tutorial
+    }
+  }, [tutorial.showTutorial]);
   useEffect(() => {
     if (algorithm) {
       queueMicrotask(() => {
