@@ -28,7 +28,7 @@ export default function TipsModal({
 
         {/* ---------- Sections ---------- */}
         <div className="space-y-4">
-          {sections.map((section, index) => (
+          {(sections || []).map((section, index) => (
             <div key={index}>
               <p className="mb-1 text-sm font-semibold text-gray-700">
                 {section.label}

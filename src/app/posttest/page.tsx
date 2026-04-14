@@ -1,59 +1,36 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, Suspense } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  Suspense,
+} from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import TrackProgress from "@/src/components/pretest/TrackProgress";
 import QuestionCard from "@/src/components/pretest/QuestionCard";
 import NavigationButtons from "@/src/components/pretest/NavigationButtons";
 import PosttestQuestionRenderer from "@/src/components/posttest/PosttestQuestionRenderer";
 import PosttestResultPage from "@/src/components/posttest/PosttestResultPage";
-import { PosttestQuestion, PosttestUserAnswer } from "@/src/app/types/posttest";
-import { posttestDataMap } from "@/src/data/posttestData";
-import { markPosttestCompleted } from "@/src/components/shared/posttestCompletion";
+import { PosttestUserAnswer } from "@/src/app/types/posttest";
+import {
+  posttestService,
+  PosttestDataDTO,
+  PosttestGradingResult,
+} from "@/src/services/posttest.service";
 
-// ─── Random question selection ───────────────────────────────────────
-// Select 5 questions ensuring at least 1 of each type
-function selectRandomQuestions(
-  allQuestions: PosttestQuestion[],
-  count: number = 5,
-): PosttestQuestion[] {
-  const types = ["multiple_choice", "fill_blank", "ordering"] as const;
+// ─── Initialize answers from questions ───────────────────────────────
+function initAnswers(
+  questions: PosttestDataDTO["questions"],
+  saved?: PosttestUserAnswer[],
+): PosttestUserAnswer[] {
+  const savedMap = new Map((saved || []).map((a) => [a.questionId, a]));
 
-  // Group by type
-  const byType: Record<string, PosttestQuestion[]> = {};
-  for (const t of types) {
-    byType[t] = allQuestions.filter((q) => q.type === t);
-  }
-
-  const selected: PosttestQuestion[] = [];
-  const usedIds = new Set<string>();
-
-  // Pick at least 1 of each type
-  for (const t of types) {
-    const pool = byType[t];
-    if (pool.length > 0) {
-      const pick = pool[Math.floor(Math.random() * pool.length)];
-      selected.push(pick);
-      usedIds.add(pick.id);
-    }
-  }
-
-  // Fill remaining slots from unused questions
-  const remaining = allQuestions.filter((q) => !usedIds.has(q.id));
-  const shuffled = [...remaining].sort(() => Math.random() - 0.5);
-
-  for (const q of shuffled) {
-    if (selected.length >= count) break;
-    selected.push(q);
-  }
-
-  // Shuffle final selection
-  return selected.sort(() => Math.random() - 0.5);
-}
-
-// ─── Initialize answers ──────────────────────────────────────────────
-function initAnswers(questions: PosttestQuestion[]): PosttestUserAnswer[] {
   return questions.map((q) => {
+    const existing = savedMap.get(q.id);
+    if (existing) return existing;
+
     const base: PosttestUserAnswer = {
       questionId: q.id,
       type: q.type,
@@ -65,13 +42,12 @@ function initAnswers(questions: PosttestQuestion[]): PosttestUserAnswer[] {
       case "fill_blank":
         return { ...base, filledAnswer: "" };
       case "ordering": {
-        const hasCanvas = q.question.canvasData !== undefined;
-        if (hasCanvas) {
-          // Canvas ordering: start with empty selection (user clicks nodes)
+        if (q.question.canvasData) {
+          // Canvas ordering should start with no selection; user must click nodes.
           return { ...base, orderedItems: [] };
         }
-        // Drag-and-drop ordering: shuffle items for initial display
-        const shuffledIds = [...q.question.items]
+        const items = q.question.items || [];
+        const shuffledIds = [...items]
           .sort(() => Math.random() - 0.5)
           .map((item) => item.id);
         return { ...base, orderedItems: shuffledIds };
@@ -92,10 +68,8 @@ function hasAnswer(answer: PosttestUserAnswer): boolean {
       );
     case "fill_blank":
       return (answer.filledAnswer || "").trim().length > 0;
-    case "ordering": {
-      const items = answer.orderedItems || [];
-      return items.length > 0; // canvas: needs at least 1 selection; drag-drop: always has items
-    }
+    case "ordering":
+      return (answer.orderedItems || []).length > 0;
     default:
       return false;
   }
@@ -109,23 +83,89 @@ function PosttestContent() {
   const algoType = searchParams.get("type") || "sorting";
   const algorithm = searchParams.get("algorithm") || "";
 
-  // Load data and select questions
-  const posttest = posttestDataMap[algorithm];
-
-  const selectedQuestions = useMemo(() => {
-    if (!posttest) return [];
-    return selectRandomQuestions(posttest.questions, 5);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [algorithm]);
+  const [posttest, setPosttest] = useState<PosttestDataDTO | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState<PosttestUserAnswer[]>(() =>
-    initAnswers(selectedQuestions),
-  );
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [userAnswers, setUserAnswers] = useState<PosttestUserAnswer[]>([]);
+  const [gradingResult, setGradingResult] =
+    useState<PosttestGradingResult | null>(null);
 
-  const currentQuestion = selectedQuestions[currentQuestionIndex];
-  const totalQuestions = selectedQuestions.length;
+  // Auto-save debounce
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const answersRef = useRef(userAnswers);
+  answersRef.current = userAnswers;
+
+  // Fetch posttest questions from API
+  useEffect(() => {
+    if (!algorithm) {
+      setIsLoading(false);
+      setError("No algorithm specified");
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchPosttest = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response =
+          await posttestService.getPosttestByAlgorithm(algorithm);
+        if (cancelled) return;
+
+        const data = response.data.data;
+
+        if (!data || !data.questions || data.questions.length === 0) {
+          setError(`No posttest questions found for "${algorithm}"`);
+          return;
+        }
+
+        setPosttest(data);
+        setUserAnswers(initAnswers(data.questions, data.savedAnswers));
+      } catch (err) {
+        if (cancelled) return;
+        setError(
+          err instanceof Error ? err.message : "Failed to load posttest data",
+        );
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    fetchPosttest();
+    return () => {
+      cancelled = true;
+    };
+  }, [algorithm]);
+
+  // Auto-save progress when answers change
+  const saveProgress = useCallback(async () => {
+    if (!algorithm || answersRef.current.length === 0) return;
+    try {
+      await posttestService.savePosttestProgress(algorithm, answersRef.current);
+    } catch {
+      // Silent fail
+    }
+  }, [algorithm]);
+
+  // Save on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (algorithm && answersRef.current.length > 0) {
+        posttestService
+          .savePosttestProgress(algorithm, answersRef.current)
+          .catch(() => {});
+      }
+    };
+  }, [algorithm]);
+
+  const currentQuestion = posttest?.questions[currentQuestionIndex];
+  const totalQuestions = posttest?.questions.length ?? 0;
   const isFirstQuestion = currentQuestionIndex === 0;
   const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
 
@@ -134,38 +174,69 @@ function PosttestContent() {
   );
   const answered = currentAnswer ? hasAnswer(currentAnswer) : false;
 
-  const handleAnswer = useCallback((newAnswer: PosttestUserAnswer) => {
-    setUserAnswers((prev) =>
-      prev.map((a) => (a.questionId === newAnswer.questionId ? newAnswer : a)),
-    );
-  }, []);
+  const handleAnswer = useCallback(
+    (newAnswer: PosttestUserAnswer) => {
+      setUserAnswers((prev) =>
+        prev.map((a) =>
+          a.questionId === newAnswer.questionId ? newAnswer : a,
+        ),
+      );
+
+      // Debounced auto-save
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        saveProgress();
+      }, 1000);
+    },
+    [saveProgress],
+  );
 
   const handleBack = useCallback(() => {
-    if (!isFirstQuestion) {
-      setCurrentQuestionIndex((prev) => prev - 1);
-    }
+    if (!isFirstQuestion) setCurrentQuestionIndex((prev) => prev - 1);
   }, [isFirstQuestion]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback(async () => {
     if (isLastQuestion) {
-      markPosttestCompleted(algoType, algorithm);
-      setIsSubmitted(true);
+      // Submit for backend grading
+      setIsSubmitting(true);
+      try {
+        const response = await posttestService.submitPosttestAnswers(
+          algorithm,
+          userAnswers,
+        );
+        setGradingResult(response.data.data);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to submit posttest",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
       setCurrentQuestionIndex((prev) => prev + 1);
     }
-  }, [isLastQuestion, algoType, algorithm]);
+  }, [isLastQuestion, algorithm, userAnswers]);
 
   const handleGoHome = useCallback(() => {
     router.push("/");
   }, [router]);
 
-  // No data found
-  if (!posttest || selectedQuestions.length === 0) {
+  // Loading state
+  if (isLoading) {
     return (
-      <div className="bg-white min-h-screen w-full flex items-center justify-center">
-        <div className="text-center space-y-4">
+      <div className="flex items-center justify-center w-full min-h-screen bg-white">
+        <p className="text-lg text-gray-500">Loading posttest...</p>
+      </div>
+    );
+  }
+
+  // Error / no data
+  if (error || !posttest || !currentQuestion) {
+    return (
+      <div className="flex items-center justify-center w-full min-h-screen bg-white">
+        <div className="space-y-4 text-center">
           <p className="text-xl font-semibold text-[#222121]">
-            No posttest data found for &quot;{algorithm}&quot;
+            {error || `No posttest data found for "${algorithm}"`}
           </p>
           <button
             onClick={() => router.push("/")}
@@ -178,13 +249,23 @@ function PosttestContent() {
     );
   }
 
-  // Show result page after submission
-  if (isSubmitted) {
+  // Submitting state
+  if (isSubmitting) {
+    return (
+      <div className="flex items-center justify-center w-full min-h-screen bg-white">
+        <p className="text-lg text-gray-500">Submitting posttest...</p>
+      </div>
+    );
+  }
+
+  // Show result page after grading
+  if (gradingResult) {
     return (
       <PosttestResultPage
-        posttest={posttest}
-        selectedQuestions={selectedQuestions}
+        title={posttest.title}
+        questions={posttest.questions}
         userAnswers={userAnswers}
+        gradingResult={gradingResult}
         onGoHome={handleGoHome}
         algoType={algoType}
       />
@@ -192,8 +273,8 @@ function PosttestContent() {
   }
 
   return (
-    <div className="bg-white min-h-screen w-full">
-      <div className="max-w-360 mx-auto sm:px-8 sm:py-8">
+    <div className="w-full min-h-screen bg-white">
+      <div className="mx-auto max-w-360 sm:px-8 sm:py-8">
         {/* Progress Bar */}
         <TrackProgress
           current={currentQuestionIndex + 1}
@@ -210,11 +291,11 @@ function PosttestContent() {
             Answer the question:
           </p>
 
-          {/* Question renderer (routes to correct component by type) */}
+          {/* Question renderer — cast to expected type */}
           {currentAnswer && (
             <div className="mb-10">
               <PosttestQuestionRenderer
-                question={currentQuestion}
+                question={currentQuestion as never}
                 answer={currentAnswer}
                 onAnswer={handleAnswer}
                 algoType={algoType}
@@ -241,7 +322,7 @@ export default function PosttestPage() {
   return (
     <Suspense
       fallback={
-        <div className="bg-white min-h-screen w-full flex items-center justify-center">
+        <div className="flex items-center justify-center w-full min-h-screen bg-white">
           <p className="text-lg text-gray-500">Loading...</p>
         </div>
       }
