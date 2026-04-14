@@ -93,7 +93,26 @@ export const posttestService = {
   savePosttestProgress: (algorithm: string, answers: PosttestUserAnswer[]) =>
     api.put<ApiResponse<{ saved: boolean }>>(
       `/posttests/${algorithm}/progress`,
-      { answers },
+      {
+        questionIds: answers.map((answer) => answer.questionId),
+        // Only persist actual answers; empty placeholders can trip backend validation.
+        answers: answers.filter((answer) => {
+          switch (answer.type) {
+            case "multiple_choice":
+              return (
+                answer.selectedChoiceId !== null &&
+                answer.selectedChoiceId !== undefined &&
+                answer.selectedChoiceId !== ""
+              );
+            case "fill_blank":
+              return (answer.filledAnswer || "").trim().length > 0;
+            case "ordering":
+              return (answer.orderedItems || []).length > 0;
+            default:
+              return false;
+          }
+        }),
+      },
     ),
 
   /** GET /posttests/:algorithm/status — check posttest state */

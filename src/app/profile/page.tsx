@@ -52,6 +52,37 @@ export default function Profile() {
     setLocalUser(user);
   }, [user]);
 
+  useEffect(() => {
+    if (!token) return;
+
+    let cancelled = false;
+
+    const refreshProfile = async () => {
+      try {
+        const syncedUser = await syncUserWithBackend(token);
+        if (cancelled) return;
+
+        setLocalUser({
+          id: syncedUser?.id,
+          uid: syncedUser?.uid,
+          email: syncedUser?.email,
+          imageUrl: syncedUser?.imageUrl,
+          updatedAt: syncedUser?.updatedAt,
+          progress: syncedUser?.progress,
+          categoryAlgoProgress: syncedUser?.categoryAlgoProgress,
+        });
+      } catch {
+        // Keep cached profile data when sync fails.
+      }
+    };
+
+    void refreshProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
   const profileUser = localUser ?? user;
   const totalProgress = profileUser?.progress?.totalProgress ?? 0;
   const pretestScore = profileUser?.progress?.pretestScore ?? 0;
