@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useReactFlow, XYPosition, Node, useNodes } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
@@ -65,7 +65,21 @@ function Data_sort({
   const [draggedValue, setDraggedValue] = useState<number | null>(null);
 
   // สร้าง State สำหรับ Sample Nodes (เริ่มด้วยค่า 1-5 แบบเดิม หรือค่าสุ่มก็ได้)
+  // 1. ตั้งค่าเริ่มต้นเป็นเลขคงที่ก่อน (ป้องกัน Hydration Error)
   const [sampleNodes, setSampleNodes] = useState<number[]>([1, 2, 3, 4, 5]);
+
+  // 2. ใช้ useEffect + setTimeout เพื่อสุ่มเลข (ป้องกัน Cascading Render Warning)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const randomNodes = Array.from(
+        { length: 5 },
+        () => Math.floor(Math.random() * 99) + 1,
+      );
+      setSampleNodes(randomNodes);
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const createAddNewNode = useCallback(
     (sampleValue: number, sampleIndex?: number): OnDropAction => {

@@ -59,6 +59,7 @@ export const GLOW_ZONE = {
 };
 
 interface TutorialProps {
+  algorithm: string;
   onComplete: () => void;
   currentStep: number;
   setCurrentStep: (step: number) => void;
@@ -124,6 +125,7 @@ const DashedArrow = ({
 };
 
 export default function TutorialTree({
+  algorithm,
   onComplete,
   currentStep,
   setCurrentStep,
@@ -190,7 +192,7 @@ export default function TutorialTree({
                 <rect
                   x="130"
                   y="12"
-                  width="440"
+                  width={algorithm === "avl-tree" ? "490" : "440"}
                   height="45"
                   rx="22"
                   fill="black"
@@ -228,7 +230,9 @@ export default function TutorialTree({
               Color Legend
             </h3>
             <p className="text-sm text-gray-600 mb-5 leading-relaxed">
-              Look here to understand what different node colors mean
+              {algorithm === "avl-tree"
+                ? "Look here to understand node colors. You can also use the button to show or hide the Balance Factors (-1, 0, 1)!"
+                : "Look here to understand what different node colors mean."}
             </p>
             <button
               onClick={() => setLocalEndStep(2)}

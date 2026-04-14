@@ -682,6 +682,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       {/* Tutorial overlay for tree */}
       {tutorial.showTutorial && (
         <TutorialTree
+          algorithm={algorithm}
           onComplete={tutorial.handleTutorialComplete}
           currentStep={tutorial.tutorialStep}
           setCurrentStep={tutorial.setTutorialStep}
