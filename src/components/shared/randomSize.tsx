@@ -7,10 +7,16 @@ interface RandomSizeProps {
   inputValue?: string;
   onReset?: () => void;
   onAdd?: (value: number) => void;
-  isDisabled?: boolean; // 🎯 1. เพิ่ม Prop นี้เข้ามาเพื่อรับสถานะ "เต็ม/ล็อก"
+  isDisabled?: boolean; //  เพิ่ม Prop นี้เข้ามาเพื่อรับสถานะ "เต็ม/ล็อก"
+  warningText?: string | null;
 }
 
-const RandomSize = ({ onReset, onAdd, isDisabled }: RandomSizeProps) => {
+const RandomSize = ({
+  onReset,
+  onAdd,
+  isDisabled,
+  warningText,
+}: RandomSizeProps) => {
   const [inputValue, setInputValue] = useState<string>("");
 
   const handleRandomClick = () => {
@@ -63,6 +69,11 @@ const RandomSize = ({ onReset, onAdd, isDisabled }: RandomSizeProps) => {
             <Plus color="white" />
           </button>
         </div>
+        {warningText && (
+          <div className="text-red-500 text-sm font-medium text-left w-full my-1 transition-opacity duration-300">
+            {warningText}
+          </div>
+        )}
 
         {/* ปุ่ม Reset All*/}
         <button

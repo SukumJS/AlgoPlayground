@@ -53,7 +53,7 @@ function Data_Linear_DS({
 
   const [type, setType] = useState<string | null>(null);
   const [draggedValue, setDraggedValue] = useState<number | null>(null);
-
+  const [warningText, setWarningText] = useState<string | null>(null);
   // 1. ตั้งค่าเริ่มต้นเป็นเลขคงที่ก่อน (ป้องกัน Hydration Error)
   const [sampleNodes, setSampleNodes] = useState<number[]>([1, 2, 3, 4, 5]);
 
@@ -125,7 +125,20 @@ function Data_Linear_DS({
 
       const currentNodes = getNodes();
       const availableSpace = 50 - currentNodes.length;
-      if (availableSpace <= 0) return;
+      if (availableSpace <= 0) {
+        setWarningText("Maximum limit of 50 nodes reached. Cannot add more.");
+        setTimeout(() => setWarningText(null), 5000);
+        return;
+      }
+
+      if (count > availableSpace) {
+        setWarningText(
+          `Only space for ${availableSpace} more nodes. Added ${availableSpace} nodes.`,
+        );
+        setTimeout(() => setWarningText(null), 5000);
+      } else {
+        setWarningText(null);
+      }
 
       const actualCount = Math.min(count, availableSpace);
 
@@ -164,6 +177,7 @@ function Data_Linear_DS({
 
   const handleResetNodes = useCallback(() => {
     setNodes([]);
+    setWarningText(null);
   }, [setNodes]);
 
   return (
@@ -265,6 +279,7 @@ function Data_Linear_DS({
             onAdd={handleGenerateRandomNodes}
             onReset={handleResetNodes}
             isDisabled={disableDrag}
+            warningText={warningText}
           />
         </div>
 
