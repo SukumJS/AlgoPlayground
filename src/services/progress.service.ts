@@ -28,9 +28,12 @@ export interface UserProgress {
 export interface AlgorithmTestStatusResponse {
   completed: boolean;
   inProgress: boolean;
-  score?: number;
-  total?: number;
-  answeredCount?: number;
+  score: number | null;
+  total: number | null;
+  answeredCount: number | null;
+  reminderShown?: boolean;
+  reminderShownAt?: string | null;
+  updatedAt?: string;
 }
 
 export interface TestResultHistory {

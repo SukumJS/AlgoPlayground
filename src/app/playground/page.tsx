@@ -43,8 +43,9 @@ function BrowserBackPosttestGuard({
 
       if (!mounted) return;
 
-      setHasDeferredReminder(reminderSeen);
-      setShowReminder(!completed && reminderSeen);
+      setHasDeferredReminder(completed || reminderSeen);
+      // Do not auto-open reminder on entry; only show on exit interception.
+      setShowReminder(false);
       setStatusReady(true);
     };
 
