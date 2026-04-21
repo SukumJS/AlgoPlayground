@@ -1,48 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Props = {
   onClose: () => void;
-  username: string;
-  email: string;
   avatar: string;
-  onUpdate?: (data: {
-    username?: string;
-    avatar?: string;
-    name?: string;
-  }) => void;
+  onUpdate?: (data: { avatar?: string }) => void;
 };
 
-export default function EditProfile({
-  onClose,
-  username,
-  email,
-  avatar,
-  onUpdate,
-}: Props) {
-  const [editedUsername, setEditedUsername] = useState(username);
+export default function EditProfile({ onClose, avatar, onUpdate }: Props) {
+  // const [editedUsername, setEditedUsername] = useState(username);
   const [editedAvatar, setEditedAvatar] = useState(avatar);
-  const [prevProps, setPrevProps] = useState({ username, avatar });
 
-  // อัพเดท state เมื่อ props เปลี่ยน (render-time adjustment)
-  if (username !== prevProps.username || avatar !== prevProps.avatar) {
-    setPrevProps({ username, avatar });
-    setEditedUsername(username);
+  useEffect(() => {
     setEditedAvatar(avatar);
-  }
-
-  const handleFocus = () => {
-    if (editedUsername === username) {
-      setEditedUsername("");
-    }
-  };
+  }, [avatar]);
 
   const handleSave = () => {
     // เรียก API เพื่อบันทึกข้อมูล
     if (onUpdate) {
       onUpdate({
-        username: editedUsername,
         avatar: editedAvatar,
       });
     }
@@ -67,43 +44,6 @@ export default function EditProfile({
             alt="Profile"
             className="w-24 h-24 rounded-full mb-2"
           />
-          <button
-            className="text-sm text-blue-600 hover:underline"
-            onClick={() => {
-              // เปิด dialog สำหรับเลือก/อัพโหลดรูปภาพ
-              const newAvatar = prompt("Enter image URL:");
-              if (newAvatar) setEditedAvatar(newAvatar);
-            }}
-          >
-            Change Picture
-          </button>
-        </div>
-
-        {/* FORM */}
-        <div className="mt-1 space-y-3">
-          <div>
-            <label className="text-sm text-gray-600">Username</label>
-            <input
-              type="text"
-              value={editedUsername}
-              onChange={(e) => setEditedUsername(e.target.value)}
-              onFocus={handleFocus}
-              className="w-full mt-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm text-gray-600">Email</label>
-            <input
-              type="email"
-              value={email}
-              disabled
-              className="w-full mt-1 px-2 py-2 border rounded-md bg-gray-100 text-gray-400"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Email cannot be changed
-            </p>
-          </div>
         </div>
 
         {/* ACTIONS */}
