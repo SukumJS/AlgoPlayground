@@ -563,8 +563,10 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
   const handlePaneClick = useCallback(() => {
     if (!tutorial.showTutorial) {
       nodeInteraction.handlePaneClick();
+      // If traversal result is being held, dismiss it and reset tree to normal
+      stepEngine.dismissResult();
     }
-  }, [tutorial.showTutorial, nodeInteraction]);
+  }, [tutorial.showTutorial, nodeInteraction, stepEngine]);
 
   // สร้าง String ตัวแทนข้อมูล (เอาแค่ ID และ Label)
   const nodeDataString = nodes

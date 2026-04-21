@@ -13,7 +13,9 @@ export interface TreeAnimationEngine {
   skipForward: () => void;
   skipBack: () => void;
   reset: () => void;
+  dismissResult: () => void;
   isRunning: boolean;
+  isHoldingResult: boolean;
 }
 
 export function useTreeController(
