@@ -165,7 +165,7 @@ export function useLinearDSTutorial({
       if (!isNode1Alive) {
         queueMicrotask(() => {
           setIsTrashActive(false);
-          handleTutorialComplete();
+          setTutorialStep(5);
         });
       }
     }

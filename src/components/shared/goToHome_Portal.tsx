@@ -53,6 +53,13 @@ export default function GoToHome_Portal({
             router.push("/");
           }
         }}
+        onTakeTest={async () => {
+          try {
+            await markPosttestReminderSeen(algoType, algorithm);
+          } finally {
+            setShowReminder(false);
+          }
+        }}
         algorithm={algorithm}
         algoType={algoType}
       />

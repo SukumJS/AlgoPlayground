@@ -99,6 +99,14 @@ function BrowserBackPosttestGuard({
           }
         }
       }}
+      onTakeTest={async () => {
+        try {
+          await markPosttestReminderSeen(algoType, algorithm);
+        } finally {
+          setHasDeferredReminder(true);
+          setShowReminder(false);
+        }
+      }}
       algorithm={algorithm}
       algoType={algoType}
     />

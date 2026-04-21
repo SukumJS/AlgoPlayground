@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
 
 interface TutorialProps {
@@ -65,8 +65,107 @@ export default function TutorialSort({
   dropZoneScreenPos,
   isTrashActive,
   trashBinPos,
+  onComplete, // อย่าลืมใส่เข้ามาใน props destruction
   nodeMaskSize,
 }: TutorialProps) {
+  // สร้าง State ท้องถิ่น
+  const [localEndStep, setLocalEndStep] = useState(0);
+
+  // กันข้ามอัตโนมัติ (Anti Auto-Skip System) สำหรับ Array Flow (จบที่ Step 4 แล้วไป 5)
+  if (localEndStep === 0) {
+    if (currentStep >= 5) {
+      setLocalEndStep(1);
+    }
+  }
+
+  // หากอยู่ในช่วง 2 สเต็ปสุดท้าย ให้รันหน้าตานี้
+  if (localEndStep > 0) {
+    return (
+      <div className="fixed inset-0 z-[80] pointer-events-auto transition-opacity duration-300">
+        {/* --- MASK SPOTLIGHT สำหรับ Legend และ Post Test --- */}
+        <svg
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          style={{ position: "fixed" }}
+        >
+          <defs>
+            <mask id="endstep-spotlight-mask-sort">
+              <rect width="100%" height="100%" fill="white" />
+              {localEndStep === 1 && (
+                <rect
+                  x="130"
+                  y="12"
+                  width="250"
+                  height="45"
+                  rx="22"
+                  fill="black"
+                />
+              )}
+              {localEndStep === 2 && (
+                <rect
+                  x="1500"
+                  y="900"
+                  width="400"
+                  height="55"
+                  rx="4"
+                  fill="black"
+                />
+              )}
+            </mask>
+          </defs>
+          <rect
+            width="100%"
+            height="100%"
+            fill="rgba(0, 0, 0, 0.6)"
+            mask="url(#endstep-spotlight-mask-sort)"
+          />
+        </svg>
+
+        {/* กล่องชี้สถานะสี (ซ้ายบน) */}
+        {localEndStep === 1 && (
+          <div className="absolute top-[120px] left-[120px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
+            <DashedArrow
+              width={50}
+              className="absolute -top-[45px] left-[30px] transform rotate-90"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">
+              Color Legend
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Look here to understand what different node colors mean
+            </p>
+            <button
+              onClick={() => setLocalEndStep(2)}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/* กล่องชี้ Post Test (ขวาล่าง) */}
+        {localEndStep === 2 && (
+          <div className="absolute bottom-[120px] right-[100px] bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out">
+            <DashedArrow
+              width={50}
+              className="absolute -bottom-[50px] left-1/2 transform -translate-x-1/2 rotate-[270deg]"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Post Test</h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Once you finish experimenting, click here to take a short quiz and
+              test your knowledge!
+            </p>
+            <button
+              onClick={onComplete}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (currentStep >= 5) return null;
 
   const nodeBoxSize = 105;
@@ -164,8 +263,8 @@ export default function TutorialSort({
           }}
         >
           <p className="text-sm text-gray-800">
-            <span className="font-bold">Drag a element</span> from the panel and
-            drop it where the playground glows.
+            <span className="font-bold">Drag an element</span> from the panel
+            and drop it where the playground glows.
           </p>
           <DashedArrow
             width={45}
