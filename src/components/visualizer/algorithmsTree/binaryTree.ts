@@ -143,7 +143,7 @@ export function calculateBTPositions(
 ): Map<string, NodePosition> {
   if (!root) return positions;
   const total = getAllBTNodes(root).length;
-  const gap = Math.max(60, 80 + total * 8);
+  const gap = Math.max(50, 85 - total * 0.8);
   const verticalGap = 100;
   let idx = 0;
   function inorder(node: BTNode | null, depth: number) {

@@ -20,6 +20,8 @@ import {
   rebuildAVLTreeFromNodes,
   removeAVL,
   insertAVL,
+  calculateTreePositions,
+  avlTreeToReactFlow,
   type AVLTreeNode,
 } from "@/src/components/visualizer/algorithmsTree/avlTree";
 import { type AnimationCallbacks } from "@/src/components/visualizer/animations/types";
@@ -37,6 +39,8 @@ import {
   insertBST,
   cloneBSTTree,
   rebuildBSTFromNodes,
+  calculateBSTPositions,
+  bstToReactFlow,
   type BSTNode,
   removeBST,
 } from "@/src/components/visualizer/algorithmsTree/bstTree";
@@ -192,6 +196,7 @@ function Data_tree({
   const isMinHeap = algorithm === "min-heap";
   const hasTraversal = isBT;
   const traversalType = isBT ? algorithm : null;
+  const isLimitReached = currentNodes.length >= 50;
 
   // Set initial explanation when a tree algorithm is selected
   useEffect(() => {
@@ -784,6 +789,7 @@ function Data_tree({
       tutorialStep,
       onTutorialDropSuccess,
       isAnimating,
+      isLimitReached,
       isBST,
       isBT,
       isAVL,
@@ -812,6 +818,14 @@ function Data_tree({
     if (tutorialMode || isAnimating || !inputValue) return;
     const v = parseInt(inputValue);
     if (isNaN(v)) return;
+
+    if (currentNodes.length >= 50) {
+      alert(
+        "Playground node limit reached (50). Please remove some nodes first.",
+      );
+      return;
+    }
+
     removeIsolatedNodes();
     let steps: TreeAnimationStep[] | undefined;
     if (algorithm === "avl-tree") steps = handleAVLInsert(v);
@@ -1000,7 +1014,156 @@ function Data_tree({
     setBTRoot(null);
     setAVLRoot(null);
     setHeapRoot(null);
-  }, [tutorialMode, setAVLRoot, setHeapRoot]);
+    setNodes([]);
+    setEdges([]);
+  }, [tutorialMode, setAVLRoot, setHeapRoot, setNodes, setEdges]);
+
+  // Handle generate random nodes
+  const handleGenerateRandomNodes = useCallback(
+    (count: number) => {
+      if (count <= 0 || tutorialMode || isAnimating) return;
+
+      const currentNodes = rf.getNodes();
+
+      const existingValues = new Set(
+        currentNodes
+          .map((n) => parseInt(n.data.label as string))
+          .filter((v) => !isNaN(v)),
+      );
+
+      let currentBSTRoot = bstRoot;
+      let currentBTRoot = btRoot;
+      let currentAVLRoot = avlRoot;
+      let currentHeapRoot = heapRoot;
+
+      // Only count custom nodes
+      const currentCustomNodesCount = currentNodes.filter(
+        (n) => n.type === "custom",
+      ).length;
+      const maxAllowed = 50 - currentCustomNodesCount;
+      if (maxAllowed <= 0) return;
+
+      const actualCount = Math.min(count, maxAllowed);
+
+      const newNodes: RFNode[] = [];
+
+      for (let i = 0; i < actualCount; i++) {
+        let v: number;
+        let tries = 0;
+        do {
+          v = Math.floor(Math.random() * 99) + 1;
+          tries++;
+        } while (existingValues.has(v) && tries < 200);
+        existingValues.add(v);
+
+        const idx = currentNodes.length + i;
+        const pos = {
+          x: 50 + (idx % 6) * 70,
+          y: 50 + Math.floor(idx / 6) * 70,
+        };
+
+        const newNode = {
+          id: getId(),
+          type: "custom",
+          position: pos,
+          data: { label: v.toString(), variant: "circle" },
+        };
+        newNodes.push(newNode);
+
+        if (isBST) {
+          currentBSTRoot = currentBSTRoot
+            ? insertBST(cloneBSTTree(currentBSTRoot), v, newNode.id)
+            : { value: v, id: newNode.id, left: null, right: null };
+        }
+        if (isBT) {
+          currentBTRoot = currentBTRoot
+            ? insertBT(cloneBT(currentBTRoot), v, newNode.id)
+            : { value: v, id: newNode.id, left: null, right: null };
+        }
+        if (isAVL) {
+          currentAVLRoot = insertAVL(currentAVLRoot, v, newNode.id);
+        }
+        if (isHeap) {
+          const res = insertHeap(
+            currentHeapRoot ? cloneHeap(currentHeapRoot) : null,
+            v,
+            newNode.id,
+            isMinHeap,
+          );
+          currentHeapRoot = res.root;
+        }
+      }
+
+      if (isBST) {
+        setBSTRoot(currentBSTRoot);
+        const positions = calculateBSTPositions(currentBSTRoot);
+        const { nodes: rfNodes, edges: rfEdges } = bstToReactFlow(
+          currentBSTRoot,
+          [],
+          [],
+          positions,
+        );
+        setNodes(rfNodes as RFNode[]);
+        setEdges(rfEdges as RFEdge[]);
+      } else if (isBT) {
+        setBTRoot(currentBTRoot);
+        const positions = calculateBTPositions(currentBTRoot);
+        const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(
+          currentBTRoot,
+          [],
+          [],
+          positions,
+        );
+        setNodes(rfNodes as RFNode[]);
+        setEdges(rfEdges as RFEdge[]);
+      } else if (isAVL) {
+        setAVLRoot(currentAVLRoot);
+        const positions = calculateTreePositions(currentAVLRoot);
+        const { nodes: rfNodes, edges: rfEdges } = avlTreeToReactFlow(
+          currentAVLRoot,
+          [],
+          [],
+          positions,
+        );
+        setNodes(rfNodes as RFNode[]);
+        setEdges(rfEdges as RFEdge[]);
+      } else if (isHeap) {
+        setHeapRoot(currentHeapRoot);
+        const positions = calculateHeapPositions(currentHeapRoot);
+        const { nodes: rfNodes, edges: rfEdges } = heapToReactFlow(
+          currentHeapRoot,
+          [],
+          [],
+          positions,
+          "heap-edge",
+        );
+        setNodes(rfNodes as RFNode[]);
+        setEdges(rfEdges as RFEdge[]);
+      } else {
+        setNodes((prev) => [...prev, ...newNodes]);
+      }
+
+      setTimeout(() => {
+        rf.fitView({ padding: 0.2, duration: 800 });
+      }, 100);
+    },
+    [
+      tutorialMode,
+      isAnimating,
+      rf,
+      bstRoot,
+      btRoot,
+      avlRoot,
+      heapRoot,
+      isBST,
+      isBT,
+      isAVL,
+      isHeap,
+      isMinHeap,
+      setNodes,
+      setEdges,
+    ],
+  );
 
   // Toggle expand/collapse
   const handleToggle = useCallback(() => {
@@ -1155,15 +1318,17 @@ function Data_tree({
             <div className="flex gap-2">
               <input
                 type="number"
-                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-gray-100 disabled:placeholder-gray-500"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                disabled={isAnimating}
+                disabled={isAnimating || isLimitReached}
+                placeholder={isLimitReached ? "Limit reached" : ""}
               />
               <button
                 className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
                 onClick={handleInsert}
-                disabled={isAnimating}
+                disabled={isAnimating || isLimitReached}
+                title={isLimitReached ? "Limit reached" : ""}
               >
                 <Plus color="white" />
               </button>
@@ -1212,7 +1377,11 @@ function Data_tree({
             </div>
           </div>
 
-          <RandomSize onReset={handleReset} />
+          <RandomSize
+            onReset={handleReset}
+            onAdd={handleGenerateRandomNodes}
+            isDisabled={isAnimating || isLimitReached}
+          />
         </div>
       </div>
     </>

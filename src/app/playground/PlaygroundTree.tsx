@@ -292,9 +292,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       setTreeAction(null);
     }
   }, [algorithm]);
-  const { flowToScreenPosition } = useReactFlow();
-
-  const rebalanceRef = useRef<(() => void) | null>(null);
+  const { flowToScreenPosition, setCenter, getZoom, fitView } = useReactFlow();
 
   // ดึงชื่อจาก Mapping (ถ้าไม่เจอให้ใช้ค่า Default)
   const prettyName = algorithm
@@ -303,6 +301,88 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
   const effectiveExplanation = explanation.trim()
     ? explanation
     : getDefaultTreeExplanation(prettyName);
+
+  // เพิ่มระบบ Smart Camera (กล้องติดตามกล่องที่กำลังทำงาน)
+  const isUserPanning = React.useRef(false);
+  const lastPannedPosition = React.useRef<{
+    id: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  React.useEffect(() => {
+    // ถ้าไม่ได้รันอยู่ ให้ล้างค่าความจำกล้องทิ้ง
+    if (!isAnimatingLocal) {
+      lastPannedPosition.current = null;
+      return;
+    }
+
+    // ถ้าคนเล่นกำลังเอามือลากจออยู่ ให้พักกล้องอัตโนมัติ
+    if (isUserPanning.current) return;
+
+    // หากล่องที่กำลังทำงานอยู่ (ถูกไฮไลท์สี)
+    const activeNode = nodes.find(
+      (n) =>
+        (n.data as Record<string, unknown>).highlightColor != null &&
+        (n.data as Record<string, unknown>).highlightColor !== "",
+    );
+
+    if (activeNode) {
+      const isSameNode = lastPannedPosition.current?.id === activeNode.id;
+      const isSameX = lastPannedPosition.current?.x === activeNode.position.x;
+      const isSameY = lastPannedPosition.current?.y === activeNode.position.y;
+
+      // เลื่อนกล้องเมื่อเปลี่ยนกล่อง หรือพิกัดเปลี่ยน
+      if (!isSameNode || !isSameX || !isSameY) {
+        lastPannedPosition.current = {
+          id: activeNode.id,
+          x: activeNode.position.x,
+          y: activeNode.position.y,
+        };
+
+        const lowerDesc = effectiveExplanation.toLowerCase();
+        const isRebalancingPhase =
+          algorithm === "avl-tree" &&
+          (lowerDesc.includes("perform") ||
+            lowerDesc.includes("topology") ||
+            lowerDesc.includes("restored"));
+
+        if (isRebalancingPhase) {
+          // ซูมออก (zoom 0.5) และเลื่อนจุดศูนย์กลางลงมาด้านล่างนิดเผื่อให้เห็นลูกๆ โหนดที่จะหมุน
+          setCenter(activeNode.position.x + 32.5, activeNode.position.y + 70, {
+            zoom: 0.5,
+            duration: 600,
+          });
+        } else {
+          // ซูมเข้าเฉพาะโหนดเป้าหมาย
+          setCenter(activeNode.position.x + 32.5, activeNode.position.y + 25, {
+            zoom: 1.2,
+            duration: 600,
+          });
+        }
+      }
+    }
+  }, [
+    nodes,
+    isAnimatingLocal,
+    setCenter,
+    getZoom,
+    algorithm,
+    effectiveExplanation,
+  ]);
+
+  // ซูมภาพรวม (Fit View) เมื่อแอนิเมชันรันเสร็จ
+  React.useEffect(() => {
+    if (!isAnimatingLocal) {
+      const timer = setTimeout(() => {
+        fitView({ padding: 0.2, duration: 800 });
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAnimatingLocal, fitView]);
+
+  const rebalanceRef = useRef<(() => void) | null>(null);
 
   // reset explanation when the selected algorithm changes
   React.useEffect(() => {
@@ -611,6 +691,19 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         edges={edges}
         onNodesChange={tutorial.showTutorial ? undefined : onNodesChange}
         onEdgesChange={tutorial.showTutorial ? undefined : onEdgesChange}
+        onMoveStart={(event) => {
+          if (event) {
+            isUserPanning.current = true;
+          }
+        }}
+        onMoveEnd={(event) => {
+          if (event) {
+            // เมื่อคนเล่นปล่อยเมาส์ ให้หน่วงเวลา 1.5 วินาที กล้องถึงจะกลับมาทำงาน
+            setTimeout(() => {
+              isUserPanning.current = false;
+            }, 1500);
+          }
+        }}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
