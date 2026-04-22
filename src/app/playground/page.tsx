@@ -121,8 +121,8 @@ function PlaygroundRouter() {
   const typeToCatalogId: Record<string, string> = {
     tree: "tree",
     graph: "graph",
-    sort: "sorting",
-    search: "searching",
+    sorting: "sorting",
+    searching: "searching",
     "linear-ds": "linear-ds",
   };
 
@@ -143,9 +143,9 @@ function PlaygroundRouter() {
     content = <PlaygroundTree algorithm={algorithm} />;
   } else if (algoType === "graph") {
     content = <PlaygroundGraph algorithm={algorithm} />;
-  } else if (algoType === "sort") {
+  } else if (algoType === "sorting") {
     content = <PlaygroundSort algorithm={algorithm} />;
-  } else if (algoType === "search") {
+  } else if (algoType === "searching") {
     content = <PlaygroundSearch algorithm={algorithm} />;
   } else if (algoType === "linear-ds") {
     content = <PlaygroundLinearDS algorithm={algorithm} />;

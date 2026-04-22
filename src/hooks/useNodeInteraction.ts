@@ -336,7 +336,7 @@ export function useNodeInteraction({
 
       const trashX = window.innerWidth / 2;
       const trashY = window.innerHeight - 140;
-      const dropTargetRadius = 150;
+      const dropTargetRadius = 130;
 
       const dist = Math.sqrt(
         Math.pow(event.clientX - trashX, 2) +

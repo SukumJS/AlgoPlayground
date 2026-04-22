@@ -328,7 +328,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
           />
         </div>
         <div>
-          <PostTest_portal algorithm={algorithm} algoType="sort" />
+          <PostTest_portal algorithm={algorithm} algoType="sorting" />
         </div>
       </SideTab>
     ),
@@ -391,7 +391,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
       {sideTabMemo}
 
       <div className="absolute top-4 left-8 z-10 flex gap-2">
-        <GoToHome_Portal algorithm={algorithm} algoType="sort" />
+        <GoToHome_Portal algorithm={algorithm} algoType="sorting" />
         <button
           onClick={(e) => {
             e.stopPropagation();

@@ -253,7 +253,7 @@ export function useTreeTutorial({
       if (showTutorial && tutorialStep === 5) {
         const trashX = window.innerWidth / 2;
         const trashY = window.innerHeight - 140;
-        const dropTargetRadius = 150; // Glow activation radius
+        const dropTargetRadius = 130; // Glow activation radius
 
         // Calculate distance
         const dist = Math.sqrt(

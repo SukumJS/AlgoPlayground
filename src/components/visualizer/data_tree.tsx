@@ -164,6 +164,7 @@ function Data_tree({
   const [removeValue, setRemoveValue] = useState<string>("");
   const [draggedValue, setDraggedValue] = useState<number | null>(null);
   const [nodeIdCounter, setNodeIdCounter] = useState(5);
+  const [warningText, setWarningText] = useState<string | null>(null);
 
   // Animation states
   const [internalIsAnimating, setInternalIsAnimating] = useState(false);
@@ -1016,6 +1017,7 @@ function Data_tree({
     setHeapRoot(null);
     setNodes([]);
     setEdges([]);
+    setWarningText(null);
   }, [tutorialMode, setAVLRoot, setHeapRoot, setNodes, setEdges]);
 
   // Handle generate random nodes
@@ -1024,6 +1026,27 @@ function Data_tree({
       if (count <= 0 || tutorialMode || isAnimating) return;
 
       const currentNodes = rf.getNodes();
+
+      // Only count custom nodes
+      const currentCustomNodesCount = currentNodes.filter(
+        (n) => n.type === "custom",
+      ).length;
+      const availableSpace = 50 - currentCustomNodesCount;
+
+      if (availableSpace <= 0) {
+        setWarningText("Maximum limit of 50 nodes reached. Cannot add more.");
+        setTimeout(() => setWarningText(null), 5000);
+        return;
+      }
+
+      if (count > availableSpace) {
+        setWarningText(
+          `Only space for ${availableSpace} more nodes. Added ${availableSpace} nodes.`,
+        );
+        setTimeout(() => setWarningText(null), 5000);
+      } else {
+        setWarningText(null);
+      }
 
       const existingValues = new Set(
         currentNodes
@@ -1036,14 +1059,7 @@ function Data_tree({
       let currentAVLRoot = avlRoot;
       let currentHeapRoot = heapRoot;
 
-      // Only count custom nodes
-      const currentCustomNodesCount = currentNodes.filter(
-        (n) => n.type === "custom",
-      ).length;
-      const maxAllowed = 50 - currentCustomNodesCount;
-      if (maxAllowed <= 0) return;
-
-      const actualCount = Math.min(count, maxAllowed);
+      const actualCount = Math.min(count, availableSpace);
 
       const newNodes: RFNode[] = [];
 
@@ -1217,8 +1233,8 @@ function Data_tree({
           >
             <input
               type="number"
-              placeholder="0"
-              className="w-11 h-full bg-transparent text-center text-[#222121] font-semibold text-xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-100 disabled:bg-transparent"
+              placeholder="N"
+              className="w-11 h-full bg-transparent text-center text-[#222121] font-semibold text-xl focus:outline-none placeholder:text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-100 disabled:bg-transparent transition-colors"
               value={nodeInput}
               onChange={(e) =>
                 setNodeInput(
@@ -1253,6 +1269,80 @@ function Data_tree({
         <div
           className={`flex-col justify-center items-center text-center ${tutorialMode || isAnimating ? "pointer-events-none opacity-60" : ""}`}
         >
+          <RandomSize
+            onReset={handleReset}
+            onAdd={handleGenerateRandomNodes}
+            isDisabled={isAnimating || isLimitReached}
+            warningText={warningText}
+          />
+
+          {/* Insert */}
+          <div className="grid-cols-1 grid gap-2 text-start m-1">
+            <p className="font-bold text-md">Insert</p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                className="border border-gray-200 p-2 rounded-lg w-80 placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-gray-100 disabled:placeholder-gray-500 transition-colors"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                disabled={isAnimating || isLimitReached}
+                placeholder={isLimitReached ? "Limit reached" : "e.g. 99"}
+              />
+              <button
+                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
+                onClick={handleInsert}
+                disabled={isAnimating || isLimitReached}
+                title={isLimitReached ? "Limit reached" : ""}
+              >
+                <Plus color="white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="grid-cols-1 grid gap-2 text-start m-1">
+            <p className="font-bold text-md">Search</p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                className="border border-gray-200 p-2 rounded-lg w-80 placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                disabled={isAnimating}
+                placeholder="e.g. 99"
+              />
+              <button
+                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
+                onClick={handleSearch}
+                disabled={isAnimating}
+              >
+                <Search color="white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Remove */}
+          <div className="grid-cols-1 grid gap-2 text-start m-1">
+            <p className="font-bold text-md">Remove</p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                className="border border-gray-200 p-2 rounded-lg w-80 placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors"
+                value={removeValue}
+                onChange={(e) => setRemoveValue(e.target.value)}
+                disabled={isAnimating}
+                placeholder="e.g. 99"
+              />
+              <button
+                className="bg-[#E82B2B] rounded-lg p-2 disabled:opacity-50"
+                onClick={handleRemove}
+                disabled={isAnimating}
+              >
+                <Trash color="white" />
+              </button>
+            </div>
+          </div>
+
           {/* Traversal Buttons (เฉพาะ bt-* algorithms) */}
           {hasTraversal && (
             <div className="grid-cols-1 grid gap-2 text-start m-1">
@@ -1312,76 +1402,6 @@ function Data_tree({
               </div>
             </div>
           )}
-          {/* Insert */}
-          <div className="grid-cols-1 grid gap-2 text-start m-1">
-            <p className="font-bold text-md">Insert</p>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-gray-100 disabled:placeholder-gray-500"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                disabled={isAnimating || isLimitReached}
-                placeholder={isLimitReached ? "Limit reached" : ""}
-              />
-              <button
-                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
-                onClick={handleInsert}
-                disabled={isAnimating || isLimitReached}
-                title={isLimitReached ? "Limit reached" : ""}
-              >
-                <Plus color="white" />
-              </button>
-            </div>
-          </div>
-
-          {/* Search */}
-          <div className="grid-cols-1 grid gap-2 text-start m-1">
-            <p className="font-bold text-md">Search</p>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                disabled={isAnimating}
-              />
-              <button
-                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
-                onClick={handleSearch}
-                disabled={isAnimating}
-              >
-                <Search color="white" />
-              </button>
-            </div>
-          </div>
-
-          {/* Remove */}
-          <div className="grid-cols-1 grid gap-2 text-start m-1">
-            <p className="font-bold text-md">Remove</p>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={removeValue}
-                onChange={(e) => setRemoveValue(e.target.value)}
-                disabled={isAnimating}
-              />
-              <button
-                className="bg-[#E82B2B] rounded-lg p-2 disabled:opacity-50"
-                onClick={handleRemove}
-                disabled={isAnimating}
-              >
-                <Trash color="white" />
-              </button>
-            </div>
-          </div>
-
-          <RandomSize
-            onReset={handleReset}
-            onAdd={handleGenerateRandomNodes}
-            isDisabled={isAnimating || isLimitReached}
-          />
         </div>
       </div>
     </>

@@ -11,4 +11,9 @@ export type TutorialStep = {
   completed: boolean;
 };
 
-export type TutorialType = "tree" | "sort" | "graph" | "linear";
+export type TutorialType =
+  | "tree"
+  | "sorting"
+  | "graph"
+  | "linear"
+  | "searching";
