@@ -25,6 +25,7 @@ type DataLinearProps = {
   onTutorialDropSuccess?: () => void;
   onTutorialInsert?: () => void;
   onTutorialDelete?: () => void;
+  onExplainAction?: (message: string) => void;
 };
 
 function Data_Linear_DS({
@@ -39,6 +40,7 @@ function Data_Linear_DS({
   onTutorialDropSuccess,
   onTutorialInsert,
   onTutorialDelete,
+  onExplainAction,
 }: DataLinearProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -74,9 +76,16 @@ function Data_Linear_DS({
   const [insertValue, setInsertValue] = useState<number | string>("");
   const [deleteIndex, setDeleteIndex] = useState<number | string>("");
 
+  const explainAction = useCallback(
+    (message: string) => {
+      if (onExplainAction) onExplainAction(message);
+    },
+    [onExplainAction],
+  );
+
   const createAddNewNode = useCallback(
     (sampleValue: number, sampleIndex?: number): OnDropAction => {
-      return ({ position }: { position: XYPosition }) => {
+      return () => {
         setNodes((prev) => {
           if (prev.length >= 50) return prev;
 
@@ -321,6 +330,9 @@ function Data_Linear_DS({
                 </div>
                 <button
                   onClick={() => {
+                    explainAction(
+                      "Insert adds your value at that index. All values after it shift right to make room.",
+                    );
                     if (onInsert)
                       onInsert(Number(insertIndex), Number(insertValue));
                     setInsertValue("");
@@ -359,6 +371,9 @@ function Data_Linear_DS({
                 </div>
                 <button
                   onClick={() => {
+                    explainAction(
+                      "Delete removes your value at that index. All values after it shift left to close the gap.",
+                    );
                     if (onDelete) onDelete(Number(deleteIndex));
                     setDeleteIndex("");
                     if (onTutorialDelete) onTutorialDelete();
@@ -394,23 +409,27 @@ function Data_Linear_DS({
                     disabled={isAnimating || isFull}
                     className="w-38 placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
-                  <button
-                    onClick={() => {
-                      if (onInsert) onInsert(nodes.length, Number(insertValue));
-                      setInsertValue("");
-                      if (onTutorialInsert) onTutorialInsert();
-                    }}
-                    disabled={isAnimating || disableDrag || insertValue === ""}
-                    className="bg-[#222121] text-white px-5 py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50 whitespace-nowrap"
-                  >
-                    Push
-                  </button>
                 </div>
-
-                <div className="w-[2px] h-8 bg-[#222121] rounded-full flex-shrink-0 mx-1"></div>
+                <button
+                  onClick={() => {
+                    explainAction(
+                      "Push adds your value to the top. The newest value is always removed first (LIFO).",
+                    );
+                    if (onInsert) onInsert(nodes.length, Number(insertValue));
+                    setInsertValue("");
+                    if (onTutorialInsert) onTutorialInsert();
+                  }}
+                  disabled={isAnimating || disableDrag || insertValue === ""}
+                  className="flex-1 bg-[#222121] text-white py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50 "
+                >
+                  Push
+                </button>
                 <button
                   id="tutorial-delete-zone"
                   onClick={() => {
+                    explainAction(
+                      "Pop removes the top value and tosses it away. The newest value gets removed first (LIFO).",
+                    );
                     if (onDelete && nodes.length > 0)
                       onDelete(nodes.length - 1);
                     if (onTutorialDelete) onTutorialDelete();
@@ -446,23 +465,27 @@ function Data_Linear_DS({
                     disabled={isAnimating || isFull}
                     className="w-24 placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:border-gray-500 transition-colors"
                   />
-                  <button
-                    onClick={() => {
-                      if (onInsert) onInsert(nodes.length, Number(insertValue));
-                      setInsertValue("");
-                      if (onTutorialInsert) onTutorialInsert();
-                    }}
-                    disabled={isAnimating || disableDrag || insertValue === ""}
-                    className="bg-[#222121] text-white px-5 py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50 whitespace-nowrap"
-                  >
-                    Enqueue
-                  </button>
                 </div>
-
-                <div className="w-[2px] h-8 bg-[#222121] rounded-full flex-shrink-0 mx-1"></div>
+                <button
+                  onClick={() => {
+                    explainAction(
+                      "Enqueue adds your value to the back. It waits its turn in line like a real queue (FIFO).",
+                    );
+                    if (onInsert) onInsert(nodes.length, Number(insertValue));
+                    setInsertValue("");
+                    if (onTutorialInsert) onTutorialInsert();
+                  }}
+                  disabled={isAnimating || disableDrag || insertValue === ""}
+                  className="flex-1 bg-[#222121] text-white py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50"
+                >
+                  Enqueue
+                </button>
                 <button
                   id="tutorial-delete-zone"
                   onClick={() => {
+                    explainAction(
+                      "Dequeue removes the front value—the one that arrived first. First in gets served first (FIFO).",
+                    );
                     if (onDelete && nodes.length > 0) onDelete(0);
                     if (onTutorialDelete) onTutorialDelete();
                   }}

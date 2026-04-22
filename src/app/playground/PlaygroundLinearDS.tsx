@@ -106,6 +106,23 @@ const algorithmNames: Record<string, string> = {
   "doubly-linked-list": "Doubly Linked List",
 };
 
+const algorithmDescriptions: Record<string, string> = {
+  array:
+    "Arrays store values by index. Insert and delete shift elements left or right, which takes extra time but allows fast random access.",
+  queue:
+    "Queues use FIFO (first-in, first-out). Add to the back, remove from the front. Perfect for ordered processing.",
+  stack:
+    "Stacks use LIFO (last-in, first-out). Add and remove from the top. Like a stack of plates—newest on top comes off first.",
+  "singly-linked-list":
+    "Singly linked lists use nodes that point forward only. Fast insertion and deletion, but only fast if you know the position.",
+  "doubly-linked-list":
+    "Doubly linked lists use nodes with forward and backward pointers. Slower than singly-linked but allows traversal both ways.",
+};
+
+const getDefaultLinearDSExplanation = (name: string, algo?: string) =>
+  algorithmDescriptions[algo ?? ""] ??
+  `This section will explain ${name}. Perform an operation to begin.`;
+
 export default function PlaygroundLinearDS({
   algorithm,
 }: {
@@ -148,6 +165,9 @@ export default function PlaygroundLinearDS({
     : "Linear Data Structures";
   const isLinkedList =
     algorithm === "singly-linked-list" || algorithm === "doubly-linked-list";
+  const effectiveExplanation = explanation.trim()
+    ? explanation
+    : getDefaultLinearDSExplanation(prettyName, algorithm);
 
   // --- 1. INITIALIZE TUTORIAL HOOK ---
   const tutorial = useLinearDSTutorial({
@@ -169,9 +189,7 @@ export default function PlaygroundLinearDS({
   useEffect(() => {
     if (algorithm) {
       queueMicrotask(() => {
-        setExplanation(
-          `This section will explain ${prettyName} operations. Click 'Run' to start.`,
-        );
+        setExplanation(getDefaultLinearDSExplanation(prettyName, algorithm));
       });
     }
   }, [algorithm, prettyName]);
@@ -453,7 +471,7 @@ export default function PlaygroundLinearDS({
       <SideTab title={prettyName}>
         <div>
           <CodeAlgo />
-          <ExplainAlgo explanation={explanation} />
+          <ExplainAlgo explanation={effectiveExplanation} />
           <Data_Linear_DS
             nodeInput={nodeInput}
             setNodeInput={setNodeInput}
@@ -463,6 +481,7 @@ export default function PlaygroundLinearDS({
             onDelete={deleteAtIndex}
             isAnimating={isAnimating}
             tutorialMode={tutorial.showTutorial}
+            onExplainAction={setExplanation}
             onTutorialDropSuccess={() => {
               tutorial.handleTutorialDropSuccess();
               setNodeInput("");
@@ -476,7 +495,7 @@ export default function PlaygroundLinearDS({
     ),
     [
       nodeInput,
-      explanation,
+      effectiveExplanation,
       prettyName,
       isAnimating,
       algorithm,
@@ -521,7 +540,7 @@ export default function PlaygroundLinearDS({
       {sideTabMemo}
 
       <div className="absolute top-4 left-8 z-10 flex gap-2">
-        <GoToHome_Portal />
+        <GoToHome_Portal algorithm={algorithm} algoType="linear-ds" />
         <button
           onClick={(e) => {
             e.stopPropagation();

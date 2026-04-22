@@ -66,10 +66,19 @@ export const pretestService = {
     api.put<ApiResponse<{ saved: boolean }>>(
       `/pretests/${algorithm}/progress`,
       {
-        answers: answers.map((a) => ({
-          questionId: a.questionId,
-          selectedChoiceId: a.selectedChoiceId || "",
-        })),
+        questionIds: answers.map((answer) => answer.questionId),
+        // Send only answered items for partial-save endpoint.
+        // Empty choice ids can fail backend validation and cause 500.
+        answers: answers
+          .filter(
+            (a) =>
+              typeof a.selectedChoiceId === "string" &&
+              a.selectedChoiceId.length > 0,
+          )
+          .map((a) => ({
+            questionId: a.questionId,
+            selectedChoiceId: a.selectedChoiceId as string,
+          })),
       },
     ),
 };

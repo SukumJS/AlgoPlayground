@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/src/config/firebase";
-import { authService } from "@/src/services/auth.service";
+import { syncUserWithBackend } from "@/src/services/auth.service";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,7 +27,7 @@ export default function LoginPage() {
       const idToken = await userCred.user.getIdToken();
       localStorage.setItem("access_token", idToken);
       try {
-        await authService.sync();
+        await syncUserWithBackend(idToken);
       } catch (err) {
         console.error("SYNC ERROR:", err);
 
@@ -80,7 +80,7 @@ export default function LoginPage() {
       localStorage.setItem("access_token", idToken);
       // sync is best-effort — don't block login if backend is down
       try {
-        await authService.sync();
+        await syncUserWithBackend(idToken);
       } catch (err) {
         console.error("SYNC ERROR:", err);
 
