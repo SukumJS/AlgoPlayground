@@ -2,7 +2,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
-import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  sendEmailVerification,
+} from "firebase/auth";
 import { auth, googleProvider } from "@/src/config/firebase";
 import { authService } from "@/src/services/auth.service";
 
@@ -28,27 +32,29 @@ export default function RegisterPage() {
     }
     setError("");
     setLoading(true);
+
     try {
+      // สร้างบัญชี
       const userCred = await createUserWithEmailAndPassword(
         auth,
         email,
         password,
       );
-      const idToken = await userCred.user.getIdToken();
-      localStorage.setItem("access_token", idToken);
-      // sync is best-effort — don't block signup if backend is down
-      try {
-        await authService.sync();
-      } catch (err) {
-        await userCred.user.delete();
 
-        localStorage.removeItem("access_token");
+      // สั่งส่งอีเมลยืนยันตัวตน
+      await sendEmailVerification(userCred.user);
 
-        setError("Signup failed. Please try again.");
-        setLoading(false);
-        return;
-      }
-      router.push("/");
+      // แจ้งเตือนผู้ใช้
+      alert(
+        "สมัครสมาชิกสำเร็จ! เราได้ส่งลิงก์ยืนยันไปที่อีเมลของคุณแล้ว กรุณากดยืนยันก่อนเข้าสู่ระบบ",
+      );
+
+      // บังคับ Log out ออกไปก่อน เพื่อไม่ให้มี Token ค้างในระบบ
+      await auth.signOut();
+      localStorage.removeItem("access_token");
+
+      // พาไปหน้า Login (ตัด authService.sync() ออกจากตรงนี้ไปเลย)
+      router.push("/auth/signin");
     } catch (err) {
       const firebaseError = err as { code?: string };
       if (firebaseError.code) {
