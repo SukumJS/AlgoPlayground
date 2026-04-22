@@ -51,16 +51,15 @@ const TREE_TUTORIAL_STEPS: TutorialStep[] = [
   },
 ];
 
-// Glow zone canvas position - Under node 30
-// Screen position: left:500px, top:525px (center: 540, 565)
-// Calculated canvas coords: x=78.5, y=283.25 (scale=2, tx=383, ty=-1.5)
+// Glow zone canvas position
 export const GLOW_ZONE = {
   x: 5,
   y: 285,
-  radius: 60, // generous hit radius (canvas pixels) to match visual ring size
+  radius: 60,
 };
 
 interface TutorialProps {
+  algorithm: string;
   onComplete: () => void;
   currentStep: number;
   setCurrentStep: (step: number) => void;
@@ -75,48 +74,58 @@ interface TutorialProps {
   trashBinPos?: { x: number; y: number } | null;
 }
 
-// Custom Dashed Arrow Component matching Lucide style
+// Custom Dashed Arrow Component (อัปเดตให้เหมือน Graph)
 const DashedArrow = ({
   className,
   style,
   width = 50,
   color = "#333",
+  direction = "left", // "left" | "right" | "up" | "down"
 }: {
   className?: string;
   style?: React.CSSProperties;
   width?: number;
   color?: string;
-}) => (
-  <svg
-    width={width}
-    height="24"
-    viewBox={`0 0 ${width} 24`}
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-    style={style}
-  >
-    {/* Dashed Shaft */}
-    <path
-      d={`M${width - 2} 12H5`}
-      stroke={color}
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeDasharray="4 4"
-    />
-    {/* Solid Arrowhead (Left pointing) */}
-    <path
-      d="M12 19L5 12L12 5"
-      stroke={color}
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+  direction?: "left" | "right" | "up" | "down";
+}) => {
+  const rotate = {
+    left: 0,
+    right: 180,
+    up: 90,
+    down: -90,
+  }[direction];
+
+  return (
+    <svg
+      width={width}
+      height="24"
+      viewBox={`0 0 ${width} 24`}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      style={{ ...style, transform: `rotate(${rotate}deg)` }}
+    >
+      <path
+        d={`M${width - 2} 12H5`}
+        stroke={color}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="4 4"
+      />
+      <path
+        d="M12 19L5 12L12 5"
+        stroke={color}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};
 
 export default function TutorialTree({
+  algorithm,
   onComplete,
   currentStep,
   setCurrentStep,
@@ -131,6 +140,10 @@ export default function TutorialTree({
 }: TutorialProps) {
   const [steps, setSteps] = useState<TutorialStep[]>(TREE_TUTORIAL_STEPS);
 
+  // สร้าง State ท้องถิ่นเพื่อแยก 2 สเต็ปสุดท้ายออกมา
+  const [localEndStep, setLocalEndStep] = useState(0);
+
+  // 🎯 แก้ไข: ให้ดัน currentStep ไปเรื่อยๆ แทนการเรียก onComplete() ทันที
   const handleStepComplete = useCallback(() => {
     if (currentStep < steps.length) {
       setSteps((prev) =>
@@ -138,14 +151,9 @@ export default function TutorialTree({
           idx === currentStep ? { ...step, completed: true } : step,
         ),
       );
-
-      if (currentStep === steps.length - 1) {
-        onComplete();
-      } else {
-        setCurrentStep(currentStep + 1);
-      }
+      setCurrentStep(currentStep + 1);
     }
-  }, [currentStep, steps.length, onComplete, setCurrentStep]);
+  }, [currentStep, steps.length, setCurrentStep]);
 
   const handleDropOnGlow = useCallback(
     (e: React.DragEvent) => {
@@ -162,6 +170,103 @@ export default function TutorialTree({
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   }, []);
+
+  // กันข้ามอัตโนมัติ (Anti Auto-Skip System)
+  if (localEndStep === 0) {
+    if (currentStep >= steps.length) {
+      setLocalEndStep(1);
+    }
+  }
+  // ส่วนของชี้สถานะสีและ Post Test
+  if (localEndStep > 0) {
+    return (
+      <div className="fixed inset-0 z-[80] pointer-events-auto transition-opacity duration-300">
+        <svg
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          style={{ position: "fixed" }}
+        >
+          <defs>
+            <mask id="endstep-spotlight-mask-tree">
+              <rect width="100%" height="100%" fill="white" />
+              {localEndStep === 1 && (
+                <rect
+                  x="130"
+                  y="12"
+                  width={algorithm === "avl-tree" ? "490" : "440"}
+                  height="45"
+                  rx="22"
+                  fill="black"
+                />
+              )}
+              {localEndStep === 2 && (
+                <rect
+                  x="1500"
+                  y="900"
+                  width="400"
+                  height="55"
+                  rx="4"
+                  fill="black"
+                />
+              )}
+            </mask>
+          </defs>
+          <rect
+            width="100%"
+            height="100%"
+            fill="rgba(0, 0, 0, 0.6)"
+            mask="url(#endstep-spotlight-mask-tree)"
+          />
+        </svg>
+
+        {/* กล่องชี้สถานะสี (ซ้ายบน) */}
+        {localEndStep === 1 && (
+          <div className="absolute top-[120px] left-[120px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
+            <DashedArrow
+              width={50}
+              className="absolute -top-[45px] left-[30px]"
+              direction="up"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">
+              Color Legend
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              {algorithm === "avl-tree"
+                ? "Look here to understand node colors. You can also use the button to show or hide the Balance Factors (-1, 0, 1)!"
+                : "Look here to understand what different node colors mean."}
+            </p>
+            <button
+              onClick={() => setLocalEndStep(2)}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/* กล่องชี้ Post Test (ขวาล่าง) */}
+        {localEndStep === 2 && (
+          <div className="absolute bottom-[120px] right-[100px] bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out">
+            <DashedArrow
+              width={50}
+              className="absolute -bottom-[50px] left-1/2 transform -translate-x-1/2"
+              direction="down"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Post Test</h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Once you finish experimenting, click here to take a short quiz and
+              test your knowledge!
+            </p>
+            <button
+              onClick={onComplete} // จบ Tutorial
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   const currentStepData = steps[currentStep];
 
@@ -286,7 +391,6 @@ export default function TutorialTree({
             <span className="font-bold">Drag a node</span> from the panel and
             drop it where the playground glows.
           </p>
-          {/* Arrow pointing RIGHT - rotated 180deg */}
           <DashedArrow
             width={60}
             className="absolute pointer-events-none"
@@ -295,18 +399,17 @@ export default function TutorialTree({
               top: "50%",
               marginTop: "-12px",
               marginLeft: "10px",
-              transform: "rotate(180deg)", // Point Right
             }}
+            direction="right"
           />
         </div>
       )}
 
-      {/* Glow drop zone (Step 1) — Dynamically positioned to match canvas GLOW_ZONE */}
+      {/* Glow drop zone (Step 1) */}
       {currentStep === 0 && (
         <div
           className="fixed z-50 pointer-events-none"
           style={{
-            // Center the 100px ring on the computed screen position
             left: glowZoneScreenPos ? `${glowZoneScreenPos.x - 50}px` : "250px",
             top: glowZoneScreenPos ? `${glowZoneScreenPos.y - 50}px` : "450px",
             width: "100px",
@@ -327,16 +430,14 @@ export default function TutorialTree({
           <div
             className="fixed z-50 bg-white rounded-lg shadow-xl px-4 py-2 border border-gray-200"
             style={{
-              // Position relative to trash bin, or fallback to fixed if not ready
               left: trashBinPos ? `${trashBinPos.x - 350}px` : "55%",
               top: trashBinPos ? `${trashBinPos.y - 30}px` : "85%",
-              transform: "translateY(-50%)", // Center vertically relative to target
+              transform: "translateY(-50%)",
             }}
           >
             <p className="text-base text-gray-800 font-medium">
               Drag it to the trash bin icon.
             </p>
-            {/* Arrow pointing RIGHT to node 90 */}
             <DashedArrow
               width={60}
               className="absolute pointer-events-none"
@@ -345,8 +446,8 @@ export default function TutorialTree({
                 top: "50%",
                 marginTop: "-12px",
                 marginLeft: "10px",
-                transform: "rotate(180deg)", // Point Right
               }}
+              direction="right"
             />
           </div>
           <div
@@ -384,7 +485,6 @@ export default function TutorialTree({
           <p className="text-base text-gray-800 font-medium whitespace-nowrap">
             Tap a node to start.
           </p>
-          {/* Arrow pointing LEFT to node 3 */}
           <DashedArrow
             width={50}
             className="absolute pointer-events-none"
@@ -394,6 +494,7 @@ export default function TutorialTree({
               marginTop: "-12px",
               marginRight: "10px",
             }}
+            direction="left"
           />
         </div>
       )}
@@ -411,7 +512,6 @@ export default function TutorialTree({
           <p className="text-base text-gray-800 font-medium">
             Now, tap another node to create a link.
           </p>
-          {/* Arrow pointing LEFT to node 30 */}
           <DashedArrow
             width={50}
             className="absolute pointer-events-none"
@@ -421,6 +521,7 @@ export default function TutorialTree({
               marginTop: "-12px",
               marginRight: "10px",
             }}
+            direction="left"
           />
         </div>
       )}
@@ -443,7 +544,6 @@ export default function TutorialTree({
             <p className="text-base text-gray-800 font-medium whitespace-nowrap">
               Link Created!
             </p>
-            {/* Arrow pointing LEFT */}
             <DashedArrow
               width={30}
               className="absolute pointer-events-none"
@@ -453,6 +553,7 @@ export default function TutorialTree({
                 marginTop: "-12px",
                 marginRight: "10px",
               }}
+              direction="left"
             />
           </div>
         </>
@@ -463,9 +564,7 @@ export default function TutorialTree({
         <div
           className="fixed z-50 bg-white rounded-lg shadow-xl px-4 py-2 border border-gray-200"
           style={{
-            // Position relative to node 90 (left side)
-            // Arrow should mimic image: [Tooltip]--> (Node 90)
-            right: `calc(100vw - ${node90ScreenPos ? node90ScreenPos.x : 1086}px + 120px)`, // Position on Left side of node
+            right: `calc(100vw - ${node90ScreenPos ? node90ScreenPos.x : 1086}px + 120px)`,
             top: `${(node90ScreenPos ? node90ScreenPos.y : 630) - 20}px`,
             borderRadius: "10px",
           }}
@@ -473,7 +572,6 @@ export default function TutorialTree({
           <p className="text-base text-gray-800 font-medium whitespace-nowrap">
             Press and hold the node.
           </p>
-          {/* Arrow pointing RIGHT to node 90 */}
           <DashedArrow
             width={50}
             className="absolute pointer-events-none"
@@ -482,8 +580,8 @@ export default function TutorialTree({
               top: "50%",
               marginTop: "-12px",
               marginLeft: "10px",
-              transform: "rotate(180deg)",
             }}
+            direction="right"
           />
         </div>
       )}

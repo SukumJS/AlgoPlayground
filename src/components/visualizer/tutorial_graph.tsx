@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Trash2, Check } from "lucide-react";
 
 // Graph Tutorial Steps configuration — DIRECTED mode (Dijkstra)
@@ -118,7 +118,6 @@ interface TutorialGraphProps {
   edge64to39WeightPos?: { x: number; y: number } | null;
   trashBinPos?: { x: number; y: number } | null;
   isTrashActive?: boolean;
-  /** Computed screen-space radius of a graph node (accounts for zoom) */
   nodeScreenRadius?: number;
   // Weight input
   showWeightInput?: boolean;
@@ -144,6 +143,9 @@ export default function TutorialGraph({
   onWeightInputChange,
   onWeightConfirm,
 }: TutorialGraphProps) {
+  // สร้าง State ท้องถิ่นเพื่อแยก 2 สเต็ปสุดท้ายออกมา
+  const [localEndStep, setLocalEndStep] = useState(0);
+
   const steps = directed
     ? DIRECTED_TUTORIAL_STEPS
     : weighted
@@ -151,12 +153,115 @@ export default function TutorialGraph({
       : UNDIRECTED_TUTORIAL_STEPS;
 
   const stepData = steps[currentStep];
-  if (!stepData) return null;
 
   // Dynamic step references
   const deleteHighlightStep = weighted ? 7 : 3;
   const dragStep = weighted ? 8 : 4;
   const completeStep = weighted ? 9 : 5;
+
+  // กันข้ามอัตโนมัติ (Anti Auto-Skip System) - ดักจับตอนถึงสเต็ปสุดท้ายของแต่ละโหมด
+  if (localEndStep === 0) {
+    if (currentStep >= completeStep) {
+      setLocalEndStep(1);
+    }
+  }
+
+  // หากอยู่ในช่วง 2 สเต็ปสุดท้าย ให้รันหน้าตานี้ และไม่ต้องสนใจ currentStep ของระบบกราฟอีกต่อไป
+  if (localEndStep > 0) {
+    return (
+      <div className="fixed inset-0 z-[80] pointer-events-auto transition-opacity duration-300">
+        {/* --- MASK SPOTLIGHT สำหรับ Legend และ Post Test --- */}
+        <svg
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          style={{ position: "fixed" }}
+        >
+          <defs>
+            <mask id="endstep-spotlight-mask-graph">
+              <rect width="100%" height="100%" fill="white" />
+
+              {/* เจาะรูไฮไลท์สำหรับ Color Legend (ซ้ายบน) */}
+              {localEndStep === 1 && (
+                <rect
+                  x="130"
+                  y="12"
+                  width="250"
+                  height="45"
+                  rx="22"
+                  fill="black"
+                />
+              )}
+
+              {/* เจาะรูไฮไลท์สำหรับ Post Test (ขวาล่างสุดของ Sidebar) */}
+              {localEndStep === 2 && (
+                <rect
+                  x="1500"
+                  y="900"
+                  width="400"
+                  height="55"
+                  rx="4"
+                  fill="black"
+                />
+              )}
+            </mask>
+          </defs>
+          <rect
+            width="100%"
+            height="100%"
+            fill="rgba(0, 0, 0, 0.6)"
+            mask="url(#endstep-spotlight-mask-graph)"
+          />
+        </svg>
+
+        {/* กล่องชี้สถานะสี (ซ้ายบน) */}
+        {localEndStep === 1 && (
+          <div className="absolute top-[120px] left-[120px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
+            <DashedArrow
+              width={50}
+              className="absolute -top-[45px] left-[30px]"
+              direction="up" // ใช้ direction ของไฟล์ graph หมุนขึ้น
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">
+              Color Legend
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Look here to understand what different node colors mean
+            </p>
+            <button
+              onClick={() => setLocalEndStep(2)}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/* กล่องชี้ Post Test (ขวาล่าง) */}
+        {localEndStep === 2 && (
+          <div className="absolute bottom-[120px] right-[100px] bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out">
+            <DashedArrow
+              width={50}
+              className="absolute -bottom-[50px] left-1/2 transform -translate-x-1/2"
+              direction="down" // ใช้ direction ของไฟล์ graph หมุนลง
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Post Test</h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Once you finish experimenting, click here to take a short quiz and
+              test your knowledge!
+            </p>
+            <button
+              onClick={onComplete}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ถ้ายังไม่เริ่มหรือจบไปแล้วแต่ยังไม่ได้ขึ้น 2 สเต็ปสุดท้าย (กันพัง)
+  if (!stepData) return null;
 
   return (
     <>
@@ -456,29 +561,6 @@ export default function TutorialGraph({
             <Trash2 color="white" size={40} />
           </div>
         </>
-      )}
-
-      {/* Complete step: Completion Modal */}
-      {currentStep === completeStep && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200 text-center min-w-[320px]">
-            <div className="w-16 h-16 mx-auto mb-4 bg-green-500 rounded-full flex items-center justify-center">
-              <Check color="white" size={40} />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Tutorial Completed!
-            </h2>
-            <p className="text-gray-600 mb-6">
-              You&apos;re now ready to use Graph Playground.
-            </p>
-            <button
-              onClick={onComplete}
-              className="w-full bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors"
-            >
-              Done
-            </button>
-          </div>
-        </div>
       )}
     </>
   );

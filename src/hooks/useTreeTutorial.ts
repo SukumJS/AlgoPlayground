@@ -15,6 +15,7 @@ interface UseTreeTutorialProps {
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
   isTree: boolean;
+  algorithm: string;
 }
 
 export function useTreeTutorial({
@@ -23,6 +24,7 @@ export function useTreeTutorial({
   setNodes,
   setEdges,
   isTree,
+  algorithm,
 }: UseTreeTutorialProps) {
   // Tutorial state
   const [showTutorial, setShowTutorial] = useState(false);
@@ -130,18 +132,23 @@ export function useTreeTutorial({
   }, [updateTutorialPositions]);
 
   // Check if user needs to see tutorial (default: show if tree type)
+  // localStorage เอาไว้เช็คว่าเคยผ่าน tutorial ของโครงสร้างข้อมูลนี้แล้วหรือยัง
   useEffect(() => {
-    if (isTree) {
-      // TODO: Check Firebase here
-      // ใช้ setTimeout เพื่อจำลองการรอข้อมูลจาก Firebase และแก้ Error Cascading Renders
+    if (isTree && algorithm) {
       const timer = setTimeout(() => {
-        // Default: show tutorial since backend not ready
-        setShowTutorial(true);
+        // จะได้คีย์เช่น "tutorial_bst_completed" หรือ "tutorial_avl_completed"
+        const hasCompleted = localStorage.getItem(
+          `tutorial_${algorithm}_completed`,
+        );
+
+        if (!hasCompleted) {
+          setShowTutorial(true);
+        }
       }, 0);
 
       return () => clearTimeout(timer);
     }
-  }, [isTree]);
+  }, [isTree, algorithm]);
 
   // Trigger position update when tutorial becomes active
   // Larger delay to ensure sidebar DOM elements are rendered
@@ -157,8 +164,11 @@ export function useTreeTutorial({
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
     setShowCompletionModal(true);
-    // TODO: POST to Firebase to mark tutorial as completed
-  }, []);
+    // มาร์คใน localStorage ว่า tutorial นี้ผ่านแล้ว (ใช้ algorithm เป็น key เพื่อแยกแต่ละ tutorial)
+    if (algorithm) {
+      localStorage.setItem(`tutorial_${algorithm}_completed`, "true");
+    }
+  }, [algorithm]);
 
   // Handle node click for tutorial
   const handleNodeClick = useCallback(
@@ -276,12 +286,11 @@ export function useTreeTutorial({
         if (dist < dropTargetRadius) {
           // Delete the node
           setNodes((nds) => nds.filter((n) => n.id !== node.id));
-          // Complete tutorial
-          handleTutorialComplete();
+          setTutorialStep(6);
         }
       }
     },
-    [showTutorial, tutorialStep, setNodes, handleTutorialComplete],
+    [showTutorial, tutorialStep, setNodes, setTutorialStep],
   );
 
   return {

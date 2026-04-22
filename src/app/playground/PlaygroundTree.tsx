@@ -354,6 +354,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
     setNodes,
     setEdges,
     isTree: true,
+    algorithm: algorithm,
   });
 
   // Node interaction (universal - works for all node types, only active when NOT in tutorial)
@@ -678,6 +679,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       {/* Tutorial overlay for tree */}
       {tutorial.showTutorial && (
         <TutorialTree
+          algorithm={algorithm}
           onComplete={tutorial.handleTutorialComplete}
           currentStep={tutorial.tutorialStep}
           setCurrentStep={tutorial.setTutorialStep}

@@ -142,13 +142,13 @@ export default function PlaygroundLinearDS({
       data: { value: val, index: i, status: "idle" },
     }));
   });
-  const [nodeInput, setNodeInput] = useState<number | string>("6");
+  const [nodeInput, setNodeInput] = useState<number | string>("");
   useEffect(() => {
     queueMicrotask(() => {
       if (algorithm === "stack" || algorithm === "queue") {
         setNodeInput(""); // ถ้าเป็น Stack/Queue ให้ช่อง Drag กลายเป็นค่าว่าง เพื่อโชว์ตัว "N"
       } else {
-        setNodeInput("6"); // ถ้าเป็น Array หรือ Linked List ให้กลับมาเป็น 6 สำหรับสอนลากวาง
+        setNodeInput(""); // ถ้าเป็น Array หรือ Linked List ให้กลับมาเป็น 6 สำหรับสอนลากวาง
       }
     });
   }, [algorithm]);
@@ -176,8 +176,16 @@ export default function PlaygroundLinearDS({
     setNodes,
     isLinearDS: true,
     isLinkedList,
+    algorithm,
   });
-
+  // Auto-fill เลข 11 ให้กล่อง Input เฉพาะตอนที่ Tutorial ทำงาน
+  React.useEffect(() => {
+    if (tutorial.showTutorial) {
+      setNodeInput(6);
+    } else {
+      setNodeInput(""); // เคลียร์กล่องเป็นค่าว่างเมื่อจบ Tutorial หรือไม่ได้อยู่ใน Tutorial
+    }
+  }, [tutorial.showTutorial]);
   useEffect(() => {
     if (algorithm) {
       queueMicrotask(() => {
