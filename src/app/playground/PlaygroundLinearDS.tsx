@@ -106,6 +106,23 @@ const algorithmNames: Record<string, string> = {
   "doubly-linked-list": "Doubly Linked List",
 };
 
+const algorithmDescriptions: Record<string, string> = {
+  array:
+    "Arrays store values by index. Insert and delete shift elements left or right, which takes extra time but allows fast random access.",
+  queue:
+    "Queues use FIFO (first-in, first-out). Add to the back, remove from the front. Perfect for ordered processing.",
+  stack:
+    "Stacks use LIFO (last-in, first-out). Add and remove from the top. Like a stack of plates—newest on top comes off first.",
+  "singly-linked-list":
+    "Singly linked lists use nodes that point forward only. Fast insertion and deletion, but only fast if you know the position.",
+  "doubly-linked-list":
+    "Doubly linked lists use nodes with forward and backward pointers. Slower than singly-linked but allows traversal both ways.",
+};
+
+const getDefaultLinearDSExplanation = (name: string, algo?: string) =>
+  algorithmDescriptions[algo ?? ""] ??
+  `This section will explain ${name}. Perform an operation to begin.`;
+
 export default function PlaygroundLinearDS({
   algorithm,
 }: {
@@ -125,13 +142,13 @@ export default function PlaygroundLinearDS({
       data: { value: val, index: i, status: "idle" },
     }));
   });
-  const [nodeInput, setNodeInput] = useState<number | string>("6");
+  const [nodeInput, setNodeInput] = useState<number | string>("");
   useEffect(() => {
     queueMicrotask(() => {
       if (algorithm === "stack" || algorithm === "queue") {
         setNodeInput(""); // ถ้าเป็น Stack/Queue ให้ช่อง Drag กลายเป็นค่าว่าง เพื่อโชว์ตัว "N"
       } else {
-        setNodeInput("6"); // ถ้าเป็น Array หรือ Linked List ให้กลับมาเป็น 6 สำหรับสอนลากวาง
+        setNodeInput(""); // ถ้าเป็น Array หรือ Linked List ให้กลับมาเป็น 6 สำหรับสอนลากวาง
       }
     });
   }, [algorithm]);
@@ -148,6 +165,9 @@ export default function PlaygroundLinearDS({
     : "Linear Data Structures";
   const isLinkedList =
     algorithm === "singly-linked-list" || algorithm === "doubly-linked-list";
+  const effectiveExplanation = explanation.trim()
+    ? explanation
+    : getDefaultLinearDSExplanation(prettyName, algorithm);
 
   // --- 1. INITIALIZE TUTORIAL HOOK ---
   const tutorial = useLinearDSTutorial({
@@ -156,14 +176,20 @@ export default function PlaygroundLinearDS({
     setNodes,
     isLinearDS: true,
     isLinkedList,
+    algorithm,
   });
-
+  // Auto-fill เลข 11 ให้กล่อง Input เฉพาะตอนที่ Tutorial ทำงาน
+  React.useEffect(() => {
+    if (tutorial.showTutorial) {
+      setNodeInput(6);
+    } else {
+      setNodeInput(""); // เคลียร์กล่องเป็นค่าว่างเมื่อจบ Tutorial หรือไม่ได้อยู่ใน Tutorial
+    }
+  }, [tutorial.showTutorial]);
   useEffect(() => {
     if (algorithm) {
       queueMicrotask(() => {
-        setExplanation(
-          `This section will explain ${prettyName} operations. Click 'Run' to start.`,
-        );
+        setExplanation(getDefaultLinearDSExplanation(prettyName, algorithm));
       });
     }
   }, [algorithm, prettyName]);
@@ -445,7 +471,7 @@ export default function PlaygroundLinearDS({
       <SideTab title={prettyName}>
         <div>
           <CodeAlgo />
-          <ExplainAlgo explanation={explanation} />
+          <ExplainAlgo explanation={effectiveExplanation} />
           <Data_Linear_DS
             nodeInput={nodeInput}
             setNodeInput={setNodeInput}
@@ -455,6 +481,7 @@ export default function PlaygroundLinearDS({
             onDelete={deleteAtIndex}
             isAnimating={isAnimating}
             tutorialMode={tutorial.showTutorial}
+            onExplainAction={setExplanation}
             onTutorialDropSuccess={() => {
               tutorial.handleTutorialDropSuccess();
               setNodeInput("");
@@ -468,7 +495,7 @@ export default function PlaygroundLinearDS({
     ),
     [
       nodeInput,
-      explanation,
+      effectiveExplanation,
       prettyName,
       isAnimating,
       algorithm,
@@ -513,7 +540,7 @@ export default function PlaygroundLinearDS({
       {sideTabMemo}
 
       <div className="absolute top-4 left-8 z-10 flex gap-2">
-        <GoToHome_Portal />
+        <GoToHome_Portal algorithm={algorithm} algoType="linear-ds" />
         <button
           onClick={(e) => {
             e.stopPropagation();

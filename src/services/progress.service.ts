@@ -24,6 +24,18 @@ export interface UserProgress {
   posttest: TestStatus;
 }
 
+/** Response shape from /pretests/:algorithm/status and /posttests/:algorithm/status */
+export interface AlgorithmTestStatusResponse {
+  completed: boolean;
+  inProgress: boolean;
+  score: number | null;
+  total: number | null;
+  answeredCount: number | null;
+  reminderShown?: boolean;
+  reminderShownAt?: string | null;
+  updatedAt?: string;
+}
+
 export interface TestResultHistory {
   id: string;
   algorithm: string;
@@ -44,15 +56,33 @@ export const progressService = {
   /** GET /progress/all — batch fetch all pretest + posttest statuses */
   getAllProgress: () => api.get<ApiResponse<AllProgressData>>("/progress/all"),
 
-  /** GET /users/:userId/progress */
+  /**
+   * GET /pretests/:algorithm/status
+   * Single algorithm pretest status (completed/in-progress/score)
+   */
+  getPretestStatus: (algorithm: string) =>
+    api.get<ApiResponse<AlgorithmTestStatusResponse>>(
+      `/pretests/${algorithm}/status`,
+    ),
+
+  /**
+   * GET /posttests/:algorithm/status
+   * Single algorithm posttest status (completed/in-progress/score)
+   */
+  getPosttestStatus: (algorithm: string) =>
+    api.get<ApiResponse<AlgorithmTestStatusResponse>>(
+      `/posttests/${algorithm}/status`,
+    ),
+
+  /** GET /users/:userId/progress (legacy endpoint) */
   getUserProgress: (userId: string) =>
     api.get<UserProgress[]>(`/users/${userId}/progress`),
 
-  /** GET /users/:userId/pretest-results */
+  /** GET /users/:userId/pretest-results (legacy endpoint) */
   getPretestResults: (userId: string) =>
     api.get<TestResultHistory[]>(`/users/${userId}/pretest-results`),
 
-  /** GET /users/:userId/posttest-results */
+  /** GET /users/:userId/posttest-results (legacy endpoint) */
   getPosttestResults: (userId: string) =>
     api.get<TestResultHistory[]>(`/users/${userId}/posttest-results`),
 };
