@@ -186,7 +186,11 @@ export default function LoginPage() {
 
       {/* Forgot password */}
       <div className="w-[454px] text-right">
-        <button className="text-sm font-medium underline text-black">
+        <button
+          type="button" // ใส่ type="button" กันฟอร์ม submit อัตโนมัติ
+          onClick={() => router.push("/auth/forgot-password")}
+          className="text-sm font-medium underline text-black hover:text-[#0066CC] transition-colors"
+        >
           Forgot your password?
         </button>
       </div>
