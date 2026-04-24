@@ -22,6 +22,7 @@ export interface AuthUserProfile {
   uid?: string;
   email?: string;
   imageUrl?: string;
+  authProvider?: string;
   updatedAt?: string;
   progress?: UserProgressSummary;
   categoryAlgoProgress?: UserCategoryAlgoProgressSummary;
