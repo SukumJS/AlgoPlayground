@@ -17,7 +17,7 @@ export default function TipsModal({
 }: TipsModalProps) {
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <div className="w-105 rounded-xl bg-white p-6 shadow-lg">
+      <div className="w-11/12 max-w-4xl rounded-xl bg-white p-6 shadow-lg md:max-h-[85vh] overflow-y-auto">
         {/* ---------- Header ---------- */}
         <div className="mb-3 flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100">
