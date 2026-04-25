@@ -46,10 +46,14 @@ import {
 } from "@/src/components/visualizer/algorithmsTree/bstTree";
 import {
   insertBT,
+  calculateBTPositions,
+  btToReactFlow,
   type BTNode,
 } from "@/src/components/visualizer/algorithmsTree/binaryTree";
 import {
   insertHeap,
+  calculateHeapPositions,
+  heapToReactFlow,
   type HeapNode,
 } from "@/src/components/visualizer/algorithmsTree/heapTree";
 import {
@@ -198,6 +202,34 @@ const treeInitialAVLRoot = buildTreeInitialAVLRoot();
 const treeInitialMinHeapRoot = buildTreeInitialHeapRoot(true);
 const treeInitialMaxHeapRoot = buildTreeInitialHeapRoot(false);
 
+// ── Generate correct initial ReactFlow nodes/edges for heap structures ──────
+const buildHeapInitialRF = (heapRoot: HeapNode) => {
+  const positions = calculateHeapPositions(heapRoot);
+  const { nodes, edges } = heapToReactFlow(
+    heapRoot,
+    [],
+    [],
+    positions,
+    "heap-edge",
+  );
+  return { nodes: nodes as Node[], edges: edges as Edge[] };
+};
+const treeInitialMinHeapRF = buildHeapInitialRF(treeInitialMinHeapRoot);
+const treeInitialMaxHeapRF = buildHeapInitialRF(treeInitialMaxHeapRoot);
+
+// ── Generate correct initial ReactFlow nodes/edges for BST, AVL, BT structures ──
+const buildBTInitialRF = (btRoot: BTNode) => {
+  const positions = calculateBTPositions(btRoot);
+  const { nodes, edges } = btToReactFlow(btRoot, [], [], positions, "bt-edge");
+  return { nodes: nodes as Node[], edges: edges as Edge[] };
+};
+const treeInitialBSTRF = buildBTInitialRF(treeInitialBSTRoot);
+const treeInitialBTRF = buildBTInitialRF(treeInitialBTRoot);
+// AVL uses the same rendering as BST (BT structure)
+const treeInitialAVLRF = buildBTInitialRF(
+  treeInitialAVLRoot as unknown as BTNode,
+);
+
 // สร้าง Object ไว้แปลงชื่อ Tree Algorithm
 const algorithmNames: Record<string, string> = {
   "binary-search-tree": "Binary Search Tree",
@@ -213,8 +245,38 @@ const getDefaultTreeExplanation = (name: string) =>
   `This section will explain ${name}. Perform an operation to begin.`;
 
 export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
-  const [nodes, setNodes] = useState<Node[]>(treeInitialNodes);
-  const [edges, setEdges] = useState<Edge[]>(treeInitialEdges);
+  // Use correct initial nodes/edges based on algorithm type
+  const isMinHeap = algorithm === "min-heap";
+  const isMaxHeap = algorithm === "max-heap";
+  const isHeapAlgo = isMinHeap || isMaxHeap;
+  const isBST = algorithm === "binary-search-tree";
+  const isAVL = algorithm === "avl-tree";
+  const isBT =
+    algorithm === "binary-tree-inorder" ||
+    algorithm === "binary-tree-preorder" ||
+    algorithm === "binary-tree-postorder";
+
+  // Check if tutorial has been completed (use algorithm-specific initial state if yes)
+  const tutorialCompleted =
+    typeof window !== "undefined" &&
+    localStorage.getItem(`tutorial_${algorithm}_completed`) !== null;
+
+  const initialRF = tutorialCompleted
+    ? isHeapAlgo
+      ? isMinHeap
+        ? treeInitialMinHeapRF
+        : treeInitialMaxHeapRF
+      : isBST
+        ? treeInitialBSTRF
+        : isAVL
+          ? treeInitialAVLRF
+          : isBT
+            ? treeInitialBTRF
+            : { nodes: treeInitialNodes, edges: treeInitialEdges }
+    : { nodes: treeInitialNodes, edges: treeInitialEdges };
+
+  const [nodes, setNodes] = useState<Node[]>(initialRF.nodes);
+  const [edges, setEdges] = useState<Edge[]>(initialRF.edges);
   const [showInfo, setShowInfo] = useState(false);
   const defaultPrettyName = algorithm
     ? algorithmNames[algorithm] || "Tree Algorithms"
@@ -761,7 +823,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
             setSavedNodes(nodes);
             setSavedEdges(edges);
             setSavedExplanation(explanation);
-            // Reset playground to initial state for tutorial (synchronously)
+            // Reset playground to tutorial's expected initial state (BST-structured nodes)
             flushSync(() => {
               setNodes(treeInitialNodes);
               setEdges(treeInitialEdges);

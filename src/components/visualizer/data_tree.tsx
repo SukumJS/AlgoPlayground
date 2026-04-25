@@ -72,6 +72,7 @@ import {
   cloneHeap,
   calculateHeapPositions,
   heapToReactFlow,
+  rebuildHeapFromReactFlow,
   type HeapNode,
 } from "@/src/components/visualizer/algorithmsTree/heapTree";
 
@@ -273,60 +274,13 @@ function Data_tree({
   useEffect(() => {
     if (isHeap && !isAnimating) {
       setTimeout(() => {
-        let root: HeapNode | null = null;
-
         const nodes = JSON.parse(nodesStr);
         const edges = JSON.parse(edgesStr);
-
-        const numericNodes = nodes.filter(
-          (n: { id: string; data: { label: string } }) =>
-            !isNaN(parseInt(n.data.label)),
-        );
-
-        if (numericNodes.length > 0) {
-          if (edges.length === 0) {
-            const res = insertHeap(
-              root,
-              parseInt(numericNodes[0].data.label),
-              numericNodes[0].id,
-              isMinHeap,
-            );
-            root = res.root;
-          } else {
-            const targetIds = new Set(edges.map((e: RFEdge) => e.target));
-            let rootNode = numericNodes.find(
-              (n: RFNode) => !targetIds.has(n.id),
-            );
-            if (!rootNode) rootNode = numericNodes[0];
-
-            // Include all nodes with at least one edge connection
-            // (connected clusters auto-inserted; truly isolated nodes excluded)
-            const connectedIds = new Set<string>();
-            for (const edge of edges) {
-              connectedIds.add(edge.source);
-              connectedIds.add(edge.target);
-            }
-
-            const values = numericNodes
-              .filter((n: RFNode) => connectedIds.has(n.id))
-              .map((n: RFNode) => {
-                const nodeData = n.data as Record<string, string>;
-                return {
-                  value: parseInt(nodeData?.label || "0", 10),
-                  id: n.id,
-                };
-              });
-
-            values.forEach((v: { value: number; id: string }) => {
-              const res = insertHeap(root, v.value, v.id, isMinHeap);
-              root = res.root;
-            });
-          }
-        }
+        const root = rebuildHeapFromReactFlow(nodes, edges);
         setHeapRoot(root);
       }, 0);
     }
-  }, [isHeap, isAnimating, nodesStr, edgesStr, isMinHeap]);
+  }, [isHeap, isAnimating, nodesStr, edgesStr]);
 
   const heapInitRef = useRef(false);
   useEffect(() => {
