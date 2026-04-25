@@ -16,6 +16,7 @@ interface UseLinearDSTutorialProps {
   setNodes: React.Dispatch<React.SetStateAction<Node<LinearNodeData>[]>>;
   isLinearDS: boolean;
   isLinkedList: boolean;
+  algorithm: string;
 }
 
 export function useLinearDSTutorial({
@@ -24,6 +25,7 @@ export function useLinearDSTutorial({
   setNodes,
   isLinearDS,
   isLinkedList,
+  algorithm,
 }: UseLinearDSTutorialProps) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -138,13 +140,21 @@ export function useLinearDSTutorial({
       window.removeEventListener("resize", updateTutorialPositions);
     };
   }, [showTutorial, updateTutorialPositions]);
-
+  // localStorage เอาไว้เช็คว่าเคยผ่าน tutorial ของโครงสร้างข้อมูลนี้แล้วหรือยัง
   useEffect(() => {
-    if (isLinearDS) {
-      const timer = setTimeout(() => setShowTutorial(true), 500);
+    if (isLinearDS && algorithm) {
+      const timer = setTimeout(() => {
+        const hasCompleted = localStorage.getItem(
+          `tutorial_${algorithm}_completed`,
+        );
+
+        if (!hasCompleted) {
+          setShowTutorial(true);
+        }
+      }, 0);
       return () => clearTimeout(timer);
     }
-  }, [isLinearDS]);
+  }, [isLinearDS, algorithm]);
 
   useEffect(() => {
     if (tutorialStep === 2) {
@@ -156,7 +166,11 @@ export function useLinearDSTutorial({
   const handleTutorialComplete = useCallback(() => {
     setShowTutorial(false);
     setShowCompletionModal(true);
-  }, []);
+    // มาร์คใน localStorage ว่า tutorial นี้ผ่านแล้ว (ใช้ algorithm เป็น key เพื่อแยกแต่ละ tutorial)
+    if (algorithm) {
+      localStorage.setItem(`tutorial_${algorithm}_completed`, "true");
+    }
+  }, [algorithm]);
 
   useEffect(() => {
     if (showTutorial && tutorialStep === 4) {
@@ -165,7 +179,7 @@ export function useLinearDSTutorial({
       if (!isNode1Alive) {
         queueMicrotask(() => {
           setIsTrashActive(false);
-          handleTutorialComplete();
+          setTutorialStep(5);
         });
       }
     }

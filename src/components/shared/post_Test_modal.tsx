@@ -8,6 +8,7 @@ import { TriangleAlert } from "lucide-react";
 type post_test_modalProps = {
   showModal: boolean;
   onClose: () => void;
+  onTakeTest?: () => void;
   algorithm?: string;
   algoType?: string;
 };
@@ -15,6 +16,7 @@ type post_test_modalProps = {
 const post_Test_modal = ({
   showModal,
   onClose,
+  onTakeTest,
   algorithm,
   algoType,
 }: post_test_modalProps) => {
@@ -49,7 +51,7 @@ const post_Test_modal = ({
           </button>
           <Link
             href={href}
-            onClick={onClose}
+            onClick={onTakeTest}
             className="bg-[#0066CC] text-white w-auto px-4 h-10 rounded-md mt-8 inline-flex items-center justify-center hover:bg-[#0470dd]"
           >
             Take the Test

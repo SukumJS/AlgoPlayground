@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import React, { useState, useCallback } from "react"; // ลบ useEffect ออก
+import React, { useState, useCallback, useEffect } from "react";
 import { useReactFlow, XYPosition, Node, useNodes } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
@@ -21,11 +21,11 @@ type DataLinearProps = {
   onDelete?: (index: number) => void;
   isAnimating?: boolean;
 
-  // เพิ่ม Props สำหรับ Tutorial
   tutorialMode?: boolean;
   onTutorialDropSuccess?: () => void;
   onTutorialInsert?: () => void;
   onTutorialDelete?: () => void;
+  onExplainAction?: (message: string) => void;
 };
 
 function Data_Linear_DS({
@@ -40,8 +40,8 @@ function Data_Linear_DS({
   onTutorialDropSuccess,
   onTutorialInsert,
   onTutorialDelete,
+  onExplainAction,
 }: DataLinearProps) {
-  // เริ่มต้นเป็น false เสมอ
   const [isOpen, setIsOpen] = useState(false);
 
   const isPanelOpen = tutorialMode || isOpen;
@@ -55,16 +55,37 @@ function Data_Linear_DS({
 
   const [type, setType] = useState<string | null>(null);
   const [draggedValue, setDraggedValue] = useState<number | null>(null);
-
+  const [warningText, setWarningText] = useState<string | null>(null);
+  // 1. ตั้งค่าเริ่มต้นเป็นเลขคงที่ก่อน (ป้องกัน Hydration Error)
   const [sampleNodes, setSampleNodes] = useState<number[]>([1, 2, 3, 4, 5]);
+
+  // 2. ใช้ useEffect + setTimeout เพื่อสุ่มเลข (ป้องกัน Cascading Render Warning)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const randomNodes = Array.from(
+        { length: 5 },
+        () => Math.floor(Math.random() * 99) + 1,
+      );
+      setSampleNodes(randomNodes);
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const [insertIndex, setInsertIndex] = useState<number | string>("");
   const [insertValue, setInsertValue] = useState<number | string>("");
   const [deleteIndex, setDeleteIndex] = useState<number | string>("");
 
+  const explainAction = useCallback(
+    (message: string) => {
+      if (onExplainAction) onExplainAction(message);
+    },
+    [onExplainAction],
+  );
+
   const createAddNewNode = useCallback(
     (sampleValue: number, sampleIndex?: number): OnDropAction => {
-      return ({ position }: { position: XYPosition }) => {
+      return () => {
         setNodes((prev) => {
           if (prev.length >= 50) return prev;
 
@@ -99,7 +120,6 @@ function Data_Linear_DS({
         setType(null);
         setDraggedValue(null);
 
-        // 🎯 แจ้ง Hook ว่าลากกล่องลงไปสำเร็จแล้ว
         if (onTutorialDropSuccess) {
           onTutorialDropSuccess();
         }
@@ -114,7 +134,20 @@ function Data_Linear_DS({
 
       const currentNodes = getNodes();
       const availableSpace = 50 - currentNodes.length;
-      if (availableSpace <= 0) return;
+      if (availableSpace <= 0) {
+        setWarningText("Maximum limit of 50 nodes reached. Cannot add more.");
+        setTimeout(() => setWarningText(null), 5000);
+        return;
+      }
+
+      if (count > availableSpace) {
+        setWarningText(
+          `Only space for ${availableSpace} more nodes. Added ${availableSpace} nodes.`,
+        );
+        setTimeout(() => setWarningText(null), 5000);
+      } else {
+        setWarningText(null);
+      }
 
       const actualCount = Math.min(count, availableSpace);
 
@@ -153,6 +186,7 @@ function Data_Linear_DS({
 
   const handleResetNodes = useCallback(() => {
     setNodes([]);
+    setWarningText(null);
   }, [setNodes]);
 
   return (
@@ -206,7 +240,7 @@ function Data_Linear_DS({
           >
             <input
               type="number"
-              placeholder="0"
+              placeholder="N"
               disabled={disableDrag}
               className={`w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                 disableDrag ? "cursor-not-allowed" : ""
@@ -254,6 +288,7 @@ function Data_Linear_DS({
             onAdd={handleGenerateRandomNodes}
             onReset={handleResetNodes}
             isDisabled={disableDrag}
+            warningText={warningText}
           />
         </div>
 
@@ -295,6 +330,9 @@ function Data_Linear_DS({
                 </div>
                 <button
                   onClick={() => {
+                    explainAction(
+                      "Insert adds your value at that index. All values after it shift right to make room.",
+                    );
                     if (onInsert)
                       onInsert(Number(insertIndex), Number(insertValue));
                     setInsertValue("");
@@ -333,6 +371,9 @@ function Data_Linear_DS({
                 </div>
                 <button
                   onClick={() => {
+                    explainAction(
+                      "Delete removes your value at that index. All values after it shift left to close the gap.",
+                    );
                     if (onDelete) onDelete(Number(deleteIndex));
                     setDeleteIndex("");
                     if (onTutorialDelete) onTutorialDelete();
@@ -351,25 +392,29 @@ function Data_Linear_DS({
         {algorithm === "stack" && (
           <div className="p-4 border-t border-gray-300 flex flex-col gap-4">
             <div>
-              <h3 className="font-bold text-md mb-2 text-gray-800 flex items-center gap-2">
+              <h3 className="font-bold text-md mb-3 text-gray-800 flex items-center gap-2">
                 Stack Operations (LIFO)
               </h3>
-              <div className="flex gap-2 items-end">
-                <div className="flex-[2]">
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">
-                    Value
-                  </label>
+
+              <div className="flex items-center gap-3">
+                <div
+                  id="tutorial-insert-zone"
+                  className="flex items-center gap-2"
+                >
                   <input
                     type="number"
                     placeholder="e.g. 99"
                     value={insertValue}
                     onChange={(e) => setInsertValue(e.target.value)}
                     disabled={isAnimating || isFull}
-                    className="w-full placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-38 placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
                 <button
                   onClick={() => {
+                    explainAction(
+                      "Push adds your value to the top. The newest value is always removed first (LIFO).",
+                    );
                     if (onInsert) onInsert(nodes.length, Number(insertValue));
                     setInsertValue("");
                     if (onTutorialInsert) onTutorialInsert();
@@ -380,13 +425,17 @@ function Data_Linear_DS({
                   Push
                 </button>
                 <button
+                  id="tutorial-delete-zone"
                   onClick={() => {
+                    explainAction(
+                      "Pop removes the top value and tosses it away. The newest value gets removed first (LIFO).",
+                    );
                     if (onDelete && nodes.length > 0)
                       onDelete(nodes.length - 1);
                     if (onTutorialDelete) onTutorialDelete();
                   }}
                   disabled={isAnimating || nodes.length === 0}
-                  className="flex-1 bg-[#222121] text-white py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50 "
+                  className="bg-[#222121] text-white px-5 py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50 whitespace-nowrap flex-shrink-0"
                 >
                   Pop
                 </button>
@@ -397,27 +446,31 @@ function Data_Linear_DS({
 
         {/* UI ของ Queue (FIFO) */}
         {algorithm === "queue" && (
-          <div className="p-4 border-t border-gray-300 flex flex-col gap-4">
+          <div className="p-4 border-t border-gray-300 flex flex-col gap-3">
             <div>
-              <h3 className="font-bold text-md mb-2 text-gray-800 flex items-center gap-2">
+              <h3 className="font-bold text-md mb-3 text-gray-800 flex items-center gap-2">
                 Queue Operations (FIFO)
               </h3>
-              <div className="flex gap-2 items-end">
-                <div className="flex-[2]">
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">
-                    Value
-                  </label>
+
+              <div className="flex items-center gap-3">
+                <div
+                  id="tutorial-insert-zone"
+                  className="flex items-center gap-2"
+                >
                   <input
                     type="number"
                     placeholder="e.g. 99"
                     value={insertValue}
                     onChange={(e) => setInsertValue(e.target.value)}
                     disabled={isAnimating || isFull}
-                    className="w-full placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="w-24 placeholder:text-gray-300 border border-gray-300 p-2 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:outline-none focus:border-gray-500 transition-colors"
                   />
                 </div>
                 <button
                   onClick={() => {
+                    explainAction(
+                      "Enqueue adds your value to the back. It waits its turn in line like a real queue (FIFO).",
+                    );
                     if (onInsert) onInsert(nodes.length, Number(insertValue));
                     setInsertValue("");
                     if (onTutorialInsert) onTutorialInsert();
@@ -428,12 +481,16 @@ function Data_Linear_DS({
                   Enqueue
                 </button>
                 <button
+                  id="tutorial-delete-zone"
                   onClick={() => {
+                    explainAction(
+                      "Dequeue removes the front value—the one that arrived first. First in gets served first (FIFO).",
+                    );
                     if (onDelete && nodes.length > 0) onDelete(0);
                     if (onTutorialDelete) onTutorialDelete();
                   }}
                   disabled={isAnimating || nodes.length === 0}
-                  className="flex-1 bg-[#222121] text-white py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50"
+                  className="bg-[#222121] text-white px-5 py-2 rounded-lg font-medium hover:bg-black transition-colors disabled:opacity-50 whitespace-nowrap flex-shrink-0"
                 >
                   Dequeue
                 </button>

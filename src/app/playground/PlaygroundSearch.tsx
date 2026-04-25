@@ -91,7 +91,7 @@ const algorithmNames: Record<string, string> = {
 
 export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
   const [nodes, setNodes] = useState<Node<SortNodeData>[]>(initialNodes);
-  const [nodeInput, setNodeInput] = useState<number | string>("6");
+  const [nodeInput, setNodeInput] = useState<number | string>("");
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [targetValue, setTargetValue] = useState<number | string>("");
   const [explanation, setExplanation] = useState<string>(
@@ -118,8 +118,16 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
     flowToScreenPosition,
     setNodes,
     isSearch: true,
+    algorithm,
   });
-
+  // Auto-fill เลข 11 ให้กล่อง Input เฉพาะตอนที่ Tutorial ทำงาน
+  React.useEffect(() => {
+    if (tutorial.showTutorial) {
+      setNodeInput(6);
+    } else {
+      setNodeInput(""); // เคลียร์กล่องเป็นค่าว่างเมื่อจบ Tutorial หรือไม่ได้อยู่ใน Tutorial
+    }
+  }, [tutorial.showTutorial]);
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
       setNodes((nds) => applyNodeChanges(changes, nds) as Node<SortNodeData>[]),
