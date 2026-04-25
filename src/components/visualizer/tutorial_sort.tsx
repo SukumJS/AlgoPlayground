@@ -92,7 +92,7 @@ export default function TutorialSort({
               <rect width="100%" height="100%" fill="white" />
               {localEndStep === 1 && (
                 <rect
-                  x="130"
+                  x="180"
                   y="12"
                   width="250"
                   height="45"
@@ -122,10 +122,10 @@ export default function TutorialSort({
 
         {/* กล่องชี้สถานะสี (ซ้ายบน) */}
         {localEndStep === 1 && (
-          <div className="absolute top-[120px] left-[120px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
+          <div className="absolute top-[120px] left-[200px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
             <DashedArrow
               width={50}
-              className="absolute -top-[45px] left-[30px] transform rotate-90"
+              className="absolute -top-[45px] left-[110px] transform rotate-90"
             />
             <h3 className="font-bold text-gray-800 text-lg mb-2">
               Color Legend

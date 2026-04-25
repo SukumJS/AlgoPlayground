@@ -182,7 +182,7 @@ export default function TutorialGraph({
               {/* เจาะรูไฮไลท์สำหรับ Color Legend (ซ้ายบน) */}
               {localEndStep === 1 && (
                 <rect
-                  x="130"
+                  x="180"
                   y="12"
                   width="250"
                   height="45"
@@ -214,10 +214,10 @@ export default function TutorialGraph({
 
         {/* กล่องชี้สถานะสี (ซ้ายบน) */}
         {localEndStep === 1 && (
-          <div className="absolute top-[120px] left-[120px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
+          <div className="absolute top-[120px] left-[200px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
             <DashedArrow
               width={50}
-              className="absolute -top-[45px] left-[30px]"
+              className="absolute -top-[45px] left-[110px]"
               direction="up" // ใช้ direction ของไฟล์ graph หมุนขึ้น
             />
             <h3 className="font-bold text-gray-800 text-lg mb-2">

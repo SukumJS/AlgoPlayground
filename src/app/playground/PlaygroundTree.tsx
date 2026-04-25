@@ -7,6 +7,7 @@ import React, {
   DragEvent,
   useMemo,
 } from "react";
+import { flushSync } from "react-dom";
 import { useStepTreeEngine } from "@/src/hooks/tree/useStepTreeEngine";
 import { useTreeController } from "@/src/hooks/useTreeController";
 import ControlPanel from "../../components/shared/controlPanel";
@@ -57,7 +58,7 @@ import {
   type AVLTreeNode,
 } from "@/src/components/visualizer/algorithmsTree/avlTree";
 import Reading_modal from "@/src/components/shared/reading_modal";
-import { Info, Scale } from "lucide-react";
+import { Info, Scale, HelpCircle } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 const nodeTypes = { custom: CustomNode };
@@ -219,6 +220,11 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
     ? algorithmNames[algorithm] || "Tree Algorithms"
     : "Tree Algorithms";
   const [showAVLBalance, setShowAVLBalance] = useState(false);
+
+  // Save playground state before tutorial to restore after completion
+  const [savedNodes, setSavedNodes] = useState<Node[] | null>(null);
+  const [savedEdges, setSavedEdges] = useState<Edge[] | null>(null);
+  const [savedExplanation, setSavedExplanation] = useState<string | null>(null);
   // avlRoot tracked here so BF overlay works even when sidebar (Data_tree) is unmounted.
   // Wrap in {root, seq} so the effect ALWAYS re-fires even when root is the same reference.
   const avlSeqRef = useRef(0);
@@ -748,6 +754,40 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         >
           <Info color="#000000" />
         </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            // Save current playground state before tutorial
+            setSavedNodes(nodes);
+            setSavedEdges(edges);
+            setSavedExplanation(explanation);
+            // Reset playground to initial state for tutorial (synchronously)
+            flushSync(() => {
+              setNodes(treeInitialNodes);
+              setEdges(treeInitialEdges);
+              setExplanation(getDefaultTreeExplanation(prettyName));
+              // Reset AVL root if applicable
+              if (algorithm === "avl-tree") {
+                setPersistedAVLRoot(treeInitialAVLRoot);
+                setAvlRootForBF({
+                  root: treeInitialAVLRoot,
+                  seq: ++avlSeqRef.current,
+                });
+              }
+            });
+            // Reset viewport to initial position
+            fitView({ padding: 0.2, duration: 300 });
+            // Reset tutorial state and start tutorial
+            tutorial.setTutorialStep(0);
+            tutorial.setShowTutorial(true);
+            // Clear completion flag to allow re-running tutorial
+            localStorage.removeItem(`tutorial_${algorithm}_completed`);
+          }}
+          className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
+          title="Show Tutorial"
+        >
+          <HelpCircle color="#000000" />
+        </button>
         {algorithm === "avl-tree" && (
           <button
             title={
@@ -801,26 +841,49 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       {tutorial.showCompletionModal && (
         <Tutorial_modal
           showModal={tutorial.showCompletionModal}
-          onClose={() => tutorial.setShowCompletionModal(false)}
+          onClose={() => {
+            // Restore saved playground state if available
+            if (savedNodes && savedEdges && savedExplanation) {
+              setNodes(savedNodes);
+              setEdges(savedEdges);
+              setExplanation(savedExplanation);
+              setSavedNodes(null);
+              setSavedEdges(null);
+              setSavedExplanation(null);
+            }
+            tutorial.setShowCompletionModal(false);
+          }}
           tutorialContent={[
             {
               title: "Tutorial Complete!",
               description: `You are now ready to explore ${prettyName}.`,
             },
           ]}
-          onLetsPlay={
-            algorithm === "avl-tree"
-              ? () => rebalanceRef.current?.()
-              : [
-                    "binary-tree-inorder",
-                    "binary-tree-preorder",
-                    "binary-tree-postorder",
-                  ].includes(algorithm)
-                ? () => btRebalanceRef.current?.()
-                : ["min-heap", "max-heap"].includes(algorithm)
-                  ? () => heapRebalanceRef.current?.()
-                  : undefined
-          }
+          onLetsPlay={() => {
+            // Restore saved playground state if available
+            if (savedNodes && savedEdges && savedExplanation) {
+              setNodes(savedNodes);
+              setEdges(savedEdges);
+              setExplanation(savedExplanation);
+              setSavedNodes(null);
+              setSavedEdges(null);
+              setSavedExplanation(null);
+            }
+            // Call algorithm-specific rebalance if needed
+            if (algorithm === "avl-tree") {
+              rebalanceRef.current?.();
+            } else if (
+              [
+                "binary-tree-inorder",
+                "binary-tree-preorder",
+                "binary-tree-postorder",
+              ].includes(algorithm)
+            ) {
+              btRebalanceRef.current?.();
+            } else if (["min-heap", "max-heap"].includes(algorithm)) {
+              heapRebalanceRef.current?.();
+            }
+          }}
         />
       )}
     </div>

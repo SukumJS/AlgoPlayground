@@ -190,9 +190,9 @@ export default function TutorialTree({
               <rect width="100%" height="100%" fill="white" />
               {localEndStep === 1 && (
                 <rect
-                  x="130"
+                  x={algorithm === "avl-tree" ? "220" : "180"}
                   y="12"
-                  width={algorithm === "avl-tree" ? "490" : "440"}
+                  width={algorithm === "avl-tree" ? "460" : "440"}
                   height="45"
                   rx="22"
                   fill="black"
@@ -220,10 +220,10 @@ export default function TutorialTree({
 
         {/* กล่องชี้สถานะสี (ซ้ายบน) */}
         {localEndStep === 1 && (
-          <div className="absolute top-[120px] left-[120px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
+          <div className="absolute top-[120px] left-[200px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
             <DashedArrow
               width={50}
-              className="absolute -top-[45px] left-[30px]"
+              className="absolute -top-[45px] left-[140px]"
               direction="up"
             />
             <h3 className="font-bold text-gray-800 text-lg mb-2">
