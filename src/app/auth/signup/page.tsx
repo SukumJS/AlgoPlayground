@@ -14,7 +14,9 @@ export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [email, setEmail] = useState("");
@@ -31,6 +33,7 @@ export default function RegisterPage() {
       return;
     }
     setError("");
+    setSuccess(""); // ล้างข้อความ success เก่า (ถ้ามี)
     setLoading(true);
 
     try {
@@ -44,17 +47,19 @@ export default function RegisterPage() {
       // สั่งส่งอีเมลยืนยันตัวตน
       await sendEmailVerification(userCred.user);
 
-      // แจ้งเตือนผู้ใช้
-      alert(
-        "สมัครสมาชิกสำเร็จ! เราได้ส่งลิงก์ยืนยันไปที่อีเมลของคุณแล้ว กรุณากดยืนยันก่อนเข้าสู่ระบบ",
+      // ตั้งค่าข้อความแจ้งเตือนความสำเร็จ
+      setSuccess(
+        "suuccess! A verification email has been sent. Please check your inbox and verify your email before logging in.",
       );
 
       // บังคับ Log out ออกไปก่อน เพื่อไม่ให้มี Token ค้างในระบบ
       await auth.signOut();
       localStorage.removeItem("access_token");
 
-      // พาไปหน้า Login (ตัด authService.sync() ออกจากตรงนี้ไปเลย)
-      router.push("/auth/signin");
+      // หน่วงเวลา 4 วินาทีก่อนพาไปหน้า Login เพื่อให้อ่านข้อความทัน
+      setTimeout(() => {
+        router.push("/auth/signin");
+      }, 4000);
     } catch (err) {
       const firebaseError = err as { code?: string };
       if (firebaseError.code) {
@@ -79,8 +84,7 @@ export default function RegisterPage() {
       } else {
         setError("An error occurred during sign up. Please try again.");
       }
-    } finally {
-      setLoading(false);
+      setLoading(false); // ย้ายมาตรงนี้ เพื่อไม่ให้ปุ่มกลับมากดได้ตอนกำลังรอ Redirect
     }
   };
 
@@ -220,10 +224,17 @@ export default function RegisterPage() {
         {error && <div className="text-sm text-red-500">{error}</div>}
       </div>
 
+      {/* กล่องแสดงข้อความสำเร็จ */}
+      {success && (
+        <div className="w-[454px] text-sm font-medium text-green-700 text-center">
+          {success}
+        </div>
+      )}
+
       {/* Register Button */}
       <button
         onClick={handleRegister}
-        disabled={loading}
+        disabled={loading || success !== ""}
         className="
           w-[454px] h-12
           rounded-md
