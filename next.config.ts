@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "export",
   env: {
     NEXT_PUBLIC_FIREBASE_API_KEY: process.env.FIREBASE_API_KEY || "",
     NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN || "",
@@ -14,6 +15,7 @@ const nextConfig: NextConfig = {
       process.env.FIREBASE_MEASUREMENT_ID || "",
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
