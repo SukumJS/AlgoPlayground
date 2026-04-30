@@ -12,6 +12,7 @@ import TrackProgress from "@/src/components/pretest/TrackProgress";
 import QuestionCard from "@/src/components/pretest/QuestionCard";
 import ChoiceCard from "@/src/components/pretest/ChoiceCard";
 import NavigationButtons from "@/src/components/pretest/NavigationButtons";
+import IncompleteQuizModal from "@/src/components/shared/IncompleteQuizModal";
 import PretestResultPage from "@/src/app/result/page";
 import type { UserAnswer } from "../types/quiz";
 import {
@@ -36,6 +37,7 @@ function PretestContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [gradingResult, setGradingResult] =
     useState<PretestGradingResult | null>(null);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
 
   // Ref to track the latest answers for auto-save (avoids stale closure)
   const answersRef = useRef<UserAnswer[]>([]);
@@ -84,7 +86,11 @@ function PretestContent() {
           return;
         }
 
-        setQuizData(data);
+        // Limit to the first 5 questions regardless of how many the DB returns
+        const limitedQuestions = data.questions.slice(0, 5);
+        const limitedData = { ...data, questions: limitedQuestions };
+
+        setQuizData(limitedData);
 
         // Restore saved answers if they exist, otherwise create empty answers
         let initialAnswers: UserAnswer[];
@@ -93,12 +99,12 @@ function PretestContent() {
           const savedMap = new Map(
             data.savedAnswers.map((a) => [a.questionId, a.selectedChoiceId]),
           );
-          initialAnswers = data.questions.map((q) => ({
+          initialAnswers = limitedQuestions.map((q) => ({
             questionId: q.id,
             selectedChoiceId: savedMap.get(q.id) || null,
           }));
         } else {
-          initialAnswers = data.questions.map((q) => ({
+          initialAnswers = limitedQuestions.map((q) => ({
             questionId: q.id,
             selectedChoiceId: null,
           }));
@@ -161,7 +167,7 @@ function PretestContent() {
   }, [algorithm]);
 
   const currentQuestion = quizData?.questions[currentQuestionIndex];
-  const totalQuestions = quizData?.questions.length ?? 0;
+  const totalQuestions = 5;
   const isFirstQuestion = currentQuestionIndex === 0;
   const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
 
@@ -194,8 +200,20 @@ function PretestContent() {
     }
   }, [isFirstQuestion]);
 
+  const unansweredCount = userAnswers.filter(
+    (a) => a.selectedChoiceId === null,
+  ).length;
+
   const handleNext = useCallback(async () => {
     if (isLastQuestion) {
+      const hasUnanswered = userAnswers.some(
+        (a) => a.selectedChoiceId === null,
+      );
+      if (hasUnanswered) {
+        setShowIncompleteModal(true);
+        return;
+      }
+
       // Cancel any pending auto-save
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
@@ -308,6 +326,13 @@ function PretestContent() {
           )}
         </div>
       </div>
+
+      <IncompleteQuizModal
+        isOpen={showIncompleteModal}
+        onClose={() => setShowIncompleteModal(false)}
+        unansweredCount={unansweredCount}
+        totalCount={totalQuestions}
+      />
     </div>
   );
 }

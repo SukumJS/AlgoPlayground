@@ -608,14 +608,14 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   // Edge click handler (for weight editing)
   const handleEdgeClick = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
-      if (isAnimationPlaying) return; // lock during animation
+      if (isAnimationActive) return; // lock during entire animation session
       if (graphTutorial.showTutorial) {
         graphTutorial.handleWeightClick(edge.id);
       } else {
         nodeInteraction.handleEdgeClick(event, edge.id);
       }
     },
-    [isAnimationPlaying, graphTutorial, nodeInteraction],
+    [isAnimationActive, graphTutorial, nodeInteraction],
   );
 
   // Combined node click handler
@@ -728,11 +728,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               : onNodesChange
         }
         onEdgesChange={
-          graphTutorial.showTutorial || isAnimationPlaying
+          graphTutorial.showTutorial || isAnimationActive
             ? undefined
             : onEdgesChange
         }
-        onConnect={isAnimationPlaying ? undefined : onConnect}
+        onConnect={isAnimationActive ? undefined : onConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onDragOver={onDragOver}
@@ -828,7 +828,14 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                 nodeInteraction.handleWeightInputChange(e.target.value)
               }
               onKeyDown={(e) => {
-                if (e.key === "Enter") nodeInteraction.handleWeightConfirm();
+                if (e.key === "Enter") {
+                  if (
+                    algorithm === "dijkstra" &&
+                    Number(nodeInteraction.weightInputValue) < 0
+                  )
+                    return;
+                  nodeInteraction.handleWeightConfirm();
+                }
                 if (e.key === "Escape")
                   nodeInteraction.handleWeightModalClose();
               }}
@@ -836,6 +843,13 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               placeholder="0"
               autoFocus
             />
+            {algorithm === "dijkstra" &&
+              nodeInteraction.weightInputValue.trim() !== "" &&
+              Number(nodeInteraction.weightInputValue) < 0 && (
+                <p className="text-red-500 text-sm mt-2 text-center">
+                  Dijkstra&apos;s algorithm does not support negative weights.
+                </p>
+              )}
             <div className="flex gap-3 mt-4">
               <button
                 onClick={nodeInteraction.handleWeightModalClose}
@@ -845,7 +859,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               </button>
               <button
                 onClick={nodeInteraction.handleWeightConfirm}
-                className="flex-1 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors"
+                disabled={
+                  algorithm === "dijkstra" &&
+                  Number(nodeInteraction.weightInputValue) < 0
+                }
+                className="flex-1 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Confirm
               </button>

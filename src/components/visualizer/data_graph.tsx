@@ -42,7 +42,7 @@ function Data_graph({
   const { onDragStart, isDragging } = useDnD();
   // The type of the node that is being dragged.
   const [type, setType] = useState<string | null>(null);
-  const { setNodes } = useReactFlow();
+  const { setNodes, getNodes } = useReactFlow();
   const [inputValue, setInputValue] = useState<string>("");
   const [searchValue, setSearchValue] = useState<string>("");
   const [removeValue, setRemoveValue] = useState<string>("");
@@ -57,34 +57,65 @@ function Data_graph({
     START_ONLY_ALGORITHMS.includes(algorithm) ||
     AUTO_ALGORITHMS.includes(algorithm);
 
-  const Sample = [
-    { number: "1" },
-    { number: "2" },
-    { number: "3" },
-    { number: "4" },
-    { number: "5" },
-  ];
+  const generateSingleSampleNumber = useCallback(
+    (currentSamples: { number: string }[]) => {
+      const usedLabels = new Set(getNodes().map((n) => String(n.data?.label)));
+      // Also avoid other sample numbers
+      for (const s of currentSamples) usedLabels.add(s.number);
+      let candidate: number;
+      let tries = 0;
+      do {
+        candidate = Math.floor(Math.random() * 99) + 1;
+        tries++;
+      } while (usedLabels.has(String(candidate)) && tries < 500);
+      return String(candidate);
+    },
+    [getNodes],
+  );
+
+  const [sampleNumbers, setSampleNumbers] = useState(() => {
+    const nums = new Set<number>();
+    while (nums.size < 5) {
+      nums.add(Math.floor(Math.random() * 99) + 1);
+    }
+    return Array.from(nums).map((n) => ({ number: String(n) }));
+  });
 
   const createAddNewNode = useCallback(
-    (Sample: number): OnDropAction => {
+    (value: number, sampleIndex?: number): OnDropAction => {
       return ({ position }: { position: XYPosition }) => {
         // Block drag-drop during animation
         if (isAnimating) return;
 
-        // Here, we create a new node and add it to the flow.
-        // You can customize the behavior of what happens when a node is dropped on the flow here.
+        // Prevent duplicate labels
+        const existingLabels = new Set(
+          getNodes().map((n) => String(n.data?.label)),
+        );
+        if (existingLabels.has(value.toString())) return;
+
         const newNode = {
           id: getId(),
-          type: "custom", // Changed node type to "custom"
+          type: "custom",
           position,
-          data: { label: Sample.toString(), variant: "circle" },
+          data: { label: value.toString(), variant: "circle" },
         };
 
         setNodes((nds) => nds.concat(newNode));
         setType(null);
+
+        // Regenerate only the dragged sample number
+        if (sampleIndex !== undefined) {
+          setSampleNumbers((prev) =>
+            prev.map((item, i) =>
+              i === sampleIndex
+                ? { number: generateSingleSampleNumber(prev) }
+                : item,
+            ),
+          );
+        }
       };
     },
-    [setNodes, setType, isAnimating],
+    [setNodes, setType, isAnimating, getNodes, generateSingleSampleNumber],
   );
 
   //reset all of value in input data
@@ -141,22 +172,25 @@ function Data_graph({
             }}
           >
             <input
-              type="number"
-              placeholder="0"
+              type="text"
+              placeholder="N"
               className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={nodeInput}
               onChange={(e) => setNodeInput(e.target.value)}
               onPointerDown={(e) => e.stopPropagation()}
             />
           </div>
-          {Sample.map((item, index) => (
+          {sampleNumbers.map((item, index) => (
             <div
               key={index}
               className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363]"
               onPointerDown={(event) => {
                 setType("custom"); // Changed drag ghost type to "custom"
                 setDraggedValue(parseInt(item.number)); // Set dragged value
-                onDragStart(event, createAddNewNode(parseInt(item.number)));
+                onDragStart(
+                  event,
+                  createAddNewNode(parseInt(item.number), index),
+                );
               }}
             >
               {item.number}

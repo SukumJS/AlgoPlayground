@@ -11,6 +11,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import TrackProgress from "@/src/components/pretest/TrackProgress";
 import QuestionCard from "@/src/components/pretest/QuestionCard";
 import NavigationButtons from "@/src/components/pretest/NavigationButtons";
+import IncompleteQuizModal from "@/src/components/shared/IncompleteQuizModal";
 import PosttestQuestionRenderer from "@/src/components/posttest/PosttestQuestionRenderer";
 import PosttestResultPage from "@/src/components/posttest/PosttestResultPage";
 import { PosttestUserAnswer } from "@/src/app/types/posttest";
@@ -92,6 +93,7 @@ function PosttestContent() {
   const [userAnswers, setUserAnswers] = useState<PosttestUserAnswer[]>([]);
   const [gradingResult, setGradingResult] =
     useState<PosttestGradingResult | null>(null);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
 
   // Auto-save debounce
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -195,8 +197,16 @@ function PosttestContent() {
     if (!isFirstQuestion) setCurrentQuestionIndex((prev) => prev - 1);
   }, [isFirstQuestion]);
 
+  const unansweredCount = userAnswers.filter((a) => !hasAnswer(a)).length;
+
   const handleNext = useCallback(async () => {
     if (isLastQuestion) {
+      const hasUnanswered = userAnswers.some((a) => !hasAnswer(a));
+      if (hasUnanswered) {
+        setShowIncompleteModal(true);
+        return;
+      }
+
       // Submit for backend grading
       setIsSubmitting(true);
       try {
@@ -313,6 +323,13 @@ function PosttestContent() {
           />
         </div>
       </div>
+
+      <IncompleteQuizModal
+        isOpen={showIncompleteModal}
+        onClose={() => setShowIncompleteModal(false)}
+        unansweredCount={unansweredCount}
+        totalCount={totalQuestions}
+      />
     </div>
   );
 }
