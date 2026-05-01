@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Trash2 } from "lucide-react";
+import { useWindowSize } from "@/src/hooks/useWindowSize";
 
 interface TutorialProps {
   onComplete: () => void;
@@ -67,6 +68,7 @@ export default function TutorialSort({
   trashBinPos,
   nodeMaskSize,
 }: TutorialProps) {
+  const { width: vw, height: vh } = useWindowSize();
   if (currentStep >= 5) return null;
 
   const nodeBoxSize = 105;
@@ -81,6 +83,8 @@ export default function TutorialSort({
       <svg
         className="absolute top-0 left-0 w-full h-full pointer-events-none z-[60]"
         style={{ position: "fixed" }}
+        viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+        preserveAspectRatio="none"
       >
         <defs>
           <mask id="spotlight-mask">

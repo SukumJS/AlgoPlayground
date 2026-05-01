@@ -65,6 +65,9 @@ export function useNodeInteraction({
   // Drag-to-delete state
   const [showTrashBin, setShowTrashBin] = useState(false);
   const [isTrashActive, setIsTrashActive] = useState(false);
+  // Mirror of isTrashActive that updates synchronously, so handleNodeDragStop
+  // can read the latest value without racing the React render cycle.
+  const isTrashActiveRef = useRef(false);
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const draggingNodeIdRef = useRef<string | null>(null);
 
@@ -344,6 +347,7 @@ export function useNodeInteraction({
       );
 
       const isNearTrash = dist < dropTargetRadius;
+      isTrashActiveRef.current = isNearTrash;
       setIsTrashActive(isNearTrash);
 
       // Update node color when near trash
@@ -374,8 +378,9 @@ export function useNodeInteraction({
       if (isTutorialActive) return;
 
       if (showTrashBin) {
-        // Delete if node is in danger zone (red) — no need for cursor to be on trash icon
-        if (isTrashActive) {
+        // Read from ref — state may not have flushed yet if user released
+        // immediately after the node turned red.
+        if (isTrashActiveRef.current) {
           setNodes((nds) => nds.filter((n) => n.id !== node.id));
           setEdges((eds) =>
             eds.filter((e) => e.source !== node.id && e.target !== node.id),
@@ -395,9 +400,10 @@ export function useNodeInteraction({
       // Reset state
       setShowTrashBin(false);
       setIsTrashActive(false);
+      isTrashActiveRef.current = false;
       draggingNodeIdRef.current = null;
     },
-    [isTutorialActive, showTrashBin, isTrashActive, setNodes, setEdges],
+    [isTutorialActive, showTrashBin, setNodes, setEdges],
   );
 
   /**

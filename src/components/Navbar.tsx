@@ -38,9 +38,9 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
     <div className="sticky top-[30px] z-50 flex justify-center">
       <div
         className="
-          w-full max-w-[1380px]
+          w-full max-w-[1380px] mx-2 md:mx-0
           h-[80px]
-          px-8
+          px-4 md:px-8
           flex items-center
           rounded-[50px]
           bg-[#B4D4F1]
@@ -49,21 +49,21 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
         "
       >
         {/* Logo */}
-        <div className="text-xl font-bold uppercase text-[#222121]">
+        <div className="text-base md:text-xl font-bold uppercase text-[#222121] whitespace-nowrap">
           Algo playground
         </div>
 
         <div className="flex-1" />
-        <div className="flex items-center gap-4">
-          <button className="px-2 py-2 text-lg font-bold text-[#222121] capitalize">
+        <div className="flex items-center gap-1 md:gap-4">
+          <button className="px-2 py-2 text-base md:text-lg font-bold text-[#222121] capitalize">
             <Link href="/">Home</Link>
           </button>
 
           {/* Dropdown */}
-          <div className="relative min-w-[8rem]">
+          <div className="relative md:min-w-32">
             <button
               onClick={() => setOpen(!open)}
-              className="flex items-center gap-2 px-2 py-2 text-lg font-bold capitalize"
+              className="flex items-center gap-2 px-2 py-2 text-base md:text-lg font-bold capitalize"
             >
               <span className="text-[#222121] hover:text-[#5D5D5D] transition-colors ">
                 Explore
@@ -102,13 +102,13 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
             )}
           </div>
 
-          <button className="py-2 text-lg font-bold text-[#222121] capitalize">
+          <button className="py-2 text-base md:text-lg font-bold text-[#222121] capitalize whitespace-nowrap">
             <a href="/exercise">examples questions</a>
           </button>
         </div>
 
         {/* Auth section */}
-        <div className="ml-4">
+        <div className="ml-2 md:ml-4">
           {!user ? (
             <Link href="/auth/signin">
               <button className="px-6 py-2 rounded-full bg-[#1A75D1] text-[#F1F1F1] font-bold shadow-md">

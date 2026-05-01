@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { Trash2 } from "lucide-react";
 import { TutorialStep } from "@/src/app/types/tutorial";
+import { useWindowSize } from "@/src/hooks/useWindowSize";
 
 // Tutorial steps for Tree (BST)
 const TREE_TUTORIAL_STEPS: TutorialStep[] = [
@@ -130,6 +131,7 @@ export default function TutorialTree({
   trashBinPos,
 }: TutorialProps) {
   const [steps, setSteps] = useState<TutorialStep[]>(TREE_TUTORIAL_STEPS);
+  const { width: vw, height: vh } = useWindowSize();
 
   const handleStepComplete = useCallback(() => {
     if (currentStep < steps.length) {
@@ -175,6 +177,8 @@ export default function TutorialTree({
       <svg
         className="absolute top-0 left-0 w-full h-full pointer-events-none z-50"
         style={{ position: "fixed" }}
+        viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+        preserveAspectRatio="none"
       >
         <defs>
           <mask id="spotlight-mask">

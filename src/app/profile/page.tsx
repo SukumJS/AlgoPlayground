@@ -53,9 +53,9 @@ export default function Profile() {
     <div className="min-h-screen bg-white p-6 text-black">
       <Navbar onSelectCategory={setSelectedCategory} />
 
-      <div className="mt-6 grid grid-cols-12 mt-18 px-20">
+      <div className="mt-18 px-4 md:px-12 lg:px-20 flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:gap-0">
         {/* LEFT: PROFILE */}
-        <div className="col-span-3 rounded-xl p-6 text-center">
+        <div className="lg:col-span-3 rounded-xl p-6 text-center">
           <img
             src={profileAvatar}
             alt={profileName}
@@ -84,8 +84,8 @@ export default function Profile() {
         </div>
 
         {/* RIGHT: STATS & PROGRESS */}
-        <div className="col-span-9 space-y-6 mr-4">
-          <div className="grid grid-cols-3 gap-4">
+        <div className="lg:col-span-9 space-y-6 lg:mr-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard
               title="Total Progress"
               value={`${totalProgress}%`}

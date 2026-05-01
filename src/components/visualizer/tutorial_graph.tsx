@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Trash2, Check } from "lucide-react";
+import { useWindowSize } from "@/src/hooks/useWindowSize";
 
 // Graph Tutorial Steps configuration — DIRECTED mode (Dijkstra)
 const DIRECTED_TUTORIAL_STEPS = [
@@ -151,6 +152,7 @@ export default function TutorialGraph({
       : UNDIRECTED_TUTORIAL_STEPS;
 
   const stepData = steps[currentStep];
+  const { width: vw, height: vh } = useWindowSize();
   if (!stepData) return null;
 
   // Dynamic step references
@@ -164,6 +166,8 @@ export default function TutorialGraph({
       <svg
         className="absolute top-0 left-0 w-full h-full pointer-events-none z-50"
         style={{ position: "fixed" }}
+        viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+        preserveAspectRatio="none"
       >
         <defs>
           <mask id="graph-spotlight-mask">
