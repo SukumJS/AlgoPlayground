@@ -37,8 +37,18 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch {}
+
+      // ถ้ามาถึงตรงนี้แปลว่าไม่มี Token หรือขอ Token ใหม่ไม่สำเร็จ
       localStorage.removeItem("access_token");
-      window.location.href = "/auth/signin";
+
+      // ดึง path ปัจจุบันมาเช็ค
+      const currentPath = window.location.pathname;
+      const isHomePage = currentPath === "/";
+
+      // ถ้า "ไม่ใช่" หน้า Home ค่อยสั่งเด้ง
+      if (!isHomePage) {
+        window.location.href = "/auth/signin";
+      }
     }
 
     return Promise.reject(error);

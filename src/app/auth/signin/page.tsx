@@ -24,13 +24,24 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const userCred = await signInWithEmailAndPassword(auth, email, password);
-      const idToken = await userCred.user.getIdToken();
+
+      // เพิ่มการตรวจสอบ emailVerified
+      if (!userCred.user.emailVerified) {
+        setError("Please verify your email address. Check your inbox.");
+        // await auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      //  บังคับดึง Token ใหม่เสมอ (ใส่ true)
+      // เพื่อให้แน่ใจว่าได้ Token ที่มีค่า "email_verified": true อัปเดตล่าสุด
+      const idToken = await userCred.user.getIdToken(true);
+
       localStorage.setItem("access_token", idToken);
       try {
         await syncUserWithBackend(idToken);
       } catch (err) {
         console.error("SYNC ERROR:", err);
-
         setError("Server error. Please try again.");
         setLoading(false);
         return;
@@ -175,7 +186,11 @@ export default function LoginPage() {
 
       {/* Forgot password */}
       <div className="w-[454px] text-right">
-        <button className="text-sm font-medium underline text-black">
+        <button
+          type="button" // ใส่ type="button" กันฟอร์ม submit อัตโนมัติ
+          onClick={() => router.push("/auth/forgot-password")}
+          className="text-sm font-medium underline text-black hover:text-[#0066CC] transition-colors"
+        >
           Forgot your password?
         </button>
       </div>
