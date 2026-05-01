@@ -2,7 +2,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
-import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  sendEmailVerification,
+} from "firebase/auth";
 import { auth, googleProvider } from "@/src/config/firebase";
 import { authService } from "@/src/services/auth.service";
 
@@ -10,7 +14,9 @@ export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [email, setEmail] = useState("");
@@ -27,28 +33,33 @@ export default function RegisterPage() {
       return;
     }
     setError("");
+    setSuccess(""); // ล้างข้อความ success เก่า (ถ้ามี)
     setLoading(true);
+
     try {
+      // สร้างบัญชี
       const userCred = await createUserWithEmailAndPassword(
         auth,
         email,
         password,
       );
-      const idToken = await userCred.user.getIdToken();
-      localStorage.setItem("access_token", idToken);
-      // sync is best-effort — don't block signup if backend is down
-      try {
-        await authService.sync();
-      } catch (err) {
-        await userCred.user.delete();
 
-        localStorage.removeItem("access_token");
+      // สั่งส่งอีเมลยืนยันตัวตน
+      await sendEmailVerification(userCred.user);
 
-        setError("Signup failed. Please try again.");
-        setLoading(false);
-        return;
-      }
-      router.push("/");
+      // ตั้งค่าข้อความแจ้งเตือนความสำเร็จ
+      setSuccess(
+        "suuccess! A verification email has been sent. Please check your inbox and verify your email before logging in.",
+      );
+
+      // บังคับ Log out ออกไปก่อน เพื่อไม่ให้มี Token ค้างในระบบ
+      await auth.signOut();
+      localStorage.removeItem("access_token");
+
+      // หน่วงเวลา 4 วินาทีก่อนพาไปหน้า Login เพื่อให้อ่านข้อความทัน
+      setTimeout(() => {
+        router.push("/auth/signin");
+      }, 4000);
     } catch (err) {
       const firebaseError = err as { code?: string };
       if (firebaseError.code) {
@@ -73,8 +84,7 @@ export default function RegisterPage() {
       } else {
         setError("An error occurred during sign up. Please try again.");
       }
-    } finally {
-      setLoading(false);
+      setLoading(false); // ย้ายมาตรงนี้ เพื่อไม่ให้ปุ่มกลับมากดได้ตอนกำลังรอ Redirect
     }
   };
 
@@ -214,10 +224,17 @@ export default function RegisterPage() {
         {error && <div className="text-sm text-red-500">{error}</div>}
       </div>
 
+      {/* กล่องแสดงข้อความสำเร็จ */}
+      {success && (
+        <div className="w-[454px] text-sm font-medium text-green-700 text-center">
+          {success}
+        </div>
+      )}
+
       {/* Register Button */}
       <button
         onClick={handleRegister}
-        disabled={loading}
+        disabled={loading || success !== ""}
         className="
           w-[454px] h-12
           rounded-md
