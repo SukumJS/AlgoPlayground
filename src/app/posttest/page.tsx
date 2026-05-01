@@ -119,7 +119,7 @@ function PosttestContent() {
           await posttestService.getPosttestByAlgorithm(algorithm);
         if (cancelled) return;
 
-        const data = response.data.data;
+        const { data } = response.data;
 
         if (!data || !data.questions || data.questions.length === 0) {
           setError(`No posttest questions found for "${algorithm}"`);
@@ -158,7 +158,7 @@ function PosttestContent() {
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      if (algorithm && answersRef.current.length > 0) {
+      if (algorithm && answersRef.current.some((answer) => hasAnswer(answer))) {
         posttestService
           .savePosttestProgress(algorithm, answersRef.current)
           .catch(() => {});

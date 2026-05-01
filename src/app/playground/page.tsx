@@ -10,20 +10,126 @@ import PlaygroundSearch from "./PlaygroundSearch";
 import PlaygroundLinearDS from "./PlaygroundLinearDS";
 import { algorithmCatalog } from "@/src/data/algorithmCatalog";
 import { pretestService } from "@/src/services/pretest.service";
+import Post_Test_modal from "@/src/components/shared/post_Test_modal";
+import {
+  hasCompletedPosttest,
+  hasSeenPosttestReminder,
+  markPosttestReminderSeen,
+} from "@/src/components/shared/posttestCompletion";
 
-const TYPE_TO_CATALOG_ID: Record<string, string> = {
-  tree: "tree",
-  graph: "graph",
-  sort: "sorting",
-  search: "searching",
-  "linear-ds": "linear-ds",
+type BrowserBackPosttestGuardProps = {
+  algoType: string;
+  algorithm: string;
 };
+
+function BrowserBackPosttestGuard({
+  algoType,
+  algorithm,
+}: BrowserBackPosttestGuardProps) {
+  const [reminderContext, setReminderContext] = useState<"entry" | "exit">(
+    "entry",
+  );
+  const [hasDeferredReminder, setHasDeferredReminder] = useState(false);
+  const [showReminder, setShowReminder] = useState(false);
+  const [statusReady, setStatusReady] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadState = async () => {
+      const [completed, reminderSeen] = await Promise.all([
+        hasCompletedPosttest(algoType, algorithm),
+        hasSeenPosttestReminder(algoType, algorithm),
+      ]);
+
+      if (!mounted) return;
+
+      setHasDeferredReminder(completed || reminderSeen);
+      // Do not auto-open reminder on entry; only show on exit interception.
+      setShowReminder(false);
+      setStatusReady(true);
+    };
+
+    loadState();
+
+    return () => {
+      mounted = false;
+    };
+  }, [algoType, algorithm]);
+
+  useEffect(() => {
+    if (!statusReady || showReminder) return;
+
+    // After user chooses "Maybe Later" in this visit, allow leaving playground.
+    if (hasDeferredReminder) {
+      return;
+    }
+
+    const GUARD_KEY = "posttestBackGuard";
+
+    const pushGuardState = () => {
+      const nextState = { ...(window.history.state ?? {}), [GUARD_KEY]: true };
+      window.history.pushState(nextState, "", window.location.href);
+    };
+
+    if (!window.history.state?.[GUARD_KEY]) {
+      pushGuardState();
+    }
+
+    const handlePopState = () => {
+      setReminderContext("exit");
+      setShowReminder(true);
+      pushGuardState();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [algoType, algorithm, hasDeferredReminder, showReminder, statusReady]);
+
+  return (
+    <Post_Test_modal
+      showModal={showReminder}
+      onClose={async () => {
+        try {
+          await markPosttestReminderSeen(algoType, algorithm);
+        } finally {
+          setHasDeferredReminder(true);
+          setShowReminder(false);
+          if (reminderContext === "exit") {
+            window.location.assign("/");
+          }
+        }
+      }}
+      onTakeTest={async () => {
+        try {
+          await markPosttestReminderSeen(algoType, algorithm);
+        } finally {
+          setHasDeferredReminder(true);
+          setShowReminder(false);
+        }
+      }}
+      algorithm={algorithm}
+      algoType={algoType}
+    />
+  );
+}
 
 function PlaygroundRouter() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const algoType = searchParams.get("type");
   const algorithm = searchParams.get("algorithm");
+  const TYPE_TO_CATALOG_ID: Record<string, string> = {
+    tree: "tree",
+    graph: "graph",
+    sorting: "sorting",
+    searching: "searching",
+    "linear-ds": "linear-ds",
+  };
+
+  if (!algoType || !algorithm || !TYPE_TO_CATALOG_ID[algoType]) {
+    notFound();
+  }
 
   const [pretestChecked, setPretestChecked] = useState(false);
 
@@ -80,19 +186,32 @@ function PlaygroundRouter() {
     );
   }
 
+  let content: React.ReactNode = null;
+
   if (algoType === "tree") {
-    return <PlaygroundTree algorithm={algorithm!} />;
+    content = <PlaygroundTree algorithm={algorithm} />;
   } else if (algoType === "graph") {
-    return <PlaygroundGraph algorithm={algorithm!} />;
-  } else if (algoType === "sort") {
-    return <PlaygroundSort algorithm={algorithm!} />;
-  } else if (algoType === "search") {
-    return <PlaygroundSearch algorithm={algorithm!} />;
+    content = <PlaygroundGraph algorithm={algorithm} />;
+  } else if (algoType === "sorting") {
+    content = <PlaygroundSort algorithm={algorithm} />;
+  } else if (algoType === "searching") {
+    content = <PlaygroundSearch algorithm={algorithm} />;
   } else if (algoType === "linear-ds") {
-    return <PlaygroundLinearDS algorithm={algorithm!} />;
+    content = <PlaygroundLinearDS algorithm={algorithm} />;
+  } else {
+    notFound();
   }
 
-  return notFound();
+  return (
+    <>
+      <BrowserBackPosttestGuard
+        key={`${algoType}:${algorithm}`}
+        algoType={algoType}
+        algorithm={algorithm}
+      />
+      {content}
+    </>
+  );
 }
 
 export default function Page() {

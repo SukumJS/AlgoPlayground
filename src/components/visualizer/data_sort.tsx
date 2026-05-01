@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useReactFlow, XYPosition, Node, useNodes } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
@@ -63,9 +63,23 @@ function Data_sort({
 
   const [type, setType] = useState<string | null>(null);
   const [draggedValue, setDraggedValue] = useState<number | null>(null);
-
+  const [warningText, setWarningText] = useState<string | null>(null);
   // สร้าง State สำหรับ Sample Nodes (เริ่มด้วยค่า 1-5 แบบเดิม หรือค่าสุ่มก็ได้)
+  // 1. ตั้งค่าเริ่มต้นเป็นเลขคงที่ก่อน (ป้องกัน Hydration Error)
   const [sampleNodes, setSampleNodes] = useState<number[]>([1, 2, 3, 4, 5]);
+
+  // 2. ใช้ useEffect + setTimeout เพื่อสุ่มเลข (ป้องกัน Cascading Render Warning)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const randomNodes = Array.from(
+        { length: 5 },
+        () => Math.floor(Math.random() * 99) + 1,
+      );
+      setSampleNodes(randomNodes);
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const createAddNewNode = useCallback(
     (sampleValue: number, sampleIndex?: number): OnDropAction => {
@@ -188,7 +202,20 @@ function Data_sort({
       // คำนวณพื้นที่ที่เหลืออยู่ (รับได้สูงสุด 50)
       const availableSpace = 50 - currentNodes.length;
 
-      if (availableSpace <= 0) return;
+      if (availableSpace <= 0) {
+        setWarningText("Maximum limit of 50 nodes reached. Cannot add more.");
+        setTimeout(() => setWarningText(null), 5000);
+        return;
+      }
+
+      if (count > availableSpace) {
+        setWarningText(
+          `Only space for ${availableSpace} more nodes. Added ${availableSpace} nodes.`,
+        );
+        setTimeout(() => setWarningText(null), 5000);
+      } else {
+        setWarningText(null);
+      }
 
       // สร้างกล่องเท่าที่พื้นที่เหลือรับไหว (เช่น ขอ 10 แต่เหลือที่แค่ 2 ก็สร้าง 2)
       const actualCount = Math.min(count, availableSpace);
@@ -232,6 +259,7 @@ function Data_sort({
   // reset nodes
   const handleResetNodes = useCallback(() => {
     setNodes([]);
+    setWarningText(null);
   }, [setNodes]);
 
   // ฟังก์ชันสำหรับเรียงลำดับกล่องที่มีอยู่บนจอแบบอัตโนมัติ (จากน้อยไปมาก)
@@ -307,7 +335,7 @@ function Data_sort({
           >
             <input
               type="number"
-              placeholder="0"
+              placeholder="N"
               disabled={disableDrag} //ปิดการพิมพ์ถ้าเต็ม
               className={`w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                 disableDrag ? "cursor-not-allowed" : ""
@@ -373,6 +401,7 @@ function Data_sort({
             onAdd={handleGenerateRandomNodes}
             onReset={handleResetNodes}
             isDisabled={disableDrag}
+            warningText={warningText}
           />
         </div>
 

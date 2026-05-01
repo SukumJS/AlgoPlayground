@@ -1,40 +1,81 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "@/src/config/firebase";
 import {
-  authService,
-  type SyncUserResponse,
-} from "@/src/services/auth.service";
+  clearAuthSession,
+  getStoredToken,
+  getStoredUser,
+  type AuthUserProfile,
+} from "@/src/lib/auth-storage";
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<SyncUserResponse | null>(null);
+  const [user, setUser] = useState<AuthUserProfile | null>(() =>
+    getStoredUser(),
+  );
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(() => getStoredToken());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const idToken = await firebaseUser.getIdToken();
-        localStorage.setItem("access_token", idToken);
-
-        try {
-          const res = await authService.sync();
-          setProfile(res.data.data.user);
-        } catch {
-          setProfile(null);
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (!fbUser) {
+        clearAuthSession();
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("access_token");
         }
-      } else {
-        localStorage.removeItem("access_token");
-        setProfile(null);
+        setUser(null);
+        setFirebaseUser(null);
+        setToken(null);
+        setLoading(false);
+        return;
       }
-      setUser(firebaseUser);
+
+      const idToken = await fbUser.getIdToken();
+      if (typeof window !== "undefined") {
+        localStorage.setItem("access_token", idToken);
+      }
+
+      const storedUser = getStoredUser();
+      setUser(storedUser);
+      setFirebaseUser(fbUser);
+      setToken(idToken);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return unsubscribe;
   }, []);
 
-  return { user, profile, loading };
+  // Listen for profile updates from other components (e.g., profile page avatar changes)
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      const updatedUser = getStoredUser();
+      setUser(updatedUser);
+    };
+
+    window.addEventListener("authProfileUpdated", handleProfileUpdate);
+    return () => {
+      window.removeEventListener("authProfileUpdated", handleProfileUpdate);
+    };
+  }, []);
+
+  const logout = async () => {
+    await signOut(auth);
+    clearAuthSession();
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("access_token");
+    }
+    setUser(null);
+    setFirebaseUser(null);
+    setToken(null);
+  };
+
+  return {
+    user,
+    firebaseUser,
+    token,
+    loading,
+    logout,
+  };
 }

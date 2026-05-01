@@ -22,8 +22,6 @@ import {
   type OnEdgesChange,
   type DefaultEdgeOptions,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import "@xyflow/react/dist/base.css";
 import SortNode, { type SortNodeData } from "@/src/components/shared/sortNode";
 import { useSortableDrag } from "@/src/hooks/sort/useSortableDrag";
 import { useExecutionSpeed } from "@/src/hooks/useExecutionSpeed";
@@ -93,7 +91,7 @@ const algorithmNames: Record<string, string> = {
 
 export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
   const [nodes, setNodes] = useState<Node<SortNodeData>[]>(initialNodes);
-  const [nodeInput, setNodeInput] = useState<number | string>("6");
+  const [nodeInput, setNodeInput] = useState<number | string>("");
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [targetValue, setTargetValue] = useState<number | string>("");
   const [explanation, setExplanation] = useState<string>(
@@ -120,8 +118,16 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
     flowToScreenPosition,
     setNodes,
     isSearch: true,
+    algorithm,
   });
-
+  // Auto-fill เลข 11 ให้กล่อง Input เฉพาะตอนที่ Tutorial ทำงาน
+  React.useEffect(() => {
+    if (tutorial.showTutorial) {
+      setNodeInput(6);
+    } else {
+      setNodeInput(""); // เคลียร์กล่องเป็นค่าว่างเมื่อจบ Tutorial หรือไม่ได้อยู่ใน Tutorial
+    }
+  }, [tutorial.showTutorial]);
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
       setNodes((nds) => applyNodeChanges(changes, nds) as Node<SortNodeData>[]),
@@ -389,7 +395,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
       {sideTabMemo}
 
       <div className="absolute top-4 left-8 z-10 flex gap-2">
-        <GoToHome_Portal />
+        <GoToHome_Portal algorithm={algorithm} algoType="search" />
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -404,7 +410,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
 
       {!tutorial.showTutorial && isDraggingNode && (
         <div
-          className={`fixed z-[65] flex items-center justify-center w-16 h-16 rounded-full bg-[#E53E3E] shadow-lg border-2 border-[#5D5D5D] transition-transform duration-200 ${isTrashActive ? "scale-125" : ""}`}
+          className={`fixed z-65 flex items-center justify-center w-16 h-16 rounded-full bg-[#E53E3E] shadow-lg border-2 border-[#5D5D5D] transition-transform duration-200 ${isTrashActive ? "scale-125" : ""}`}
           style={{
             bottom: "140px",
             left: "50%",
@@ -421,7 +427,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
       <Reading_modal isOpen={showInfo} onClose={() => setShowInfo(false)} />
       {/* Modal แจ้งเตือน Binary Search */}
       {showBinaryWarning && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all">
           <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full   transform scale-100">
             <h2 className="text-2xl font-bold text-red-600 mb-4 flex items-center gap-2">
               Data is Not Sorted!

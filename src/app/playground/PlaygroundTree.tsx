@@ -35,8 +35,6 @@ import {
   type OnEdgesChange,
   type DefaultEdgeOptions,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import "@xyflow/react/dist/base.css";
 import Data_tree from "@/src/components/visualizer/data_tree";
 import CustomNode from "@/src/components/shared/customNodeTreeandGraph";
 import TreeEdge from "@/src/components/shared/treeEdge";
@@ -62,7 +60,6 @@ import Reading_modal from "@/src/components/shared/reading_modal";
 import { Info, Scale } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
-
 const nodeTypes = { custom: CustomNode };
 const edgeTypes = { tree: TreeEdge, floatingEdge: FloatingEdge };
 const fitViewOptions: FitViewOptions = { padding: 0.2 };
@@ -357,6 +354,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
     setNodes,
     setEdges,
     isTree: true,
+    algorithm: algorithm,
   });
 
   // Node interaction (universal - works for all node types, only active when NOT in tutorial)
@@ -645,7 +643,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
 
       {/*Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
       <div className="absolute top-4 left-8 z-10 flex gap-2">
-        <GoToHome_Portal />
+        <GoToHome_Portal algorithm={algorithm} algoType="tree" />
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -681,6 +679,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       {/* Tutorial overlay for tree */}
       {tutorial.showTutorial && (
         <TutorialTree
+          algorithm={algorithm}
           onComplete={tutorial.handleTutorialComplete}
           currentStep={tutorial.tutorialStep}
           setCurrentStep={tutorial.setTutorialStep}

@@ -33,8 +33,6 @@ import {
   type OnEdgesChange,
   type DefaultEdgeOptions,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import "@xyflow/react/dist/base.css";
 import Data_graph from "@/src/components/visualizer/data_graph";
 import CustomNode from "@/src/components/shared/customNodeTreeandGraph";
 import TreeEdge from "@/src/components/shared/treeEdge";
@@ -43,6 +41,7 @@ import Reading_modal from "@/src/components/shared/reading_modal";
 import { Info } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
+import Post_Test_modal from "@/src/components/shared/post_Test_modal";
 
 // ── Graph Algorithm imports ──────────────────────────────────────────
 import { getAlgorithmRunner } from "@/src/components/visualizer/algorithmGraph";
@@ -264,6 +263,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   const [nodes, setNodes] = useState<Node[]>(graphInitialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [showInfo, setShowInfo] = useState(false);
+  const [showPostModal, setShowPostModal] = useState(false);
   const defaultPrettyName = algorithm
     ? algorithmNames[algorithm] || "Graph Algorithms"
     : "Graph Algorithms";
@@ -703,6 +703,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     isGraph: true,
     directed: isDirectedGraph,
     weighted: isWeightedGraph,
+    algorithm,
   });
 
   // Node interaction (universal - works for graph interactions, active when NOT in tutorial)
@@ -909,7 +910,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
 
       {/* Top Left Component show Info for reading how algo work & Status of Node in Playground Page */}
       <div className="absolute top-4 left-8 z-10 flex gap-2">
-        <GoToHome_Portal />
+        <GoToHome_Portal algorithm={algorithm} algoType="graph" />
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -924,6 +925,10 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
 
       {/* Info Reading inside Playground */}
       <Reading_modal isOpen={showInfo} onClose={() => setShowInfo(false)} />
+      <Post_Test_modal
+        showModal={showPostModal}
+        onClose={() => setShowPostModal(false)}
+      />
 
       {/* Tutorial overlay for graph — only render after positions are stable */}
       {graphTutorial.showTutorial && graphTutorial.positionsReady && (
