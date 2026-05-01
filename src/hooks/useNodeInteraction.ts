@@ -343,7 +343,8 @@ export function useNodeInteraction({
           Math.pow(event.clientY - trashY, 2),
       );
 
-      const isNearTrash = dist < dropTargetRadius;
+      const isNearTrash =
+        dist < dropTargetRadius || event.clientY > window.innerHeight - 200;
       setIsTrashActive(isNearTrash);
 
       // Update node color when near trash
