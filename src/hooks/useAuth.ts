@@ -11,12 +11,8 @@ import {
 } from "@/src/lib/auth-storage";
 
 export function useAuth() {
-  const [user, setUser] = useState<AuthUserProfile | null>(
-    typeof window !== "undefined" ? getStoredUser() : null,
-  );
-  const [token, setToken] = useState<string | null>(
-    typeof window !== "undefined" ? getStoredToken() : null,
-  );
+  const [user, setUser] = useState<AuthUserProfile | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
