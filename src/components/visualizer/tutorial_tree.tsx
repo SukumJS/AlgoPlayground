@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Trash2 } from "lucide-react";
 import { TutorialStep } from "@/src/app/types/tutorial";
 
@@ -143,6 +143,29 @@ export default function TutorialTree({
   // สร้าง State ท้องถิ่นเพื่อแยก 2 สเต็ปสุดท้ายออกมา
   const [localEndStep, setLocalEndStep] = useState(0);
 
+  // ติดตามตำแหน่งปุ่ม Post Test แบบ dynamic
+  const [postTestRect, setPostTestRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (localEndStep !== 2) return;
+    let frameId: number;
+    const track = () => {
+      const el = document.getElementById("post-test-button");
+      if (el) {
+        const r = el.getBoundingClientRect();
+        setPostTestRect({ x: r.left, y: r.top, w: r.width, h: r.height });
+      }
+      frameId = requestAnimationFrame(track);
+    };
+    track();
+    return () => cancelAnimationFrame(frameId);
+  }, [localEndStep]);
+
   // 🎯 แก้ไข: ให้ดัน currentStep ไปเรื่อยๆ แทนการเรียก onComplete() ทันที
   const handleStepComplete = useCallback(() => {
     if (currentStep < steps.length) {
@@ -198,12 +221,12 @@ export default function TutorialTree({
                   fill="black"
                 />
               )}
-              {localEndStep === 2 && (
+              {localEndStep === 2 && postTestRect && (
                 <rect
-                  x="1500"
-                  y="900"
-                  width="400"
-                  height="55"
+                  x={postTestRect.x - 4}
+                  y={postTestRect.y - 4}
+                  width={postTestRect.w + 8}
+                  height={postTestRect.h + 8}
                   rx="4"
                   fill="black"
                 />
@@ -243,9 +266,15 @@ export default function TutorialTree({
           </div>
         )}
 
-        {/* กล่องชี้ Post Test (ขวาล่าง) */}
-        {localEndStep === 2 && (
-          <div className="absolute bottom-[120px] right-[100px] bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out">
+        {/* กล่องชี้ Post Test (ชี้ไปที่ปุ่ม Post Test จริง) */}
+        {localEndStep === 2 && postTestRect && (
+          <div
+            className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
+            style={{
+              top: `${postTestRect.y - 280}px`,
+              left: `${postTestRect.x + postTestRect.w / 2 - 150}px`,
+            }}
+          >
             <DashedArrow
               width={50}
               className="absolute -bottom-[50px] left-1/2 transform -translate-x-1/2"
