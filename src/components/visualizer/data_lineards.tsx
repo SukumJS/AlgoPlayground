@@ -398,12 +398,6 @@ function Data_Linear_DS({
         {/* UI ของ Stack (LIFO) */}
         {algorithm === "stack" && (
           <div className="p-4 border-t border-gray-300 flex flex-col gap-4">
-            {/* แสดงข้อความแจ้งเตือนสำหรับ Stack */}
-            {engineWarningText && (
-              <div className="text-red-600 text-sm font-medium bg-red-50 p-3 rounded-lg border border-red-200 shadow-sm transition-all">
-                {engineWarningText}
-              </div>
-            )}
             <div>
               <h3 className="font-bold text-md mb-3 text-gray-800 flex items-center gap-2">
                 Stack Operations (LIFO)
@@ -454,18 +448,18 @@ function Data_Linear_DS({
                 </button>
               </div>
             </div>
+            {/* แสดงข้อความแจ้งเตือนจาก Engine (Insert/Delete)*/}
+            {engineWarningText && (
+              <div className="text-red-600 text-sm font-medium  transition-all">
+                {engineWarningText}
+              </div>
+            )}
           </div>
         )}
 
         {/* UI ของ Queue (FIFO) */}
         {algorithm === "queue" && (
           <div className="p-4 border-t border-gray-300 flex flex-col gap-3">
-            {/* แสดงข้อความแจ้งเตือนสำหรับ Queue  */}
-            {engineWarningText && (
-              <div className="text-red-600 text-sm font-medium bg-red-50 p-3 rounded-lg border border-red-200 shadow-sm transition-all">
-                {engineWarningText}
-              </div>
-            )}
             <div>
               <h3 className="font-bold text-md mb-3 text-gray-800 flex items-center gap-2">
                 Queue Operations (FIFO)
@@ -515,6 +509,12 @@ function Data_Linear_DS({
                 </button>
               </div>
             </div>
+            {/* แสดงข้อความแจ้งเตือนจาก Engine (Insert/Delete)*/}
+            {engineWarningText && (
+              <div className="text-red-600 text-sm font-medium  transition-all">
+                {engineWarningText}
+              </div>
+            )}
           </div>
         )}
       </div>
