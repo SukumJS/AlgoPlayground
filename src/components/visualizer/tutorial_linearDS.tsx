@@ -81,6 +81,12 @@ export default function TutorialLinearDS({
     w: number;
     h: number;
   } | null>(null);
+  const [postTestRect, setPostTestRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
   const nodeBoxSize = 105;
   const nodeHalfBox = nodeBoxSize / 2;
   const nodeRadius = "12";
@@ -123,6 +129,28 @@ export default function TutorialLinearDS({
     }
   }
 
+  useEffect(() => {
+    if (localEndStep < 1) return;
+    let frameId: number;
+    const trackPosition = () => {
+      const el = document.querySelector(
+        "[data-tutorial-posttest]",
+      ) as HTMLElement | null;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        setPostTestRect({
+          x: rect.left,
+          y: rect.top,
+          w: rect.width,
+          h: rect.height,
+        });
+      }
+      frameId = requestAnimationFrame(trackPosition);
+    };
+    trackPosition();
+    return () => cancelAnimationFrame(frameId);
+  }, [localEndStep]);
+
   // หากอยู่ในช่วง 2 สเต็ปสุดท้าย ให้รันหน้าตานี้ และไม่ต้องสนใจ currentStep อีกต่อไป
   if (localEndStep > 0) {
     return (
@@ -131,6 +159,8 @@ export default function TutorialLinearDS({
         <svg
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
           style={{ position: "fixed" }}
+          viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+          preserveAspectRatio="none"
         >
           <defs>
             <mask id="endstep-spotlight-mask">
@@ -152,10 +182,10 @@ export default function TutorialLinearDS({
               {/* เจาะรูไฮไลท์สำหรับ Post Test (ขวาล่างสุดของ Sidebar) */}
               {localEndStep === 2 && (
                 <rect
-                  x="1500"
-                  y="900"
-                  width="400"
-                  height="55"
+                  x={(postTestRect?.x ?? (vw || 1920) - 420) - 8}
+                  y={(postTestRect?.y ?? (vh || 1080) - 180) - 8}
+                  width={(postTestRect?.w ?? 400) + 16}
+                  height={(postTestRect?.h ?? 55) + 16}
                   rx="4"
                   fill="black"
                 />

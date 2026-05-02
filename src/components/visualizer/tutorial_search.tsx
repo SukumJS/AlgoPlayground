@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { useWindowSize } from "@/src/hooks/useWindowSize";
 
@@ -72,6 +72,12 @@ export default function TutorialSearch({
   const { width: vw, height: vh } = useWindowSize();
   // สร้าง State ท้องถิ่นเพื่อตัดขาดจากระบบ Auto-Advance ของ Hook นอก
   const [localEndStep, setLocalEndStep] = useState(0);
+  const [postTestRect, setPostTestRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
 
   // กันข้ามอัตโนมัติ
   if (localEndStep === 0) {
@@ -79,6 +85,28 @@ export default function TutorialSearch({
       setLocalEndStep(1);
     }
   }
+
+  useEffect(() => {
+    if (localEndStep < 1) return;
+    let frameId: number;
+    const trackPosition = () => {
+      const el = document.querySelector(
+        "[data-tutorial-posttest]",
+      ) as HTMLElement | null;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        setPostTestRect({
+          x: rect.left,
+          y: rect.top,
+          w: rect.width,
+          h: rect.height,
+        });
+      }
+      frameId = requestAnimationFrame(trackPosition);
+    };
+    trackPosition();
+    return () => cancelAnimationFrame(frameId);
+  }, [localEndStep]);
 
   // หากอยู่ในช่วง 2 สเต็ปสุดท้าย ให้รันหน้าตานี้
   if (localEndStep > 0) {
@@ -88,6 +116,8 @@ export default function TutorialSearch({
         <svg
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
           style={{ position: "fixed" }}
+          viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+          preserveAspectRatio="none"
         >
           <defs>
             <mask id="endstep-spotlight-mask-search">
@@ -104,10 +134,10 @@ export default function TutorialSearch({
               )}
               {localEndStep === 2 && (
                 <rect
-                  x="1500"
-                  y="900"
-                  width="400"
-                  height="55"
+                  x={(postTestRect?.x ?? (vw || 1920) - 420) - 8}
+                  y={(postTestRect?.y ?? (vh || 1080) - 180) - 8}
+                  width={(postTestRect?.w ?? 400) + 16}
+                  height={(postTestRect?.h ?? 55) + 16}
                   rx="4"
                   fill="black"
                 />

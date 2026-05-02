@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { TutorialStep } from "@/src/app/types/tutorial";
 import { useWindowSize } from "@/src/hooks/useWindowSize";
@@ -144,6 +144,12 @@ export default function TutorialTree({
 
   // สร้าง State ท้องถิ่นเพื่อแยก 2 สเต็ปสุดท้ายออกมา
   const [localEndStep, setLocalEndStep] = useState(0);
+  const [postTestRect, setPostTestRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
 
   // 🎯 แก้ไข: ให้ดัน currentStep ไปเรื่อยๆ แทนการเรียก onComplete() ทันที
   const handleStepComplete = useCallback(() => {
@@ -179,6 +185,28 @@ export default function TutorialTree({
       setLocalEndStep(1);
     }
   }
+
+  useEffect(() => {
+    if (localEndStep < 1) return;
+    let frameId: number;
+    const trackPosition = () => {
+      const el = document.querySelector(
+        "[data-tutorial-posttest]",
+      ) as HTMLElement | null;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        setPostTestRect({
+          x: rect.left,
+          y: rect.top,
+          w: rect.width,
+          h: rect.height,
+        });
+      }
+      frameId = requestAnimationFrame(trackPosition);
+    };
+    trackPosition();
+    return () => cancelAnimationFrame(frameId);
+  }, [localEndStep]);
   // ส่วนของชี้สถานะสีและ Post Test
   if (localEndStep > 0) {
     return (
@@ -186,6 +214,8 @@ export default function TutorialTree({
         <svg
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
           style={{ position: "fixed" }}
+          viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+          preserveAspectRatio="none"
         >
           <defs>
             <mask id="endstep-spotlight-mask-tree">
@@ -202,10 +232,10 @@ export default function TutorialTree({
               )}
               {localEndStep === 2 && (
                 <rect
-                  x="1500"
-                  y="900"
-                  width="400"
-                  height="55"
+                  x={(postTestRect?.x ?? (vw || 1920) - 420) - 8}
+                  y={(postTestRect?.y ?? (vh || 1080) - 180) - 8}
+                  width={(postTestRect?.w ?? 400) + 16}
+                  height={(postTestRect?.h ?? 55) + 16}
                   rx="4"
                   fill="black"
                 />

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronUp } from "lucide-react";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -10,12 +10,24 @@ interface NavbarProps {
   onSelectCategory: (category: string) => void;
 }
 
+const subscribeToNoop = () => () => {};
+const getMountedSnapshot = () => true;
+const getServerMountedSnapshot = () => false;
+
 export default function Navbar({ onSelectCategory }: NavbarProps) {
   const router = useRouter();
   const { user, firebaseUser, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("all");
   const [profileOpen, setProfileOpen] = useState(false);
+  // Auth state is hydrated from localStorage on the client only. Render the
+  // signed-out variant during SSR/initial hydration to avoid HTML mismatch.
+  const mounted = useSyncExternalStore(
+    subscribeToNoop,
+    getMountedSnapshot,
+    getServerMountedSnapshot,
+  );
+  const isSignedIn = mounted && Boolean(user);
 
   const items = [
     { label: "All", value: "all" },
@@ -107,7 +119,7 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
 
         {/* Auth section */}
         <div className="ml-2 md:ml-4">
-          {!user ? (
+          {!isSignedIn ? (
             <Link href="/auth/signin">
               <button className="px-6 py-2 rounded-full bg-[#1A75D1] text-[#F1F1F1] font-bold shadow-md">
                 Sign in
