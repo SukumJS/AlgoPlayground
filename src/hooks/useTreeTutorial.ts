@@ -261,7 +261,10 @@ export function useTreeTutorial({
             Math.pow(event.clientY - trashY, 2),
         );
 
-        setIsTrashActive(dist < dropTargetRadius);
+        const isNearTrash =
+          dist < dropTargetRadius || event.clientY > window.innerHeight - 200;
+
+        setIsTrashActive(isNearTrash);
       }
     },
     [showTutorial, tutorialStep],
@@ -275,7 +278,7 @@ export function useTreeTutorial({
         // bottom: 140px, left: 50%
         const trashX = window.innerWidth / 2;
         const trashY = window.innerHeight - 140;
-        const dropTargetRadius = 60; // Hit radius
+        const dropTargetRadius = 130; // Glow activation radius
 
         // Calculate drop distance
         const dist = Math.sqrt(
@@ -283,11 +286,15 @@ export function useTreeTutorial({
             Math.pow(event.clientY - trashY, 2),
         );
 
-        if (dist < dropTargetRadius) {
+        const isNearTrash =
+          dist < dropTargetRadius || event.clientY > window.innerHeight - 200;
+
+        if (isNearTrash) {
           // Delete the node
           setNodes((nds) => nds.filter((n) => n.id !== node.id));
           setTutorialStep(6);
         }
+        setIsTrashActive(false);
       }
     },
     [showTutorial, tutorialStep, setNodes, setTutorialStep],
