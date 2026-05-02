@@ -47,9 +47,11 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
         "
       >
         {/* Logo */}
-        <div className="text-xl font-bold uppercase text-[#222121]">
-          Algo playground
-        </div>
+        <Link href="/">
+          <div className="text-xl font-bold uppercase text-[#222121] cursor-pointer transition-opacity">
+            Algo playground
+          </div>
+        </Link>
 
         <div className="flex-1" />
         <div className="flex items-center gap-4">
@@ -64,7 +66,9 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
               className="flex items-center gap-2 px-2 py-2 text-lg font-bold capitalize"
             >
               <span className="text-[#222121] hover:text-[#5D5D5D] transition-colors ">
-                Explore
+                {selected === "all"
+                  ? "Explore"
+                  : items.find((item) => item.value === selected)?.label}
               </span>
 
               <ChevronUp
@@ -126,12 +130,12 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
                     "https://i.pravatar.cc/150"
                   }
                   alt="profile"
-                  className="w-full h-full object-cover"
+                  className="object-cover w-full h-full"
                 />
               </button>
 
               {profileOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg">
+                <div className="absolute right-0 w-40 mt-2 bg-white shadow-lg rounded-xl">
                   <Link href="/profile">
                     <button
                       onClick={() => setProfileOpen(false)}
