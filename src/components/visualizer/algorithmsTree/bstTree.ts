@@ -223,7 +223,7 @@ export function calculateBSTPositions(
   if (!root) return positions;
 
   const totalNodes = getTreeNodesArray(root).length;
-  const gap = Math.max(60, 80 + totalNodes * 8);
+  const gap = Math.max(50, 85 - totalNodes * 0.8);
   const verticalGap = 100;
 
   let idx = 0;
@@ -299,6 +299,8 @@ export function cloneBSTTree(root: BSTNode | null): BSTNode | null {
   return JSON.parse(JSON.stringify(root));
 }
 
+import { BTNode, rebuildBTFromReactFlow } from "./binaryTree";
+
 export function rebuildBSTFromNodes(
   nodes: Array<{ id: string; data: { label: string } }>,
   edges: Array<{
@@ -307,57 +309,18 @@ export function rebuildBSTFromNodes(
     sourceHandle?: string | null;
   }> = [], // default to empty array for backwards compatibility
 ): BSTNode | null {
-  if (!nodes || nodes.length === 0) return null;
+  const btRoot = rebuildBTFromReactFlow(nodes, edges);
+  if (!btRoot) return null;
 
-  // Find valid numeric nodes
-  const validNodes = nodes.filter((node) => !isNaN(parseInt(node.data.label)));
-  if (validNodes.length === 0) return null;
-
-  // If no edges, it's either an empty tree or just the very first node.
-  if (edges.length === 0) {
-    const firstNode = validNodes[0];
-    return insertBST(null, parseInt(firstNode.data.label), firstNode.id);
+  function convertToBST(btNode: BTNode | null): BSTNode | null {
+    if (!btNode) return null;
+    return {
+      id: btNode.id,
+      value: btNode.value,
+      left: convertToBST(btNode.left),
+      right: convertToBST(btNode.right),
+    };
   }
 
-  // Determine root: the node that is NEVER a target
-  const targetIds = new Set(edges.map((e) => e.target));
-  let rootNode = validNodes.find((n) => !targetIds.has(n.id));
-  if (!rootNode) rootNode = validNodes[0]; // fallback
-
-  // Include all nodes that have at least one edge connection
-  // (connected clusters get auto-inserted into the main tree;
-  //  truly isolated nodes with zero edges are excluded)
-  const connectedIds = new Set<string>();
-  for (const e of edges) {
-    connectedIds.add(e.source);
-    connectedIds.add(e.target);
-  }
-
-  let root: BSTNode | null = null;
-  const values = validNodes
-    .filter((n) => connectedIds.has(n.id))
-    .map((n) => ({ value: parseInt(n.data.label), id: n.id }));
-
-  if (values.length === 0) return null;
-
-  const sorted = [...values].sort((a, b) => {
-    const tsA = extractTimestamp(a.id);
-    const tsB = extractTimestamp(b.id);
-    if (tsA !== null && tsB !== null) return tsA - tsB;
-    if (tsA !== null) return 1;
-    if (tsB !== null) return -1;
-    return 0;
-  });
-
-  sorted.forEach(({ value, id }) => {
-    root = insertBST(root, value, id);
-  });
-
-  return root;
-}
-
-function extractTimestamp(id: string): number | null {
-  const match = id.match(/(\d{10,})/);
-  if (match) return parseInt(match[1], 10);
-  return null;
+  return convertToBST(btRoot);
 }

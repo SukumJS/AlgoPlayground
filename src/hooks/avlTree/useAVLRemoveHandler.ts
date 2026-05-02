@@ -124,13 +124,8 @@ export function useAVLRemoveHandler(params: {
       }
 
       // Pre-compute removal
-      const {
-        successorId,
-        afterRemove,
-        rotationType,
-        rotationNodeId,
-        afterRebalance,
-      } = removeAVLWithSteps(avlRoot, value);
+      const { successorId, afterRemove, rotations, afterRebalance } =
+        removeAVLWithSteps(avlRoot, value);
 
       // Step: Show successor if 2-child case
       if (successorId) {
@@ -176,9 +171,12 @@ export function useAVLRemoveHandler(params: {
           stepToCodeLine: stepToLine,
         });
 
-        // Steps: Check balance going back up
+        // Steps: Check balance going back up for the first round
         const bfMap = collectBFs(afterRemove);
         const checkPath = [...path].reverse();
+        const firstRotNodeId =
+          rotations && rotations.length > 0 ? rotations[0].nodeId : null;
+
         checkPath.forEach((id) => {
           // Only add step if this node still exists in the afterRemove tree
           const nodeExists = (removedRF.nodes as RFNode[]).some(
@@ -193,7 +191,7 @@ export function useAVLRemoveHandler(params: {
               isHighlighted: n.id === id,
               highlightColor:
                 n.id === id
-                  ? id === rotationNodeId
+                  ? id === firstRotNodeId
                     ? "#EF4444"
                     : "#F7AD45"
                   : undefined,
@@ -205,102 +203,114 @@ export function useAVLRemoveHandler(params: {
             nodes: hl,
             edges: removedRF.edges as RFEdge[],
             description:
-              id === rotationNodeId
-                ? `Balance factor is ${bf}. This node is imbalanced, so apply ${rotationType}.`
+              id === firstRotNodeId
+                ? `Balance factor is ${bf}. This node is imbalanced, prepare for ${rotations[0].type}.`
                 : `Balance factor is ${bf}. This node is balanced, continue upward.`,
-            codeStep: id === rotationNodeId ? 4 : 3,
+            codeStep: id === firstRotNodeId ? 4 : 3,
             treeAction,
             stepToCodeLine: stepToLine,
           });
         });
       }
 
-      // Steps: Rotation animation
-      if (rotationType && afterRemove && afterRebalance) {
-        const removedPositions = calculateTreePositions(afterRemove);
-        const removedRF = avlTreeToReactFlow(
-          afterRemove,
-          [],
-          [],
-          removedPositions,
-        );
-        const finalPositions = calculateTreePositions(afterRebalance);
-        const finalRF = avlTreeToReactFlow(
-          afterRebalance,
-          [],
-          [],
-          finalPositions,
-        );
+      // Steps: Rotation animations (cascading)
+      if (rotations && rotations.length > 0 && afterRemove) {
+        let currentIterTree = afterRemove;
 
-        // Highlight rotation node
-        const hl = (removedRF.nodes as RFNode[]).map((n: RFNode) => ({
-          ...n,
-          data: {
-            ...n.data,
-            isHighlighted: n.id === rotationNodeId,
-            highlightColor: n.id === rotationNodeId ? "#EF4444" : undefined,
-          },
-        }));
-        const hlEdges = (removedRF.edges as RFEdge[]).map((e: RFEdge) => ({
-          ...e,
-          style:
-            e.source === rotationNodeId || e.target === rotationNodeId
-              ? { stroke: "#EF4444", strokeWidth: 3 }
-              : { stroke: "#999", strokeWidth: 2 },
-        }));
-        const nodeLabel = (removedRF.nodes as RFNode[]).find(
-          (n) => n.id === rotationNodeId,
-        )?.data.label;
-        steps.push({
-          nodes: hl,
-          edges: hlEdges,
-          description: `Imbalance detected at node ${nodeLabel}. Perform ${rotationType}.`,
-          codeStep: 5,
-          treeAction,
-          stepToCodeLine: stepToLine,
-        });
+        rotations.forEach((rot, index) => {
+          const rotationType = rot.type;
+          const rotationNodeId = rot.nodeId;
+          const rotAfterTree = rot.afterTree;
+          if (!rotAfterTree) return;
 
-        // Topology re-wire
-        const beforePosMap = new Map<string, { x: number; y: number }>();
-        (removedRF.nodes as RFNode[]).forEach((n) => {
-          beforePosMap.set(n.id, { x: n.position.x, y: n.position.y });
-        });
-        const tangledNodes = (finalRF.nodes as RFNode[]).map((n: RFNode) => {
-          const before = beforePosMap.get(n.id) || n.position;
-          return {
+          const removedPositions = calculateTreePositions(currentIterTree);
+          const removedRF = avlTreeToReactFlow(
+            currentIterTree,
+            [],
+            [],
+            removedPositions,
+          );
+          const finalPositions = calculateTreePositions(rotAfterTree);
+          const finalRF = avlTreeToReactFlow(
+            rotAfterTree,
+            [],
+            [],
+            finalPositions,
+          );
+
+          // Highlight rotation node
+          const hl = (removedRF.nodes as RFNode[]).map((n: RFNode) => ({
             ...n,
-            position: before,
             data: {
               ...n.data,
               isHighlighted: n.id === rotationNodeId,
-              highlightColor: n.id === rotationNodeId ? "#F7AD45" : undefined,
+              highlightColor: n.id === rotationNodeId ? "#EF4444" : undefined,
             },
-          };
-        });
-        const tangledEdges = (finalRF.edges as RFEdge[]).map((e: RFEdge) => ({
-          ...e,
-          style:
-            e.source === rotationNodeId || e.target === rotationNodeId
-              ? { stroke: "#F7AD45", strokeWidth: 3 }
-              : { stroke: "#999", strokeWidth: 2 },
-        }));
-        steps.push({
-          nodes: tangledNodes,
-          edges: tangledEdges,
-          description: "Update child links for the rotation topology.",
-          codeStep: 5,
-          treeAction,
-          stepToCodeLine: stepToLine,
-        });
+          }));
+          const hlEdges = (removedRF.edges as RFEdge[]).map((e: RFEdge) => ({
+            ...e,
+            style:
+              e.source === rotationNodeId || e.target === rotationNodeId
+                ? { stroke: "#EF4444", strokeWidth: 3 }
+                : { stroke: "#999", strokeWidth: 2 },
+          }));
+          const nodeLabel = (removedRF.nodes as RFNode[]).find(
+            (n) => n.id === rotationNodeId,
+          )?.data.label;
+          steps.push({
+            nodes: hl,
+            edges: hlEdges,
+            description: `Imbalance detected at node ${nodeLabel}. Perform ${rotationType}.`,
+            codeStep: 5,
+            treeAction,
+            stepToCodeLine: stepToLine,
+          });
 
-        // Final rotation result
-        steps.push({
-          nodes: finalRF.nodes as RFNode[],
-          edges: finalRF.edges as RFEdge[],
-          description: `${rotationType} complete. AVL balance is restored.`,
-          codeStep: 6,
-          treeAction,
-          stepToCodeLine: stepToLine,
+          // Topology re-wire
+          const beforePosMap = new Map<string, { x: number; y: number }>();
+          (removedRF.nodes as RFNode[]).forEach((n) => {
+            beforePosMap.set(n.id, { x: n.position.x, y: n.position.y });
+          });
+          const tangledNodes = (finalRF.nodes as RFNode[]).map((n: RFNode) => {
+            const before = beforePosMap.get(n.id) || n.position;
+            return {
+              ...n,
+              position: before,
+              data: {
+                ...n.data,
+                isHighlighted: n.id === rotationNodeId,
+                highlightColor: n.id === rotationNodeId ? "#F7AD45" : undefined,
+              },
+            };
+          });
+          const tangledEdges = (finalRF.edges as RFEdge[]).map((e: RFEdge) => ({
+            ...e,
+            style:
+              e.source === rotationNodeId || e.target === rotationNodeId
+                ? { stroke: "#F7AD45", strokeWidth: 3 }
+                : { stroke: "#999", strokeWidth: 2 },
+          }));
+          steps.push({
+            nodes: tangledNodes,
+            edges: tangledEdges,
+            description: "Update child links for the rotation topology.",
+            codeStep: 5,
+            treeAction,
+            stepToCodeLine: stepToLine,
+          });
+
+          // Final rotation result for this iteration
+          const isLast = index === rotations.length - 1;
+          steps.push({
+            nodes: finalRF.nodes as RFNode[],
+            edges: finalRF.edges as RFEdge[],
+            description: `${rotationType} complete. ${isLast ? "AVL balance is fully restored." : "Checking ancestors for further imbalances..."}`,
+            codeStep: 6,
+            treeAction,
+            stepToCodeLine: stepToLine,
+          });
+
+          currentIterTree = rotAfterTree;
         });
       } else {
         // No rotation needed

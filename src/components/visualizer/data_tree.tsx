@@ -20,6 +20,8 @@ import {
   rebuildAVLTreeFromNodes,
   removeAVL,
   insertAVL,
+  calculateTreePositions,
+  avlTreeToReactFlow,
   type AVLTreeNode,
 } from "@/src/components/visualizer/algorithmsTree/avlTree";
 import { type AnimationCallbacks } from "@/src/components/visualizer/animations/types";
@@ -37,6 +39,8 @@ import {
   insertBST,
   cloneBSTTree,
   rebuildBSTFromNodes,
+  calculateBSTPositions,
+  bstToReactFlow,
   type BSTNode,
   removeBST,
 } from "@/src/components/visualizer/algorithmsTree/bstTree";
@@ -68,6 +72,7 @@ import {
   cloneHeap,
   calculateHeapPositions,
   heapToReactFlow,
+  rebuildHeapFromReactFlow,
   type HeapNode,
 } from "@/src/components/visualizer/algorithmsTree/heapTree";
 
@@ -160,6 +165,7 @@ function Data_tree({
   const [removeValue, setRemoveValue] = useState<string>("");
   const [draggedValue, setDraggedValue] = useState<number | null>(null);
   const [nodeIdCounter, setNodeIdCounter] = useState(5);
+  const [warningText, setWarningText] = useState<string | null>(null);
 
   // Animation states
   const [internalIsAnimating, setInternalIsAnimating] = useState(false);
@@ -192,6 +198,7 @@ function Data_tree({
   const isMinHeap = algorithm === "min-heap";
   const hasTraversal = isBT;
   const traversalType = isBT ? algorithm : null;
+  const isLimitReached = currentNodes.length >= 50;
 
   // Set initial explanation when a tree algorithm is selected
   useEffect(() => {
@@ -267,60 +274,13 @@ function Data_tree({
   useEffect(() => {
     if (isHeap && !isAnimating) {
       setTimeout(() => {
-        let root: HeapNode | null = null;
-
         const nodes = JSON.parse(nodesStr);
         const edges = JSON.parse(edgesStr);
-
-        const numericNodes = nodes.filter(
-          (n: { id: string; data: { label: string } }) =>
-            !isNaN(parseInt(n.data.label)),
-        );
-
-        if (numericNodes.length > 0) {
-          if (edges.length === 0) {
-            const res = insertHeap(
-              root,
-              parseInt(numericNodes[0].data.label),
-              numericNodes[0].id,
-              isMinHeap,
-            );
-            root = res.root;
-          } else {
-            const targetIds = new Set(edges.map((e: RFEdge) => e.target));
-            let rootNode = numericNodes.find(
-              (n: RFNode) => !targetIds.has(n.id),
-            );
-            if (!rootNode) rootNode = numericNodes[0];
-
-            // Include all nodes with at least one edge connection
-            // (connected clusters auto-inserted; truly isolated nodes excluded)
-            const connectedIds = new Set<string>();
-            for (const edge of edges) {
-              connectedIds.add(edge.source);
-              connectedIds.add(edge.target);
-            }
-
-            const values = numericNodes
-              .filter((n: RFNode) => connectedIds.has(n.id))
-              .map((n: RFNode) => {
-                const nodeData = n.data as Record<string, string>;
-                return {
-                  value: parseInt(nodeData?.label || "0", 10),
-                  id: n.id,
-                };
-              });
-
-            values.forEach((v: { value: number; id: string }) => {
-              const res = insertHeap(root, v.value, v.id, isMinHeap);
-              root = res.root;
-            });
-          }
-        }
+        const root = rebuildHeapFromReactFlow(nodes, edges);
         setHeapRoot(root);
       }, 0);
     }
-  }, [isHeap, isAnimating, nodesStr, edgesStr, isMinHeap]);
+  }, [isHeap, isAnimating, nodesStr, edgesStr]);
 
   const heapInitRef = useRef(false);
   useEffect(() => {
@@ -784,6 +744,7 @@ function Data_tree({
       tutorialStep,
       onTutorialDropSuccess,
       isAnimating,
+      isLimitReached,
       isBST,
       isBT,
       isAVL,
@@ -812,6 +773,14 @@ function Data_tree({
     if (tutorialMode || isAnimating || !inputValue) return;
     const v = parseInt(inputValue);
     if (isNaN(v)) return;
+
+    if (currentNodes.length >= 50) {
+      alert(
+        "Playground node limit reached (50). Please remove some nodes first.",
+      );
+      return;
+    }
+
     removeIsolatedNodes();
     let steps: TreeAnimationStep[] | undefined;
     if (algorithm === "avl-tree") steps = handleAVLInsert(v);
@@ -1000,7 +969,171 @@ function Data_tree({
     setBTRoot(null);
     setAVLRoot(null);
     setHeapRoot(null);
-  }, [tutorialMode, setAVLRoot, setHeapRoot]);
+    setNodes([]);
+    setEdges([]);
+    setWarningText(null);
+  }, [tutorialMode, setAVLRoot, setHeapRoot, setNodes, setEdges]);
+
+  // Handle generate random nodes
+  const handleGenerateRandomNodes = useCallback(
+    (count: number) => {
+      if (count <= 0 || tutorialMode || isAnimating) return;
+
+      const currentNodes = rf.getNodes();
+
+      // Only count custom nodes
+      const currentCustomNodesCount = currentNodes.filter(
+        (n) => n.type === "custom",
+      ).length;
+      const availableSpace = 50 - currentCustomNodesCount;
+
+      if (availableSpace <= 0) {
+        setWarningText("Maximum limit of 50 nodes reached. Cannot add more.");
+        setTimeout(() => setWarningText(null), 5000);
+        return;
+      }
+
+      if (count > availableSpace) {
+        setWarningText(
+          `Only space for ${availableSpace} more nodes. Added ${availableSpace} nodes.`,
+        );
+        setTimeout(() => setWarningText(null), 5000);
+      } else {
+        setWarningText(null);
+      }
+
+      const existingValues = new Set(
+        currentNodes
+          .map((n) => parseInt(n.data.label as string))
+          .filter((v) => !isNaN(v)),
+      );
+
+      let currentBSTRoot = bstRoot;
+      let currentBTRoot = btRoot;
+      let currentAVLRoot = avlRoot;
+      let currentHeapRoot = heapRoot;
+
+      const actualCount = Math.min(count, availableSpace);
+
+      const newNodes: RFNode[] = [];
+
+      for (let i = 0; i < actualCount; i++) {
+        let v: number;
+        let tries = 0;
+        do {
+          v = Math.floor(Math.random() * 99) + 1;
+          tries++;
+        } while (existingValues.has(v) && tries < 200);
+        existingValues.add(v);
+
+        const idx = currentNodes.length + i;
+        const pos = {
+          x: 50 + (idx % 6) * 70,
+          y: 50 + Math.floor(idx / 6) * 70,
+        };
+
+        const newNode = {
+          id: getId(),
+          type: "custom",
+          position: pos,
+          data: { label: v.toString(), variant: "circle" },
+        };
+        newNodes.push(newNode);
+
+        if (isBST) {
+          currentBSTRoot = currentBSTRoot
+            ? insertBST(cloneBSTTree(currentBSTRoot), v, newNode.id)
+            : { value: v, id: newNode.id, left: null, right: null };
+        }
+        if (isBT) {
+          currentBTRoot = currentBTRoot
+            ? insertBT(cloneBT(currentBTRoot), v, newNode.id)
+            : { value: v, id: newNode.id, left: null, right: null };
+        }
+        if (isAVL) {
+          currentAVLRoot = insertAVL(currentAVLRoot, v, newNode.id);
+        }
+        if (isHeap) {
+          const res = insertHeap(
+            currentHeapRoot ? cloneHeap(currentHeapRoot) : null,
+            v,
+            newNode.id,
+            isMinHeap,
+          );
+          currentHeapRoot = res.root;
+        }
+      }
+
+      if (isBST) {
+        setBSTRoot(currentBSTRoot);
+        const positions = calculateBSTPositions(currentBSTRoot);
+        const { nodes: rfNodes, edges: rfEdges } = bstToReactFlow(
+          currentBSTRoot,
+          [],
+          [],
+          positions,
+        );
+        setNodes(rfNodes as RFNode[]);
+        setEdges(rfEdges as RFEdge[]);
+      } else if (isBT) {
+        setBTRoot(currentBTRoot);
+        const positions = calculateBTPositions(currentBTRoot);
+        const { nodes: rfNodes, edges: rfEdges } = btToReactFlow(
+          currentBTRoot,
+          [],
+          [],
+          positions,
+        );
+        setNodes(rfNodes as RFNode[]);
+        setEdges(rfEdges as RFEdge[]);
+      } else if (isAVL) {
+        setAVLRoot(currentAVLRoot);
+        const positions = calculateTreePositions(currentAVLRoot);
+        const { nodes: rfNodes, edges: rfEdges } = avlTreeToReactFlow(
+          currentAVLRoot,
+          [],
+          [],
+          positions,
+        );
+        setNodes(rfNodes as RFNode[]);
+        setEdges(rfEdges as RFEdge[]);
+      } else if (isHeap) {
+        setHeapRoot(currentHeapRoot);
+        const positions = calculateHeapPositions(currentHeapRoot);
+        const { nodes: rfNodes, edges: rfEdges } = heapToReactFlow(
+          currentHeapRoot,
+          [],
+          [],
+          positions,
+          "heap-edge",
+        );
+        setNodes(rfNodes as RFNode[]);
+        setEdges(rfEdges as RFEdge[]);
+      } else {
+        setNodes((prev) => [...prev, ...newNodes]);
+      }
+
+      setTimeout(() => {
+        rf.fitView({ padding: 0.2, duration: 800 });
+      }, 100);
+    },
+    [
+      tutorialMode,
+      isAnimating,
+      rf,
+      bstRoot,
+      btRoot,
+      avlRoot,
+      heapRoot,
+      isBST,
+      isBT,
+      isAVL,
+      isHeap,
+      isMinHeap,
+      setNodes,
+      setEdges,
+    ],
+  );
 
   // Toggle expand/collapse
   const handleToggle = useCallback(() => {
@@ -1054,8 +1187,8 @@ function Data_tree({
           >
             <input
               type="number"
-              placeholder="0"
-              className="w-11 h-full bg-transparent text-center text-[#222121] font-semibold text-xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-100 disabled:bg-transparent"
+              placeholder="N"
+              className="w-11 h-full bg-transparent text-center text-[#222121] font-semibold text-xl focus:outline-none placeholder:text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-100 disabled:bg-transparent transition-colors"
               value={nodeInput}
               onChange={(e) =>
                 setNodeInput(
@@ -1090,6 +1223,80 @@ function Data_tree({
         <div
           className={`flex-col justify-center items-center text-center ${tutorialMode || isAnimating ? "pointer-events-none opacity-60" : ""}`}
         >
+          <RandomSize
+            onReset={handleReset}
+            onAdd={handleGenerateRandomNodes}
+            isDisabled={isAnimating || isLimitReached}
+            warningText={warningText}
+          />
+
+          {/* Insert */}
+          <div className="grid-cols-1 grid gap-2 text-start m-1">
+            <p className="font-bold text-md">Insert</p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                className="border border-gray-200 p-2 rounded-lg w-80 placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:bg-gray-100 disabled:placeholder-gray-500 transition-colors"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                disabled={isAnimating || isLimitReached}
+                placeholder={isLimitReached ? "Limit reached" : "e.g. 99"}
+              />
+              <button
+                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
+                onClick={handleInsert}
+                disabled={isAnimating || isLimitReached}
+                title={isLimitReached ? "Limit reached" : ""}
+              >
+                <Plus color="white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="grid-cols-1 grid gap-2 text-start m-1">
+            <p className="font-bold text-md">Search</p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                className="border border-gray-200 p-2 rounded-lg w-80 placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                disabled={isAnimating}
+                placeholder="e.g. 99"
+              />
+              <button
+                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
+                onClick={handleSearch}
+                disabled={isAnimating}
+              >
+                <Search color="white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Remove */}
+          <div className="grid-cols-1 grid gap-2 text-start m-1">
+            <p className="font-bold text-md">Remove</p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                className="border border-gray-200 p-2 rounded-lg w-80 placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors"
+                value={removeValue}
+                onChange={(e) => setRemoveValue(e.target.value)}
+                disabled={isAnimating}
+                placeholder="e.g. 99"
+              />
+              <button
+                className="bg-[#E82B2B] rounded-lg p-2 disabled:opacity-50"
+                onClick={handleRemove}
+                disabled={isAnimating}
+              >
+                <Trash color="white" />
+              </button>
+            </div>
+          </div>
+
           {/* Traversal Buttons (เฉพาะ bt-* algorithms) */}
           {hasTraversal && (
             <div className="grid-cols-1 grid gap-2 text-start m-1">
@@ -1149,70 +1356,6 @@ function Data_tree({
               </div>
             </div>
           )}
-          {/* Insert */}
-          <div className="grid-cols-1 grid gap-2 text-start m-1">
-            <p className="font-bold text-md">Insert</p>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                disabled={isAnimating}
-              />
-              <button
-                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
-                onClick={handleInsert}
-                disabled={isAnimating}
-              >
-                <Plus color="white" />
-              </button>
-            </div>
-          </div>
-
-          {/* Search */}
-          <div className="grid-cols-1 grid gap-2 text-start m-1">
-            <p className="font-bold text-md">Search</p>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                disabled={isAnimating}
-              />
-              <button
-                className="bg-[#222121] rounded-lg p-2 disabled:opacity-50"
-                onClick={handleSearch}
-                disabled={isAnimating}
-              >
-                <Search color="white" />
-              </button>
-            </div>
-          </div>
-
-          {/* Remove */}
-          <div className="grid-cols-1 grid gap-2 text-start m-1">
-            <p className="font-bold text-md">Remove</p>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                className="border border-gray-200 p-2 rounded-lg w-80 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                value={removeValue}
-                onChange={(e) => setRemoveValue(e.target.value)}
-                disabled={isAnimating}
-              />
-              <button
-                className="bg-[#E82B2B] rounded-lg p-2 disabled:opacity-50"
-                onClick={handleRemove}
-                disabled={isAnimating}
-              >
-                <Trash color="white" />
-              </button>
-            </div>
-          </div>
-
-          <RandomSize onReset={handleReset} />
         </div>
       </div>
     </>

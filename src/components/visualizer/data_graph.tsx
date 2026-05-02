@@ -142,8 +142,8 @@ function Data_graph({
           >
             <input
               type="number"
-              placeholder="0"
-              className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              placeholder="N"
+              className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none placeholder:text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={nodeInput}
               onChange={(e) => setNodeInput(e.target.value)}
               onPointerDown={(e) => e.stopPropagation()}
@@ -171,10 +171,11 @@ function Data_graph({
               <p className="font-bold text-md">Start Vertex</p>
               <input
                 type="number"
-                className="border border-gray-200 p-2 rounded-lg w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="border border-gray-200 p-2 rounded-lg w-full placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 disabled={isAnimating}
+                placeholder="e.g. 1"
               />
             </div>
           )}
@@ -183,10 +184,11 @@ function Data_graph({
               <p className="font-bold text-md">End Vertex</p>
               <input
                 type="number"
-                className="border border-gray-200 p-2 rounded-lg w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="border border-gray-200 p-2 rounded-lg w-full placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 disabled={isAnimating}
+                placeholder="e.g. 5"
               />
             </div>
           )}

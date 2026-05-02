@@ -38,7 +38,7 @@ import LinearDSNode, {
 import { useSortableDrag } from "@/src/hooks/sort/useSortableDrag";
 import { useExecutionSpeed } from "@/src/hooks/useExecutionSpeed";
 import Reading_modal from "@/src/components/shared/reading_modal";
-import { Info, Trash2 } from "lucide-react";
+import { Info, Trash2, HelpCircle } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 
@@ -158,7 +158,7 @@ export default function PlaygroundLinearDS({
   );
   const [showInfo, setShowInfo] = useState(false);
 
-  const { setCenter, getZoom, flowToScreenPosition } = useReactFlow();
+  const { setCenter, getZoom, flowToScreenPosition, fitView } = useReactFlow();
 
   const prettyName = algorithm
     ? algorithmNames[algorithm] || "Linear Data Structures"
@@ -546,9 +546,44 @@ export default function PlaygroundLinearDS({
             e.stopPropagation();
             setShowInfo(true);
           }}
-          className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:bg-gray-100 transition cursor-pointer"
+          className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
         >
           <Info color="#000000" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            // Reset playground to initial state based on algorithm
+            const isLL =
+              algorithm === "singly-linked-list" ||
+              algorithm === "doubly-linked-list";
+            const spacing = isLL ? 120 : NODE_WIDTH;
+            const initialValues = isLL ? [1, 2, 3] : [1, 2, 3, 4, 5];
+            const defaultNodes: Node<LinearNodeData>[] = initialValues.map(
+              (val, i) => ({
+                id: `${i + 1}`,
+                type: "custom",
+                position: { x: i * spacing, y: 5 },
+                data: { value: val, index: i, status: "idle" },
+              }),
+            );
+            setNodes(defaultNodes);
+            setEdges(initialEdges);
+            setExplanation(
+              getDefaultLinearDSExplanation(prettyName, algorithm),
+            );
+            // Reset viewport to initial position
+            fitView({ padding: 0.2, duration: 300 });
+            // Reset tutorial state
+            tutorial.setTutorialStep(0);
+            tutorial.setShowTutorial(true);
+            // Clear completion flag to allow re-running tutorial
+            localStorage.removeItem(`tutorial_${algorithm}_completed`);
+          }}
+          className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
+          title="Show Tutorial"
+        >
+          <HelpCircle color="#000000" />
         </button>
         <StatusNode />
       </div>

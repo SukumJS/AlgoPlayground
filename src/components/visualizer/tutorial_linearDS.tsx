@@ -72,6 +72,31 @@ export default function TutorialLinearDS({
 }: TutorialProps) {
   // สร้าง State ท้องถิ่นเพื่อตัดขาดจากระบบ Auto-Advance ของ Hook นอก
   const [localEndStep, setLocalEndStep] = useState(0);
+
+  // ติดตามตำแหน่งปุ่ม Post Test แบบ dynamic
+  const [postTestRect, setPostTestRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (localEndStep !== 2) return;
+    // Force open the sidebar so the post test button becomes visible
+    window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
+    let frameId: number;
+    const track = () => {
+      const el = document.getElementById("post-test-button");
+      if (el) {
+        const r = el.getBoundingClientRect();
+        setPostTestRect({ x: r.left, y: r.top, w: r.width, h: r.height });
+      }
+      frameId = requestAnimationFrame(track);
+    };
+    track();
+    return () => cancelAnimationFrame(frameId);
+  }, [localEndStep]);
   // สร้าง State เก็บขนาดปุ่มและตามติดตำแหน่งปุ่มอัตโนมัติ
   const [sqRect, setSqRect] = useState<{
     x: number;
@@ -138,7 +163,7 @@ export default function TutorialLinearDS({
               {/* เจาะรูไฮไลท์สำหรับ Color Legend (ซ้ายบน) */}
               {localEndStep === 1 && (
                 <rect
-                  x="130"
+                  x="180"
                   y="12"
                   width="250"
                   height="45"
@@ -147,13 +172,13 @@ export default function TutorialLinearDS({
                 />
               )}
 
-              {/* เจาะรูไฮไลท์สำหรับ Post Test (ขวาล่างสุดของ Sidebar) */}
-              {localEndStep === 2 && (
+              {/* เจาะรูไฮไลท์สำหรับ Post Test (ตามตำแหน่งจริง) */}
+              {localEndStep === 2 && postTestRect && (
                 <rect
-                  x="1500"
-                  y="900"
-                  width="400"
-                  height="55"
+                  x={postTestRect.x - 4}
+                  y={postTestRect.y - 4}
+                  width={postTestRect.w + 8}
+                  height={postTestRect.h + 8}
                   rx="4"
                   fill="black"
                 />
@@ -170,10 +195,10 @@ export default function TutorialLinearDS({
 
         {/* กล่องชี้สถานะสี (ซ้ายบน) */}
         {localEndStep === 1 && (
-          <div className="absolute top-[120px] left-[120px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
+          <div className="absolute top-[120px] left-[200px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
             <DashedArrow
               width={50}
-              className="absolute -top-[45px] left-[30px] transform rotate-90"
+              className="absolute -top-[45px] left-[110px] transform rotate-90"
             />
             <h3 className="font-bold text-gray-800 text-lg mb-2">
               Color Legend
@@ -190,9 +215,15 @@ export default function TutorialLinearDS({
           </div>
         )}
 
-        {/* กล่องชี้ Post Test (ขวาล่าง) */}
-        {localEndStep === 2 && (
-          <div className="absolute bottom-[120px] right-[100px] bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out">
+        {/* กล่องชี้ Post Test (ชี้ไปที่ปุ่ม Post Test จริง) */}
+        {localEndStep === 2 && postTestRect && (
+          <div
+            className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
+            style={{
+              top: `${postTestRect.y - 280}px`,
+              left: `${postTestRect.x + postTestRect.w / 2 - 150}px`,
+            }}
+          >
             <DashedArrow
               width={50}
               className="absolute -bottom-[50px] left-1/2 transform -translate-x-1/2 rotate-[270deg]"

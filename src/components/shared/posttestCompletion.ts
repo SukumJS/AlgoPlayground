@@ -20,11 +20,6 @@ function getLocalCompletionKey(algoType?: string, algorithm?: string) {
   return `posttest-completed:${algoType}:${algorithm}`;
 }
 
-function getLocalReminderKey(algoType?: string, algorithm?: string) {
-  if (!algoType || !algorithm) return null;
-  return `posttest-reminder-shown:${algoType}:${algorithm}`;
-}
-
 function getStatusCacheKey(algoType?: string, algorithm?: string) {
   return `${algoType || ""}:${algorithm || ""}`;
 }
@@ -32,12 +27,6 @@ function getStatusCacheKey(algoType?: string, algorithm?: string) {
 function getLocalCompletionValue(algoType?: string, algorithm?: string) {
   if (typeof window === "undefined") return false;
   const key = getLocalCompletionKey(algoType, algorithm);
-  return key ? window.localStorage.getItem(key) === "true" : false;
-}
-
-function getLocalReminderValue(algoType?: string, algorithm?: string) {
-  if (typeof window === "undefined") return false;
-  const key = getLocalReminderKey(algoType, algorithm);
   return key ? window.localStorage.getItem(key) === "true" : false;
 }
 
@@ -61,13 +50,6 @@ function syncLocalStatus(
     setLocalFlag(
       getLocalCompletionKey(algoType, algorithm),
       snapshot.completed,
-    );
-  }
-
-  if (typeof snapshot?.reminderShown === "boolean") {
-    setLocalFlag(
-      getLocalReminderKey(algoType, algorithm),
-      snapshot.reminderShown,
     );
   }
 }
@@ -118,10 +100,9 @@ async function loadStatusSnapshot(
       return snapshot;
     } catch {
       const localCompleted = getLocalCompletionValue(algoType, algorithm);
-      const localReminder = getLocalReminderValue(algoType, algorithm);
       return {
         completed: localCompleted,
-        reminderShown: localCompleted || localReminder,
+        reminderShown: localCompleted,
       };
     } finally {
       inFlightStatus.delete(cacheKey);

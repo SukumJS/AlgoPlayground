@@ -1,4 +1,4 @@
-export const AUTH_TOKEN_KEY = "authToken";
+export const AUTH_TOKEN_KEY = "access_token";
 export const AUTH_USER_KEY = "authUser";
 
 export interface UserProgressSummary {
@@ -22,6 +22,7 @@ export interface AuthUserProfile {
   uid?: string;
   email?: string;
   imageUrl?: string;
+  authProvider?: string;
   updatedAt?: string;
   progress?: UserProgressSummary;
   categoryAlgoProgress?: UserCategoryAlgoProgressSummary;

@@ -12,7 +12,7 @@ interface NavbarProps {
 
 export default function Navbar({ onSelectCategory }: NavbarProps) {
   const router = useRouter();
-  const { user, firebaseUser, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("all");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -111,7 +111,9 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
 
         {/* Auth section */}
         <div className="ml-4">
-          {!firebaseUser ? (
+          {loading ? (
+            <div className="w-12 h-12 rounded-full bg-[#9EC5E8] animate-pulse" />
+          ) : !user ? (
             <Link href="/auth/signin">
               <button className="px-6 py-2 rounded-full bg-[#1A75D1] text-[#F1F1F1] font-bold shadow-md">
                 Sign in
@@ -124,11 +126,7 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
                 className="w-12 h-12 rounded-full overflow-hidden border border-[#5D5D5D]"
               >
                 <img
-                  src={
-                    user?.imageUrl ??
-                    firebaseUser?.photoURL ??
-                    "https://i.pravatar.cc/150"
-                  }
+                  src={user?.imageUrl ?? "@/src/data/default-profile.png"}
                   alt="profile"
                   className="object-cover w-full h-full"
                 />
