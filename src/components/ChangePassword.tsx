@@ -1,45 +1,115 @@
 "use client";
 import React, { useState, ChangeEvent, FormEvent } from "react";
+import {
+  getAuth,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
+  signOut,
+} from "firebase/auth";
 
-// กำหนด Type สำหรับ Props
 interface ChangePasswordProps {
   onClose: () => void;
 }
 
 export default function ChangePassword({ onClose }: ChangePasswordProps) {
-  // สร้าง State สำหรับเก็บค่ารหัสผ่าน
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  // State สำหรับการซ่อน/แสดงรหัสผ่าน
   const [showPass, setShowPass] = useState({
     current: false,
     new: false,
     confirm: false,
   });
 
-  // ฟังก์ชัน Handle Input Change
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ฟังก์ชัน Submit
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  //  ใส่ Logic เปลี่ยนรหัสผ่านของ Firebase เข้าไปใน Submit
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Submit Data:", formData);
-    //เรียก API สำหรับเปลี่ยนรหัสผ่านที่นี่
+    setError(""); // ล้าง error เก่าทุกครั้งที่กด Submit
+
+    const { currentPassword, newPassword, confirmPassword } = formData;
+
+    // Validate เบื้องต้น
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError("New password must be at least 6 characters long.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user || !user.email) {
+        throw new Error("User not found. Please log in again.");
+      }
+
+      // Re-authenticate with current password
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        currentPassword,
+      );
+      await reauthenticateWithCredential(user, credential);
+
+      // Update to new password
+      await updatePassword(user, newPassword);
+
+      alert("Password changed successfully. Please log in again.");
+
+      // Force logout and redirect to Login (remove the next 2 lines if you don't want this)
+      await signOut(auth);
+      window.location.href = "/auth/signin";
+
+      onClose();
+    } catch (error: unknown) {
+      // Type assertion for Firebase error structure
+      const err = error as { code?: string; message?: string };
+
+      // Handle Firebase-specific errors
+      if (
+        err.code === "auth/invalid-credential" ||
+        err.code === "auth/wrong-password"
+      ) {
+        setError("Incorrect current password.");
+      } else if (err.code === "auth/too-many-requests") {
+        setError("Too many attempts. Please try again later.");
+      } else {
+        setError(
+          err.message || "An error occurred while changing the password.",
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-gray-300">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4 backdrop-gray-300">
       <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
           Change Password
         </h2>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm text-center">
+            {error}
+          </div>
+        )}
 
         <form className="space-y-5" onSubmit={handleSubmit}>
           {/* Current Password */}
@@ -84,15 +154,17 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
             <button
               type="button"
               onClick={onClose}
-              className="w-40 py-2 border rounded-md text-sm hover:bg-gray-100 text-gray-600"
+              disabled={loading}
+              className="w-40 py-2 border rounded-md text-sm hover:bg-gray-100 text-gray-600 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="w-40 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+              disabled={loading}
+              className="w-40 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:bg-blue-400"
             >
-              Update Password
+              {loading ? "Updating..." : "Update Password"}
             </button>
           </div>
         </form>
@@ -101,6 +173,7 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
   );
 }
 
+// Component ย่อย: PasswordField
 interface PasswordFieldProps {
   label: string;
   name: string;
@@ -137,7 +210,7 @@ const PasswordField = ({
       <button
         type="button"
         onClick={toggleVisible}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
       ></button>
     </div>
   </div>
