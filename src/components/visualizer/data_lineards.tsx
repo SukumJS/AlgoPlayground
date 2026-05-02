@@ -20,6 +20,7 @@ type DataLinearProps = {
   onInsert?: (index: number, value: number) => void;
   onDelete?: (index: number) => void;
   isAnimating?: boolean;
+  engineWarningText?: string | null;
 
   tutorialMode?: boolean;
   onTutorialDropSuccess?: () => void;
@@ -36,6 +37,7 @@ function Data_Linear_DS({
   onInsert,
   onDelete,
   isAnimating,
+  engineWarningText,
   tutorialMode,
   onTutorialDropSuccess,
   onTutorialInsert,
@@ -55,11 +57,10 @@ function Data_Linear_DS({
 
   const [type, setType] = useState<string | null>(null);
   const [draggedValue, setDraggedValue] = useState<number | null>(null);
-  const [warningText, setWarningText] = useState<string | null>(null);
-  // 1. ตั้งค่าเริ่มต้นเป็นเลขคงที่ก่อน (ป้องกัน Hydration Error)
+  const [warningText, setWarningText] = useState<string | null>(null); // ของ Random
+
   const [sampleNodes, setSampleNodes] = useState<number[]>([1, 2, 3, 4, 5]);
 
-  // 2. ใช้ useEffect + setTimeout เพื่อสุ่มเลข (ป้องกัน Cascading Render Warning)
   useEffect(() => {
     const timer = setTimeout(() => {
       const randomNodes = Array.from(
@@ -385,12 +386,24 @@ function Data_Linear_DS({
                 </button>
               </div>
             </div>
+            {/* แสดงข้อความแจ้งเตือนจาก Engine (Insert/Delete)*/}
+            {engineWarningText && (
+              <div className="text-red-600 text-sm font-medium  transition-all">
+                {engineWarningText}
+              </div>
+            )}
           </div>
         )}
 
         {/* UI ของ Stack (LIFO) */}
         {algorithm === "stack" && (
           <div className="p-4 border-t border-gray-300 flex flex-col gap-4">
+            {/* แสดงข้อความแจ้งเตือนสำหรับ Stack */}
+            {engineWarningText && (
+              <div className="text-red-600 text-sm font-medium bg-red-50 p-3 rounded-lg border border-red-200 shadow-sm transition-all">
+                {engineWarningText}
+              </div>
+            )}
             <div>
               <h3 className="font-bold text-md mb-3 text-gray-800 flex items-center gap-2">
                 Stack Operations (LIFO)
@@ -447,6 +460,12 @@ function Data_Linear_DS({
         {/* UI ของ Queue (FIFO) */}
         {algorithm === "queue" && (
           <div className="p-4 border-t border-gray-300 flex flex-col gap-3">
+            {/* แสดงข้อความแจ้งเตือนสำหรับ Queue  */}
+            {engineWarningText && (
+              <div className="text-red-600 text-sm font-medium bg-red-50 p-3 rounded-lg border border-red-200 shadow-sm transition-all">
+                {engineWarningText}
+              </div>
+            )}
             <div>
               <h3 className="font-bold text-md mb-3 text-gray-800 flex items-center gap-2">
                 Queue Operations (FIFO)
