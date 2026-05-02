@@ -36,7 +36,7 @@ export const useLinkedListEngine = (
 ) => {
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // ⭐️ เพิ่ม State สำหรับเก็บข้อความแจ้งเตือน
+  // เพิ่ม State สำหรับเก็บข้อความแจ้งเตือน
   const [warningText, setWarningText] = useState<string | null>(null);
 
   const isDLL = algorithm === "doubly-linked-list";
@@ -52,7 +52,7 @@ export const useLinkedListEngine = (
 
   const insertAtIndex = useCallback(
     async (targetIndex: number, value: number) => {
-      // ⭐️ เปลี่ยนเป็นแจ้งเตือนภาษาอังกฤษแทน alert
+      // เปลี่ยนเป็นแจ้งเตือนภาษาอังกฤษแทน alert
       if (targetIndex < 0 || targetIndex > nodes.length || nodes.length >= 50) {
         setWarningText(
           "Invalid index or linked list has reached the maximum size of 50.",
@@ -164,7 +164,7 @@ export const useLinkedListEngine = (
 
   const deleteAtIndex = useCallback(
     async (targetIndex: number) => {
-      // ⭐️ เปลี่ยนเป็นแจ้งเตือนภาษาอังกฤษแทน alert
+      //  เปลี่ยนเป็นแจ้งเตือนภาษาอังกฤษแทน alert
       if (targetIndex < 0 || targetIndex >= nodes.length) {
         setWarningText("Invalid index. No element to delete.");
         setTimeout(() => setWarningText(null), 3000);
