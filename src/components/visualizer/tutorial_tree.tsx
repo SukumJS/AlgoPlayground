@@ -153,6 +153,8 @@ export default function TutorialTree({
 
   useEffect(() => {
     if (localEndStep !== 2) return;
+    // Force open the sidebar so the post test button becomes visible
+    window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
     let frameId: number;
     const track = () => {
       const el = document.getElementById("post-test-button");
