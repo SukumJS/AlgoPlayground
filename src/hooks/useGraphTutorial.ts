@@ -479,14 +479,17 @@ export function useGraphTutorial({
       if (showTutorial && tutorialStep === dragDeleteStep) {
         const trashX = window.innerWidth / 2;
         const trashY = window.innerHeight - 140;
-        const dropTargetRadius = 150;
+        const dropTargetRadius = 130;
 
         const dist = Math.sqrt(
           Math.pow(event.clientX - trashX, 2) +
             Math.pow(event.clientY - trashY, 2),
         );
 
-        setIsTrashActive(dist < dropTargetRadius);
+        const isNearTrash =
+          dist < dropTargetRadius || event.clientY > window.innerHeight - 200;
+
+        setIsTrashActive(isNearTrash);
 
         // Keep spotlight in sync with the dragged node so it follows smoothly
         const screenPos = flowToScreenPosition({
@@ -501,7 +504,7 @@ export function useGraphTutorial({
             ...n,
             data: {
               ...n.data,
-              isDanger: n.id === node.id ? dist < dropTargetRadius : false,
+              isDanger: n.id === node.id ? isNearTrash : false,
             },
           })),
         );
@@ -522,14 +525,17 @@ export function useGraphTutorial({
       if (showTutorial && tutorialStep === dragDeleteStep) {
         const trashX = window.innerWidth / 2;
         const trashY = window.innerHeight - 140;
-        const dropTargetRadius = 60;
+        const dropTargetRadius = 130;
 
         const dist = Math.sqrt(
           Math.pow(event.clientX - trashX, 2) +
             Math.pow(event.clientY - trashY, 2),
         );
 
-        if (dist < dropTargetRadius) {
+        const isNearTrash =
+          dist < dropTargetRadius || event.clientY > window.innerHeight - 200;
+
+        if (isNearTrash) {
           // Delete node and connected edges
           setNodes((nds) => nds.filter((n) => n.id !== node.id));
           setEdges((eds) =>

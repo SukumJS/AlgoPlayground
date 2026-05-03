@@ -181,6 +181,7 @@ function generateTraversalSteps(
       codeStep: 0,
       treeAction: null,
       stepToCodeLine: stepToLine,
+      isCleanStep: true,
     });
   }
 

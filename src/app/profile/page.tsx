@@ -22,16 +22,13 @@ type ProgressItem = {
 export default function Profile() {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const cropImageRef = useRef<HTMLImageElement | null>(null);
-  const { token, user, firebaseUser } = useAuth();
+  const { token, user } = useAuth();
   const [localUser, setLocalUser] = useState(user);
-  const isGoogleUser =
-    firebaseUser?.providerData?.some(
-      (provider) => provider.providerId === "google.com",
-    ) ?? false;
-  const profileAvatar = localUser?.imageUrl || "https://i.pravatar.cc/150";
+  const isGoogleUser = user?.authProvider === "google.com";
+  const profileAvatar = localUser?.imageUrl ?? "";
   const profileName =
-    localUser?.uid || localUser?.email?.split("@")[0] || "Thunwa";
-  const profileEmail = localUser?.email || "thunwa@gmail.com";
+    localUser?.uid || localUser?.email?.split("@")[0] || "Unknown";
+  const profileEmail = localUser?.email || "Unknown";
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState("");

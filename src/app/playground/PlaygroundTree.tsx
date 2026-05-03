@@ -7,6 +7,7 @@ import React, {
   DragEvent,
   useMemo,
 } from "react";
+import { flushSync } from "react-dom";
 import { useStepTreeEngine } from "@/src/hooks/tree/useStepTreeEngine";
 import { useTreeController } from "@/src/hooks/useTreeController";
 import ControlPanel from "../../components/shared/controlPanel";
@@ -45,10 +46,14 @@ import {
 } from "@/src/components/visualizer/algorithmsTree/bstTree";
 import {
   insertBT,
+  calculateBTPositions,
+  btToReactFlow,
   type BTNode,
 } from "@/src/components/visualizer/algorithmsTree/binaryTree";
 import {
   insertHeap,
+  calculateHeapPositions,
+  heapToReactFlow,
   type HeapNode,
 } from "@/src/components/visualizer/algorithmsTree/heapTree";
 import {
@@ -57,7 +62,7 @@ import {
   type AVLTreeNode,
 } from "@/src/components/visualizer/algorithmsTree/avlTree";
 import Reading_modal from "@/src/components/shared/reading_modal";
-import { Info, Scale } from "lucide-react";
+import { Info, Scale, HelpCircle } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 const nodeTypes = { custom: CustomNode };
@@ -197,6 +202,34 @@ const treeInitialAVLRoot = buildTreeInitialAVLRoot();
 const treeInitialMinHeapRoot = buildTreeInitialHeapRoot(true);
 const treeInitialMaxHeapRoot = buildTreeInitialHeapRoot(false);
 
+// ── Generate correct initial ReactFlow nodes/edges for heap structures ──────
+const buildHeapInitialRF = (heapRoot: HeapNode) => {
+  const positions = calculateHeapPositions(heapRoot);
+  const { nodes, edges } = heapToReactFlow(
+    heapRoot,
+    [],
+    [],
+    positions,
+    "heap-edge",
+  );
+  return { nodes: nodes as Node[], edges: edges as Edge[] };
+};
+const treeInitialMinHeapRF = buildHeapInitialRF(treeInitialMinHeapRoot);
+const treeInitialMaxHeapRF = buildHeapInitialRF(treeInitialMaxHeapRoot);
+
+// ── Generate correct initial ReactFlow nodes/edges for BST, AVL, BT structures ──
+const buildBTInitialRF = (btRoot: BTNode) => {
+  const positions = calculateBTPositions(btRoot);
+  const { nodes, edges } = btToReactFlow(btRoot, [], [], positions, "bt-edge");
+  return { nodes: nodes as Node[], edges: edges as Edge[] };
+};
+const treeInitialBSTRF = buildBTInitialRF(treeInitialBSTRoot);
+const treeInitialBTRF = buildBTInitialRF(treeInitialBTRoot);
+// AVL uses the same rendering as BST (BT structure)
+const treeInitialAVLRF = buildBTInitialRF(
+  treeInitialAVLRoot as unknown as BTNode,
+);
+
 // สร้าง Object ไว้แปลงชื่อ Tree Algorithm
 const algorithmNames: Record<string, string> = {
   "binary-search-tree": "Binary Search Tree",
@@ -212,13 +245,48 @@ const getDefaultTreeExplanation = (name: string) =>
   `This section will explain ${name}. Perform an operation to begin.`;
 
 export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
-  const [nodes, setNodes] = useState<Node[]>(treeInitialNodes);
-  const [edges, setEdges] = useState<Edge[]>(treeInitialEdges);
+  // Use correct initial nodes/edges based on algorithm type
+  const isMinHeap = algorithm === "min-heap";
+  const isMaxHeap = algorithm === "max-heap";
+  const isHeapAlgo = isMinHeap || isMaxHeap;
+  const isBST = algorithm === "binary-search-tree";
+  const isAVL = algorithm === "avl-tree";
+  const isBT =
+    algorithm === "binary-tree-inorder" ||
+    algorithm === "binary-tree-preorder" ||
+    algorithm === "binary-tree-postorder";
+
+  // Check if tutorial has been completed (use algorithm-specific initial state if yes)
+  const tutorialCompleted =
+    typeof window !== "undefined" &&
+    localStorage.getItem(`tutorial_${algorithm}_completed`) !== null;
+
+  const initialRF = tutorialCompleted
+    ? isHeapAlgo
+      ? isMinHeap
+        ? treeInitialMinHeapRF
+        : treeInitialMaxHeapRF
+      : isBST
+        ? treeInitialBSTRF
+        : isAVL
+          ? treeInitialAVLRF
+          : isBT
+            ? treeInitialBTRF
+            : { nodes: treeInitialNodes, edges: treeInitialEdges }
+    : { nodes: treeInitialNodes, edges: treeInitialEdges };
+
+  const [nodes, setNodes] = useState<Node[]>(initialRF.nodes);
+  const [edges, setEdges] = useState<Edge[]>(initialRF.edges);
   const [showInfo, setShowInfo] = useState(false);
   const defaultPrettyName = algorithm
     ? algorithmNames[algorithm] || "Tree Algorithms"
     : "Tree Algorithms";
   const [showAVLBalance, setShowAVLBalance] = useState(false);
+
+  // Save playground state before tutorial to restore after completion
+  const [savedNodes, setSavedNodes] = useState<Node[] | null>(null);
+  const [savedEdges, setSavedEdges] = useState<Edge[] | null>(null);
+  const [savedExplanation, setSavedExplanation] = useState<string | null>(null);
   // avlRoot tracked here so BF overlay works even when sidebar (Data_tree) is unmounted.
   // Wrap in {root, seq} so the effect ALWAYS re-fires even when root is the same reference.
   const avlSeqRef = useRef(0);
@@ -289,9 +357,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       setTreeAction(null);
     }
   }, [algorithm]);
-  const { flowToScreenPosition } = useReactFlow();
-
-  const rebalanceRef = useRef<(() => void) | null>(null);
+  const { flowToScreenPosition, setCenter, getZoom, fitView } = useReactFlow();
 
   // ดึงชื่อจาก Mapping (ถ้าไม่เจอให้ใช้ค่า Default)
   const prettyName = algorithm
@@ -300,6 +366,88 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
   const effectiveExplanation = explanation.trim()
     ? explanation
     : getDefaultTreeExplanation(prettyName);
+
+  // เพิ่มระบบ Smart Camera (กล้องติดตามกล่องที่กำลังทำงาน)
+  const isUserPanning = React.useRef(false);
+  const lastPannedPosition = React.useRef<{
+    id: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  React.useEffect(() => {
+    // ถ้าไม่ได้รันอยู่ ให้ล้างค่าความจำกล้องทิ้ง
+    if (!isAnimatingLocal) {
+      lastPannedPosition.current = null;
+      return;
+    }
+
+    // ถ้าคนเล่นกำลังเอามือลากจออยู่ ให้พักกล้องอัตโนมัติ
+    if (isUserPanning.current) return;
+
+    // หากล่องที่กำลังทำงานอยู่ (ถูกไฮไลท์สี)
+    const activeNode = nodes.find(
+      (n) =>
+        (n.data as Record<string, unknown>).highlightColor != null &&
+        (n.data as Record<string, unknown>).highlightColor !== "",
+    );
+
+    if (activeNode) {
+      const isSameNode = lastPannedPosition.current?.id === activeNode.id;
+      const isSameX = lastPannedPosition.current?.x === activeNode.position.x;
+      const isSameY = lastPannedPosition.current?.y === activeNode.position.y;
+
+      // เลื่อนกล้องเมื่อเปลี่ยนกล่อง หรือพิกัดเปลี่ยน
+      if (!isSameNode || !isSameX || !isSameY) {
+        lastPannedPosition.current = {
+          id: activeNode.id,
+          x: activeNode.position.x,
+          y: activeNode.position.y,
+        };
+
+        const lowerDesc = effectiveExplanation.toLowerCase();
+        const isRebalancingPhase =
+          algorithm === "avl-tree" &&
+          (lowerDesc.includes("perform") ||
+            lowerDesc.includes("topology") ||
+            lowerDesc.includes("restored"));
+
+        if (isRebalancingPhase) {
+          // ซูมออก (zoom 0.5) และเลื่อนจุดศูนย์กลางลงมาด้านล่างนิดเผื่อให้เห็นลูกๆ โหนดที่จะหมุน
+          setCenter(activeNode.position.x + 32.5, activeNode.position.y + 70, {
+            zoom: 0.5,
+            duration: 600,
+          });
+        } else {
+          // ซูมเข้าเฉพาะโหนดเป้าหมาย
+          setCenter(activeNode.position.x + 32.5, activeNode.position.y + 25, {
+            zoom: 1.2,
+            duration: 600,
+          });
+        }
+      }
+    }
+  }, [
+    nodes,
+    isAnimatingLocal,
+    setCenter,
+    getZoom,
+    algorithm,
+    effectiveExplanation,
+  ]);
+
+  // ซูมภาพรวม (Fit View) เมื่อแอนิเมชันรันเสร็จ
+  React.useEffect(() => {
+    if (!isAnimatingLocal) {
+      const timer = setTimeout(() => {
+        fitView({ padding: 0.2, duration: 800 });
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAnimatingLocal, fitView]);
+
+  const rebalanceRef = useRef<(() => void) | null>(null);
 
   // reset explanation when the selected algorithm changes
   React.useEffect(() => {
@@ -481,8 +629,10 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
   const handlePaneClick = useCallback(() => {
     if (!tutorial.showTutorial) {
       nodeInteraction.handlePaneClick();
+      // If traversal result is being held, dismiss it and reset tree to normal
+      stepEngine.dismissResult();
     }
-  }, [tutorial.showTutorial, nodeInteraction]);
+  }, [tutorial.showTutorial, nodeInteraction, stepEngine]);
 
   // สร้าง String ตัวแทนข้อมูล (เอาแค่ ID และ Label)
   const nodeDataString = nodes
@@ -609,6 +759,19 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
         edges={edges}
         onNodesChange={tutorial.showTutorial ? undefined : onNodesChange}
         onEdgesChange={tutorial.showTutorial ? undefined : onEdgesChange}
+        onMoveStart={(event) => {
+          if (event) {
+            isUserPanning.current = true;
+          }
+        }}
+        onMoveEnd={(event) => {
+          if (event) {
+            // เมื่อคนเล่นปล่อยเมาส์ ให้หน่วงเวลา 1.5 วินาที กล้องถึงจะกลับมาทำงาน
+            setTimeout(() => {
+              isUserPanning.current = false;
+            }, 1500);
+          }
+        }}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -652,6 +815,40 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
           className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
         >
           <Info color="#000000" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            // Save current playground state before tutorial
+            setSavedNodes(nodes);
+            setSavedEdges(edges);
+            setSavedExplanation(explanation);
+            // Reset playground to tutorial's expected initial state (BST-structured nodes)
+            flushSync(() => {
+              setNodes(treeInitialNodes);
+              setEdges(treeInitialEdges);
+              setExplanation(getDefaultTreeExplanation(prettyName));
+              // Reset AVL root if applicable
+              if (algorithm === "avl-tree") {
+                setPersistedAVLRoot(treeInitialAVLRoot);
+                setAvlRootForBF({
+                  root: treeInitialAVLRoot,
+                  seq: ++avlSeqRef.current,
+                });
+              }
+            });
+            // Reset viewport to initial position
+            fitView({ padding: 0.2, duration: 300 });
+            // Reset tutorial state and start tutorial
+            tutorial.setTutorialStep(0);
+            tutorial.setShowTutorial(true);
+            // Clear completion flag to allow re-running tutorial
+            localStorage.removeItem(`tutorial_${algorithm}_completed`);
+          }}
+          className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
+          title="Show Tutorial"
+        >
+          <HelpCircle color="#000000" />
         </button>
         {algorithm === "avl-tree" && (
           <button
@@ -706,26 +903,49 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       {tutorial.showCompletionModal && (
         <Tutorial_modal
           showModal={tutorial.showCompletionModal}
-          onClose={() => tutorial.setShowCompletionModal(false)}
+          onClose={() => {
+            // Restore saved playground state if available
+            if (savedNodes && savedEdges && savedExplanation) {
+              setNodes(savedNodes);
+              setEdges(savedEdges);
+              setExplanation(savedExplanation);
+              setSavedNodes(null);
+              setSavedEdges(null);
+              setSavedExplanation(null);
+            }
+            tutorial.setShowCompletionModal(false);
+          }}
           tutorialContent={[
             {
               title: "Tutorial Complete!",
               description: `You are now ready to explore ${prettyName}.`,
             },
           ]}
-          onLetsPlay={
-            algorithm === "avl-tree"
-              ? () => rebalanceRef.current?.()
-              : [
-                    "binary-tree-inorder",
-                    "binary-tree-preorder",
-                    "binary-tree-postorder",
-                  ].includes(algorithm)
-                ? () => btRebalanceRef.current?.()
-                : ["min-heap", "max-heap"].includes(algorithm)
-                  ? () => heapRebalanceRef.current?.()
-                  : undefined
-          }
+          onLetsPlay={() => {
+            // Restore saved playground state if available
+            if (savedNodes && savedEdges && savedExplanation) {
+              setNodes(savedNodes);
+              setEdges(savedEdges);
+              setExplanation(savedExplanation);
+              setSavedNodes(null);
+              setSavedEdges(null);
+              setSavedExplanation(null);
+            }
+            // Call algorithm-specific rebalance if needed
+            if (algorithm === "avl-tree") {
+              rebalanceRef.current?.();
+            } else if (
+              [
+                "binary-tree-inorder",
+                "binary-tree-preorder",
+                "binary-tree-postorder",
+              ].includes(algorithm)
+            ) {
+              btRebalanceRef.current?.();
+            } else if (["min-heap", "max-heap"].includes(algorithm)) {
+              heapRebalanceRef.current?.();
+            }
+          }}
         />
       )}
     </div>

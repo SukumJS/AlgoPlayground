@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/src/config/firebase";
 import {
   clearAuthSession,
@@ -11,11 +11,9 @@ import {
 } from "@/src/lib/auth-storage";
 
 export function useAuth() {
-  const [user, setUser] = useState<AuthUserProfile | null>(() =>
-    getStoredUser(),
-  );
-  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(() => getStoredToken());
+  const [user, setUser] = useState<AuthUserProfile | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +24,6 @@ export function useAuth() {
           localStorage.removeItem("access_token");
         }
         setUser(null);
-        setFirebaseUser(null);
         setToken(null);
         setLoading(false);
         return;
@@ -38,8 +35,16 @@ export function useAuth() {
       }
 
       const storedUser = getStoredUser();
-      setUser(storedUser);
-      setFirebaseUser(fbUser);
+      // Extract auth provider from Firebase user
+      const authProvider = fbUser.providerData?.[0]?.providerId || "unknown";
+      const userWithProvider: AuthUserProfile | null = storedUser
+        ? {
+            ...storedUser,
+            authProvider,
+          }
+        : null;
+
+      setUser(userWithProvider);
       setToken(idToken);
       setLoading(false);
     });
@@ -67,13 +72,11 @@ export function useAuth() {
       localStorage.removeItem("access_token");
     }
     setUser(null);
-    setFirebaseUser(null);
     setToken(null);
   };
 
   return {
     user,
-    firebaseUser,
     token,
     loading,
     logout,

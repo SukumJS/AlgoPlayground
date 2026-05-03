@@ -27,7 +27,7 @@ import { useSortableDrag } from "@/src/hooks/sort/useSortableDrag";
 import { useExecutionSpeed } from "@/src/hooks/useExecutionSpeed";
 import { useStepSearchEngine } from "@/src/hooks/search/useStepSearchEngine";
 import Reading_modal from "@/src/components/shared/reading_modal";
-import { Info, Trash2 } from "lucide-react";
+import { Info, Trash2, HelpCircle } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 import { useSearchTutorial } from "@/src/hooks/useSearchTutorial";
@@ -111,7 +111,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
     }
   }, [algorithm, prettyName]);
 
-  const { flowToScreenPosition, setCenter, getZoom } = useReactFlow();
+  const { flowToScreenPosition, setCenter, getZoom, fitView } = useReactFlow();
 
   const tutorial = useSearchTutorial({
     nodes,
@@ -330,7 +330,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
           />
         </div>
         <div>
-          <PostTest_portal algorithm={algorithm} algoType="search" />
+          <PostTest_portal algorithm={algorithm} algoType="searching" />
         </div>
       </SideTab>
     ),
@@ -395,7 +395,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
       {sideTabMemo}
 
       <div className="absolute top-4 left-8 z-10 flex gap-2">
-        <GoToHome_Portal algorithm={algorithm} algoType="search" />
+        <GoToHome_Portal algorithm={algorithm} algoType="searching" />
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -404,6 +404,28 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
           className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
         >
           <Info color="#000000" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            // Reset playground to initial state
+            setNodes(initialNodes);
+            setEdges(initialEdges);
+            setExplanation(
+              `This section will explain ${prettyName}. Click 'Run' to start.`,
+            );
+            // Reset viewport to initial position
+            fitView({ padding: 0.2, duration: 300 });
+            // Reset tutorial state
+            tutorial.setTutorialStep(0);
+            tutorial.setShowTutorial(true);
+            // Clear completion flag to allow re-running tutorial
+            localStorage.removeItem(`tutorial_${algorithm}_completed`);
+          }}
+          className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
+          title="Show Tutorial"
+        >
+          <HelpCircle color="#000000" />
         </button>
         <StatusNode />
       </div>

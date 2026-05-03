@@ -420,12 +420,13 @@ function Data_sort({
               type="number"
               value={targetValue}
               disabled={isRunning}
+              placeholder="e.g. 42"
               onChange={(e) =>
                 setTargetValue(
                   e.target.value === "" ? "" : Number(e.target.value),
                 )
               }
-              className={`mt-2 border p-2 rounded-lg w-full transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+              className={`mt-2 border p-2 rounded-lg w-full transition-all placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                 isRunning
                   ? "border-gray-100 bg-gray-100 text-gray-400 cursor-not-allowed"
                   : "border-gray-200"

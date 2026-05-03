@@ -29,7 +29,7 @@ import { useSortableDrag } from "@/src/hooks/sort/useSortableDrag";
 import { useExecutionSpeed } from "@/src/hooks/useExecutionSpeed";
 import { useSortController } from "@/src/hooks/useSortController";
 import Reading_modal from "@/src/components/shared/reading_modal";
-import { Info, Trash2 } from "lucide-react";
+import { Info, Trash2, HelpCircle } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 import { useSortTutorial } from "@/src/hooks/useSortTutorial";
@@ -328,7 +328,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
           />
         </div>
         <div>
-          <PostTest_portal algorithm={algorithm} algoType="sort" />
+          <PostTest_portal algorithm={algorithm} algoType="sorting" />
         </div>
       </SideTab>
     ),
@@ -391,7 +391,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
       {sideTabMemo}
 
       <div className="absolute top-4 left-8 z-10 flex gap-2">
-        <GoToHome_Portal algorithm={algorithm} algoType="sort" />
+        <GoToHome_Portal algorithm={algorithm} algoType="sorting" />
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -400,6 +400,28 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
           className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
         >
           <Info color="#000000" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            // Reset playground to initial state
+            setNodes(initialNodes);
+            setEdges(initialEdges);
+            setExplanation(
+              `This section will explain ${prettyName}. Click 'Run' to start.`,
+            );
+            // Reset viewport to initial position
+            fitView({ padding: 0.2, duration: 300 });
+            // Reset tutorial state
+            tutorial.setTutorialStep(0);
+            tutorial.setShowTutorial(true);
+            // Clear completion flag to allow re-running tutorial
+            localStorage.removeItem(`tutorial_${algorithm}_completed`);
+          }}
+          className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
+          title="Show Tutorial"
+        >
+          <HelpCircle color="#000000" />
         </button>
         <StatusNode />
       </div>

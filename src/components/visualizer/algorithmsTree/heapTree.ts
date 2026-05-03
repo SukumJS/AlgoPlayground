@@ -285,3 +285,65 @@ export function searchHeap(
   }
   return { found: false, path };
 }
+
+/** Rebuild heap tree structure from ReactFlow nodes and edges */
+export function rebuildHeapFromReactFlow(
+  nodes: Array<{ id: string; data: { label: string } }>,
+  edges: Array<{
+    source: string;
+    target: string;
+    sourceHandle?: string | null;
+  }>,
+): HeapNode | null {
+  if (!nodes || nodes.length === 0) return null;
+
+  // Filter nodes with valid numeric values
+  const validNodes = nodes.filter((n) => !isNaN(parseInt(n.data.label)));
+  if (validNodes.length === 0) return null;
+
+  // Create a map of all node IDs to HeapNode instances
+  const nodeMap = new Map<string, HeapNode>();
+  for (const n of validNodes) {
+    nodeMap.set(n.id, {
+      id: n.id,
+      value: parseInt(n.data.label, 10),
+      left: null,
+      right: null,
+    });
+  }
+
+  // Find the root (node that is not a target of any edge)
+  const targetIds = new Set(edges.map((e) => e.target));
+  let rootNode: HeapNode | null = null;
+  for (const n of validNodes) {
+    if (!targetIds.has(n.id)) {
+      rootNode = nodeMap.get(n.id) || null;
+      break;
+    }
+  }
+  if (!rootNode) rootNode = nodeMap.get(validNodes[0].id) || null;
+
+  // Build the tree structure from edges
+  for (const edge of edges) {
+    const parent = nodeMap.get(edge.source);
+    const child = nodeMap.get(edge.target);
+    if (parent && child) {
+      // Determine if it's left or right child based on handle
+      if (edge.sourceHandle === "source-bottom-left") {
+        parent.left = child;
+      } else if (edge.sourceHandle === "source-bottom-right") {
+        parent.right = child;
+      } else {
+        // Fallback: if no handle info, use BFS order to determine left/right
+        // This is a heuristic - for heaps, we can infer from edge order
+        if (!parent.left) {
+          parent.left = child;
+        } else if (!parent.right) {
+          parent.right = child;
+        }
+      }
+    }
+  }
+
+  return rootNode;
+}

@@ -379,11 +379,21 @@ function insertBSTOnly(
 /**
  * Detect what rotation (if any) would occur at a given node
  */
-function detectRotation(root: AVLTreeNode | null): {
+export function detectRotation(
+  root: AVLTreeNode | null,
+  usePostOrder = false,
+): {
   type: string | null;
   nodeId: string | null;
 } {
   if (!root) return { type: null, nodeId: null };
+
+  if (usePostOrder) {
+    const leftResult = detectRotation(root.left, true);
+    if (leftResult.type) return leftResult;
+    const rightResult = detectRotation(root.right, true);
+    if (rightResult.type) return rightResult;
+  }
 
   const balance = getBalanceFactor(root);
 
@@ -400,10 +410,14 @@ function detectRotation(root: AVLTreeNode | null): {
     return { type: "RL (Right-Left Rotation)", nodeId: root.id };
   }
 
-  // Check children recursively
-  const leftResult = detectRotation(root.left);
-  if (leftResult.type) return leftResult;
-  return detectRotation(root.right);
+  // Check children recursively if not post-order
+  if (!usePostOrder) {
+    const leftResult = detectRotation(root.left);
+    if (leftResult.type) return leftResult;
+    return detectRotation(root.right);
+  }
+
+  return { type: null, nodeId: null };
 }
 
 /**
@@ -472,11 +486,44 @@ function removeBSTOnly(
   return { root, successorId };
 }
 
+export interface RotationStep {
+  type: string;
+  nodeId: string;
+  afterTree: AVLTreeNode | null;
+}
+
+function applyRotationById(
+  root: AVLTreeNode | null,
+  targetId: string,
+  type: string,
+): AVLTreeNode | null {
+  if (!root) return null;
+
+  if (root.id === targetId) {
+    let result = root;
+    if (type.startsWith("LL")) result = rotateRight(root);
+    else if (type.startsWith("RR")) result = rotateLeft(root);
+    else if (type.startsWith("LR")) {
+      root.left = rotateLeft(root.left!);
+      result = rotateRight(root);
+    } else if (type.startsWith("RL")) {
+      root.right = rotateRight(root.right!);
+      result = rotateLeft(root);
+    }
+    return result;
+  }
+
+  root.left = applyRotationById(root.left, targetId, type);
+  root.right = applyRotationById(root.right, targetId, type);
+  updateHeight(root);
+  return root;
+}
+
 /**
  * Remove with intermediate steps for animation:
  * 1. successorId: inorder successor (if 2-child case)
  * 2. afterRemove: tree after BST delete (before rebalance)
- * 3. rotationType + rotationNodeId
+ * 3. rotations: array of ALL rotations applied recursively
  * 4. afterRebalance: final balanced tree
  */
 export function removeAVLWithSteps(
@@ -485,27 +532,38 @@ export function removeAVLWithSteps(
 ): {
   successorId: string | null;
   afterRemove: AVLTreeNode | null;
-  rotationType: string | null;
-  rotationNodeId: string | null;
+  rotations: RotationStep[];
   afterRebalance: AVLTreeNode | null;
 } {
   // Phase 1: BST-only remove (clone first)
   const bstClone = root ? JSON.parse(JSON.stringify(root)) : null;
   const { root: afterRemove, successorId } = removeBSTOnly(bstClone, value);
 
-  // Detect rotation needed
-  const { type: rotationType, nodeId: rotationNodeId } =
-    detectRotation(afterRemove);
+  // Phase 2: Detect and apply rotations sequentially (bottom-up cascade)
+  let currentTree = afterRemove
+    ? JSON.parse(JSON.stringify(afterRemove))
+    : null;
+  const rotations: RotationStep[] = [];
 
-  // Phase 2: Full AVL remove (clone original)
-  const avlClone = root ? JSON.parse(JSON.stringify(root)) : null;
-  const afterRebalance = removeAVL(avlClone, value);
+  while (currentTree) {
+    // Post-order ensures deepest subtree is balanced first
+    const { type, nodeId } = detectRotation(currentTree, true);
+    if (!type || !nodeId) break;
+
+    currentTree = applyRotationById(currentTree, nodeId, type);
+    rotations.push({
+      type,
+      nodeId,
+      afterTree: JSON.parse(JSON.stringify(currentTree)),
+    });
+  }
+
+  const afterRebalance = currentTree;
 
   return {
     successorId,
     afterRemove,
-    rotationType,
-    rotationNodeId,
+    rotations,
     afterRebalance,
   };
 }
@@ -521,7 +579,7 @@ export function calculateTreePositions(
 
   // Use inorder layout so nodes spread horizontally; spacing grows with node count
   const totalNodes = getTreeNodesArray(root).length;
-  const gap = Math.max(60, 80 + totalNodes * 8);
+  const gap = Math.max(50, 85 - totalNodes * 0.8);
   const verticalGap = 100;
 
   let idx = 0;
@@ -771,6 +829,8 @@ export function validateAVLTree(root: AVLTreeNode | null): boolean {
  * Rebuild AVL tree from ReactFlow nodes to ensure correct structure
  * Extracts values from ReactFlow nodes and rebuilds tree with proper AVL balancing
  */
+import { BTNode, rebuildBTFromReactFlow } from "./binaryTree";
+
 export function rebuildAVLTreeFromNodes(
   nodes: Array<{ id: string; data: { label: string } }>,
   edges: Array<{
@@ -779,49 +839,25 @@ export function rebuildAVLTreeFromNodes(
     sourceHandle?: string | null;
   }> = [], // default to empty array for backwards compatibility
 ): AVLTreeNode | null {
-  if (!nodes || nodes.length === 0) return null;
+  const btRoot = rebuildBTFromReactFlow(nodes, edges);
+  if (!btRoot) return null;
 
-  // Find valid numeric nodes
-  const validNodes = nodes.filter((node) => !isNaN(parseInt(node.data.label)));
-  if (validNodes.length === 0) return null;
-
-  // If no edges, it's either an empty tree or just the very first node.
-  // Ignore disjointed nodes by just placing the first valid node
-  if (edges.length === 0) {
-    const firstNode = validNodes[0];
-    return insertAVL(null, parseInt(firstNode.data.label), firstNode.id);
+  function convertToAVL(btNode: BTNode | null): AVLTreeNode | null {
+    if (!btNode) return null;
+    const left = convertToAVL(btNode.left);
+    const right = convertToAVL(btNode.right);
+    const height =
+      Math.max(left ? left.height : 0, right ? right.height : 0) + 1;
+    return {
+      id: btNode.id,
+      value: btNode.value,
+      left,
+      right,
+      height,
+    };
   }
 
-  // Determine root: the node that is NEVER a target
-  const targetIds = new Set(edges.map((e) => e.target));
-  let rootNode = validNodes.find((n) => !targetIds.has(n.id));
-  if (!rootNode) rootNode = validNodes[0]; // fallback
-
-  // Include all nodes that have at least one edge connection
-  // (connected clusters get auto-inserted into the main tree;
-  //  truly isolated nodes with zero edges are excluded)
-  const connectedIds = new Set<string>();
-  for (const e of edges) {
-    connectedIds.add(e.source);
-    connectedIds.add(e.target);
-  }
-
-  // Only rebuild using reached nodes (ignore orphans), sorting them by value
-  let root: AVLTreeNode | null = null;
-  const values = validNodes
-    .filter((n) => connectedIds.has(n.id))
-    .map((node) => ({
-      value: parseInt(node.data.label),
-      id: node.id,
-    }))
-    .sort((a, b) => a.value - b.value);
-
-  // Rebuild AVL tree by inserting each reached value in order
-  values.forEach(({ value, id }) => {
-    root = insertAVL(root, value, id);
-  });
-
-  return root;
+  return convertToAVL(btRoot);
 }
 
 /**

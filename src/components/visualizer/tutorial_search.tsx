@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
 import { useWindowSize } from "@/src/hooks/useWindowSize";
 
@@ -72,12 +72,31 @@ export default function TutorialSearch({
   const { width: vw, height: vh } = useWindowSize();
   // สร้าง State ท้องถิ่นเพื่อตัดขาดจากระบบ Auto-Advance ของ Hook นอก
   const [localEndStep, setLocalEndStep] = useState(0);
+
+  // ติดตามตำแหน่งปุ่ม Post Test แบบ dynamic
   const [postTestRect, setPostTestRect] = useState<{
     x: number;
     y: number;
     w: number;
     h: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (localEndStep !== 2) return;
+    // Force open the sidebar so the post test button becomes visible
+    window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
+    let frameId: number;
+    const track = () => {
+      const el = document.getElementById("post-test-button");
+      if (el) {
+        const r = el.getBoundingClientRect();
+        setPostTestRect({ x: r.left, y: r.top, w: r.width, h: r.height });
+      }
+      frameId = requestAnimationFrame(track);
+    };
+    track();
+    return () => cancelAnimationFrame(frameId);
+  }, [localEndStep]);
 
   // กันข้ามอัตโนมัติ
   if (localEndStep === 0) {
@@ -124,7 +143,7 @@ export default function TutorialSearch({
               <rect width="100%" height="100%" fill="white" />
               {localEndStep === 1 && (
                 <rect
-                  x="130"
+                  x="180"
                   y="12"
                   width="330"
                   height="45"
@@ -132,12 +151,12 @@ export default function TutorialSearch({
                   fill="black"
                 />
               )}
-              {localEndStep === 2 && (
+              {localEndStep === 2 && postTestRect && (
                 <rect
-                  x={(postTestRect?.x ?? (vw || 1920) - 420) - 8}
-                  y={(postTestRect?.y ?? (vh || 1080) - 180) - 8}
-                  width={(postTestRect?.w ?? 400) + 16}
-                  height={(postTestRect?.h ?? 55) + 16}
+                  x={postTestRect.x - 4}
+                  y={postTestRect.y - 4}
+                  width={postTestRect.w + 8}
+                  height={postTestRect.h + 8}
                   rx="4"
                   fill="black"
                 />
@@ -154,10 +173,10 @@ export default function TutorialSearch({
 
         {/* กล่องชี้สถานะสี (ซ้ายบน) */}
         {localEndStep === 1 && (
-          <div className="absolute top-[120px] left-[120px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
+          <div className="absolute top-[120px] left-[200px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
             <DashedArrow
               width={50}
-              className="absolute -top-[45px] left-[30px] transform rotate-90"
+              className="absolute -top-[45px] left-[130px] transform rotate-90"
             />
             <h3 className="font-bold text-gray-800 text-lg mb-2">
               Color Legend
@@ -174,9 +193,15 @@ export default function TutorialSearch({
           </div>
         )}
 
-        {/* กล่องชี้ Post Test (ขวาล่าง) */}
-        {localEndStep === 2 && (
-          <div className="absolute bottom-[120px] right-[100px] bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out">
+        {/* กล่องชี้ Post Test (ชี้ไปที่ปุ่ม Post Test จริง) */}
+        {localEndStep === 2 && postTestRect && (
+          <div
+            className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
+            style={{
+              top: `${postTestRect.y - 280}px`,
+              left: `${postTestRect.x + postTestRect.w / 2 - 150}px`,
+            }}
+          >
             <DashedArrow
               width={50}
               className="absolute -bottom-[50px] left-1/2 transform -translate-x-1/2 rotate-[270deg]"

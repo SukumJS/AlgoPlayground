@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 
 interface RightSidebarProps {
@@ -10,6 +10,13 @@ interface RightSidebarProps {
 
 export default function Sidebar({ children, title }: RightSidebarProps) {
   const [isOpen, setIsOpen] = useState(true);
+
+  useEffect(() => {
+    const handleForceOpen = () => setIsOpen(true);
+    window.addEventListener("forceOpenSidebar", handleForceOpen);
+    return () =>
+      window.removeEventListener("forceOpenSidebar", handleForceOpen);
+  }, []);
 
   return (
     <aside

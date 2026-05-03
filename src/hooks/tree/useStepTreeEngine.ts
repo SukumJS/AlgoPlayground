@@ -12,6 +12,7 @@ export interface TreeAnimationStep {
   codeStep: number;
   treeAction: string | null;
   stepToCodeLine: number[];
+  isCleanStep?: boolean;
 }
 
 interface UseStepTreeEngineParams {
@@ -38,6 +39,7 @@ export function useStepTreeEngine({
   const [steps, setSteps] = useState<TreeAnimationStep[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
+  const [isHoldingResult, setIsHoldingResult] = useState(false);
 
   const autoPlayRef = useRef<number | null>(null);
   const isRunningRef = useRef(false);
@@ -77,11 +79,22 @@ export function useStepTreeEngine({
     if (currentStep < 0 || currentStep >= steps.length) return;
     applyStep(steps[currentStep]);
 
-    // Lock UI when viewing animation history; unlock when at the final "present" step
-    if (currentStep === steps.length - 1) {
+    // Check if we are holding at the result step (the step right before a clean step)
+    const nextStep =
+      currentStep + 1 < steps.length ? steps[currentStep + 1] : null;
+    const holdingAtResult = nextStep?.isCleanStep === true;
+
+    if (holdingAtResult) {
+      // Pause here — show the result, unlock UI, but flag that we're holding
+      setIsHoldingResult(true);
       setIsAnimating(false);
+    } else if (currentStep === steps.length - 1) {
+      // Lock UI when viewing animation history; unlock when at the final "present" step
+      setIsAnimating(false);
+      setIsHoldingResult(false);
     } else {
       setIsAnimating(true);
+      setIsHoldingResult(false);
     }
   }, [currentStep, steps, applyStep, setIsAnimating]);
 
@@ -128,6 +141,16 @@ export function useStepTreeEngine({
             const delta = now - lastTime;
             if (delta >= delayRef.current) {
               stepIdx++;
+              // Stop before a clean step — hold at the result
+              if (
+                stepIdx < stepsRef.current.length &&
+                stepsRef.current[stepIdx].isCleanStep
+              ) {
+                isRunningRef.current = false;
+                setIsRunning(false);
+                setCurrentStep(stepIdx - 1);
+                return;
+              }
               if (stepIdx >= stepsRef.current.length) {
                 // Reached the end
                 isRunningRef.current = false;
@@ -166,6 +189,16 @@ export function useStepTreeEngine({
       const delta = now - lastTime;
       if (delta >= delayRef.current) {
         stepIdx++;
+        // Stop before a clean step — hold at the result
+        if (
+          stepIdx < stepsRef.current.length &&
+          stepsRef.current[stepIdx].isCleanStep
+        ) {
+          isRunningRef.current = false;
+          setIsRunning(false);
+          setCurrentStep(stepIdx - 1);
+          return;
+        }
         if (stepIdx >= stepsRef.current.length) {
           isRunningRef.current = false;
           setIsRunning(false);
@@ -223,7 +256,19 @@ export function useStepTreeEngine({
     setSteps([]);
     setCurrentStep(0);
     setIsAnimating(false);
+    setIsHoldingResult(false);
   }, [stop, setIsAnimating]);
+
+  // Dismiss the held result — advance to the clean step (resets the tree to normal)
+  const dismissResult = useCallback(() => {
+    if (!isHoldingResult) return;
+    // The clean step is the step right after the current one
+    const cleanIdx = currentStep + 1;
+    if (cleanIdx < steps.length && steps[cleanIdx].isCleanStep) {
+      setCurrentStep(cleanIdx);
+    }
+    setIsHoldingResult(false);
+  }, [isHoldingResult, currentStep, steps]);
 
   return {
     loadSteps,
@@ -234,7 +279,9 @@ export function useStepTreeEngine({
     skipForward,
     skipBack,
     reset,
+    dismissResult,
     isRunning,
+    isHoldingResult,
     currentStep,
     totalSteps: steps.length,
   };

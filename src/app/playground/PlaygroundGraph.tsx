@@ -38,7 +38,7 @@ import CustomNode from "@/src/components/shared/customNodeTreeandGraph";
 import TreeEdge from "@/src/components/shared/treeEdge";
 import FloatingEdge from "@/src/components/shared/FloatingEdge";
 import Reading_modal from "@/src/components/shared/reading_modal";
-import { Info } from "lucide-react";
+import { Info, HelpCircle } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 import Post_Test_modal from "@/src/components/shared/post_Test_modal";
@@ -283,7 +283,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     }
   }, [algorithm, prettyName]);
 
-  const { flowToScreenPosition } = useReactFlow();
+  const { flowToScreenPosition, fitView } = useReactFlow();
 
   // ── Algorithm Animation Pipeline ────────────────────────────────────────────
   const runner = useMemo(() => getAlgorithmRunner(algorithm), [algorithm]);
@@ -919,6 +919,26 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
           className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
         >
           <Info color="#000000" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            // Reset playground to initial state
+            setNodes(graphInitialNodes);
+            setEdges(initialEdges);
+            setExplanation(getDefaultGraphExplanation(prettyName));
+            // Reset viewport to initial position
+            fitView({ padding: 0.2, duration: 300 });
+            // Reset tutorial state
+            graphTutorial.setTutorialStep(0);
+            graphTutorial.setShowTutorial(true);
+            // Clear completion flag to allow re-running tutorial
+            localStorage.removeItem(`tutorial_${algorithm}_completed`);
+          }}
+          className="rounded-full bg-white p-2 border border-gray-200 shadow-lg hover:shadow-lg hover:bg-gray-100 transition cursor-pointer"
+          title="Show Tutorial"
+        >
+          <HelpCircle color="#000000" />
         </button>
         <StatusNode />
       </div>
