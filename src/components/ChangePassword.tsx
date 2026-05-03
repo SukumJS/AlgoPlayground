@@ -26,7 +26,6 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
   });
 
   const [error, setError] = useState<string>("");
-  // ⭐️ 1. เพิ่ม State สำหรับเก็บข้อความสำเร็จ
   const [successMsg, setSuccessMsg] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -71,10 +70,10 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
       // Update to new password
       await updatePassword(user, newPassword);
 
-      // ⭐️ 2. เซ็ตข้อความสำเร็จแทนการใช้ alert
+      // เซ็ตข้อความสำเร็จแทนการใช้ alert
       setSuccessMsg("Password changed successfully. Redirecting to login...");
 
-      // ⭐️ 3. หน่วงเวลา 2 วินาทีก่อนเตะไปหน้า Login เพื่อให้อ่านข้อความทัน
+      // หน่วงเวลา 2 วินาทีก่อนเตะไปหน้า Login เพื่อให้อ่านข้อความทัน
       setTimeout(async () => {
         await signOut(auth);
         window.location.href = "/auth/signin";
