@@ -139,7 +139,7 @@ END ALGORITHM`;
               wrapLines={true}
               wrapLongLines={true}
               showLineNumbers={true}
-              showInlineLineNumbers={true}
+              showInlineLineNumbers={false}
               useInlineStyles={true}
               lineNumberStyle={{
                 minWidth: "2.2em",
@@ -170,6 +170,11 @@ END ALGORITHM`;
                   },
                 };
               }}
+              lineNumberContainerStyle={{
+                float: "unset",
+                minWidth: "2.8em",
+                paddingRight: "0.65em",
+              }}
               customStyle={{
                 margin: 0,
                 padding: "8px 0",
@@ -177,13 +182,15 @@ END ALGORITHM`;
                 lineHeight: "1.5",
                 background: "transparent",
                 width: "100%",
+                display: "flex",
               }}
               codeTagProps={{
                 style: {
                   display: "block",
-                  width: "100%",
+                  flex: 1,
+                  minWidth: 0,
                   whiteSpace: "pre-wrap",
-                  wordBreak: "break-all",
+                  wordBreak: "break-word",
                   paddingTop: "4px",
                   paddingLeft: "0.35rem",
                   paddingRight: "0.35rem",
