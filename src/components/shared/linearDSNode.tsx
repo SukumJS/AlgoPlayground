@@ -13,6 +13,7 @@ export type LinearNodeData = {
     | "found"
     | "processing"
     | "delete"
+    | "deleting"
     | "discarded";
   hideIndex?: boolean;
 };
@@ -26,6 +27,7 @@ const STATUS_BG: Record<LinearNodeData["status"], string> = {
   found: "#4CAF7D",
   processing: "#F19F72",
   delete: "#F19F72",
+  deleting: "#ef4444",
   discarded: "#E5E7EB",
 };
 
@@ -33,6 +35,7 @@ export default function LinearDSNode({
   data,
 }: NodeProps<Node<LinearNodeData>>) {
   const isDiscarded = data.status === "discarded";
+  const isDeleting = data.status === "deleting";
 
   return (
     <div className="flex flex-col items-center relative">
@@ -42,7 +45,13 @@ export default function LinearDSNode({
           justify-center items-center border-2 border-[#5D5D5D]
           w-14 h-14 rounded-lg cursor-grab
           transition-colors duration-300 ease-in-out
-          ${isDiscarded ? "text-gray-400 border-gray-300" : "text-[#222121]"}
+          ${
+            isDiscarded
+              ? "text-gray-400 border-gray-300"
+              : isDeleting
+                ? "text-white"
+                : "text-[#222121]"
+          }
         `}
         style={{
           backgroundColor: STATUS_BG[data.status],
