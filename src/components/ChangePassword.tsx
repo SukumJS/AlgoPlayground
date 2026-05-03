@@ -26,6 +26,8 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
   });
 
   const [error, setError] = useState<string>("");
+  // ⭐️ 1. เพิ่ม State สำหรับเก็บข้อความสำเร็จ
+  const [successMsg, setSuccessMsg] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -33,10 +35,10 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  //  ใส่ Logic เปลี่ยนรหัสผ่านของ Firebase เข้าไปใน Submit
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(""); // ล้าง error เก่าทุกครั้งที่กด Submit
+    setError("");
+    setSuccessMsg(""); // ล้างข้อความสำเร็จเก่า
 
     const { currentPassword, newPassword, confirmPassword } = formData;
 
@@ -69,18 +71,17 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
       // Update to new password
       await updatePassword(user, newPassword);
 
-      alert("Password changed successfully. Please log in again.");
+      // ⭐️ 2. เซ็ตข้อความสำเร็จแทนการใช้ alert
+      setSuccessMsg("Password changed successfully. Redirecting to login...");
 
-      // Force logout and redirect to Login (remove the next 2 lines if you don't want this)
-      await signOut(auth);
-      window.location.href = "/auth/signin";
-
-      onClose();
+      // ⭐️ 3. หน่วงเวลา 2 วินาทีก่อนเตะไปหน้า Login เพื่อให้อ่านข้อความทัน
+      setTimeout(async () => {
+        await signOut(auth);
+        window.location.href = "/auth/signin";
+      }, 2000);
     } catch (error: unknown) {
-      // Type assertion for Firebase error structure
       const err = error as { code?: string; message?: string };
 
-      // Handle Firebase-specific errors
       if (
         err.code === "auth/invalid-credential" ||
         err.code === "auth/wrong-password"
@@ -93,8 +94,7 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
           err.message || "An error occurred while changing the password.",
         );
       }
-    } finally {
-      setLoading(false);
+      setLoading(false); // ปิด loading เฉพาะตอนมี Error (ถ้าสำเร็จเราจะให้โหลดค้างไว้จนกว่าจะย้ายหน้า)
     }
   };
 
@@ -148,6 +148,13 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
               setShowPass((p) => ({ ...p, confirm: !p.confirm }))
             }
           />
+
+          {/* ข้อความสำเร็จ (แสดงใต้ Input ก่อนถึงปุ่มกด) */}
+          {successMsg && (
+            <div className="mt-4 p-3 text-green-600 rounded-lg text-sm text-center font-medium transition-all">
+              {successMsg}
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="mt-6 flex justify-center gap-4">
