@@ -310,7 +310,8 @@ export default function PlaygroundLinearDS({
   );
 
   const activeEngine = isLinkedList ? linkedListEngine : arrayEngine;
-  const { insertAtIndex, deleteAtIndex, isAnimating } = activeEngine;
+  const { insertAtIndex, deleteAtIndex, isAnimating, warningText } =
+    activeEngine;
 
   const isUserPanning = useRef(false);
   const lastPannedPosition = useRef<{ id: string; x: number } | null>(null);
@@ -480,6 +481,7 @@ export default function PlaygroundLinearDS({
             onInsert={insertAtIndex}
             onDelete={deleteAtIndex}
             isAnimating={isAnimating}
+            engineWarningText={warningText} // ส่งข้อความแจ้งเตือนจาก Engine ลงไปที่ UI
             tutorialMode={tutorial.showTutorial}
             onExplainAction={setExplanation}
             onTutorialDropSuccess={() => {
@@ -499,6 +501,7 @@ export default function PlaygroundLinearDS({
       prettyName,
       isAnimating,
       algorithm,
+      warningText,
       insertAtIndex,
       deleteAtIndex,
       tutorial,

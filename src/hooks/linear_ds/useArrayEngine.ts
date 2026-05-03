@@ -12,8 +12,12 @@ export const useArrayEngine = (
 ) => {
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // State สำหรับเก็บข้อความแจ้งเตือน
+  const [warningText, setWarningText] = useState<string | null>(null);
+
   const sleep = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
+
   const getSyncedNodes = useCallback(() => {
     return [...nodes]
       .sort((a, b) => a.position.x - b.position.x)
@@ -26,12 +30,17 @@ export const useArrayEngine = (
   // ฟังก์ชันแทรกข้อมูล (Insert)
   const insertAtIndex = useCallback(
     async (targetIndex: number, value: number) => {
+      // เช็คความถูกต้องของ Index และจำนวนกล่อง
       if (targetIndex < 0 || targetIndex > nodes.length || nodes.length >= 50) {
-        alert("Index ไม่ถูกต้อง หรือกล่องเต็ม 50 แล้วครับ");
+        setWarningText(
+          "Invalid index or array has reached the maximum size of 50.",
+        );
+        setTimeout(() => setWarningText(null), 3000);
         return;
       }
 
       setIsAnimating(true);
+      setWarningText(null); // ล้างข้อความเก่าทิ้งถ้าทำรายการผ่าน
 
       // ดึงข้อมูลที่ซิงค์ตำแหน่งแล้วมาใช้งาน ป้องกัน index รวน
       let currentNodes = getSyncedNodes();
@@ -96,12 +105,15 @@ export const useArrayEngine = (
   // ฟังก์ชันลบข้อมูล (Delete)
   const deleteAtIndex = useCallback(
     async (targetIndex: number) => {
+      // เช็คว่ามี Index ให้ลบไหม
       if (targetIndex < 0 || targetIndex >= nodes.length) {
-        alert("ไม่มี Index นี้ให้ลบครับ");
+        setWarningText("Invalid index. No element to delete.");
+        setTimeout(() => setWarningText(null), 3000);
         return;
       }
 
       setIsAnimating(true);
+      setWarningText(null); // ล้างข้อความเก่าทิ้งถ้าทำรายการผ่าน
 
       // ดึงข้อมูลที่ซิงค์ตำแหน่งแล้วมาใช้งาน
       let currentNodes = getSyncedNodes();
@@ -145,5 +157,5 @@ export const useArrayEngine = (
     [nodes, setNodes, speed, getSyncedNodes],
   );
 
-  return { insertAtIndex, deleteAtIndex, isAnimating };
+  return { insertAtIndex, deleteAtIndex, isAnimating, warningText };
 };
