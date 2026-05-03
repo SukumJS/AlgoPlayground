@@ -18,6 +18,9 @@ import CodePrimGraph from "./types/animationcodalgo/ani_codeprimgraph";
 import CodeBinarySearch from "./types/animationcodalgo/ani_codebinarysearch";
 import CodeLinearSearch from "./types/animationcodalgo/ani_codelinearsearch";
 import CodeGenerateSearch from "./types/animationcodalgo/ani_codegeneratesearch";
+import CodeArray from "./types/animationcodalgo/ani_codearray";
+import CodeQueue from "./types/animationcodalgo/ani_codequeue";
+import CodeStack from "./types/animationcodalgo/ani_codestack";
 
 interface CodeAlgoProps {
   title?: string;
@@ -80,6 +83,14 @@ export default function CodeAlgo(props: CodeAlgoProps) {
       return <CodeLinearSearch {...props} />;
     case "generate-search":
       return <CodeGenerateSearch {...props} />;
+
+    // Linear Data Structures
+    case "array":
+      return <CodeArray {...props} />;
+    case "queue":
+      return <CodeQueue {...props} />;
+    case "stack":
+      return <CodeStack {...props} />;
 
     default:
       return <CodeBubbleSort {...props} />;
