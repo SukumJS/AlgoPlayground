@@ -133,19 +133,19 @@ END ALGORITHM`;
               key={displayCode}
               language={language}
               style={oneDark}
-              wrapLines={true}
               wrapLongLines={true}
               showLineNumbers={true}
-              showInlineLineNumbers={false}
               useInlineStyles={true}
               lineNumberStyle={{
                 minWidth: "2.2em",
-                paddingRight: "0.65em",
+                paddingRight: "0.6em",
                 textAlign: "right",
-                color: "#6b7280",
+                color: "#4b5563",
                 fontSize: "0.75rem",
                 userSelect: "none",
-                paddingTop: "2px",
+                verticalAlign: "top",
+                paddingTop: "4px",
+                display: "table-cell",
               }}
               lineProps={(lineNumber: number) => {
                 const activeLine =
@@ -155,22 +155,12 @@ END ALGORITHM`;
                 const isActive = lineNumber === activeLine;
                 return {
                   style: {
-                    display: "block",
-                    width: "100%",
-                    boxSizing: "border-box",
+                    display: "table-row",
                     backgroundColor: isActive
-                      ? "rgba(59, 130, 246, 0.26)"
-                      : "rgba(255, 255, 255, 0.055)",
-                    borderLeft: isActive
-                      ? "3px solid rgba(147, 197, 253, 0.95)"
-                      : "3px solid transparent",
+                      ? "rgba(59, 130, 246, 0.2)"
+                      : "transparent",
                   },
                 };
-              }}
-              lineNumberContainerStyle={{
-                float: "unset",
-                minWidth: "2.8em",
-                paddingRight: "0.65em",
               }}
               customStyle={{
                 margin: 0,
@@ -178,19 +168,17 @@ END ALGORITHM`;
                 fontSize: "0.85rem",
                 lineHeight: "1.5",
                 background: "transparent",
-                width: "100%",
-                display: "flex",
+                display: "table",
+                minWidth: "100%",
               }}
               codeTagProps={{
                 style: {
-                  display: "block",
-                  flex: 1,
-                  minWidth: 0,
+                  display: "table-cell",
+                  width: "100%",
                   whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
+                  wordBreak: "break-all",
                   paddingTop: "4px",
-                  paddingLeft: "0.35rem",
-                  paddingRight: "0.35rem",
+                  paddingLeft: "0.5rem",
                 },
               }}
             >
