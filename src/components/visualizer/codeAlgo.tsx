@@ -21,6 +21,8 @@ import CodeGenerateSearch from "./types/animationcodalgo/ani_codegeneratesearch"
 import CodeArray from "./types/animationcodalgo/ani_codearray";
 import CodeQueue from "./types/animationcodalgo/ani_codequeue";
 import CodeStack from "./types/animationcodalgo/ani_codestack";
+import CodeSinglyLinkedList from "./types/animationcodalgo/ani_codesinglylinkedlist";
+import CodeDoublyLinkedList from "./types/animationcodalgo/ani_codedoublylinkedlist";
 
 interface CodeAlgoProps {
   title?: string;
@@ -91,6 +93,10 @@ export default function CodeAlgo(props: CodeAlgoProps) {
       return <CodeQueue {...props} />;
     case "stack":
       return <CodeStack {...props} />;
+    case "singly-linked-list":
+      return <CodeSinglyLinkedList {...props} />;
+    case "doubly-linked-list":
+      return <CodeDoublyLinkedList {...props} />;
 
     default:
       return <CodeBubbleSort {...props} />;
