@@ -265,9 +265,20 @@ export function useTreeTutorial({
           dist < dropTargetRadius || event.clientY > window.innerHeight - 200;
 
         setIsTrashActive(isNearTrash);
+
+        // Update node color when near trash (Match real gameplay behavior)
+        setNodes((nds) =>
+          nds.map((n) => ({
+            ...n,
+            data: {
+              ...n.data,
+              isDanger: n.id === node.id ? isNearTrash : false,
+            },
+          })),
+        );
       }
     },
-    [showTutorial, tutorialStep],
+    [showTutorial, tutorialStep, setNodes],
   );
 
   // Handle node drag stop for trash bin deletion
@@ -293,6 +304,14 @@ export function useTreeTutorial({
           // Delete the node
           setNodes((nds) => nds.filter((n) => n.id !== node.id));
           setTutorialStep(6);
+        } else {
+          // Clear danger state if not deleted
+          setNodes((nds) =>
+            nds.map((n) => ({
+              ...n,
+              data: { ...n.data, isDanger: false },
+            })),
+          );
         }
         setIsTrashActive(false);
       }
