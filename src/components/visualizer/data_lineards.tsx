@@ -20,6 +20,7 @@ type DataLinearProps = {
   onInsert?: (index: number, value: number) => void;
   onDelete?: (index: number) => void;
   isAnimating?: boolean;
+  engineWarningText?: string | null;
 
   tutorialMode?: boolean;
   onTutorialDropSuccess?: () => void;
@@ -36,6 +37,7 @@ function Data_Linear_DS({
   onInsert,
   onDelete,
   isAnimating,
+  engineWarningText,
   tutorialMode,
   onTutorialDropSuccess,
   onTutorialInsert,
@@ -55,11 +57,10 @@ function Data_Linear_DS({
 
   const [type, setType] = useState<string | null>(null);
   const [draggedValue, setDraggedValue] = useState<number | null>(null);
-  const [warningText, setWarningText] = useState<string | null>(null);
-  // 1. ตั้งค่าเริ่มต้นเป็นเลขคงที่ก่อน (ป้องกัน Hydration Error)
+  const [warningText, setWarningText] = useState<string | null>(null); // ของ Random
+
   const [sampleNodes, setSampleNodes] = useState<number[]>([1, 2, 3, 4, 5]);
 
-  // 2. ใช้ useEffect + setTimeout เพื่อสุ่มเลข (ป้องกัน Cascading Render Warning)
   useEffect(() => {
     const timer = setTimeout(() => {
       const randomNodes = Array.from(
@@ -385,6 +386,12 @@ function Data_Linear_DS({
                 </button>
               </div>
             </div>
+            {/* แสดงข้อความแจ้งเตือนจาก Engine (Insert/Delete)*/}
+            {engineWarningText && (
+              <div className="text-red-600 text-sm font-medium  transition-all">
+                {engineWarningText}
+              </div>
+            )}
           </div>
         )}
 
@@ -441,6 +448,12 @@ function Data_Linear_DS({
                 </button>
               </div>
             </div>
+            {/* แสดงข้อความแจ้งเตือนจาก Engine (Insert/Delete)*/}
+            {engineWarningText && (
+              <div className="text-red-600 text-sm font-medium  transition-all">
+                {engineWarningText}
+              </div>
+            )}
           </div>
         )}
 
@@ -496,6 +509,12 @@ function Data_Linear_DS({
                 </button>
               </div>
             </div>
+            {/* แสดงข้อความแจ้งเตือนจาก Engine (Insert/Delete)*/}
+            {engineWarningText && (
+              <div className="text-red-600 text-sm font-medium  transition-all">
+                {engineWarningText}
+              </div>
+            )}
           </div>
         )}
       </div>
