@@ -109,7 +109,7 @@ const graphDirectedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "4",
     data: { weight: 4 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -124,7 +124,7 @@ const graphDirectedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "1",
     data: { weight: 1 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -139,7 +139,7 @@ const graphDirectedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "3",
     data: { weight: 3 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -154,7 +154,7 @@ const graphDirectedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "1",
     data: { weight: 1 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -172,7 +172,7 @@ const graphUndirectedInitialEdges: Edge[] = [
     target: "g2",
     type: "floatingEdge",
     data: { directed: false },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-64-69",
@@ -180,7 +180,7 @@ const graphUndirectedInitialEdges: Edge[] = [
     target: "g4",
     type: "floatingEdge",
     data: { directed: false },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-39-97",
@@ -188,7 +188,7 @@ const graphUndirectedInitialEdges: Edge[] = [
     target: "g3",
     type: "floatingEdge",
     data: { directed: false },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-97-70",
@@ -196,7 +196,7 @@ const graphUndirectedInitialEdges: Edge[] = [
     target: "g5",
     type: "floatingEdge",
     data: { directed: false },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
 ];
 
@@ -209,7 +209,7 @@ const graphUndirectedWeightedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "4",
     data: { directed: false, weight: 4 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-64-69",
@@ -218,7 +218,7 @@ const graphUndirectedWeightedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "1",
     data: { directed: false, weight: 1 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-39-97",
@@ -227,7 +227,7 @@ const graphUndirectedWeightedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "3",
     data: { directed: false, weight: 3 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-97-70",
@@ -236,7 +236,7 @@ const graphUndirectedWeightedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "1",
     data: { directed: false, weight: 1 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
 ];
 
@@ -343,22 +343,58 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       const currentNodes = nodesRef.current;
       const currentEdges = edgesRef.current;
 
-      // Circular layout helper: distribute nodes evenly around a center
-      const centerX = 350;
-      const centerY = 280;
-      const totalCount = currentNodes.length + count;
-      const baseRadius = Math.max(120, totalCount * 30); // scale radius with total node count
+      // Canvas region for new nodes (flow coordinates) — wider area so the
+      // force-directed step has somewhere to push the new nodes outward.
+      const SCATTER = {
+        minX: 60,
+        maxX: 1400,
+        minY: 60,
+        maxY: 900,
+      };
+      const NODE_SIZE = 56;
+      const MIN_DIST = NODE_SIZE + 130; // keep nodes from visually overlapping
 
-      const circularPosition = (index: number, total: number) => ({
-        x: Math.round(
-          centerX +
-            baseRadius * Math.cos((2 * Math.PI * index) / total - Math.PI / 2),
-        ),
-        y: Math.round(
-          centerY +
-            baseRadius * Math.sin((2 * Math.PI * index) / total - Math.PI / 2),
-        ),
-      });
+      const distSq = (
+        a: { x: number; y: number },
+        b: { x: number; y: number },
+      ) => {
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        return dx * dx + dy * dy;
+      };
+
+      const minDistSq = MIN_DIST * MIN_DIST;
+
+      // Random scatter with overlap-avoidance retries.
+      const placedPositions: { x: number; y: number }[] = currentNodes.map(
+        (n) => ({ x: n.position.x, y: n.position.y }),
+      );
+      const randomPosition = () => {
+        const MAX_TRIES = 50;
+        for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
+          const candidate = {
+            x: Math.round(
+              SCATTER.minX + Math.random() * (SCATTER.maxX - SCATTER.minX),
+            ),
+            y: Math.round(
+              SCATTER.minY + Math.random() * (SCATTER.maxY - SCATTER.minY),
+            ),
+          };
+          const tooClose = placedPositions.some(
+            (p) => distSq(p, candidate) < minDistSq,
+          );
+          if (!tooClose) return candidate;
+        }
+        // Give up: just return random — relaxation step below will spread it out
+        return {
+          x: Math.round(
+            SCATTER.minX + Math.random() * (SCATTER.maxX - SCATTER.minX),
+          ),
+          y: Math.round(
+            SCATTER.minY + Math.random() * (SCATTER.maxY - SCATTER.minY),
+          ),
+        };
+      };
 
       // Always KEEP existing nodes, add `count` more nodes
       const existingLabels = new Set(
@@ -366,7 +402,6 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       );
       const addedNodes: Node[] = [];
 
-      // Place new nodes in remaining slots around the circle based on totalCount
       for (let i = 0; i < count; i++) {
         let label: number;
         let tries = 0;
@@ -376,17 +411,20 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         } while (existingLabels.has(String(label)) && tries < 200);
         existingLabels.add(String(label));
 
+        const position = randomPosition();
+        placedPositions.push(position);
+
         addedNodes.push({
           id: `g_rand_${Date.now()}_${i}`,
           type: "custom",
           data: { label: String(label), variant: "circle" },
-          position: circularPosition(currentNodes.length + i, totalCount),
+          position,
         });
       }
 
       const allNodes: Node[] = [...currentNodes, ...addedNodes];
 
-      // Keep existing edges, and add new random edges for the new nodes
+      // Keep existing edges, and add sparse random edges for the new nodes.
       const newEdges: Edge[] = [];
       const edgeSet = new Set<string>();
 
@@ -398,14 +436,28 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         }
       }
 
-      // For every newly added node, give it a chance to connect to ANY node in allNodes
+      const EDGE_PROB = 0.07;
+      const MAX_EDGES_PER_NEW_NODE = 2;
+
+      // Shuffle target order so we don't always prefer earlier nodes
+      const shuffledNodeIndices = (length: number) => {
+        const arr = Array.from({ length }, (_, i) => i);
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      };
+
       for (let i = 0; i < addedNodes.length; i++) {
         const src = addedNodes[i];
-        for (let j = 0; j < allNodes.length; j++) {
+        let added = 0;
+        for (const j of shuffledNodeIndices(allNodes.length)) {
+          if (added >= MAX_EDGES_PER_NEW_NODE) break;
           const tgt = allNodes[j];
           if (src.id === tgt.id) continue;
 
-          if (Math.random() < 0.3) {
+          if (Math.random() < EDGE_PROB) {
             const edgeKey = `${src.id}-${tgt.id}`;
             const reverseKey = `${tgt.id}-${src.id}`;
 
@@ -434,7 +486,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               ...(!isWeightedGraph && {
                 data: { directed: false },
               }),
-              style: { stroke: "#222121", strokeWidth: 1 },
+              style: { stroke: "#9CA3AF", strokeWidth: 2 },
               ...(isDirectedGraph && {
                 markerEnd: {
                   type: "arrowclosed" as const,
@@ -446,6 +498,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
             };
 
             newEdges.push(edge);
+            added += 1;
           }
         }
       }
@@ -504,7 +557,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               ...(!isWeightedGraph && {
                 data: { directed: false },
               }),
-              style: { stroke: "#222121", strokeWidth: 1 },
+              style: { stroke: "#9CA3AF", strokeWidth: 2 },
               ...(isDirectedGraph && {
                 markerEnd: {
                   type: "arrowclosed" as const,
@@ -539,7 +592,96 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         }
       }
 
-      setNodes(allNodes);
+      // ── Force-directed relaxation ─────────────────────────────────────
+      // Run a small simulation so newly added nodes spread out smoothly.
+      // Existing user-placed nodes stay anchored. Only new nodes are mobile.
+      const ITERATIONS = 140;
+      const REPULSION = 38000; // higher = nodes push each other harder
+      const SPRING_LENGTH = 240;
+      const SPRING_STIFFNESS = 0.03;
+      const DAMPING = 0.85;
+      const MAX_STEP = 30;
+
+      const positions = new Map<string, { x: number; y: number }>();
+      const movable = new Set<string>(addedNodes.map((n) => n.id));
+      for (const n of allNodes) {
+        positions.set(n.id, { x: n.position.x, y: n.position.y });
+      }
+
+      const adjacency = new Map<string, Set<string>>();
+      for (const e of allEdges) {
+        if (!adjacency.has(e.source)) adjacency.set(e.source, new Set());
+        if (!adjacency.has(e.target)) adjacency.set(e.target, new Set());
+        adjacency.get(e.source)!.add(e.target);
+        adjacency.get(e.target)!.add(e.source);
+      }
+
+      for (let it = 0; it < ITERATIONS; it++) {
+        const forces = new Map<string, { x: number; y: number }>();
+        for (const id of positions.keys()) forces.set(id, { x: 0, y: 0 });
+
+        const ids = Array.from(positions.keys());
+        // Repulsion: every pair pushes each other away
+        for (let i = 0; i < ids.length; i++) {
+          for (let j = i + 1; j < ids.length; j++) {
+            const a = positions.get(ids[i])!;
+            const b = positions.get(ids[j])!;
+            let dx = a.x - b.x;
+            let dy = a.y - b.y;
+            let dSq = dx * dx + dy * dy;
+            if (dSq < 0.01) {
+              dx = (Math.random() - 0.5) * 2;
+              dy = (Math.random() - 0.5) * 2;
+              dSq = dx * dx + dy * dy + 0.01;
+            }
+            const force = REPULSION / dSq;
+            const d = Math.sqrt(dSq);
+            const fx = (dx / d) * force;
+            const fy = (dy / d) * force;
+            forces.get(ids[i])!.x += fx;
+            forces.get(ids[i])!.y += fy;
+            forces.get(ids[j])!.x -= fx;
+            forces.get(ids[j])!.y -= fy;
+          }
+        }
+        // Attraction: edges act like springs
+        for (const e of allEdges) {
+          const a = positions.get(e.source);
+          const b = positions.get(e.target);
+          if (!a || !b) continue;
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const d = Math.sqrt(dx * dx + dy * dy) || 0.01;
+          const stretch = d - SPRING_LENGTH;
+          const fx = (dx / d) * stretch * SPRING_STIFFNESS;
+          const fy = (dy / d) * stretch * SPRING_STIFFNESS;
+          forces.get(e.source)!.x += fx;
+          forces.get(e.source)!.y += fy;
+          forces.get(e.target)!.x -= fx;
+          forces.get(e.target)!.y -= fy;
+        }
+
+        // Apply forces only to newly added nodes; clamp step and bounds
+        for (const id of movable) {
+          const f = forces.get(id)!;
+          const p = positions.get(id)!;
+          const stepX = Math.max(-MAX_STEP, Math.min(MAX_STEP, f.x * DAMPING));
+          const stepY = Math.max(-MAX_STEP, Math.min(MAX_STEP, f.y * DAMPING));
+          p.x = Math.max(SCATTER.minX, Math.min(SCATTER.maxX, p.x + stepX));
+          p.y = Math.max(SCATTER.minY, Math.min(SCATTER.maxY, p.y + stepY));
+        }
+      }
+
+      const relaxedNodes = allNodes.map((n) => {
+        if (!movable.has(n.id)) return n;
+        const p = positions.get(n.id)!;
+        return {
+          ...n,
+          position: { x: Math.round(p.x), y: Math.round(p.y) },
+        };
+      });
+
+      setNodes(relaxedNodes);
       setEdges(allEdges);
     },
     [setNodes, setEdges, isDirectedGraph, isWeightedGraph],
@@ -609,14 +751,14 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   // Edge click handler (for weight editing)
   const handleEdgeClick = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
-      if (isAnimationPlaying) return; // lock during animation
+      if (isAnimationActive) return; // lock during entire animation session
       if (graphTutorial.showTutorial) {
         graphTutorial.handleWeightClick(edge.id);
       } else {
         nodeInteraction.handleEdgeClick(event, edge.id);
       }
     },
-    [isAnimationPlaying, graphTutorial, nodeInteraction],
+    [isAnimationActive, graphTutorial, nodeInteraction],
   );
 
   // Combined node click handler
@@ -729,11 +871,16 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               : onNodesChange
         }
         onEdgesChange={
-          graphTutorial.showTutorial || isAnimationPlaying
+          graphTutorial.showTutorial || isAnimationActive
             ? undefined
             : onEdgesChange
         }
-        onConnect={isAnimationPlaying ? undefined : onConnect}
+        onConnect={isAnimationActive ? undefined : onConnect}
+        deleteKeyCode={
+          graphTutorial.showTutorial || isAnimationActive
+            ? null
+            : ["Delete", "Backspace"]
+        }
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onDragOver={onDragOver}
@@ -825,6 +972,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
           nodeScreenRadius={graphTutorial.nodeScreenRadius}
           showWeightInput={graphTutorial.showWeightInput}
           weightInputValue={graphTutorial.weightInputValue}
+          weightInputError={graphTutorial.weightInputError}
           onWeightInputChange={graphTutorial.handleWeightInputChange}
           onWeightConfirm={graphTutorial.handleWeightConfirm}
         />
@@ -853,7 +1001,14 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
                 nodeInteraction.handleWeightInputChange(e.target.value)
               }
               onKeyDown={(e) => {
-                if (e.key === "Enter") nodeInteraction.handleWeightConfirm();
+                if (e.key === "Enter") {
+                  if (
+                    algorithm === "dijkstra" &&
+                    Number(nodeInteraction.weightInputValue) < 0
+                  )
+                    return;
+                  nodeInteraction.handleWeightConfirm();
+                }
                 if (e.key === "Escape")
                   nodeInteraction.handleWeightModalClose();
               }}
@@ -861,6 +1016,13 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               placeholder="0"
               autoFocus
             />
+            {algorithm === "dijkstra" &&
+              nodeInteraction.weightInputValue.trim() !== "" &&
+              Number(nodeInteraction.weightInputValue) < 0 && (
+                <p className="text-red-500 text-sm mt-2 text-center">
+                  Dijkstra&apos;s algorithm does not support negative weights.
+                </p>
+              )}
             <div className="flex gap-3 mt-4">
               <button
                 onClick={nodeInteraction.handleWeightModalClose}
@@ -870,7 +1032,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               </button>
               <button
                 onClick={nodeInteraction.handleWeightConfirm}
-                className="flex-1 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors"
+                disabled={
+                  algorithm === "dijkstra" &&
+                  Number(nodeInteraction.weightInputValue) < 0
+                }
+                className="flex-1 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Confirm
               </button>

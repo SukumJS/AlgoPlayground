@@ -22,7 +22,7 @@ const Tutorial_modal = ({
     <ModalOverlay isOpen={showModal} onClose={() => {}}>
       {tutorialContent.map((item, index) => (
         <div
-          className="w-130.5 h-61 rounded-2xl flex-row border border-gray-100 shadow-lg bg-white justify-center gap-4 p-8"
+          className="w-130.5 max-w-[95vw] h-61 rounded-2xl flex-row border border-gray-100 shadow-lg bg-white justify-center gap-4 p-8"
           key={index}
         >
           <div className="w-10 h-10 rounded-full bg-[#DCFAE6] flex items-center justify-center mb-4">

@@ -432,7 +432,7 @@ const graphEdges_ord1: Edge[] = [
     type: "floatingEdge",
     label: "5",
     data: { weight: 5 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -447,7 +447,7 @@ const graphEdges_ord1: Edge[] = [
     type: "floatingEdge",
     label: "1",
     data: { weight: 1 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -462,7 +462,7 @@ const graphEdges_ord1: Edge[] = [
     type: "floatingEdge",
     label: "3",
     data: { weight: 3 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -477,7 +477,7 @@ const graphEdges_ord1: Edge[] = [
     type: "floatingEdge",
     label: "1",
     data: { weight: 1 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -522,7 +522,7 @@ const graphEdges_ord2: Edge[] = [
     type: "floatingEdge",
     label: "2",
     data: { weight: 2 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -537,7 +537,7 @@ const graphEdges_ord2: Edge[] = [
     type: "floatingEdge",
     label: "4",
     data: { weight: 4 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -552,7 +552,7 @@ const graphEdges_ord2: Edge[] = [
     type: "floatingEdge",
     label: "1",
     data: { weight: 1 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -567,7 +567,7 @@ const graphEdges_ord2: Edge[] = [
     type: "floatingEdge",
     label: "3",
     data: { weight: 3 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
