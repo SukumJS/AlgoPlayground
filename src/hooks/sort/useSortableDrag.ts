@@ -21,7 +21,7 @@ export function useSortableDrag(
     (event, dragged) => {
       let clientX = 0;
       let clientY = 0;
-      let isOverTrash = false; // ⭐️ เพิ่มตัวแปรเก็บสถานะการชนถังขยะ
+      let isOverTrash = false;
 
       const e = event as unknown as MouseEvent | TouchEvent;
 
@@ -41,7 +41,7 @@ export function useSortableDrag(
         const dist = Math.sqrt(
           Math.pow(clientX - trashX, 2) + Math.pow(clientY - trashY, 2),
         );
-        isOverTrash = dist < 150; // ⭐️ เช็คชนตรงนี้
+        isOverTrash = dist < 150;
         setIsTrashActive(isOverTrash);
       }
 
@@ -61,7 +61,6 @@ export function useSortableDrag(
         const sortedByX = [...prev].sort((a, b) => a.position.x - b.position.x);
         const currentIndex = sortedByX.findIndex((n) => n.id === dragged.id);
 
-        // ⭐️ สร้าง Node ใหม่พร้อมกำหนดสี deleting ถ้าจ่อถังขยะ
         const newDraggedNode = {
           ...draggedNode,
           position: dragged.position,
@@ -131,7 +130,6 @@ export function useSortableDrag(
         const dist = Math.sqrt(
           Math.pow(clientX - trashX, 2) + Math.pow(clientY - trashY, 2),
         );
-        // ⭐️ ระยะปล่อยลงถัง ผมปรับให้เป็น 150 เท่ากับตอน Hover จะได้ลื่นไหลขึ้น
         droppedInTrash = dist < 150;
       }
 
@@ -165,7 +163,6 @@ export function useSortableDrag(
                 position: positionFromIndex(visualSlot),
                 selected: false,
                 dragging: false,
-                // ⭐️ ถ้ายกเลิกลบ (ปล่อยพลาด) ให้เปลี่ยนสีกลับเป็น idle
                 data: {
                   ...n.data,
                   status: n.data.status === "deleting" ? "idle" : n.data.status,
