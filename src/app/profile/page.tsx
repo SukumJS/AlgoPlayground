@@ -370,11 +370,15 @@ export default function Profile() {
         {/* LEFT: PROFILE */}
         <div className="col-span-3 p-6 text-center rounded-xl">
           <div className="relative mx-auto mb-4 h-30 w-30">
-            <img
-              src={avatarPreview || profileAvatar}
-              alt="profile"
-              className="object-cover border rounded-full h-30 w-30"
-            />
+            {avatarPreview || profileAvatar ? (
+              <img
+                src={avatarPreview || profileAvatar}
+                alt="profile"
+                className="object-cover border rounded-full h-30 w-30"
+              />
+            ) : (
+              <div className="h-30 w-30 rounded-full border bg-gray-100" />
+            )}
             <button
               type="button"
               onClick={handleAvatarPick}

@@ -124,8 +124,8 @@ function PlaygroundOrderingQuestion({
           ...edge,
           type: "floatingEdge",
           style: {
-            stroke: "#222121",
-            strokeWidth: 1,
+            stroke: "#5D5D5D",
+            strokeWidth: 2,
           },
         };
       }

@@ -42,6 +42,11 @@ function getCircleIntersection(node: InternalNode, otherNode: InternalNode) {
   };
 }
 
+const DEFAULT_STROKE = "#9CA3AF";
+const SELECTED_STROKE = "#222121";
+const SELECTED_WIDTH = 3;
+const HIT_AREA_WIDTH = 20;
+
 /**
  * FloatingEdge - Custom edge for graph nodes (circular)
  *
@@ -52,6 +57,11 @@ function getCircleIntersection(node: InternalNode, otherNode: InternalNode) {
  * Supports `data.directed` flag:
  *   - true (default): directed edge with arrowhead + weight label
  *   - false: undirected edge — plain line, no arrow, no label gap
+ *
+ * When the edge is selected (via ReactFlow click), the visible stroke
+ * switches to a blue accent + thicker width so users can clearly see
+ * the selection state. A wider invisible "hit area" path sits beneath
+ * the visible stroke so clicking near the edge still registers.
  */
 export default function FloatingEdge({
   id,
@@ -60,6 +70,7 @@ export default function FloatingEdge({
   label,
   data,
   style,
+  selected,
 }: EdgeProps) {
   const isDirected = data?.directed !== false;
 
@@ -77,7 +88,23 @@ export default function FloatingEdge({
   const sourcePoint = getCircleIntersection(sourceNode, targetNode);
   const targetPoint = getCircleIntersection(targetNode, sourceNode);
 
-  const strokeColor = (style?.stroke as string) || "#222121";
+  const baseStrokeColor = (style?.stroke as string) || DEFAULT_STROKE;
+  // Selection only changes width (subtle feedback) — color stays the same so
+  // the look is consistent before/after click.
+  const strokeColor = selected ? SELECTED_STROKE : baseStrokeColor;
+  const visibleStyle: React.CSSProperties = {
+    ...style,
+    stroke: strokeColor,
+    strokeWidth: selected
+      ? SELECTED_WIDTH
+      : ((style?.strokeWidth as number | undefined) ?? 2),
+  };
+  const hitAreaStyle: React.CSSProperties = {
+    stroke: "transparent",
+    strokeWidth: HIT_AREA_WIDTH,
+    fill: "none",
+    pointerEvents: "stroke",
+  };
 
   // ── Undirected mode: simple line, no arrow ─────────────────────
   if (!isDirected) {
@@ -97,20 +124,22 @@ export default function FloatingEdge({
 
       const path1 = `M ${sourcePoint.x} ${sourcePoint.y} L ${beforeLabelX} ${beforeLabelY}`;
       const path2 = `M ${afterLabelX} ${afterLabelY} L ${targetPoint.x} ${targetPoint.y}`;
+      const fullPath = `M ${sourcePoint.x} ${sourcePoint.y} L ${targetPoint.x} ${targetPoint.y}`;
 
       return (
         <>
+          <path d={fullPath} style={hitAreaStyle} />
           <path
             id={`${id}-path1`}
             className="react-flow__edge-path"
             d={path1}
-            style={style}
+            style={visibleStyle}
           />
           <path
             id={`${id}-path2`}
             className="react-flow__edge-path"
             d={path2}
-            style={style}
+            style={visibleStyle}
           />
           <EdgeLabelRenderer>
             <div
@@ -120,7 +149,7 @@ export default function FloatingEdge({
                 pointerEvents: "all",
                 fontSize: "12px",
                 fontWeight: 500,
-                color: strokeColor,
+                color: baseStrokeColor,
                 background: "transparent",
                 padding: "4px 8px",
                 cursor: "pointer",
@@ -139,7 +168,15 @@ export default function FloatingEdge({
     // No label: plain line (BFS/DFS)
     const path = `M ${sourcePoint.x} ${sourcePoint.y} L ${targetPoint.x} ${targetPoint.y}`;
     return (
-      <path id={id} className="react-flow__edge-path" d={path} style={style} />
+      <>
+        <path d={path} style={hitAreaStyle} />
+        <path
+          id={id}
+          className="react-flow__edge-path"
+          d={path}
+          style={visibleStyle}
+        />
+      </>
     );
   }
 
@@ -171,6 +208,7 @@ export default function FloatingEdge({
 
   const path1 = `M ${sourcePoint.x} ${sourcePoint.y} L ${beforeLabelX} ${beforeLabelY}`;
   const path2 = `M ${afterLabelX} ${afterLabelY} L ${lineEndX} ${lineEndY}`;
+  const fullPath = `M ${sourcePoint.x} ${sourcePoint.y} L ${targetPoint.x} ${targetPoint.y}`;
 
   // Arrowhead polygon: tip at target border, base at arrowLength back
   const perpAngle = angle + Math.PI / 2;
@@ -182,17 +220,18 @@ export default function FloatingEdge({
 
   return (
     <>
+      <path d={fullPath} style={hitAreaStyle} />
       <path
         id={`${id}-path1`}
         className="react-flow__edge-path"
         d={path1}
-        style={style}
+        style={visibleStyle}
       />
       <path
         id={`${id}-path2`}
         className="react-flow__edge-path"
         d={path2}
-        style={style}
+        style={visibleStyle}
       />
       <polygon points={arrowPoints} fill={strokeColor} stroke="none" />
       {label && (
@@ -204,7 +243,7 @@ export default function FloatingEdge({
               pointerEvents: "all",
               fontSize: "12px",
               fontWeight: 500,
-              color: strokeColor,
+              color: baseStrokeColor,
               background: "transparent",
               padding: "4px 8px",
               cursor: "pointer",

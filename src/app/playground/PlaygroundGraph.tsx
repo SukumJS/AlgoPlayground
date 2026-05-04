@@ -109,7 +109,7 @@ const graphDirectedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "4",
     data: { weight: 4 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -124,7 +124,7 @@ const graphDirectedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "1",
     data: { weight: 1 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -139,7 +139,7 @@ const graphDirectedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "3",
     data: { weight: 3 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -154,7 +154,7 @@ const graphDirectedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "1",
     data: { weight: 1 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
     markerEnd: {
       type: "arrowclosed" as const,
       width: 25,
@@ -172,7 +172,7 @@ const graphUndirectedInitialEdges: Edge[] = [
     target: "g2",
     type: "floatingEdge",
     data: { directed: false },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-64-69",
@@ -180,7 +180,7 @@ const graphUndirectedInitialEdges: Edge[] = [
     target: "g4",
     type: "floatingEdge",
     data: { directed: false },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-39-97",
@@ -188,7 +188,7 @@ const graphUndirectedInitialEdges: Edge[] = [
     target: "g3",
     type: "floatingEdge",
     data: { directed: false },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-97-70",
@@ -196,7 +196,7 @@ const graphUndirectedInitialEdges: Edge[] = [
     target: "g5",
     type: "floatingEdge",
     data: { directed: false },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
 ];
 
@@ -209,7 +209,7 @@ const graphUndirectedWeightedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "4",
     data: { directed: false, weight: 4 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-64-69",
@@ -218,7 +218,7 @@ const graphUndirectedWeightedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "1",
     data: { directed: false, weight: 1 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-39-97",
@@ -227,7 +227,7 @@ const graphUndirectedWeightedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "3",
     data: { directed: false, weight: 3 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
   {
     id: "eg-97-70",
@@ -236,7 +236,7 @@ const graphUndirectedWeightedInitialEdges: Edge[] = [
     type: "floatingEdge",
     label: "1",
     data: { directed: false, weight: 1 },
-    style: { stroke: "#222121", strokeWidth: 1 },
+    style: { stroke: "#9CA3AF", strokeWidth: 2 },
   },
 ];
 
@@ -343,15 +343,16 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       const currentNodes = nodesRef.current;
       const currentEdges = edgesRef.current;
 
-      // Canvas region for new nodes (flow coordinates)
+      // Canvas region for new nodes (flow coordinates) — wider area so the
+      // force-directed step has somewhere to push the new nodes outward.
       const SCATTER = {
-        minX: 80,
-        maxX: 880,
-        minY: 80,
-        maxY: 520,
+        minX: 60,
+        maxX: 1400,
+        minY: 60,
+        maxY: 900,
       };
       const NODE_SIZE = 56;
-      const MIN_DIST = NODE_SIZE + 30; // keep nodes from visually overlapping
+      const MIN_DIST = NODE_SIZE + 130; // keep nodes from visually overlapping
 
       const distSq = (
         a: { x: number; y: number },
@@ -435,8 +436,8 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         }
       }
 
-      const EDGE_PROB = 0.12;
-      const MAX_EDGES_PER_NEW_NODE = 3;
+      const EDGE_PROB = 0.07;
+      const MAX_EDGES_PER_NEW_NODE = 2;
 
       // Shuffle target order so we don't always prefer earlier nodes
       const shuffledNodeIndices = (length: number) => {
@@ -485,7 +486,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               ...(!isWeightedGraph && {
                 data: { directed: false },
               }),
-              style: { stroke: "#222121", strokeWidth: 1 },
+              style: { stroke: "#9CA3AF", strokeWidth: 2 },
               ...(isDirectedGraph && {
                 markerEnd: {
                   type: "arrowclosed" as const,
@@ -556,7 +557,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               ...(!isWeightedGraph && {
                 data: { directed: false },
               }),
-              style: { stroke: "#222121", strokeWidth: 1 },
+              style: { stroke: "#9CA3AF", strokeWidth: 2 },
               ...(isDirectedGraph && {
                 markerEnd: {
                   type: "arrowclosed" as const,
@@ -594,9 +595,9 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       // ── Force-directed relaxation ─────────────────────────────────────
       // Run a small simulation so newly added nodes spread out smoothly.
       // Existing user-placed nodes stay anchored. Only new nodes are mobile.
-      const ITERATIONS = 80;
-      const REPULSION = 9000; // higher = nodes push each other harder
-      const SPRING_LENGTH = 130;
+      const ITERATIONS = 140;
+      const REPULSION = 38000; // higher = nodes push each other harder
+      const SPRING_LENGTH = 240;
       const SPRING_STIFFNESS = 0.03;
       const DAMPING = 0.85;
       const MAX_STEP = 30;
@@ -875,6 +876,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
             : onEdgesChange
         }
         onConnect={isAnimationActive ? undefined : onConnect}
+        deleteKeyCode={
+          graphTutorial.showTutorial || isAnimationActive
+            ? null
+            : ["Delete", "Backspace"]
+        }
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onDragOver={onDragOver}
@@ -966,6 +972,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
           nodeScreenRadius={graphTutorial.nodeScreenRadius}
           showWeightInput={graphTutorial.showWeightInput}
           weightInputValue={graphTutorial.weightInputValue}
+          weightInputError={graphTutorial.weightInputError}
           onWeightInputChange={graphTutorial.handleWeightInputChange}
           onWeightConfirm={graphTutorial.handleWeightConfirm}
         />

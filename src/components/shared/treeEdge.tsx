@@ -18,6 +18,11 @@ function getNodeCenter(node: InternalNode) {
   };
 }
 
+const DEFAULT_STROKE = "#9CA3AF";
+const SELECTED_STROKE = "#222121";
+const SELECTED_WIDTH = 3;
+const HIT_AREA_WIDTH = 20;
+
 /**
  * TreeEdge — straight edge from circle-border to circle-border between nodes.
  *
@@ -27,7 +32,9 @@ function getNodeCenter(node: InternalNode) {
  * otherwise be shorter than 2×radius, which makes the naive "extend outward"
  * trick invert the line).
  *
- * Supports labels for graph weights.
+ * Supports labels for graph weights. When the edge is selected the visible
+ * stroke turns blue and thicker; an invisible wider hit-area path makes
+ * clicking near the line easy.
  */
 export default function TreeEdge({
   id,
@@ -36,6 +43,7 @@ export default function TreeEdge({
   label,
   style,
   markerEnd,
+  selected,
 }: EdgeProps) {
   const { sourceNode, targetNode } = useStore((s) => ({
     sourceNode: s.nodeLookup.get(source),
@@ -70,16 +78,29 @@ export default function TreeEdge({
     targetY: adjustedTargetY,
   });
 
+  const visibleStyle = {
+    ...style,
+    strokeWidth: selected ? SELECTED_WIDTH : 2,
+    stroke: selected
+      ? SELECTED_STROKE
+      : (style?.stroke as string) || DEFAULT_STROKE,
+  };
+
   return (
     <>
+      <path
+        d={edgePath}
+        style={{
+          stroke: "transparent",
+          strokeWidth: HIT_AREA_WIDTH,
+          fill: "none",
+          pointerEvents: "stroke",
+        }}
+      />
       <BaseEdge
         id={id}
         path={edgePath}
-        style={{
-          ...style,
-          strokeWidth: 2,
-          stroke: "#5D5D5D",
-        }}
+        style={visibleStyle}
         markerEnd={markerEnd}
       />
       {label && (

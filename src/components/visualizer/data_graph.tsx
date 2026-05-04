@@ -34,6 +34,7 @@ interface DataGraphProps {
 function Data_graph({
   onSearch,
   algorithm = "",
+  setExplanation,
   isAnimating = false,
   onRandomGenerate,
   onResetGraph,
@@ -48,6 +49,8 @@ function Data_graph({
   const [removeValue, setRemoveValue] = useState<string>("");
   const [nodeInput, setNodeInput] = useState<string>("");
   const [draggedValue, setDraggedValue] = useState<number | null>(null); // Added draggedValue state
+  const [startError, setStartError] = useState<string | null>(null);
+  const [endError, setEndError] = useState<string | null>(null);
 
   const needsEndVertex =
     !START_ONLY_ALGORITHMS.includes(algorithm) &&
@@ -123,6 +126,8 @@ function Data_graph({
     setInputValue("");
     setSearchValue("");
     setRemoveValue("");
+    setStartError(null);
+    setEndError(null);
     onResetGraph?.();
   };
 
@@ -130,6 +135,53 @@ function Data_graph({
     if (isAnimating) return;
     // Kruskal's doesn't need any vertex input; Prim's only needs start
     if (needsStartVertex && !inputValue) return;
+
+    // Verify the entered vertex labels actually exist on the canvas before
+    // running the algorithm — otherwise the explanation would play against
+    // a non-existent node.
+    const nodes = getNodes();
+    const existingLabels = new Set(nodes.map((n) => String(n.data?.label)));
+
+    // Empty graph — block the algorithm and surface the cause in the
+    // explanation panel instead of running an animation against nothing.
+    if (nodes.length === 0) {
+      if (needsStartVertex) setStartError("No nodes in the playground yet.");
+      if (needsEndVertex) setEndError("No nodes in the playground yet.");
+      setExplanation?.(
+        "Graph is empty. Add at least one node to the playground before running the algorithm.",
+      );
+      return;
+    }
+
+    let hasError = false;
+    const missing: string[] = [];
+    if (needsStartVertex && !existingLabels.has(inputValue)) {
+      setStartError(
+        `Start vertex "${inputValue}" has not been added to the playground`,
+      );
+      missing.push(`start vertex "${inputValue}"`);
+      hasError = true;
+    } else {
+      setStartError(null);
+    }
+
+    if (needsEndVertex && !existingLabels.has(searchValue)) {
+      setEndError(
+        `End vertex "${searchValue}" has not been added to the playground`,
+      );
+      missing.push(`end vertex "${searchValue}"`);
+      hasError = true;
+    } else {
+      setEndError(null);
+    }
+
+    if (hasError) {
+      setExplanation?.(
+        `Cannot start algorithm: ${missing.join(" and ")} not found in the playground. Add the node(s) or enter values that already exist.`,
+      );
+      return;
+    }
+
     onSearch?.(inputValue, searchValue);
   };
 
@@ -207,10 +259,16 @@ function Data_graph({
                 type="number"
                 className="border border-gray-200 p-2 rounded-lg w-full placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  if (startError) setStartError(null);
+                }}
                 disabled={isAnimating}
                 placeholder="e.g. 1"
               />
+              {startError && (
+                <p className="text-red-500 text-sm">{startError}</p>
+              )}
             </div>
           )}
           {needsEndVertex && (
@@ -220,10 +278,14 @@ function Data_graph({
                 type="number"
                 className="border border-gray-200 p-2 rounded-lg w-full placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
+                onChange={(e) => {
+                  setSearchValue(e.target.value);
+                  if (endError) setEndError(null);
+                }}
                 disabled={isAnimating}
                 placeholder="e.g. 5"
               />
+              {endError && <p className="text-red-500 text-sm">{endError}</p>}
             </div>
           )}
           <button

@@ -197,7 +197,7 @@ export function useNodeInteraction({
               target: node.id,
               type: "floatingEdge",
               data: { directed: false },
-              style: { stroke: "#222121", strokeWidth: 1 },
+              style: { stroke: "#9CA3AF", strokeWidth: 2 },
             };
             setEdges((eds) => [...eds, newEdge]);
           }
@@ -415,6 +415,13 @@ export function useNodeInteraction({
       if (!isGraph) return;
       if (!weighted) return; // No weight editing for unweighted graphs
 
+      // Only open the weight modal when the user clicks the weight label
+      // itself. Clicking the edge body should let ReactFlow handle selection
+      // (so users can press Delete/Backspace to remove it).
+      const target = event.target as HTMLElement | null;
+      const onWeightLabel = target?.closest(".edge-weight-label");
+      if (!onWeightLabel) return;
+
       const edge = edges.find((e) => e.id === edgeId);
       if (!edge) return;
 
@@ -467,7 +474,7 @@ export function useNodeInteraction({
           type: "floatingEdge",
           label: String(weight),
           data: { weight },
-          style: { stroke: "#222121", strokeWidth: 1 },
+          style: { stroke: "#9CA3AF", strokeWidth: 2 },
           markerEnd: {
             type: "arrowclosed" as const,
             width: 25,
@@ -485,7 +492,7 @@ export function useNodeInteraction({
           type: "floatingEdge",
           label: String(weight),
           data: { directed: false, weight },
-          style: { stroke: "#222121", strokeWidth: 1 },
+          style: { stroke: "#9CA3AF", strokeWidth: 2 },
         };
         setEdges((eds) => [...eds, newEdge]);
       }

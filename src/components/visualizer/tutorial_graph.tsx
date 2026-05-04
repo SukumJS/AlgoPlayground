@@ -123,6 +123,7 @@ interface TutorialGraphProps {
   // Weight input
   showWeightInput?: boolean;
   weightInputValue?: string;
+  weightInputError?: string | null;
   onWeightInputChange?: (value: string) => void;
   onWeightConfirm?: () => void;
 }
@@ -141,6 +142,7 @@ export default function TutorialGraph({
   nodeScreenRadius = 32,
   showWeightInput = false,
   weightInputValue = "",
+  weightInputError = null,
   onWeightInputChange,
   onWeightConfirm,
 }: TutorialGraphProps) {
@@ -489,6 +491,11 @@ export default function TutorialGraph({
                 placeholder="0"
                 autoFocus
               />
+              {weightInputError && (
+                <p className="text-red-500 text-sm mt-2 text-center">
+                  {weightInputError}
+                </p>
+              )}
               <button
                 onClick={onWeightConfirm}
                 className="w-full mt-4 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors"
