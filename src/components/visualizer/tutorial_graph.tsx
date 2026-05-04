@@ -238,7 +238,7 @@ export default function TutorialGraph({
                 <rect
                   x="180"
                   y="12"
-                  width="250"
+                  width="370"
                   height="45"
                   rx="22"
                   fill="black"
