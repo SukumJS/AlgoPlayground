@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronUp } from "lucide-react";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -10,12 +10,24 @@ interface NavbarProps {
   onSelectCategory: (category: string) => void;
 }
 
+const subscribeToNoop = () => () => {};
+const getMountedSnapshot = () => true;
+const getServerMountedSnapshot = () => false;
+
 export default function Navbar({ onSelectCategory }: NavbarProps) {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("all");
   const [profileOpen, setProfileOpen] = useState(false);
+  // Auth state is hydrated from localStorage on the client only. Render the
+  // signed-out variant during SSR/initial hydration to avoid HTML mismatch.
+  const mounted = useSyncExternalStore(
+    subscribeToNoop,
+    getMountedSnapshot,
+    getServerMountedSnapshot,
+  );
+  const isSignedIn = mounted && Boolean(user);
 
   const items = [
     { label: "All", value: "all" },
@@ -36,9 +48,9 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
     <div className="sticky top-[30px] z-50 flex justify-center">
       <div
         className="
-          w-full max-w-[1380px]
+          w-full max-w-[1380px] mx-2 md:mx-0
           h-[80px]
-          px-8
+          px-4 md:px-8
           flex items-center
           rounded-[50px]
           bg-[#B4D4F1]
@@ -48,22 +60,22 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
       >
         {/* Logo */}
         <Link href="/">
-          <div className="text-xl font-bold uppercase text-[#222121] cursor-pointer transition-opacity">
+          <div className="text-base md:text-xl font-bold uppercase text-[#222121] cursor-pointer transition-opacity whitespace-nowrap">
             Algo playground
           </div>
         </Link>
 
         <div className="flex-1" />
-        <div className="flex items-center gap-4">
-          <button className="px-2 py-2 text-lg font-bold text-[#222121] capitalize">
+        <div className="flex items-center gap-1 md:gap-4">
+          <button className="px-2 py-2 text-base md:text-lg font-bold text-[#222121] capitalize">
             <Link href="/">Home</Link>
           </button>
 
           {/* Dropdown */}
-          <div className="relative min-w-[8rem]">
+          <div className="relative md:min-w-32">
             <button
               onClick={() => setOpen(!open)}
-              className="flex items-center gap-2 px-2 py-2 text-lg font-bold capitalize"
+              className="flex items-center gap-2 px-2 py-2 text-base md:text-lg font-bold capitalize"
             >
               <span className="text-[#222121] hover:text-[#5D5D5D] transition-colors ">
                 {selected === "all"
@@ -104,13 +116,13 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
             )}
           </div>
 
-          <button className="py-2 text-lg font-bold text-[#222121] capitalize">
+          <button className="py-2 text-base md:text-lg font-bold text-[#222121] capitalize whitespace-nowrap">
             <a href="/exercise">examples questions</a>
           </button>
         </div>
 
         {/* Auth section */}
-        <div className="ml-4">
+        <div className="ml-2 md:ml-4">
           {loading ? (
             <div className="w-12 h-12 rounded-full bg-[#9EC5E8] animate-pulse" />
           ) : !user ? (

@@ -81,6 +81,7 @@ export function useGraphTutorial({
   // Weight input state
   const [showWeightInput, setShowWeightInput] = useState(false);
   const [weightInputValue, setWeightInputValue] = useState("");
+  const [weightInputError, setWeightInputError] = useState<string | null>(null);
   const [pendingEdge, setPendingEdge] = useState<{
     source: string;
     target: string;
@@ -292,7 +293,7 @@ export function useGraphTutorial({
               target: node.id,
               type: "floatingEdge",
               data: { directed: false },
-              style: { stroke: "#222121", strokeWidth: 1 },
+              style: { stroke: "#9CA3AF", strokeWidth: 2 },
             };
             setEdges((eds) => [...eds, newEdge]);
             setNodes((nds) =>
@@ -393,13 +394,21 @@ export function useGraphTutorial({
   // Handle weight input change
   const handleWeightInputChange = useCallback((value: string) => {
     setWeightInputValue(value);
+    setWeightInputError(null);
   }, []);
 
   // Handle weight confirmation
   const handleWeightConfirm = useCallback(() => {
     if (tutorialStep === 2 && pendingEdge) {
-      // Create new edge 69→70 with weight
-      const weight = parseInt(weightInputValue) || 2;
+      // Tutorial requires exactly "2" — block any other value so the user
+      // actually follows the lesson.
+      if (weightInputValue.trim() !== "2") {
+        setWeightInputError(
+          "please enter the value 2 as shown in the tutorial",
+        );
+        return;
+      }
+      const weight = 2;
       if (directed) {
         // Directed: edge WITH arrow
         const newEdge: Edge = {
@@ -409,7 +418,7 @@ export function useGraphTutorial({
           type: "floatingEdge",
           label: String(weight),
           data: { weight },
-          style: { stroke: "#222121", strokeWidth: 1 },
+          style: { stroke: "#9CA3AF", strokeWidth: 2 },
           markerEnd: {
             type: "arrowclosed" as const,
             width: 25,
@@ -427,13 +436,14 @@ export function useGraphTutorial({
           type: "floatingEdge",
           label: String(weight),
           data: { directed: false, weight },
-          style: { stroke: "#222121", strokeWidth: 1 },
+          style: { stroke: "#9CA3AF", strokeWidth: 2 },
         };
         setEdges((eds) => [...eds, newEdge]);
       }
       setPendingEdge(null);
       setShowWeightInput(false);
       setWeightInputValue("");
+      setWeightInputError(null);
       setTutorialStep(3);
 
       // Auto-advance to next step after short delay
@@ -441,8 +451,12 @@ export function useGraphTutorial({
         setTutorialStep(4); // → tap weight step
       }, 1500);
     } else if (tutorialStep === 5 && editingEdgeId) {
-      // Edit existing edge weight (64→39) - update BOTH label and data.weight
-      const weight = parseInt(weightInputValue) || 5;
+      // Tutorial requires exactly "5" for the weight edit step.
+      if (weightInputValue.trim() !== "5") {
+        setWeightInputError("กรุณาใส่ค่า 5 ตามที่ tutorial สอน");
+        return;
+      }
+      const weight = 5;
       setEdges((eds) =>
         eds.map((e) =>
           e.id === editingEdgeId
@@ -453,6 +467,7 @@ export function useGraphTutorial({
       setEditingEdgeId(null);
       setShowWeightInput(false);
       setWeightInputValue("");
+      setWeightInputError(null);
       setTutorialStep(6);
 
       // Auto-advance to step 7 after short delay
@@ -574,6 +589,7 @@ export function useGraphTutorial({
     isTrashActive,
     showWeightInput,
     weightInputValue,
+    weightInputError,
     pendingEdge,
 
     // Mode flags (pass to tutorial_graph UI)

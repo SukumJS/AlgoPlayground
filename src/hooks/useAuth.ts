@@ -13,6 +13,7 @@ import {
 export function useAuth() {
   const [user, setUser] = useState<AuthUserProfile | null>(null);
   const [token, setToken] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

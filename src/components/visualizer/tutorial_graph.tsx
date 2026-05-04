@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Trash2, Check } from "lucide-react";
+import { useWindowSize } from "@/src/hooks/useWindowSize";
 
 // Graph Tutorial Steps configuration — DIRECTED mode (Dijkstra)
 const DIRECTED_TUTORIAL_STEPS = [
@@ -122,6 +123,7 @@ interface TutorialGraphProps {
   // Weight input
   showWeightInput?: boolean;
   weightInputValue?: string;
+  weightInputError?: string | null;
   onWeightInputChange?: (value: string) => void;
   onWeightConfirm?: () => void;
 }
@@ -140,6 +142,7 @@ export default function TutorialGraph({
   nodeScreenRadius = 32,
   showWeightInput = false,
   weightInputValue = "",
+  weightInputError = null,
   onWeightInputChange,
   onWeightConfirm,
 }: TutorialGraphProps) {
@@ -177,8 +180,7 @@ export default function TutorialGraph({
       ? UNDIRECTED_WEIGHTED_TUTORIAL_STEPS
       : UNDIRECTED_TUTORIAL_STEPS;
 
-  const stepData = steps[currentStep];
-
+  const { width: vw, height: vh } = useWindowSize();
   // Dynamic step references
   const deleteHighlightStep = weighted ? 7 : 3;
   const dragStep = weighted ? 8 : 4;
@@ -191,6 +193,31 @@ export default function TutorialGraph({
     }
   }
 
+  useEffect(() => {
+    if (localEndStep < 1) return;
+    let frameId: number;
+    const trackPosition = () => {
+      const el = document.querySelector(
+        "[data-tutorial-posttest]",
+      ) as HTMLElement | null;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        setPostTestRect({
+          x: rect.left,
+          y: rect.top,
+          w: rect.width,
+          h: rect.height,
+        });
+      }
+      frameId = requestAnimationFrame(trackPosition);
+    };
+    trackPosition();
+    return () => cancelAnimationFrame(frameId);
+  }, [localEndStep]);
+
+  const stepData = steps[currentStep];
+  if (!stepData) return null;
+
   // หากอยู่ในช่วง 2 สเต็ปสุดท้าย ให้รันหน้าตานี้ และไม่ต้องสนใจ currentStep ของระบบกราฟอีกต่อไป
   if (localEndStep > 0) {
     return (
@@ -199,6 +226,8 @@ export default function TutorialGraph({
         <svg
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
           style={{ position: "fixed" }}
+          viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+          preserveAspectRatio="none"
         >
           <defs>
             <mask id="endstep-spotlight-mask-graph">
@@ -300,6 +329,8 @@ export default function TutorialGraph({
       <svg
         className="absolute top-0 left-0 w-full h-full pointer-events-none z-50"
         style={{ position: "fixed" }}
+        viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+        preserveAspectRatio="none"
       >
         <defs>
           <mask id="graph-spotlight-mask">
@@ -460,6 +491,11 @@ export default function TutorialGraph({
                 placeholder="0"
                 autoFocus
               />
+              {weightInputError && (
+                <p className="text-red-500 text-sm mt-2 text-center">
+                  {weightInputError}
+                </p>
+              )}
               <button
                 onClick={onWeightConfirm}
                 className="w-full mt-4 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors"

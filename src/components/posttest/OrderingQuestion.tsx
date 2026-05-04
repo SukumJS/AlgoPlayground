@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   DndContext,
   closestCenter,
@@ -14,7 +14,7 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  horizontalListSortingStrategy,
+  verticalListSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -80,10 +80,12 @@ function SortableNode({ item, variant, disabled }: SortableNodeProps) {
       {...attributes}
       {...listeners}
       className={`
-        shrink-0 flex items-center justify-center
-        px-5 py-3 min-w-[140px] min-h-[56px]
+        w-full max-w-[640px] h-[72px]
+        flex items-center justify-center text-center
+        px-5 py-3
         border-2 border-[#5D5D5D] bg-[#D9E363]
         rounded-lg text-sm font-semibold text-[#222121]
+        overflow-hidden line-clamp-2
         select-none transition-shadow duration-200
         ${disabled ? "cursor-default" : "cursor-grab active:cursor-grabbing"}
         ${isDragging ? "shadow-lg" : "shadow-md"}
@@ -126,10 +128,12 @@ function StaticNode({ item, variant, isWrong = false }: StaticNodeProps) {
   return (
     <div
       className={`
-        shrink-0 flex items-center justify-center
-        px-5 py-3 min-w-[140px] min-h-[56px]
+        w-full max-w-[640px] h-[72px]
+        flex items-center justify-center text-center
+        px-5 py-3
         border-2 ${borderColor} ${bgColor}
         rounded-lg text-sm font-semibold ${textColor}
+        overflow-hidden line-clamp-2
       `}
     >
       {item.label}
@@ -189,9 +193,9 @@ function OrderingQuestion({
       >
         <SortableContext
           items={currentOrder}
-          strategy={horizontalListSortingStrategy}
+          strategy={verticalListSortingStrategy}
         >
-          <div className="flex flex-wrap gap-3 items-center justify-center">
+          <div className="flex flex-col gap-3 items-center">
             {orderedItems.map((item) => (
               <SortableNode
                 key={item.id}
@@ -228,9 +232,7 @@ export function OrderingResultDisplay({
     .filter(Boolean) as OrderItem[];
 
   return (
-    <div
-      className={`flex flex-wrap gap-3 items-center justify-center ${className}`}
-    >
+    <div className={`flex flex-col gap-3 items-center ${className}`}>
       {orderedItems.map((item, index) => {
         const isWrong = correctOrder
           ? orderedIds[index] !== correctOrder[index]

@@ -92,12 +92,13 @@ function PlaygroundOrderingQuestion({
 
       return {
         ...node,
+        type: "custom",
         data: {
           ...node.data,
           isHighlighted: isSelected,
           highlightColor: isSelected ? "#9CA3AF" : undefined,
           label: node.data.label as string,
-          variant: node.data.variant as "square" | "circle",
+          variant: (node.data.variant as "square" | "circle") ?? "circle",
         },
         draggable: false,
         selectable: false,
@@ -123,8 +124,8 @@ function PlaygroundOrderingQuestion({
           ...edge,
           type: "floatingEdge",
           style: {
-            stroke: "#222121",
-            strokeWidth: 1,
+            stroke: "#5D5D5D",
+            strokeWidth: 2,
           },
         };
       }
@@ -167,7 +168,7 @@ function PlaygroundOrderingQuestion({
           edgeTypes={edgeTypes}
           onNodeClick={handleNodeClick}
           fitView
-          fitViewOptions={{ padding: 0.45, maxZoom: 0.8 }}
+          fitViewOptions={{ padding: 0.2, minZoom: 0.2, maxZoom: 1.5 }}
           panOnDrag={false}
           zoomOnScroll={false}
           zoomOnPinch={false}

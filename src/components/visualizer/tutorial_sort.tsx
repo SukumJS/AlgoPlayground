@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
+import { useWindowSize } from "@/src/hooks/useWindowSize";
 
 interface TutorialProps {
   onComplete: () => void;
@@ -68,6 +69,7 @@ export default function TutorialSort({
   onComplete, // อย่าลืมใส่เข้ามาใน props destruction
   nodeMaskSize,
 }: TutorialProps) {
+  const { width: vw, height: vh } = useWindowSize();
   // สร้าง State ท้องถิ่น
   const [localEndStep, setLocalEndStep] = useState(0);
 
@@ -103,6 +105,28 @@ export default function TutorialSort({
     }
   }
 
+  useEffect(() => {
+    if (localEndStep < 1) return;
+    let frameId: number;
+    const trackPosition = () => {
+      const el = document.querySelector(
+        "[data-tutorial-posttest]",
+      ) as HTMLElement | null;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        setPostTestRect({
+          x: rect.left,
+          y: rect.top,
+          w: rect.width,
+          h: rect.height,
+        });
+      }
+      frameId = requestAnimationFrame(trackPosition);
+    };
+    trackPosition();
+    return () => cancelAnimationFrame(frameId);
+  }, [localEndStep]);
+
   // หากอยู่ในช่วง 2 สเต็ปสุดท้าย ให้รันหน้าตานี้
   if (localEndStep > 0) {
     return (
@@ -111,6 +135,8 @@ export default function TutorialSort({
         <svg
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
           style={{ position: "fixed" }}
+          viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+          preserveAspectRatio="none"
         >
           <defs>
             <mask id="endstep-spotlight-mask-sort">
@@ -211,6 +237,8 @@ export default function TutorialSort({
       <svg
         className="absolute top-0 left-0 w-full h-full pointer-events-none z-[60]"
         style={{ position: "fixed" }}
+        viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+        preserveAspectRatio="none"
       >
         <defs>
           <mask id="spotlight-mask">
