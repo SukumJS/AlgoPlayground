@@ -174,7 +174,6 @@ function PosttestContent() {
   const currentAnswer = userAnswers.find(
     (a) => a.questionId === currentQuestion?.id,
   );
-  const answered = currentAnswer ? hasAnswer(currentAnswer) : false;
 
   const handleAnswer = useCallback(
     (newAnswer: PosttestUserAnswer) => {
@@ -319,7 +318,6 @@ function PosttestContent() {
             onNext={handleNext}
             isFirstQuestion={isFirstQuestion}
             isLastQuestion={isLastQuestion}
-            hasSelectedAnswer={answered}
           />
         </div>
       </div>

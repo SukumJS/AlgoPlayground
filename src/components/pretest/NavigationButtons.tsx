@@ -8,7 +8,6 @@ type NavigationButtonsProps = {
   onNext: () => void;
   isFirstQuestion: boolean;
   isLastQuestion: boolean;
-  hasSelectedAnswer: boolean;
   className?: string;
 };
 
@@ -17,13 +16,12 @@ function NavigationButtons({
   onNext,
   isFirstQuestion,
   isLastQuestion,
-  hasSelectedAnswer,
   className = "",
 }: NavigationButtonsProps) {
   // The Submit button on the last question stays clickable so the
   // incomplete-quiz modal can show; intermediate Next buttons require
   // a real answer.
-  const nextDisabled = !isLastQuestion && !hasSelectedAnswer;
+  const nextDisabled = false;
 
   return (
     <div className={`flex justify-between items-center w-full ${className}`}>

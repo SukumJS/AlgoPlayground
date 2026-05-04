@@ -174,7 +174,6 @@ function PretestContent() {
   const currentAnswer = currentQuestion
     ? userAnswers.find((a) => a.questionId === currentQuestion.id)
     : undefined;
-  const hasSelectedAnswer = currentAnswer?.selectedChoiceId !== null;
 
   const handleSelectChoice = useCallback(
     (choiceId: string) => {
@@ -316,7 +315,6 @@ function PretestContent() {
             onNext={handleNext}
             isFirstQuestion={isFirstQuestion}
             isLastQuestion={isLastQuestion}
-            hasSelectedAnswer={hasSelectedAnswer}
           />
 
           {isSubmitting && (

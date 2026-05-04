@@ -20,7 +20,7 @@ function getNodeCenter(node: InternalNode) {
 
 const DEFAULT_STROKE = "#9CA3AF";
 const SELECTED_STROKE = "#222121";
-const SELECTED_WIDTH = 3;
+const SELECTED_WIDTH = 2;
 const HIT_AREA_WIDTH = 20;
 
 /**
