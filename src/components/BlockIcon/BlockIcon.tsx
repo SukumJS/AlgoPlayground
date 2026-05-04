@@ -20,7 +20,6 @@ import BubbleSortIcon from "./BubbleSort";
 import SelectionSortIcon from "./SelectionSort";
 import InsertionSortIcon from "./InsertionSort";
 import MergeSortIcon from "./MergeSort";
-import QueueSortIcon from "./QueueSort";
 import LinearSearchIcon from "./LinearSearch";
 import BinarySearchIcon from "./BinarySearch";
 
@@ -48,7 +47,6 @@ interface Props {
     | "selection-sort"
     | "insertion-sort"
     | "merge-sort"
-    | "queue-sort"
     | "linear-search"
     | "binary-search";
   className?: string;
@@ -99,8 +97,6 @@ export function BlockIcon({ pattern, className }: Props) {
       return <InsertionSortIcon className={className} />;
     case "merge-sort":
       return <MergeSortIcon className={className} />;
-    case "queue-sort":
-      return <QueueSortIcon className={className} />;
     case "linear-search":
       return <LinearSearchIcon className={className} />;
     case "binary-search":

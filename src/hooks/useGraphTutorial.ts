@@ -453,7 +453,9 @@ export function useGraphTutorial({
     } else if (tutorialStep === 5 && editingEdgeId) {
       // Tutorial requires exactly "5" for the weight edit step.
       if (weightInputValue.trim() !== "5") {
-        setWeightInputError("กรุณาใส่ค่า 5 ตามที่ tutorial สอน");
+        setWeightInputError(
+          "please enter the value 5 as shown in the tutorial",
+        );
         return;
       }
       const weight = 5;
