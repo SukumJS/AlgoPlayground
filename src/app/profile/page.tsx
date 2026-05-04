@@ -25,11 +25,13 @@ export default function Profile() {
   const { token, user } = useAuth();
   const [localUser, setLocalUser] = useState(user);
   const isGoogleUser = user?.authProvider === "google.com";
-  const profileAvatar = localUser?.imageUrl ?? "";
+  const profileAvatar = localUser?.imageUrl || null;
   const profileName =
     localUser?.uid || localUser?.email?.split("@")[0] || "Unknown";
   const profileEmail = localUser?.email || "Unknown";
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const profileAvatarSrc = avatarPreview || profileAvatar;
+  const profileInitial = profileName.trim().charAt(0).toUpperCase() || "U";
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState("");
   const [cropSource, setCropSource] = useState<string | null>(null);
@@ -366,15 +368,21 @@ export default function Profile() {
     <div className="min-h-screen p-6 text-black bg-white">
       <Navbar onSelectCategory={setSelectedCategory} />
 
-      <div className="grid grid-cols-12 px-20 mt-6 mt-18">
+      <div className="grid w-full max-w-[1380px] grid-cols-12 mx-auto mt-18">
         {/* LEFT: PROFILE */}
         <div className="col-span-3 p-6 text-center rounded-xl">
           <div className="relative mx-auto mb-4 h-30 w-30">
-            <img
-              src={avatarPreview || profileAvatar}
-              alt="profile"
-              className="object-cover border rounded-full h-30 w-30"
-            />
+            {profileAvatarSrc ? (
+              <img
+                src={profileAvatarSrc}
+                alt="profile"
+                className="object-cover border rounded-full h-30 w-30"
+              />
+            ) : (
+              <div className="flex items-center justify-center border rounded-full h-30 w-30 bg-gray-100 text-gray-600 text-4xl font-semibold">
+                {profileInitial}
+              </div>
+            )}
             <button
               type="button"
               onClick={handleAvatarPick}
