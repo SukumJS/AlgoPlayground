@@ -431,6 +431,7 @@ function Data_Linear_DS({
                 >
                   Push
                 </button>
+                <div className="w-px h-10 bg-gray-300 mx-1"></div>
                 <button
                   id="tutorial-delete-zone"
                   onClick={() => {
@@ -493,6 +494,7 @@ function Data_Linear_DS({
                 >
                   Enqueue
                 </button>
+                <div className="w-px h-10 bg-gray-300 mx-1"></div>
                 <button
                   id="tutorial-delete-zone"
                   onClick={() => {
