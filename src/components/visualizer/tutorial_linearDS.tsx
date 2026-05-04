@@ -265,8 +265,10 @@ export default function TutorialLinearDS({
                 <rect
                   x={sqRect.x - 2}
                   y={sqRect.y - 2}
-                  width={sqRect.w + 5}
-                  height={sqRect.h + 5}
+                  width={
+                    sqRect.w + (currentStep === 0 ? (isQueue ? 140 : 120) : 5)
+                  }
+                  height={sqRect.h + (currentStep === 0 ? 5 : 5)}
                   rx="10"
                   fill="black"
                 />
@@ -283,19 +285,19 @@ export default function TutorialLinearDS({
         </svg>
 
         <div
-          className={`absolute top-[72%] ${
+          className={`absolute top-[72%] translate-y-6 ${
             currentStep === 0 ? "right-[90px]" : "right-[20px]"
           } bg-white p-6 rounded-xl shadow-2xl w-[260px] transition-all duration-500 ease-in-out`}
         >
           <DashedArrow
             width={50}
-            className={`absolute -top-[45px] transform rotate-90 transition-all duration-500 ${
+            className={`absolute -top-[35px] transform rotate-90 transition-all duration-500 ${
               currentStep === 0 ? "left-1/2 -ml-[25px]" : "right-[30px]"
             }`}
           />
 
           {currentStep === 0 && (
-            <>
+            <div className="">
               <h3 className="font-bold text-gray-800 text-lg mb-2">
                 {isStack ? "Stack" : "Queue"} Tutorial
               </h3>
@@ -309,7 +311,7 @@ export default function TutorialLinearDS({
               >
                 Next
               </button>
-            </>
+            </div>
           )}
           {currentStep === 1 && (
             <>

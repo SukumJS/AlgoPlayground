@@ -12,6 +12,7 @@ export type SortNodeData = {
     | "merge"
     | "sorted"
     | "found"
+    | "deleting"
     | "processing"
     | "discarded";
   level?: number;
@@ -28,10 +29,12 @@ const STATUS_BG: Record<SortNodeData["status"], string> = {
   found: "#4CAF7D",
   processing: "#F19F72",
   discarded: "#E5E7EB",
+  deleting: "#F44336",
 };
 
 export default function SortNode({ data }: NodeProps<Node<SortNodeData>>) {
   const isDiscarded = data.status === "discarded";
+  const isDeleting = data.status === "deleting";
 
   return (
     <div
@@ -41,6 +44,7 @@ export default function SortNode({ data }: NodeProps<Node<SortNodeData>>) {
         w-14 h-14 rounded-lg cursor-grab
         transition-colors duration-300 ease-in-out
         ${isDiscarded ? "text-gray-400 border-gray-300" : "text-[#222121]"}
+        ${isDeleting ? "bg-red-500" : ""}
       `}
       style={{
         backgroundColor: STATUS_BG[data.status],

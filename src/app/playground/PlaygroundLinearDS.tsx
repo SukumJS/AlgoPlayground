@@ -337,7 +337,10 @@ export default function PlaygroundLinearDS({
       return;
     }
     const activeNode = nodes.find(
-      (n) => n.data.status === "compare" || n.data.status === "processing",
+      (n) =>
+        n.data.status === "compare" ||
+        n.data.status === "processing" ||
+        n.data.status === "delete",
     );
     if (activeNode) {
       const isSameNode = lastPannedPosition.current?.id === activeNode.id;
