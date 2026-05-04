@@ -159,11 +159,6 @@ export const algorithmCatalog: AlgorithmSectionData[] = [
         title: "Merge Sort",
         progress: defaultProgress(),
       },
-      {
-        slug: "queue-sort",
-        title: "Queue Sort",
-        progress: defaultProgress(),
-      },
     ],
   },
 
