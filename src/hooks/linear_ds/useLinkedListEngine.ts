@@ -25,6 +25,16 @@ const createEdge = (
 });
 
 const NODE_DISTANCE = 120;
+const INSERT_LINES_SLL = [2, 8, 12];
+const DELETE_LINES_SLL = [14, 18, 22];
+const INSERT_LINES_DLL = [2, 7, 12];
+const DELETE_LINES_DLL = [14, 17, 21];
+const IDLE_CODE_HIGHLIGHT = {
+  currentStep: 0,
+  stepToCodeLine: [1],
+};
+
+export type LinkedListCodeDrive = typeof IDLE_CODE_HIGHLIGHT;
 
 export const useLinkedListEngine = (
   nodes: Node<LinearNodeData>[],
@@ -35,11 +45,15 @@ export const useLinkedListEngine = (
   algorithm?: string,
 ) => {
   const [isAnimating, setIsAnimating] = useState(false);
+  const [codeDrive, setCodeDrive] =
+    useState<LinkedListCodeDrive>(IDLE_CODE_HIGHLIGHT);
 
   // เพิ่ม State สำหรับเก็บข้อความแจ้งเตือน
   const [warningText, setWarningText] = useState<string | null>(null);
 
   const isDLL = algorithm === "doubly-linked-list";
+  const insertLines = isDLL ? INSERT_LINES_DLL : INSERT_LINES_SLL;
+  const deleteLines = isDLL ? DELETE_LINES_DLL : DELETE_LINES_SLL;
 
   const sleep = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
@@ -52,8 +66,25 @@ export const useLinkedListEngine = (
 
   const insertAtIndex = useCallback(
     async (targetIndex: number, value: number) => {
+      const normalizedIndex = Number(targetIndex);
+      const normalizedValue = Number(value);
+      const currentNodesLength = getLogicalNodes().length;
+
+      if (
+        !Number.isInteger(normalizedIndex) ||
+        !Number.isFinite(normalizedValue)
+      ) {
+        setWarningText("Please enter a valid integer index and numeric value.");
+        setTimeout(() => setWarningText(null), 3000);
+        return;
+      }
+
       // เปลี่ยนเป็นแจ้งเตือนภาษาอังกฤษแทน alert
-      if (targetIndex < 0 || targetIndex > nodes.length || nodes.length >= 50) {
+      if (
+        normalizedIndex < 0 ||
+        normalizedIndex > currentNodesLength ||
+        currentNodesLength >= 50
+      ) {
         setWarningText(
           "Invalid index or linked list has reached the maximum size of 50.",
         );
@@ -62,14 +93,15 @@ export const useLinkedListEngine = (
       }
 
       setIsAnimating(true);
+      setCodeDrive({ currentStep: 0, stepToCodeLine: insertLines });
       setWarningText(null); // ล้างข้อความเก่าทิ้งถ้าผ่านเงื่อนไข
 
       let currentNodes = getLogicalNodes();
       let currentEdges = [...edges];
 
       const prevNodeForPos =
-        targetIndex > 0
-          ? currentNodes.find((n) => n.data.index === targetIndex - 1)
+        normalizedIndex > 0
+          ? currentNodes.find((n) => n.data.index === normalizedIndex - 1)
           : null;
 
       const startX = prevNodeForPos
@@ -80,12 +112,17 @@ export const useLinkedListEngine = (
         id: getNewId(),
         type: "custom",
         position: { x: startX, y: -80 },
-        data: { value, status: "processing" as const, index: targetIndex },
+        data: {
+          value: normalizedValue,
+          status: "processing" as const,
+          index: normalizedIndex,
+        },
       };
 
       currentNodes.push(newNode);
       setNodes([...currentNodes]);
       await sleep(speed * 1.5);
+      setCodeDrive({ currentStep: 1, stepToCodeLine: insertLines });
 
       //อัปเดตตำแหน่ง (Visual) และ Index (Logical) แบบแยกออกจากกัน
       currentNodes = currentNodes.map((node): Node<LinearNodeData> => {
@@ -96,7 +133,7 @@ export const useLinkedListEngine = (
           if (node.position.x >= startX) {
             newX += NODE_DISTANCE;
           }
-          if (newIdx >= targetIndex) {
+          if (newIdx >= normalizedIndex) {
             newIdx += 1;
           }
 
@@ -113,10 +150,10 @@ export const useLinkedListEngine = (
       await sleep(speed);
 
       const prevNode = currentNodes.find(
-        (n) => n.data.index === targetIndex - 1,
+        (n) => n.data.index === normalizedIndex - 1,
       );
       const nextNode = currentNodes.find(
-        (n) => n.data.index === targetIndex + 1 && n.id !== newNode.id,
+        (n) => n.data.index === normalizedIndex + 1 && n.id !== newNode.id,
       );
 
       if (prevNode) {
@@ -143,6 +180,7 @@ export const useLinkedListEngine = (
 
       setEdges([...currentEdges]);
       await sleep(speed * 1.5);
+      setCodeDrive({ currentStep: 2, stepToCodeLine: insertLines });
 
       currentNodes = currentNodes.map((node): Node<LinearNodeData> => {
         if (node.id === newNode.id) {
@@ -157,9 +195,19 @@ export const useLinkedListEngine = (
 
       setNodes([...currentNodes]);
       await sleep(speed * 1.5);
+      setCodeDrive(IDLE_CODE_HIGHLIGHT);
       setIsAnimating(false);
     },
-    [nodes, setNodes, edges, setEdges, speed, getLogicalNodes, isDLL],
+    [
+      nodes,
+      setNodes,
+      edges,
+      setEdges,
+      speed,
+      getLogicalNodes,
+      isDLL,
+      insertLines,
+    ],
   );
 
   const deleteAtIndex = useCallback(
@@ -172,6 +220,7 @@ export const useLinkedListEngine = (
       }
 
       setIsAnimating(true);
+      setCodeDrive({ currentStep: 0, stepToCodeLine: deleteLines });
       setWarningText(null); // ล้างข้อความเก่าทิ้งถ้าผ่านเงื่อนไข
 
       let currentNodes = getLogicalNodes();
@@ -192,6 +241,7 @@ export const useLinkedListEngine = (
       });
       setNodes([...currentNodes]);
       await sleep(speed * 1.5);
+      setCodeDrive({ currentStep: 1, stepToCodeLine: deleteLines });
 
       const prevNode = currentNodes.find(
         (n) => n.data.index === targetIndex - 1,
@@ -244,10 +294,28 @@ export const useLinkedListEngine = (
       setNodes([...currentNodes]);
 
       await sleep(speed * 1.5);
+      setCodeDrive({ currentStep: 2, stepToCodeLine: deleteLines });
+      await sleep(speed);
+      setCodeDrive(IDLE_CODE_HIGHLIGHT);
       setIsAnimating(false);
     },
-    [nodes, setNodes, edges, setEdges, speed, getLogicalNodes, isDLL],
+    [
+      nodes,
+      setNodes,
+      edges,
+      setEdges,
+      speed,
+      getLogicalNodes,
+      isDLL,
+      deleteLines,
+    ],
   );
 
-  return { insertAtIndex, deleteAtIndex, isAnimating, warningText };
+  return {
+    insertAtIndex,
+    deleteAtIndex,
+    isAnimating,
+    warningText,
+    codeDrive,
+  };
 };

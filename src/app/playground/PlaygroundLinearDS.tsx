@@ -42,7 +42,10 @@ import { Info, Trash2, HelpCircle } from "lucide-react";
 import StatusNode from "@/src/components/shared/statusNode";
 import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 
-import { useArrayEngine } from "@/src/hooks/linear_ds/useArrayEngine";
+import {
+  useArrayEngine,
+  type LinearDsCodeKind,
+} from "@/src/hooks/linear_ds/useArrayEngine";
 import { useLinkedListEngine } from "@/src/hooks/linear_ds/useLinkedListEngine";
 
 // --- TUTORIAL IMPORTS ---
@@ -299,7 +302,17 @@ export default function PlaygroundLinearDS({
     isLinkedList,
   );
 
-  const arrayEngine = useArrayEngine(nodes, setNodes, numericSpeed);
+  const linearDsCodeKind: LinearDsCodeKind =
+    algorithm === "array" || algorithm === "stack" || algorithm === "queue"
+      ? algorithm
+      : "array";
+  const arrayEngine = useArrayEngine(
+    nodes,
+    setNodes,
+    numericSpeed,
+    linearDsCodeKind,
+  );
+  const { codeDrive: arrayCodeDrive } = arrayEngine;
   const linkedListEngine = useLinkedListEngine(
     nodes,
     setNodes,
@@ -308,6 +321,7 @@ export default function PlaygroundLinearDS({
     numericSpeed,
     algorithm,
   );
+  const { codeDrive: linkedListCodeDrive } = linkedListEngine;
 
   const activeEngine = isLinkedList ? linkedListEngine : arrayEngine;
   const { insertAtIndex, deleteAtIndex, isAnimating, warningText } =
@@ -474,7 +488,23 @@ export default function PlaygroundLinearDS({
     () => (
       <SideTab title={prettyName}>
         <div>
-          <CodeAlgo />
+          <CodeAlgo
+            algoType={algorithm}
+            {...(algorithm === "array" ||
+            algorithm === "stack" ||
+            algorithm === "queue"
+              ? {
+                  currentStep: arrayCodeDrive.currentStep,
+                  stepToCodeLine: arrayCodeDrive.stepToCodeLine,
+                }
+              : algorithm === "singly-linked-list" ||
+                  algorithm === "doubly-linked-list"
+                ? {
+                    currentStep: linkedListCodeDrive.currentStep,
+                    stepToCodeLine: linkedListCodeDrive.stepToCodeLine,
+                  }
+                : {})}
+          />
           <ExplainAlgo explanation={effectiveExplanation} />
           <Data_Linear_DS
             nodeInput={nodeInput}
@@ -508,6 +538,8 @@ export default function PlaygroundLinearDS({
       insertAtIndex,
       deleteAtIndex,
       tutorial,
+      arrayCodeDrive,
+      linkedListCodeDrive,
     ],
   );
 
