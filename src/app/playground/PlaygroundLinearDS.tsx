@@ -321,6 +321,7 @@ export default function PlaygroundLinearDS({
     numericSpeed,
     algorithm,
   );
+  const { codeDrive: linkedListCodeDrive } = linkedListEngine;
 
   const activeEngine = isLinkedList ? linkedListEngine : arrayEngine;
   const { insertAtIndex, deleteAtIndex, isAnimating, warningText } =
@@ -493,7 +494,13 @@ export default function PlaygroundLinearDS({
                   currentStep: arrayCodeDrive.currentStep,
                   stepToCodeLine: arrayCodeDrive.stepToCodeLine,
                 }
-              : {})}
+              : algorithm === "singly-linked-list" ||
+                  algorithm === "doubly-linked-list"
+                ? {
+                    currentStep: linkedListCodeDrive.currentStep,
+                    stepToCodeLine: linkedListCodeDrive.stepToCodeLine,
+                  }
+                : {})}
           />
           <ExplainAlgo explanation={effectiveExplanation} />
           <Data_Linear_DS
@@ -529,6 +536,7 @@ export default function PlaygroundLinearDS({
       deleteAtIndex,
       tutorial,
       arrayCodeDrive,
+      linkedListCodeDrive,
     ],
   );
 
