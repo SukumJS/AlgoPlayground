@@ -35,6 +35,10 @@ export const useLinkedListEngine = (
   algorithm?: string,
 ) => {
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // เพิ่ม State สำหรับเก็บข้อความแจ้งเตือน
+  const [warningText, setWarningText] = useState<string | null>(null);
+
   const isDLL = algorithm === "doubly-linked-list";
 
   const sleep = (ms: number) =>
@@ -48,12 +52,18 @@ export const useLinkedListEngine = (
 
   const insertAtIndex = useCallback(
     async (targetIndex: number, value: number) => {
+      // เปลี่ยนเป็นแจ้งเตือนภาษาอังกฤษแทน alert
       if (targetIndex < 0 || targetIndex > nodes.length || nodes.length >= 50) {
-        alert("Index ไม่ถูกต้อง หรือโหนดเต็มแล้วครับ");
+        setWarningText(
+          "Invalid index or linked list has reached the maximum size of 50.",
+        );
+        setTimeout(() => setWarningText(null), 3000);
         return;
       }
 
       setIsAnimating(true);
+      setWarningText(null); // ล้างข้อความเก่าทิ้งถ้าผ่านเงื่อนไข
+
       let currentNodes = getLogicalNodes();
       let currentEdges = [...edges];
 
@@ -154,12 +164,16 @@ export const useLinkedListEngine = (
 
   const deleteAtIndex = useCallback(
     async (targetIndex: number) => {
+      //  เปลี่ยนเป็นแจ้งเตือนภาษาอังกฤษแทน alert
       if (targetIndex < 0 || targetIndex >= nodes.length) {
-        alert("ไม่มี Index นี้ให้ลบครับ");
+        setWarningText("Invalid index. No element to delete.");
+        setTimeout(() => setWarningText(null), 3000);
         return;
       }
 
       setIsAnimating(true);
+      setWarningText(null); // ล้างข้อความเก่าทิ้งถ้าผ่านเงื่อนไข
+
       let currentNodes = getLogicalNodes();
       let currentEdges = [...edges];
 
@@ -235,5 +249,5 @@ export const useLinkedListEngine = (
     [nodes, setNodes, edges, setEdges, speed, getLogicalNodes, isDLL],
   );
 
-  return { insertAtIndex, deleteAtIndex, isAnimating };
+  return { insertAtIndex, deleteAtIndex, isAnimating, warningText };
 };
