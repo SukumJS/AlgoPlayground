@@ -138,9 +138,17 @@ export default function Navbar({ onSelectCategory }: NavbarProps) {
                 className="w-12 h-12 rounded-full overflow-hidden border border-[#5D5D5D]"
               >
                 <img
-                  src={user?.imageUrl ?? "@/src/data/default-profile.png"}
+                  src={
+                    user?.imageUrl ||
+                    "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                  }
                   alt="profile"
+                  referrerPolicy="no-referrer"
                   className="object-cover w-full h-full"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                  }}
                 />
               </button>
 

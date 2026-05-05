@@ -12,6 +12,7 @@ import {
 } from "@/src/services/auth.service";
 import { useAuth } from "@/src/hooks/useAuth";
 import { saveAuthSession } from "@/src/lib/auth-storage";
+import { auth } from "@/src/config/firebase";
 
 type ProgressItem = {
   name: string;
@@ -24,7 +25,10 @@ export default function Profile() {
   const cropImageRef = useRef<HTMLImageElement | null>(null);
   const { token, user } = useAuth();
   const [localUser, setLocalUser] = useState(user);
-  const isGoogleUser = user?.authProvider === "google.com";
+  const isGoogleUser =
+    user?.authProvider === "google.com" ||
+    localUser?.authProvider === "google.com" ||
+    auth?.currentUser?.providerData?.some((p) => p.providerId === "google.com");
   const profileAvatar = localUser?.imageUrl || null;
   const profileName =
     localUser?.uid || localUser?.email?.split("@")[0] || "Unknown";
@@ -69,6 +73,7 @@ export default function Profile() {
           updatedAt: syncedUser?.updatedAt,
           progress: syncedUser?.progress,
           categoryAlgoProgress: syncedUser?.categoryAlgoProgress,
+          authProvider: user?.authProvider,
         });
       } catch {
         // Keep cached profile data when sync fails.
@@ -243,6 +248,7 @@ export default function Profile() {
           updatedAt: syncedUser?.updatedAt,
           progress: syncedUser?.progress,
           categoryAlgoProgress: syncedUser?.categoryAlgoProgress,
+          authProvider: syncedUser?.authProvider,
         };
         setLocalUser(updatedUser);
         // Save updated profile to localStorage
@@ -376,7 +382,12 @@ export default function Profile() {
               <img
                 src={profileAvatarSrc}
                 alt="profile"
-                className="object-cover border rounded-full h-30 w-30"
+                referrerPolicy="no-referrer"
+                className="object-cover border rounded-full h-30 w-30 bg-white"
+                onError={(e) => {
+                  e.currentTarget.src =
+                    "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                }}
               />
             ) : (
               <div className="flex items-center justify-center border rounded-full h-30 w-30 bg-gray-100 text-gray-600 text-4xl font-semibold">
@@ -411,7 +422,7 @@ export default function Profile() {
             <span>{profileEmail}</span>
           </div>
 
-          {!isGoogleUser && (
+          {user && !isGoogleUser && (
             <div className="flex flex-col items-center gap-3 mt-6">
               <button
                 onClick={() => setOpenPassword(true)}
