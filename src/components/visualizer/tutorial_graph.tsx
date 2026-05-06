@@ -186,6 +186,11 @@ export default function TutorialGraph({
   const dragStep = weighted ? 8 : 4;
   const completeStep = weighted ? 9 : 5;
 
+  // node 70 คือ node ขวาสุด — ถ้า tooltip ที่ x+80 จะล้นขวา ให้วางซ้ายแทน
+  const node70TooltipLeft = node70ScreenPos
+    ? node70ScreenPos.x + 80 + 300 > (vw || 1200)
+    : false;
+
   // กันข้ามอัตโนมัติ (Anti Auto-Skip System) - ดักจับตอนถึงสเต็ปสุดท้ายของแต่ละโหมด
   if (localEndStep === 0) {
     if (currentStep >= completeStep) {
@@ -448,7 +453,9 @@ export default function TutorialGraph({
         <div
           className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 border border-gray-200"
           style={{
-            left: `${node70ScreenPos.x + 80}px`,
+            left: node70TooltipLeft
+              ? `${node70ScreenPos.x - 80 - 280}px`
+              : `${node70ScreenPos.x + 80}px`,
             top: `${node70ScreenPos.y - 20}px`,
           }}
         >
@@ -459,12 +466,12 @@ export default function TutorialGraph({
             width={50}
             className="absolute pointer-events-none"
             style={{
-              right: "100%",
+              [node70TooltipLeft ? "left" : "right"]: "100%",
               top: "50%",
               marginTop: "-12px",
-              marginRight: "10px",
+              [node70TooltipLeft ? "marginLeft" : "marginRight"]: "10px",
             }}
-            direction="left"
+            direction={node70TooltipLeft ? "right" : "left"}
           />
         </div>
       )}
@@ -567,7 +574,9 @@ export default function TutorialGraph({
         <div
           className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 border border-gray-200"
           style={{
-            left: `${node70ScreenPos.x + 80}px`,
+            left: node70TooltipLeft
+              ? `${node70ScreenPos.x - 80 - 200}px`
+              : `${node70ScreenPos.x + 80}px`,
             top: `${node70ScreenPos.y - 20}px`,
           }}
         >
@@ -578,12 +587,12 @@ export default function TutorialGraph({
             width={50}
             className="absolute pointer-events-none"
             style={{
-              right: "100%",
+              [node70TooltipLeft ? "left" : "right"]: "100%",
               top: "50%",
               marginTop: "-12px",
-              marginRight: "10px",
+              [node70TooltipLeft ? "marginLeft" : "marginRight"]: "10px",
             }}
-            direction="left"
+            direction={node70TooltipLeft ? "right" : "left"}
           />
         </div>
       )}

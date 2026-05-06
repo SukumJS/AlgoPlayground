@@ -228,7 +228,17 @@ function Data_graph({
               placeholder="N"
               className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none placeholder:text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={nodeInput}
-              onChange={(e) => setNodeInput(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "" || val === "-") {
+                  setNodeInput(val);
+                  return;
+                }
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && num >= -99 && num <= 99) {
+                  setNodeInput(val);
+                }
+              }}
               onPointerDown={(e) => e.stopPropagation()}
             />
           </div>

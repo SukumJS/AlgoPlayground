@@ -50,7 +50,7 @@ import { useGraphController } from "@/src/hooks/useGraphController";
 
 const nodeTypes = { custom: CustomNode };
 const edgeTypes = { tree: TreeEdge, floatingEdge: FloatingEdge };
-const fitViewOptions: FitViewOptions = { padding: 0.2 };
+const fitViewOptions: FitViewOptions = { padding: 0.2, maxZoom: 1 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: false };
 
 const getDefaultGraphExplanation = (name: string) =>
@@ -66,37 +66,37 @@ const algorithmNames: Record<string, string> = {
   "depth-first-search": "Depth-First Search",
 };
 
-// Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
+// Initial nodes for graph — positions scaled ×1.5 so fitView (maxZoom:1) renders nodes at natural size
 const graphInitialNodes: Node[] = [
   {
     id: "g1",
     type: "custom",
     data: { label: "64", variant: "circle" },
-    position: { x: 50, y: 280 },
+    position: { x: 75, y: 420 },
   },
   {
     id: "g2",
     type: "custom",
     data: { label: "39", variant: "circle" },
-    position: { x: 260, y: 120 },
+    position: { x: 390, y: 180 },
   },
   {
     id: "g3",
     type: "custom",
     data: { label: "97", variant: "circle" },
-    position: { x: 520, y: 130 },
+    position: { x: 780, y: 195 },
   },
   {
     id: "g4",
     type: "custom",
     data: { label: "69", variant: "circle" },
-    position: { x: 330, y: 380 },
+    position: { x: 495, y: 570 },
   },
   {
     id: "g5",
     type: "custom",
     data: { label: "70", variant: "circle" },
-    position: { x: 620, y: 320 },
+    position: { x: 930, y: 480 },
   },
 ];
 
@@ -1002,9 +1002,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
+                  const val = nodeInteraction.weightInputValue;
                   if (
-                    algorithm === "dijkstra" &&
-                    Number(nodeInteraction.weightInputValue) < 0
+                    val.trim() === "" ||
+                    val === "-" ||
+                    (algorithm === "dijkstra" && Number(val) < 0)
                   )
                     return;
                   nodeInteraction.handleWeightConfirm();
@@ -1033,8 +1035,10 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               <button
                 onClick={nodeInteraction.handleWeightConfirm}
                 disabled={
-                  algorithm === "dijkstra" &&
-                  Number(nodeInteraction.weightInputValue) < 0
+                  nodeInteraction.weightInputValue.trim() === "" ||
+                  nodeInteraction.weightInputValue === "-" ||
+                  (algorithm === "dijkstra" &&
+                    Number(nodeInteraction.weightInputValue) < 0)
                 }
                 className="flex-1 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >

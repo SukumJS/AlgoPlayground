@@ -403,7 +403,6 @@ export default function Profile() {
           )}
           <h2 className="text-xl font-semibold">{profileName}</h2>
           <div className="flex items-center justify-center gap-2 mt-1 text-sm text-gray-600">
-            <span>✉</span>
             <span>{profileEmail}</span>
           </div>
 
