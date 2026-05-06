@@ -751,14 +751,14 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
   // Edge click handler (for weight editing)
   const handleEdgeClick = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
-      if (isAnimationActive) return; // lock during entire animation session
+      if (isAnimationPlaying) return; // lock during animation playback
       if (graphTutorial.showTutorial) {
         graphTutorial.handleWeightClick(edge.id);
       } else {
         nodeInteraction.handleEdgeClick(event, edge.id);
       }
     },
-    [isAnimationActive, graphTutorial, nodeInteraction],
+    [isAnimationPlaying, graphTutorial, nodeInteraction],
   );
 
   // Combined node click handler
@@ -871,13 +871,13 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               : onNodesChange
         }
         onEdgesChange={
-          graphTutorial.showTutorial || isAnimationActive
+          graphTutorial.showTutorial || isAnimationPlaying
             ? undefined
             : onEdgesChange
         }
-        onConnect={isAnimationActive ? undefined : onConnect}
+        onConnect={isAnimationPlaying ? undefined : onConnect}
         deleteKeyCode={
-          graphTutorial.showTutorial || isAnimationActive
+          graphTutorial.showTutorial || isAnimationPlaying
             ? null
             : ["Delete", "Backspace"]
         }

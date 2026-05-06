@@ -12,6 +12,7 @@ import {
 } from "@/src/services/auth.service";
 import { useAuth } from "@/src/hooks/useAuth";
 import { saveAuthSession } from "@/src/lib/auth-storage";
+import { auth } from "@/src/config/firebase";
 
 type ProgressItem = {
   name: string;
@@ -24,12 +25,17 @@ export default function Profile() {
   const cropImageRef = useRef<HTMLImageElement | null>(null);
   const { token, user } = useAuth();
   const [localUser, setLocalUser] = useState(user);
-  const isGoogleUser = user?.authProvider === "google.com";
-  const profileAvatar = localUser?.imageUrl ?? "";
+  const isGoogleUser =
+    user?.authProvider === "google.com" ||
+    localUser?.authProvider === "google.com" ||
+    auth?.currentUser?.providerData?.some((p) => p.providerId === "google.com");
+  const profileAvatar = localUser?.imageUrl || null;
   const profileName =
     localUser?.uid || localUser?.email?.split("@")[0] || "Unknown";
   const profileEmail = localUser?.email || "Unknown";
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const profileAvatarSrc = avatarPreview || profileAvatar;
+  const profileInitial = profileName.trim().charAt(0).toUpperCase() || "U";
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState("");
   const [cropSource, setCropSource] = useState<string | null>(null);
@@ -67,6 +73,7 @@ export default function Profile() {
           updatedAt: syncedUser?.updatedAt,
           progress: syncedUser?.progress,
           categoryAlgoProgress: syncedUser?.categoryAlgoProgress,
+          authProvider: user?.authProvider,
         });
       } catch {
         // Keep cached profile data when sync fails.
@@ -241,6 +248,7 @@ export default function Profile() {
           updatedAt: syncedUser?.updatedAt,
           progress: syncedUser?.progress,
           categoryAlgoProgress: syncedUser?.categoryAlgoProgress,
+          authProvider: syncedUser?.authProvider,
         };
         setLocalUser(updatedUser);
         // Save updated profile to localStorage
@@ -366,18 +374,25 @@ export default function Profile() {
     <div className="min-h-screen p-6 text-black bg-white">
       <Navbar onSelectCategory={setSelectedCategory} />
 
-      <div className="mt-18 px-4 md:px-12 lg:px-20 flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:gap-0">
+      <div className="grid w-full max-w-[1380px] grid-cols-12 mx-auto mt-18">
         {/* LEFT: PROFILE */}
         <div className="col-span-3 p-6 text-center rounded-xl">
           <div className="relative mx-auto mb-4 h-30 w-30">
-            {avatarPreview || profileAvatar ? (
+            {profileAvatarSrc ? (
               <img
-                src={avatarPreview || profileAvatar}
+                src={profileAvatarSrc}
                 alt="profile"
-                className="object-cover border rounded-full h-30 w-30"
+                referrerPolicy="no-referrer"
+                className="object-cover border rounded-full h-30 w-30 bg-white"
+                onError={(e) => {
+                  e.currentTarget.src =
+                    "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                }}
               />
             ) : (
-              <div className="h-30 w-30 rounded-full border bg-gray-100" />
+              <div className="flex items-center justify-center border rounded-full h-30 w-30 bg-gray-100 text-gray-600 text-4xl font-semibold">
+                {profileInitial}
+              </div>
             )}
             <button
               type="button"
@@ -406,7 +421,7 @@ export default function Profile() {
             <span>{profileEmail}</span>
           </div>
 
-          {!isGoogleUser && (
+          {user && !isGoogleUser && (
             <div className="flex flex-col items-center gap-3 mt-6">
               <button
                 onClick={() => setOpenPassword(true)}

@@ -21,6 +21,7 @@ export function useSortableDrag(
     (event, dragged) => {
       let clientX = 0;
       let clientY = 0;
+      let isOverTrash = false;
 
       const e = event as unknown as MouseEvent | TouchEvent;
 
@@ -40,7 +41,8 @@ export function useSortableDrag(
         const dist = Math.sqrt(
           Math.pow(clientX - trashX, 2) + Math.pow(clientY - trashY, 2),
         );
-        setIsTrashActive(dist < 150);
+        isOverTrash = dist < 150;
+        setIsTrashActive(isOverTrash);
       }
 
       setNodes((prev) => {
@@ -59,11 +61,23 @@ export function useSortableDrag(
         const sortedByX = [...prev].sort((a, b) => a.position.x - b.position.x);
         const currentIndex = sortedByX.findIndex((n) => n.id === dragged.id);
 
+        const newDraggedNode = {
+          ...draggedNode,
+          position: dragged.position,
+          data: {
+            ...draggedNode.data,
+            // ถ้าลากจ่อถังขยะ เปลี่ยนสีแดง ถ้าไม่ใช่เอาสถานะลบออก
+            status: isOverTrash
+              ? "deleting"
+              : draggedNode.data.status === "deleting"
+                ? "idle"
+                : draggedNode.data.status,
+          },
+        } as Node<SortNodeData>; // จำเป็นต้อง Cast Type
+
         // ถ้าตำแหน่งช่องไม่เปลี่ยน ไม่ต้องขยับ
         if (newIndex === currentIndex) {
-          return prev.map((n) =>
-            n.id === dragged.id ? { ...n, position: dragged.position } : n,
-          );
+          return prev.map((n) => (n.id === dragged.id ? newDraggedNode : n));
         }
 
         // เอา node ออกก่อน แล้วจัดเรียงตัวที่เหลือตามพิกัด X
@@ -72,11 +86,11 @@ export function useSortableDrag(
           .sort((a, b) => a.position.x - b.position.x);
 
         // แทรกเข้าช่องใหม่
-        filtered.splice(newIndex, 0, draggedNode);
+        filtered.splice(newIndex, 0, newDraggedNode);
 
         return filtered.map((node, visualSlot) => ({
           ...node,
-          //  ถ้าเป็น Linked List ห้ามแก้ Index! ให้แก้เฉพาะโหมด Array
+          // ถ้าเป็น Linked List ห้ามแก้ Index! ให้แก้เฉพาะโหมด Array
           data: isLinkedList ? node.data : { ...node.data, index: visualSlot },
           position:
             node.id === dragged.id
@@ -116,7 +130,7 @@ export function useSortableDrag(
         const dist = Math.sqrt(
           Math.pow(clientX - trashX, 2) + Math.pow(clientY - trashY, 2),
         );
-        droppedInTrash = dist < 100;
+        droppedInTrash = dist < 150;
       }
 
       if (droppedInTrash) {
@@ -149,6 +163,10 @@ export function useSortableDrag(
                 position: positionFromIndex(visualSlot),
                 selected: false,
                 dragging: false,
+                data: {
+                  ...n.data,
+                  status: n.data.status === "deleting" ? "idle" : n.data.status,
+                },
               };
             }
             return { ...n, selected: false };

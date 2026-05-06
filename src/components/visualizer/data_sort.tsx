@@ -26,6 +26,8 @@ type nodeProps = {
   // รับค่า isRunning มาจากหน้าหลัก
   isRunning?: boolean;
   algorithm?: string;
+  showTargetError?: boolean;
+  onSearch?: () => void;
 };
 
 function Data_sort({
@@ -37,6 +39,8 @@ function Data_sort({
   setTargetValue,
   isRunning,
   algorithm,
+  showTargetError,
+  onSearch,
 }: nodeProps) {
   // ตั้งค่าเริ่มต้นให้เปิดแท็บอัตโนมัติถ้าเป็น Tutorial
   const [isDataSortOpen, setIsDataSortOpen] = useState(
@@ -429,9 +433,24 @@ function Data_sort({
               className={`mt-2 border p-2 rounded-lg w-full transition-all placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                 isRunning
                   ? "border-gray-100 bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "border-gray-200"
+                  : showTargetError
+                    ? "ring-red-500 focus:border-red-500 focus:ring-red-500"
+                    : "border-gray-200 "
               }`}
             />
+            {/* ข้อความเตือนสีแดงใต้กล่อง Input */}
+            {showTargetError && (
+              <p className="text-red-500 text-xs font-medium mt-2 ml-1 transition-all">
+                Please enter a Target Value to search.
+              </p>
+            )}
+            <button
+              onClick={onSearch}
+              disabled={isRunning}
+              className="mt-3 w-full bg-[#222121] hover:bg-black text-white text-center p-2 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRunning ? "Searching..." : "Search"}
+            </button>
           </div>
         )}
       </div>

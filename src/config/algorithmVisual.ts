@@ -26,7 +26,6 @@ export const algorithmVisualMap = {
   "selection-sort": { pattern: "selection-sort" },
   "insertion-sort": { pattern: "insertion-sort" },
   "merge-sort": { pattern: "merge-sort" },
-  "queue-sort": { pattern: "queue-sort" },
   // Searching
   "linear-search": { pattern: "linear-search" },
   "binary-search": { pattern: "binary-search" },

@@ -33,6 +33,7 @@ import GoToHome_Portal from "@/src/components/shared/goToHome_Portal";
 import { useSearchTutorial } from "@/src/hooks/useSearchTutorial";
 import TutorialSearch from "@/src/components/visualizer/tutorial_search";
 import Tutorial_modal from "@/src/components/shared/tutorial_modal";
+import { on } from "events";
 
 // กำหนด Custom Node ให้ใช้ SortNode
 const nodeTypes = {
@@ -94,6 +95,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
   const [nodeInput, setNodeInput] = useState<number | string>("");
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [targetValue, setTargetValue] = useState<number | string>("");
+  const [showTargetError, setShowTargetError] = useState(false);
   const [explanation, setExplanation] = useState<string>(
     "This section will explain the algorithm's steps. Click 'Run' to start.",
   );
@@ -189,6 +191,16 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
     setSpeed,
     speed,
     run: () => {
+      if (
+        targetValue === "" ||
+        targetValue === null ||
+        targetValue === undefined
+      ) {
+        setShowTargetError(true);
+        return;
+      }
+      setShowTargetError(false); // ปิด Error ถ้าผ่าน
+
       // ถ้าเลือก Binary Search และแอนิเมชันยังไม่ได้เริ่ม
       if (algorithm === "binary-search" && !engine.isRunning) {
         // ให้เช็คว่าข้อมูลเรียงหรือยัง
@@ -198,6 +210,30 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
         }
       }
       engine.run();
+    },
+    nextStep: () => {
+      if (
+        targetValue === "" ||
+        targetValue === null ||
+        targetValue === undefined
+      ) {
+        setShowTargetError(true);
+        return;
+      }
+      setShowTargetError(false);
+      engine.nextStep();
+    },
+    skipForward: () => {
+      if (
+        targetValue === "" ||
+        targetValue === null ||
+        targetValue === undefined
+      ) {
+        setShowTargetError(true);
+        return;
+      }
+      setShowTargetError(false);
+      engine.skipForward();
     },
   };
 
@@ -300,6 +336,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
   const handleTargetChange = useCallback((val: number | string) => {
     engineRef.current.stop();
     setTargetValue(val);
+    setShowTargetError(false);
   }, []);
 
   const { showTutorial, handleTutorialDropSuccess } = tutorial;
@@ -327,6 +364,8 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
             }}
             isRunning={controller.isRunning}
             algorithm={algorithm}
+            showTargetError={showTargetError}
+            onSearch={controller.run}
           />
         </div>
         <div>
@@ -346,6 +385,8 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
       stepToCodeLine,
       handleTutorialDropSuccess,
       controller.isRunning,
+      showTargetError,
+      controller.run,
     ],
   );
 

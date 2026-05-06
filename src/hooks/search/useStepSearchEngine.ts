@@ -45,6 +45,9 @@ const buildStepExplanations = (
 
   return steps.map((step, index) => {
     const currentNodes = step.nodes;
+    // ตรวจสอบว่าเป็นสเต็ปสุดท้ายหรือไม่
+    const isLastStep = index === steps.length - 1;
+
     if (index === 0) {
       return `Starting ${algoName}. Target value is ${target}.`;
     }
@@ -63,9 +66,15 @@ const buildStepExplanations = (
     );
     const newFound = getNodesByNewStatus(prevNodes, currentNodes, "found");
 
+    // กรณีเจอ Target
     if (newFound.length > 0) {
       const foundValue = Number(newFound[0].data.value);
       return `Found target ${target} at value ${foundValue}. Search completed.`;
+    }
+
+    // กรณีเป็นสเต็ปสุดท้ายและยังหาไม่เจอ
+    if (isLastStep) {
+      return `Search completed. Target ${target} was not found in the array.`;
     }
 
     if (newProcessing.length > 0) {

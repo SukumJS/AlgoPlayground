@@ -5,12 +5,40 @@ import { LinearNodeData } from "@/src/components/shared/linearDSNode";
 let tempId = 1000;
 const getNewId = () => `array_node_${tempId++}`;
 
+/** Animation phases → 1-based lines (must match default pseudocode in each Code* component) */
+const INSERT_LINES_ARRAY = [2, 4, 6];
+const DELETE_LINES_ARRAY = [7, 9, 11];
+/** Push / Enqueue: push branch → increment top/rear → assign slot */
+const INSERT_LINES_STACK_QUEUE = [2, 6, 7];
+/** Pop / Dequeue: pop/dequeue branch → decrement top/front → return */
+const DELETE_LINES_STACK_QUEUE = [8, 13, 14];
+
+export type LinearDsCodeKind = "array" | "stack" | "queue";
+
+const IDLE_CODE_HIGHLIGHT = {
+  currentStep: 0,
+  stepToCodeLine: [1],
+};
+
+export type ArrayCodeDrive = typeof IDLE_CODE_HIGHLIGHT;
+
+function insertLinesFor(kind: LinearDsCodeKind): number[] {
+  return kind === "array" ? INSERT_LINES_ARRAY : INSERT_LINES_STACK_QUEUE;
+}
+
+function deleteLinesFor(kind: LinearDsCodeKind): number[] {
+  return kind === "array" ? DELETE_LINES_ARRAY : DELETE_LINES_STACK_QUEUE;
+}
+
 export const useArrayEngine = (
   nodes: Node<LinearNodeData>[],
   setNodes: React.Dispatch<React.SetStateAction<Node<LinearNodeData>[]>>,
   speed: number = 1000, // ความเร็วแอนิเมชัน
+  codeKind: LinearDsCodeKind = "array",
 ) => {
   const [isAnimating, setIsAnimating] = useState(false);
+  const [codeDrive, setCodeDrive] =
+    useState<ArrayCodeDrive>(IDLE_CODE_HIGHLIGHT);
 
   // State สำหรับเก็บข้อความแจ้งเตือน
   const [warningText, setWarningText] = useState<string | null>(null);
@@ -40,6 +68,8 @@ export const useArrayEngine = (
       }
 
       setIsAnimating(true);
+      const insertLines = insertLinesFor(codeKind);
+      setCodeDrive({ currentStep: 0, stepToCodeLine: insertLines });
       setWarningText(null); // ล้างข้อความเก่าทิ้งถ้าทำรายการผ่าน
 
       // ดึงข้อมูลที่ซิงค์ตำแหน่งแล้วมาใช้งาน ป้องกัน index รวน
@@ -57,6 +87,7 @@ export const useArrayEngine = (
       setNodes([...currentNodes]);
 
       await sleep(speed * 1);
+      setCodeDrive({ currentStep: 1, stepToCodeLine: insertLines });
 
       // --- กระเถิบกล่องที่อยู่ข้างหลังไปทางขวา (+65px) ---
       currentNodes = currentNodes.map((node) => {
@@ -76,6 +107,7 @@ export const useArrayEngine = (
 
       // รอให้กล่องข้างล่างหลบทางให้เสร็จแบบชิลๆ
       await sleep(speed * 1.5);
+      setCodeDrive({ currentStep: 2, stepToCodeLine: insertLines });
 
       // ดึงกล่องใหม่ลงมาเข้าแถว (y: 5)
       currentNodes = currentNodes.map((node) => {
@@ -97,9 +129,10 @@ export const useArrayEngine = (
       // รอให้แอนิเมชันลอยลงมาเสร็จสมบูรณ์ก่อน ค่อยปลดล็อก
       await sleep(speed);
 
+      setCodeDrive(IDLE_CODE_HIGHLIGHT);
       setIsAnimating(false);
     },
-    [nodes, setNodes, speed, getSyncedNodes],
+    [nodes, setNodes, speed, getSyncedNodes, codeKind],
   );
 
   // ฟังก์ชันลบข้อมูล (Delete)
@@ -113,6 +146,8 @@ export const useArrayEngine = (
       }
 
       setIsAnimating(true);
+      const deleteLines = deleteLinesFor(codeKind);
+      setCodeDrive({ currentStep: 0, stepToCodeLine: deleteLines });
       setWarningText(null); // ล้างข้อความเก่าทิ้งถ้าทำรายการผ่าน
 
       // ดึงข้อมูลที่ซิงค์ตำแหน่งแล้วมาใช้งาน
@@ -132,6 +167,7 @@ export const useArrayEngine = (
       setNodes([...currentNodes]);
 
       await sleep(speed);
+      setCodeDrive({ currentStep: 1, stepToCodeLine: deleteLines });
 
       // ลบกล่องนั้นทิ้งออกจาก Array และขยับซ้าย
       currentNodes = currentNodes.filter(
@@ -150,12 +186,14 @@ export const useArrayEngine = (
       });
       setNodes([...currentNodes]);
 
+      setCodeDrive({ currentStep: 2, stepToCodeLine: deleteLines });
       await sleep(speed);
 
+      setCodeDrive(IDLE_CODE_HIGHLIGHT);
       setIsAnimating(false);
     },
-    [nodes, setNodes, speed, getSyncedNodes],
+    [nodes, setNodes, speed, getSyncedNodes, codeKind],
   );
 
-  return { insertAtIndex, deleteAtIndex, isAnimating, warningText };
+  return { insertAtIndex, deleteAtIndex, isAnimating, warningText, codeDrive };
 };
