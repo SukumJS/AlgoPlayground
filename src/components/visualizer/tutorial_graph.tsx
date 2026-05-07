@@ -54,16 +54,14 @@ const UNDIRECTED_WEIGHTED_TUTORIAL_STEPS = [
   { id: 9, instruction: "Tutorial Completed!", action: "complete" },
 ];
 
-// Keep a default reference
 const GRAPH_TUTORIAL_STEPS = DIRECTED_TUTORIAL_STEPS;
 
-// Custom Dashed Arrow Component
 const DashedArrow = ({
   className,
   style,
   width = 50,
   color = "#333",
-  direction = "left", // "left" | "right" | "up" | "down"
+  direction = "left",
 }: {
   className?: string;
   style?: React.CSSProperties;
@@ -71,13 +69,7 @@ const DashedArrow = ({
   color?: string;
   direction?: "left" | "right" | "up" | "down";
 }) => {
-  const rotate = {
-    left: 0,
-    right: 180,
-    up: 90,
-    down: -90,
-  }[direction];
-
+  const rotate = { left: 0, right: 180, up: 90, down: -90 }[direction];
   return (
     <svg
       width={width}
@@ -106,21 +98,28 @@ const DashedArrow = ({
   );
 };
 
+// ปุ่ม Skip
+const SkipButton = ({ onClick }: { onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className="fixed top-6 right-[480px] z-[100] px-4 py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+  >
+    Skip Tutorial <span className="text-lg leading-none"></span>
+  </button>
+);
+
 interface TutorialGraphProps {
   currentStep: number;
   setCurrentStep: (step: number) => void;
   onComplete: () => void;
-  // Mode flags
   directed?: boolean;
   weighted?: boolean;
-  // Screen positions
   node69ScreenPos?: { x: number; y: number } | null;
   node70ScreenPos?: { x: number; y: number } | null;
   edge64to39WeightPos?: { x: number; y: number } | null;
   trashBinPos?: { x: number; y: number } | null;
   isTrashActive?: boolean;
   nodeScreenRadius?: number;
-  // Weight input
   showWeightInput?: boolean;
   weightInputValue?: string;
   weightInputError?: string | null;
@@ -146,52 +145,44 @@ export default function TutorialGraph({
   onWeightInputChange,
   onWeightConfirm,
 }: TutorialGraphProps) {
-  // สร้าง State ท้องถิ่นเพื่อแยก 2 สเต็ปสุดท้ายออกมา
+  // ⭐️ 0=ยังไม่จบ, 1=Legend, 2=Info, 3=Reset/Replay, 4=PostTest
   const [localEndStep, setLocalEndStep] = useState(0);
 
-  // ติดตามตำแหน่งปุ่ม Post Test แบบ dynamic
   const [postTestRect, setPostTestRect] = useState<{
     x: number;
     y: number;
     w: number;
     h: number;
   } | null>(null);
-
-  useEffect(() => {
-    if (localEndStep !== 2) return;
-    // Force open the sidebar so the post test button becomes visible
-    window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
-    let frameId: number;
-    const track = () => {
-      const el = document.getElementById("post-test-button");
-      if (el) {
-        const r = el.getBoundingClientRect();
-        setPostTestRect({ x: r.left, y: r.top, w: r.width, h: r.height });
-      }
-      frameId = requestAnimationFrame(track);
-    };
-    track();
-    return () => cancelAnimationFrame(frameId);
-  }, [localEndStep]);
+  const [infoBtnRect, setInfoBtnRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+  const [resetBtnRect, setResetBtnRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
 
   const steps = directed
     ? DIRECTED_TUTORIAL_STEPS
     : weighted
       ? UNDIRECTED_WEIGHTED_TUTORIAL_STEPS
       : UNDIRECTED_TUTORIAL_STEPS;
-
   const { width: vw, height: vh } = useWindowSize();
-  // Dynamic step references
+
   const deleteHighlightStep = weighted ? 7 : 3;
   const dragStep = weighted ? 8 : 4;
   const completeStep = weighted ? 9 : 5;
 
-  // node 70 คือ node ขวาสุด — ถ้า tooltip ที่ x+80 จะล้นขวา ให้วางซ้ายแทน
   const node70TooltipLeft = node70ScreenPos
     ? node70ScreenPos.x + 80 + 300 > (vw || 1200)
     : false;
 
-  // กันข้ามอัตโนมัติ (Anti Auto-Skip System) - ดักจับตอนถึงสเต็ปสุดท้ายของแต่ละโหมด
+  // กันข้ามอัตโนมัติ
   if (localEndStep === 0) {
     if (currentStep >= completeStep) {
       setLocalEndStep(1);
@@ -199,19 +190,45 @@ export default function TutorialGraph({
   }
 
   useEffect(() => {
+    if (localEndStep === 4) {
+      window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
+    }
     if (localEndStep < 1) return;
+
     let frameId: number;
     const trackPosition = () => {
-      const el = document.querySelector(
+      const infoEl = document.getElementById("tutorial-info-button");
+      if (infoEl) {
+        const iRect = infoEl.getBoundingClientRect();
+        setInfoBtnRect({
+          x: iRect.left,
+          y: iRect.top,
+          w: iRect.width,
+          h: iRect.height,
+        });
+      }
+
+      const resetEl = document.getElementById("tutorial-reset-button");
+      if (resetEl) {
+        const rRect = resetEl.getBoundingClientRect();
+        setResetBtnRect({
+          x: rRect.left,
+          y: rRect.top,
+          w: rRect.width,
+          h: rRect.height,
+        });
+      }
+
+      const ptEl = document.querySelector(
         "[data-tutorial-posttest]",
       ) as HTMLElement | null;
-      if (el) {
-        const rect = el.getBoundingClientRect();
+      if (ptEl) {
+        const ptRect = ptEl.getBoundingClientRect();
         setPostTestRect({
-          x: rect.left,
-          y: rect.top,
-          w: rect.width,
-          h: rect.height,
+          x: ptRect.left,
+          y: ptRect.top,
+          w: ptRect.width,
+          h: ptRect.height,
         });
       }
       frameId = requestAnimationFrame(trackPosition);
@@ -221,13 +238,11 @@ export default function TutorialGraph({
   }, [localEndStep]);
 
   const stepData = steps[currentStep];
-  if (!stepData) return null;
 
-  // หากอยู่ในช่วง 2 สเต็ปสุดท้าย ให้รันหน้าตานี้ และไม่ต้องสนใจ currentStep ของระบบกราฟอีกต่อไป
+  // ⭐️ 4 สเต็ปจบ
   if (localEndStep > 0) {
     return (
       <div className="fixed inset-0 z-[80] pointer-events-auto transition-opacity duration-300">
-        {/* --- MASK SPOTLIGHT สำหรับ Legend และ Post Test --- */}
         <svg
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
           style={{ position: "fixed" }}
@@ -237,8 +252,6 @@ export default function TutorialGraph({
           <defs>
             <mask id="endstep-spotlight-mask-graph">
               <rect width="100%" height="100%" fill="white" />
-
-              {/* เจาะรูไฮไลท์สำหรับ Color Legend (ซ้ายบน) */}
               {localEndStep === 1 && (
                 <rect
                   x="180"
@@ -249,9 +262,27 @@ export default function TutorialGraph({
                   fill="black"
                 />
               )}
-
-              {/* เจาะรูไฮไลท์สำหรับ Post Test (ตามตำแหน่งจริง) */}
-              {localEndStep === 2 && postTestRect && (
+              {localEndStep === 2 && infoBtnRect && (
+                <rect
+                  x={infoBtnRect.x - 4}
+                  y={infoBtnRect.y - 4}
+                  width={infoBtnRect.w + 8}
+                  height={infoBtnRect.h + 8}
+                  rx="100"
+                  fill="black"
+                />
+              )}
+              {localEndStep === 3 && resetBtnRect && (
+                <rect
+                  x={resetBtnRect.x - 4}
+                  y={resetBtnRect.y - 4}
+                  width={resetBtnRect.w + 8}
+                  height={resetBtnRect.h + 8}
+                  rx="100"
+                  fill="black"
+                />
+              )}
+              {localEndStep === 4 && postTestRect && (
                 <rect
                   x={postTestRect.x - 4}
                   y={postTestRect.y - 4}
@@ -271,13 +302,12 @@ export default function TutorialGraph({
           />
         </svg>
 
-        {/* กล่องชี้สถานะสี (ซ้ายบน) */}
         {localEndStep === 1 && (
           <div className="absolute top-[120px] left-[200px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
             <DashedArrow
               width={50}
               className="absolute -top-[45px] left-[110px]"
-              direction="up" // ใช้ direction ของไฟล์ graph หมุนขึ้น
+              direction="up"
             />
             <h3 className="font-bold text-gray-800 text-lg mb-2">
               Color Legend
@@ -294,8 +324,65 @@ export default function TutorialGraph({
           </div>
         )}
 
-        {/* กล่องชี้ Post Test (ชี้ไปที่ปุ่ม Post Test จริง) */}
-        {localEndStep === 2 && postTestRect && (
+        {localEndStep === 2 && infoBtnRect && (
+          <div
+            className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
+            style={{
+              top: `${infoBtnRect.y + infoBtnRect.h + 55}px`,
+              left: `${infoBtnRect.x + infoBtnRect.w / 4 - 50}px`,
+            }}
+          >
+            <DashedArrow
+              width={50}
+              className="absolute -top-[45px] left-[35px]"
+              direction="up"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">
+              Algorithm Theory
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Click this <strong>( i ) Information</strong> icon anytime to read
+              the theory!
+            </p>
+            <button
+              onClick={() => setLocalEndStep(3)}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {localEndStep === 3 && resetBtnRect && (
+          <div
+            className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
+            style={{
+              top: `${resetBtnRect.y + resetBtnRect.h + 55}px`,
+              left: `${resetBtnRect.x + resetBtnRect.w / 4 - 50}px`,
+            }}
+          >
+            <DashedArrow
+              width={50}
+              className="absolute -top-[45px] left-[35px]"
+              direction="up"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">
+              Replay Tutorial
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Click this <strong>( ? ) Help</strong> icon if you ever want to
+              replay this tutorial!
+            </p>
+            <button
+              onClick={() => setLocalEndStep(4)}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {localEndStep === 4 && postTestRect && (
           <div
             className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
             style={{
@@ -317,20 +404,20 @@ export default function TutorialGraph({
               onClick={onComplete}
               className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
             >
-              Next
+              Finish
             </button>
           </div>
         )}
+
+        <SkipButton onClick={onComplete} />
       </div>
     );
   }
 
-  // ถ้ายังไม่เริ่มหรือจบไปแล้วแต่ยังไม่ได้ขึ้น 2 สเต็ปสุดท้าย (กันพัง)
   if (!stepData) return null;
 
   return (
     <>
-      {/* SVG Overlay for Spotlight Effect */}
       <svg
         className="absolute top-0 left-0 w-full h-full pointer-events-none z-50"
         style={{ position: "fixed" }}
@@ -340,8 +427,6 @@ export default function TutorialGraph({
         <defs>
           <mask id="graph-spotlight-mask">
             <rect width="100%" height="100%" fill="white" />
-
-            {/* Step 0: Spotlight on node 69 */}
             {currentStep === 0 && node69ScreenPos && (
               <circle
                 cx={node69ScreenPos.x}
@@ -350,8 +435,6 @@ export default function TutorialGraph({
                 fill="black"
               />
             )}
-
-            {/* Step 1: Dual spotlight - node 69 and node 70 */}
             {currentStep === 1 && node69ScreenPos && (
               <circle
                 cx={node69ScreenPos.x}
@@ -368,8 +451,6 @@ export default function TutorialGraph({
                 fill="black"
               />
             )}
-
-            {/* Step 4 (weighted): Spotlight on edge 64→39 weight */}
             {weighted && currentStep === 4 && edge64to39WeightPos && (
               <circle
                 cx={edge64to39WeightPos.x}
@@ -378,8 +459,6 @@ export default function TutorialGraph({
                 fill="black"
               />
             )}
-
-            {/* Delete highlight & drag step: Spotlight on node 70 */}
             {(currentStep === deleteHighlightStep ||
               currentStep === dragStep) &&
               node70ScreenPos && (
@@ -393,7 +472,6 @@ export default function TutorialGraph({
           </mask>
         </defs>
 
-        {/* Dark overlay with spotlight */}
         {(currentStep === 0 ||
           currentStep === 1 ||
           (weighted && currentStep === 4) ||
@@ -407,7 +485,6 @@ export default function TutorialGraph({
           />
         )}
 
-        {/* Weighted: Steps 2, 3, 5, 6: Full dark overlay (no spotlight, focus on input) */}
         {weighted &&
           (currentStep === 2 ||
             currentStep === 3 ||
@@ -416,13 +493,11 @@ export default function TutorialGraph({
             <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.5)" />
           )}
 
-        {/* Undirected+Unweighted: Step 2 = "Link Created!" confirmation overlay */}
         {!directed && !weighted && currentStep === 2 && (
           <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.5)" />
         )}
       </svg>
 
-      {/* Step 0: Tooltip pointing to node 69 */}
       {currentStep === 0 && node69ScreenPos && (
         <div
           className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 border border-gray-200"
@@ -448,7 +523,6 @@ export default function TutorialGraph({
         </div>
       )}
 
-      {/* Step 1: Tooltip pointing to node 70 */}
       {currentStep === 1 && node70ScreenPos && (
         <div
           className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 border border-gray-200"
@@ -476,7 +550,6 @@ export default function TutorialGraph({
         </div>
       )}
 
-      {/* Weighted: Step 2 & 5: Weight Input Modal */}
       {weighted &&
         showWeightInput &&
         (currentStep === 2 || currentStep === 5) && (
@@ -513,7 +586,6 @@ export default function TutorialGraph({
           </div>
         )}
 
-      {/* Undirected+Unweighted Step 2: Link Created! confirmation */}
       {!directed && !weighted && currentStep === 2 && (
         <>
           <div
@@ -528,7 +600,6 @@ export default function TutorialGraph({
         </>
       )}
 
-      {/* Weighted: Step 3 & 6: Value Set! Confirmation */}
       {weighted && (currentStep === 3 || currentStep === 6) && (
         <>
           <div
@@ -543,7 +614,6 @@ export default function TutorialGraph({
         </>
       )}
 
-      {/* Step 4 (weighted): Tooltip pointing to edge weight */}
       {weighted && currentStep === 4 && edge64to39WeightPos && (
         <div
           className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 border border-gray-200"
@@ -569,7 +639,6 @@ export default function TutorialGraph({
         </div>
       )}
 
-      {/* Delete highlight step: Tooltip for hold node 70 */}
       {currentStep === deleteHighlightStep && node70ScreenPos && (
         <div
           className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 border border-gray-200"
@@ -597,7 +666,6 @@ export default function TutorialGraph({
         </div>
       )}
 
-      {/* Drag step: Trash bin and tooltip */}
       {currentStep === dragStep && (
         <>
           <div
@@ -638,13 +706,8 @@ export default function TutorialGraph({
           </div>
         </>
       )}
+
+      <SkipButton onClick={onComplete} />
     </>
   );
 }
-
-export {
-  GRAPH_TUTORIAL_STEPS,
-  DIRECTED_TUTORIAL_STEPS,
-  UNDIRECTED_TUTORIAL_STEPS,
-  UNDIRECTED_WEIGHTED_TUTORIAL_STEPS,
-};

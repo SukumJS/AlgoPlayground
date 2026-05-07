@@ -322,7 +322,6 @@ function Data_sort({
         <div className="overflow-x-auto flex gap-2 mb-2 p-2">
           {/* Input Node */}
           <div
-            data-tutorial-target="sidebar-sort-node"
             // ใช้ disableDrag เพื่อเปลี่ยนเป็นสีเทา (grayscale) กลืนไปกับพื้นหลังเวลากดไม่ได้
             className={`shrink-0 flex justify-center items-center border-2 bg-[#D9E363] w-14 h-14 rounded-lg transition-all ${
               disableDrag
@@ -361,6 +360,9 @@ function Data_sort({
             <div
               key={index}
               //เปลี่ยนเป็นสีเทาเวลากดไม่ได้เหมือนกัน
+              data-tutorial-target={
+                index === 0 ? "sidebar-sort-node" : undefined
+              }
               className={`shrink-0 w-14 h-14 rounded-lg flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 bg-[#D9E363] transition-all ${
                 disableDrag
                   ? "cursor-not-allowed opacity-50 grayscale border-gray-400"

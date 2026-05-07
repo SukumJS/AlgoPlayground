@@ -832,6 +832,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       <div className="absolute top-4 left-8 z-10 flex gap-2">
         <GoToHome_Portal algorithm={algorithm} algoType="tree" />
         <button
+          id="tutorial-info-button"
           onClick={(e) => {
             e.stopPropagation();
             setShowInfo(true);
@@ -841,6 +842,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
           <Info color="#000000" />
         </button>
         <button
+          id="tutorial-reset-button"
           onClick={(e) => {
             e.stopPropagation();
             // Save current playground state before tutorial
