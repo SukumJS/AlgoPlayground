@@ -145,7 +145,6 @@ export default function TutorialGraph({
   onWeightInputChange,
   onWeightConfirm,
 }: TutorialGraphProps) {
-  // ⭐️ 0=ยังไม่จบ, 1=Legend, 2=Info, 3=Reset/Replay, 4=PostTest
   const [localEndStep, setLocalEndStep] = useState(0);
 
   const [postTestRect, setPostTestRect] = useState<{
@@ -239,7 +238,6 @@ export default function TutorialGraph({
 
   const stepData = steps[currentStep];
 
-  // ⭐️ 4 สเต็ปจบ
   if (localEndStep > 0) {
     return (
       <div className="fixed inset-0 z-[80] pointer-events-auto transition-opacity duration-300">
