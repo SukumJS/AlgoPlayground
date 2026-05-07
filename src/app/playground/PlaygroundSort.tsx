@@ -14,7 +14,6 @@ import {
   applyEdgeChanges,
   Controls,
   useReactFlow,
-  MiniMap,
   type Node,
   type Edge,
   type FitViewOptions,
@@ -392,15 +391,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
           defaultEdgeOptions={defaultEdgeOptions}
         >
           <Background />
-          {!tutorial.showTutorial && <Controls /> && (
-            <MiniMap
-              nodeColor="#D9E363"
-              maskColor="rgba(0, 0, 0, 0.2)"
-              position="bottom-left"
-              className="rounded-lg border-2 border-gray-200 shadow-md"
-              style={{ bottom: "80px", left: "20px" }} // ดันให้ลอยขึ้นมาหน่อยเพื่อหลบแผง Control Panel
-            />
-          )}{" "}
+          {!tutorial.showTutorial && <Controls />}
           {/* ซ่อน Controls และ MiniMap ตอนอยู่ใน Tutorial */}
         </ReactFlow>
       </div>
