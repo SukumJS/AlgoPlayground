@@ -591,6 +591,7 @@ export default function PlaygroundLinearDS({
         <button
           onClick={(e) => {
             e.stopPropagation();
+            window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
             // Reset playground to initial state based on algorithm
             const isLL =
               algorithm === "singly-linked-list" ||
@@ -611,7 +612,7 @@ export default function PlaygroundLinearDS({
               getDefaultLinearDSExplanation(prettyName, algorithm),
             );
             // Reset viewport to initial position
-            fitView({ padding: 0.2, duration: 300 });
+            fitView({ ...fitViewOptions, duration: 300 });
             // Reset tutorial state
             tutorial.setTutorialStep(0);
             tutorial.setShowTutorial(true);

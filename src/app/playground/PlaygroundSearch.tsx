@@ -449,6 +449,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
+            window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
             // Reset playground to initial state
             setNodes(initialNodes);
             setEdges(initialEdges);
@@ -456,7 +457,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
               `This section will explain ${prettyName}. Click 'Run' to start.`,
             );
             // Reset viewport to initial position
-            fitView({ padding: 0.2, duration: 300 });
+            fitView({ ...fitViewOptions, duration: 300 });
             // Reset tutorial state
             tutorial.setTutorialStep(0);
             tutorial.setShowTutorial(true);

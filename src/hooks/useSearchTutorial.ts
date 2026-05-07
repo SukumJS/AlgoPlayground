@@ -156,6 +156,9 @@ export function useSearchTutorial({
 
   useEffect(() => {
     if (showTutorial) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
+      }
       const timer = setTimeout(() => updateTutorialPositions(), 500);
       return () => clearTimeout(timer);
     }
