@@ -133,7 +133,9 @@ export function useLinearDSTutorial({
       updateTutorialPositions();
       frameId = requestAnimationFrame(loop);
     };
-    if (showTutorial) frameId = requestAnimationFrame(loop);
+    if (showTutorial) {
+      frameId = requestAnimationFrame(loop);
+    }
     window.addEventListener("resize", updateTutorialPositions);
     return () => {
       cancelAnimationFrame(frameId);
