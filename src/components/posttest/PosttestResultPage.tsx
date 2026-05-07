@@ -196,9 +196,16 @@ function PosttestResultPage({
               <div key={question.id} className="space-y-4">
                 {/* Question Header with Score */}
                 <div className="flex items-start justify-between gap-4">
-                  <p className="text-[#222121] text-base md:text-lg font-semibold">
-                    <span>{questionIndex + 1}.</span> {question.text}
-                  </p>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-[#222121] text-base md:text-lg font-semibold">
+                      <span>{questionIndex + 1}.</span> {question.text}
+                    </p>
+                    {question.fromPretest && (
+                      <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 border border-amber-300 text-amber-700">
+                        From Pretest
+                      </span>
+                    )}
+                  </div>
                   <div
                     className={`shrink-0 px-3 py-1 border rounded-lg text-sm font-medium ${
                       score === 1

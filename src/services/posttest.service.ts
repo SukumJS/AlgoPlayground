@@ -33,6 +33,7 @@ export interface PosttestQuestionDTO {
     items?: PosttestOrderItemDTO[];
     canvasData?: OrderingCanvasData;
   };
+  fromPretest?: boolean;
 }
 
 /** Full posttest response */
