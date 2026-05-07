@@ -241,16 +241,20 @@ function Data_Linear_DS({
             <input
               type="number"
               placeholder="N"
-              disabled={disableDrag}
+              disabled={disableDrag} //ปิดการพิมพ์ถ้าเต็ม
+              max={100}
               className={`w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                 disableDrag ? "cursor-not-allowed" : ""
               }`}
               value={nodeInput}
               onChange={(e) => {
                 if (typeof setNodeInput === "function") {
-                  setNodeInput(
-                    e.target.value === "" ? "" : Number(e.target.value),
-                  );
+                  const val = e.target.value;
+                  if (val === "") {
+                    setNodeInput("");
+                  } else if (Number(val) <= 100) {
+                    setNodeInput(Number(val));
+                  }
                 }
               }}
               onPointerDown={(e) => e.stopPropagation()}

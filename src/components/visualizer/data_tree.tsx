@@ -1202,13 +1202,17 @@ function Data_tree({
             <input
               type="number"
               placeholder="N"
+              max={100}
               className="w-11 h-full bg-transparent text-center text-[#222121] font-semibold text-xl focus:outline-none placeholder:text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-100 disabled:bg-transparent transition-colors"
               value={nodeInput}
-              onChange={(e) =>
-                setNodeInput(
-                  e.target.value === "" ? "" : String(Number(e.target.value)),
-                )
-              }
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "") {
+                  setNodeInput("");
+                } else if (Number(val) <= 100) {
+                  setNodeInput(String(Number(val)));
+                }
+              }}
               onPointerDown={(e) => e.stopPropagation()}
               disabled={tutorialMode || isAnimating}
               readOnly={tutorialMode || isAnimating}
