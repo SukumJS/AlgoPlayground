@@ -50,7 +50,7 @@ import { useGraphController } from "@/src/hooks/useGraphController";
 
 const nodeTypes = { custom: CustomNode };
 const edgeTypes = { tree: TreeEdge, floatingEdge: FloatingEdge };
-const fitViewOptions: FitViewOptions = { padding: 0.2 };
+const fitViewOptions: FitViewOptions = { padding: 0.2, maxZoom: 1 };
 const defaultEdgeOptions: DefaultEdgeOptions = { animated: false };
 
 const getDefaultGraphExplanation = (name: string) =>
@@ -66,37 +66,37 @@ const algorithmNames: Record<string, string> = {
   "depth-first-search": "Depth-First Search",
 };
 
-// Initial nodes for graph (Dijkstra's algorithm layout from Figma - scaled for spacing)
+// Initial nodes for graph — positions scaled ×1.5 so fitView (maxZoom:1) renders nodes at natural size
 const graphInitialNodes: Node[] = [
   {
     id: "g1",
     type: "custom",
     data: { label: "64", variant: "circle" },
-    position: { x: 50, y: 280 },
+    position: { x: 75, y: 420 },
   },
   {
     id: "g2",
     type: "custom",
     data: { label: "39", variant: "circle" },
-    position: { x: 260, y: 120 },
+    position: { x: 390, y: 180 },
   },
   {
     id: "g3",
     type: "custom",
     data: { label: "97", variant: "circle" },
-    position: { x: 520, y: 130 },
+    position: { x: 780, y: 195 },
   },
   {
     id: "g4",
     type: "custom",
     data: { label: "69", variant: "circle" },
-    position: { x: 330, y: 380 },
+    position: { x: 495, y: 570 },
   },
   {
     id: "g5",
     type: "custom",
     data: { label: "70", variant: "circle" },
-    position: { x: 620, y: 320 },
+    position: { x: 930, y: 480 },
   },
 ];
 
@@ -283,7 +283,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
     }
   }, [algorithm, prettyName]);
 
-  const { flowToScreenPosition, fitView } = useReactFlow();
+  const { flowToScreenPosition, fitView, getViewport } = useReactFlow();
 
   // ── Algorithm Animation Pipeline ────────────────────────────────────────────
   const runner = useMemo(() => getAlgorithmRunner(algorithm), [algorithm]);
@@ -343,16 +343,34 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       const currentNodes = nodesRef.current;
       const currentEdges = edgesRef.current;
 
-      // Canvas region for new nodes (flow coordinates) — wider area so the
-      // force-directed step has somewhere to push the new nodes outward.
+      // Hard cap at 50 total nodes
+      const actualCount = Math.min(count, 50 - currentNodes.length);
+      if (actualCount <= 0) return;
+
+      const totalNodes = currentNodes.length + actualCount;
+
+      // Scatter new nodes around the current viewport center (flow coordinates)
+      // so they always appear where the user is looking, not at a fixed origin.
+      const vp = getViewport();
+      const vpCenterX = -vp.x / vp.zoom + window.innerWidth / vp.zoom / 2;
+      const vpCenterY = -vp.y / vp.zoom + window.innerHeight / vp.zoom / 2;
+
+      // Half-spread in flow coords — grows with node count so large graphs
+      // have more room between nodes.
+      const halfW = totalNodes > 30 ? 1100 : totalNodes > 20 ? 870 : 670;
+      const halfH = totalNodes > 30 ? 700 : totalNodes > 20 ? 570 : 420;
+
       const SCATTER = {
-        minX: 60,
-        maxX: 1400,
-        minY: 60,
-        maxY: 900,
+        minX: vpCenterX - halfW,
+        maxX: vpCenterX + halfW,
+        minY: vpCenterY - halfH,
+        maxY: vpCenterY + halfH,
       };
+
       const NODE_SIZE = 56;
-      const MIN_DIST = NODE_SIZE + 130; // keep nodes from visually overlapping
+      // Smaller min-distance for large graphs so initial placement doesn't
+      // exhaust retries — the force-directed pass spreads them out further.
+      const MIN_DIST = totalNodes > 25 ? NODE_SIZE + 80 : NODE_SIZE + 130;
 
       const distSq = (
         a: { x: number; y: number },
@@ -396,13 +414,13 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         };
       };
 
-      // Always KEEP existing nodes, add `count` more nodes
+      // Always KEEP existing nodes, add `actualCount` more nodes
       const existingLabels = new Set(
         currentNodes.map((n) => String(n.data.label)),
       );
       const addedNodes: Node[] = [];
 
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < actualCount; i++) {
         let label: number;
         let tries = 0;
         do {
@@ -436,8 +454,9 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         }
       }
 
-      const EDGE_PROB = 0.07;
-      const MAX_EDGES_PER_NEW_NODE = 2;
+      // Reduce edge density as graph grows to keep the layout readable
+      const EDGE_PROB = totalNodes > 30 ? 0.03 : totalNodes > 20 ? 0.05 : 0.07;
+      const MAX_EDGES_PER_NEW_NODE = totalNodes > 20 ? 1 : 2;
 
       // Shuffle target order so we don't always prefer earlier nodes
       const shuffledNodeIndices = (length: number) => {
@@ -595,12 +614,14 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       // ── Force-directed relaxation ─────────────────────────────────────
       // Run a small simulation so newly added nodes spread out smoothly.
       // Existing user-placed nodes stay anchored. Only new nodes are mobile.
-      const ITERATIONS = 140;
-      const REPULSION = 38000; // higher = nodes push each other harder
-      const SPRING_LENGTH = 240;
+      // All parameters scale up with graph size so large graphs spread wider.
+      const ITERATIONS = totalNodes > 20 ? 200 : 140;
+      const REPULSION =
+        totalNodes > 30 ? 70000 : totalNodes > 20 ? 52000 : 38000;
+      const SPRING_LENGTH = totalNodes > 30 ? 350 : totalNodes > 20 ? 290 : 240;
       const SPRING_STIFFNESS = 0.03;
       const DAMPING = 0.85;
-      const MAX_STEP = 30;
+      const MAX_STEP = totalNodes > 20 ? 45 : 30;
 
       const positions = new Map<string, { x: number; y: number }>();
       const movable = new Set<string>(addedNodes.map((n) => n.id));
@@ -684,7 +705,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       setNodes(relaxedNodes);
       setEdges(allEdges);
     },
-    [setNodes, setEdges, isDirectedGraph, isWeightedGraph],
+    [setNodes, setEdges, isDirectedGraph, isWeightedGraph, getViewport],
   );
 
   // Reset graph: clear all nodes and edges
@@ -1002,9 +1023,11 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
+                  const val = nodeInteraction.weightInputValue;
                   if (
-                    algorithm === "dijkstra" &&
-                    Number(nodeInteraction.weightInputValue) < 0
+                    val.trim() === "" ||
+                    val === "-" ||
+                    (algorithm === "dijkstra" && Number(val) < 0)
                   )
                     return;
                   nodeInteraction.handleWeightConfirm();
@@ -1033,8 +1056,10 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
               <button
                 onClick={nodeInteraction.handleWeightConfirm}
                 disabled={
-                  algorithm === "dijkstra" &&
-                  Number(nodeInteraction.weightInputValue) < 0
+                  nodeInteraction.weightInputValue.trim() === "" ||
+                  nodeInteraction.weightInputValue === "-" ||
+                  (algorithm === "dijkstra" &&
+                    Number(nodeInteraction.weightInputValue) < 0)
                 }
                 className="flex-1 bg-[#222121] text-white py-3 rounded-xl font-semibold hover:bg-[#333] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >

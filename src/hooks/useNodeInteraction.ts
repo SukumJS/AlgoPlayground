@@ -178,28 +178,41 @@ export function useNodeInteraction({
             })),
           );
         } else {
-          // Link: behavior depends on directed/weighted mode
-          if (directed) {
-            // Directed mode: show weight modal before creating edge
-            setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
-            setWeightInputValue("");
-            setShowWeightModal(true);
-          } else if (weighted) {
-            // Undirected + weighted: show weight modal before creating edge (no arrow)
-            setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
-            setWeightInputValue("");
-            setShowWeightModal(true);
-          } else {
-            // Undirected mode: create edge immediately (no weight)
-            const newEdge: Edge = {
-              id: `eg-${selectedNodeId}-${node.id}-${Date.now()}`,
-              source: selectedNodeId,
-              target: node.id,
-              type: "floatingEdge",
-              data: { directed: false },
-              style: { stroke: "#9CA3AF", strokeWidth: 2 },
-            };
-            setEdges((eds) => [...eds, newEdge]);
+          // Check for existing edge before creating a new one
+          const edgeAlreadyExists = directed
+            ? edges.some(
+                (e) => e.source === selectedNodeId && e.target === node.id,
+              )
+            : edges.some(
+                (e) =>
+                  (e.source === selectedNodeId && e.target === node.id) ||
+                  (e.source === node.id && e.target === selectedNodeId),
+              );
+
+          if (!edgeAlreadyExists) {
+            // Link: behavior depends on directed/weighted mode
+            if (directed) {
+              // Directed mode: show weight modal before creating edge
+              setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
+              setWeightInputValue("");
+              setShowWeightModal(true);
+            } else if (weighted) {
+              // Undirected + weighted: show weight modal before creating edge (no arrow)
+              setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
+              setWeightInputValue("");
+              setShowWeightModal(true);
+            } else {
+              // Undirected mode: create edge immediately (no weight)
+              const newEdge: Edge = {
+                id: `eg-${selectedNodeId}-${node.id}-${Date.now()}`,
+                source: selectedNodeId,
+                target: node.id,
+                type: "floatingEdge",
+                data: { directed: false },
+                style: { stroke: "#9CA3AF", strokeWidth: 2 },
+              };
+              setEdges((eds) => [...eds, newEdge]);
+            }
           }
           // Clear selection visual
           setNodes((nds) =>
@@ -445,7 +458,14 @@ export function useNodeInteraction({
    * Weight modal handlers
    */
   const handleWeightInputChange = useCallback((value: string) => {
-    setWeightInputValue(value);
+    if (value === "" || value === "-") {
+      setWeightInputValue(value);
+      return;
+    }
+    const num = parseInt(value, 10);
+    if (!isNaN(num) && num >= -99 && num <= 99) {
+      setWeightInputValue(value);
+    }
   }, []);
 
   const handleWeightConfirm = useCallback(() => {

@@ -113,6 +113,9 @@ export default function TreeEdge({
               fontSize: "12px",
               fontWeight: 500,
               color: "#5D5D5D",
+              background: "white",
+              borderRadius: "4px",
+              padding: "2px 6px",
             }}
             className="nodrag nopan"
           >

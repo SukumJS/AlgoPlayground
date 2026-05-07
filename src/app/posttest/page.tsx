@@ -297,7 +297,9 @@ function PosttestContent() {
 
           {/* Answer instruction */}
           <p className="font-bold text-lg text-[#222121] mb-9">
-            Answer the question:
+            {currentQuestion.type === "ordering"
+              ? "Drag the items into the correct order:"
+              : "Answer the question:"}
           </p>
 
           {/* Question renderer — cast to expected type */}
