@@ -377,6 +377,15 @@ function Data_tree({
     [pickUnique],
   );
 
+  /** Called when a node is successfully dropped into the playground */
+  const handleSuccessfulDrop = useCallback(
+    (idx: number) => {
+      // Slide nodes: remove the dropped one and generate a new one
+      handlePanelNodeDragged(idx);
+    },
+    [handlePanelNodeDragged],
+  );
+
   // Animation callbacks
   const animationCallbacks: AnimationCallbacks = useMemo(
     () => ({
@@ -688,7 +697,7 @@ function Data_tree({
 
   // Drag & Drop
   const createAddNewNode = useCallback(
-    (sampleValue: number): OnDropAction => {
+    (sampleValue: number, panelIndex?: number): OnDropAction => {
       return ({ position }: { position: XYPosition }) => {
         // Block drag-drop during animation
         if (isAnimating) return;
@@ -735,7 +744,12 @@ function Data_tree({
             return result.root;
           });
 
-        if (tutorialMode && tutorialStep === 0) onTutorialDropSuccess?.();
+        if (tutorialMode && tutorialStep === 0) {
+          onTutorialDropSuccess?.();
+        } else if (typeof panelIndex === "number") {
+          // Slide panel nodes after successful drop (non-tutorial)
+          handleSuccessfulDrop(panelIndex);
+        }
       };
     },
     [
@@ -744,7 +758,6 @@ function Data_tree({
       tutorialStep,
       onTutorialDropSuccess,
       isAnimating,
-      isLimitReached,
       isBST,
       isBT,
       isAVL,
@@ -752,6 +765,7 @@ function Data_tree({
       isMinHeap,
       setAVLRoot,
       setHeapRoot,
+      handleSuccessfulDrop,
     ],
   );
 
@@ -1210,9 +1224,7 @@ function Data_tree({
                 onPointerDown={(event) => {
                   setType("custom");
                   setDraggedValue(val);
-                  onDragStart(event, createAddNewNode(val));
-                  // Slide nodes after successful pointer-down (node will shift immediately)
-                  setTimeout(() => handlePanelNodeDragged(idx), 0);
+                  onDragStart(event, createAddNewNode(val, idx));
                 }}
               >
                 {val}

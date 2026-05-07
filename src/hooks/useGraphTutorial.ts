@@ -393,8 +393,16 @@ export function useGraphTutorial({
 
   // Handle weight input change
   const handleWeightInputChange = useCallback((value: string) => {
-    setWeightInputValue(value);
-    setWeightInputError(null);
+    if (value === "" || value === "-") {
+      setWeightInputValue(value);
+      setWeightInputError(null);
+      return;
+    }
+    const num = parseInt(value, 10);
+    if (!isNaN(num) && num >= -99 && num <= 99) {
+      setWeightInputValue(value);
+      setWeightInputError(null);
+    }
   }, []);
 
   // Handle weight confirmation

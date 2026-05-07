@@ -14,6 +14,7 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
   verticalListSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
@@ -159,6 +160,7 @@ function OrderingQuestion({
   disabled = false,
   className = "",
 }: OrderingQuestionProps) {
+  const useCompactLayout = items.every((item) => item.label.length <= 4);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
@@ -186,6 +188,11 @@ function OrderingQuestion({
 
   return (
     <div className={`${className}`}>
+      {!disabled && (
+        <p className="text-sm text-gray-400 mb-3 text-center select-none">
+          Drag to reorder
+        </p>
+      )}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -193,9 +200,19 @@ function OrderingQuestion({
       >
         <SortableContext
           items={currentOrder}
-          strategy={verticalListSortingStrategy}
+          strategy={
+            useCompactLayout
+              ? horizontalListSortingStrategy
+              : verticalListSortingStrategy
+          }
         >
-          <div className="flex flex-col gap-3 items-center">
+          <div
+            className={
+              useCompactLayout
+                ? "flex flex-wrap gap-3 items-center justify-center"
+                : "flex flex-col gap-3 items-center"
+            }
+          >
             {orderedItems.map((item) => (
               <SortableNode
                 key={item.id}
@@ -227,12 +244,19 @@ export function OrderingResultDisplay({
   variant = "square",
   className = "",
 }: OrderingResultDisplayProps) {
+  const useCompactLayout = items.every((item) => item.label.length <= 4);
   const orderedItems = orderedIds
     .map((id) => items.find((item) => item.id === id))
     .filter(Boolean) as OrderItem[];
 
   return (
-    <div className={`flex flex-col gap-3 items-center ${className}`}>
+    <div
+      className={
+        useCompactLayout
+          ? `flex flex-wrap gap-3 items-center justify-center ${className}`
+          : `flex flex-col gap-3 items-center ${className}`
+      }
+    >
       {orderedItems.map((item, index) => {
         const isWrong = correctOrder
           ? orderedIds[index] !== correctOrder[index]

@@ -150,8 +150,9 @@ export default function FloatingEdge({
                 fontSize: "12px",
                 fontWeight: 500,
                 color: baseStrokeColor,
-                background: "transparent",
-                padding: "4px 8px",
+                background: "white",
+                borderRadius: "4px",
+                padding: "2px 6px",
                 cursor: "pointer",
                 zIndex: 1000,
               }}
@@ -244,8 +245,9 @@ export default function FloatingEdge({
               fontSize: "12px",
               fontWeight: 500,
               color: baseStrokeColor,
-              background: "transparent",
-              padding: "4px 8px",
+              background: "white",
+              borderRadius: "4px",
+              padding: "2px 6px",
               cursor: "pointer",
               zIndex: 1000,
             }}
