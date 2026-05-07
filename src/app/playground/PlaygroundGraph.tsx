@@ -950,12 +950,13 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
+            window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
             // Reset playground to initial state
             setNodes(graphInitialNodes);
             setEdges(initialEdges);
             setExplanation(getDefaultGraphExplanation(prettyName));
             // Reset viewport to initial position
-            fitView({ padding: 0.2, duration: 300 });
+            fitView({ ...fitViewOptions, duration: 300 });
             // Reset tutorial state
             graphTutorial.setTutorialStep(0);
             graphTutorial.setShowTutorial(true);
