@@ -2,7 +2,7 @@
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import React, { useState, useCallback } from "react";
-import { useReactFlow, XYPosition } from "@xyflow/react";
+import { useReactFlow, useNodes, XYPosition } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
 
@@ -44,6 +44,8 @@ function Data_graph({
   // The type of the node that is being dragged.
   const [type, setType] = useState<string | null>(null);
   const { setNodes, getNodes } = useReactFlow();
+  const currentNodes = useNodes();
+  const isFull = currentNodes.length >= 50;
   const [inputValue, setInputValue] = useState<string>("");
   const [searchValue, setSearchValue] = useState<string>("");
   const [removeValue, setRemoveValue] = useState<string>("");
@@ -51,6 +53,7 @@ function Data_graph({
   const [draggedValue, setDraggedValue] = useState<number | null>(null); // Added draggedValue state
   const [startError, setStartError] = useState<string | null>(null);
   const [endError, setEndError] = useState<string | null>(null);
+  const [warningText, setWarningText] = useState<string | null>(null);
 
   const needsEndVertex =
     !START_ONLY_ALGORITHMS.includes(algorithm) &&
@@ -121,6 +124,28 @@ function Data_graph({
     [setNodes, setType, isAnimating, getNodes, generateSingleSampleNumber],
   );
 
+  const handleRandomGenerate = useCallback(
+    (count: number) => {
+      const nodeCount = getNodes().length;
+      const available = 50 - nodeCount;
+      if (available <= 0) {
+        setWarningText("Maximum limit of 50 nodes reached. Cannot add more.");
+        setTimeout(() => setWarningText(null), 5000);
+        return;
+      }
+      if (count > available) {
+        setWarningText(
+          `Only space for ${available} more nodes. Added ${available} nodes.`,
+        );
+        setTimeout(() => setWarningText(null), 5000);
+      } else {
+        setWarningText(null);
+      }
+      onRandomGenerate?.(Math.min(count, available));
+    },
+    [getNodes, onRandomGenerate],
+  );
+
   //reset all of value in input data
   const handleReset = () => {
     setInputValue("");
@@ -128,6 +153,7 @@ function Data_graph({
     setRemoveValue("");
     setStartError(null);
     setEndError(null);
+    setWarningText(null);
     onResetGraph?.();
   };
 
@@ -259,7 +285,12 @@ function Data_graph({
             </div>
           ))}
         </div>
-        <RandomSize onReset={handleReset} onAdd={onRandomGenerate} />
+        <RandomSize
+          onReset={handleReset}
+          onAdd={handleRandomGenerate}
+          isDisabled={isFull}
+          warningText={warningText}
+        />
         <hr className="border-t border-[#5D5D5D]/20 my-6 mx-2" />
         <div className="flex flex-col gap-2 px-2">
           {needsStartVertex && (
