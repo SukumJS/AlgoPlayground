@@ -189,49 +189,82 @@ export default function TutorialGraph({
   }
 
   useEffect(() => {
+    // บังคับเปิด Sidebar เพื่อโชว์ปุ่ม Post test ตอนถึง Step 4
     if (localEndStep === 4) {
       window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
     }
+
     if (localEndStep < 1) return;
 
     let frameId: number;
     const trackPosition = () => {
-      const infoEl = document.getElementById("tutorial-info-button");
+      // ดึงตำแหน่งปุ่ม Info (i) แบบควานหาทุกซอกทุกมุม
+      const infoEl =
+        document.getElementById("tutorial-info-button") ||
+        Array.from(document.querySelectorAll("button")).find((b) =>
+          b.innerHTML.includes("lucide-info"),
+        ) ||
+        document.querySelector("svg.lucide-info")?.closest("button");
+
       if (infoEl) {
         const iRect = infoEl.getBoundingClientRect();
-        setInfoBtnRect({
-          x: iRect.left,
-          y: iRect.top,
-          w: iRect.width,
-          h: iRect.height,
-        });
+        if (iRect.width > 0)
+          setInfoBtnRect({
+            x: iRect.left,
+            y: iRect.top,
+            w: iRect.width,
+            h: iRect.height,
+          });
       }
 
-      const resetEl = document.getElementById("tutorial-reset-button");
+      // ดึงตำแหน่งปุ่ม Reset (?) แบบควานหาทุกซอกทุกมุม
+      const resetEl =
+        document.getElementById("tutorial-reset-button") ||
+        Array.from(document.querySelectorAll("button")).find((b) =>
+          b.innerHTML.includes("lucide-help-circle"),
+        ) ||
+        document.querySelector("svg.lucide-help-circle")?.closest("button");
+
       if (resetEl) {
         const rRect = resetEl.getBoundingClientRect();
-        setResetBtnRect({
-          x: rRect.left,
-          y: rRect.top,
-          w: rRect.width,
-          h: rRect.height,
-        });
+        if (rRect.width > 0)
+          setResetBtnRect({
+            x: rRect.left,
+            y: rRect.top,
+            w: rRect.width,
+            h: rRect.height,
+          });
       }
 
-      const ptEl = document.querySelector(
-        "[data-tutorial-posttest]",
-      ) as HTMLElement | null;
+      // ดึงตำแหน่งปุ่ม Post Test
+      let ptEl =
+        document.getElementById("post-test-button") ||
+        document.querySelector("[data-tutorial-posttest]");
+
+      if (!ptEl || ptEl.getBoundingClientRect().width === 0) {
+        const allEls = Array.from(document.querySelectorAll("button, a, div"));
+        ptEl = allEls.find(
+          (el) =>
+            el.textContent?.includes("Post Test") &&
+            el.getBoundingClientRect().width > 0 &&
+            el.getBoundingClientRect().height < 100,
+        ) as HTMLElement | null;
+      }
+
       if (ptEl) {
         const ptRect = ptEl.getBoundingClientRect();
-        setPostTestRect({
-          x: ptRect.left,
-          y: ptRect.top,
-          w: ptRect.width,
-          h: ptRect.height,
-        });
+        if (ptRect.width > 0)
+          setPostTestRect({
+            x: ptRect.left,
+            y: ptRect.top,
+            w: ptRect.width,
+            h: ptRect.height,
+          });
       }
+
       frameId = requestAnimationFrame(trackPosition);
     };
+
     trackPosition();
     return () => cancelAnimationFrame(frameId);
   }, [localEndStep]);
