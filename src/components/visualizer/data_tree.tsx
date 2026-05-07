@@ -377,6 +377,15 @@ function Data_tree({
     [pickUnique],
   );
 
+  /** Called when a node is successfully dropped into the playground */
+  const handleSuccessfulDrop = useCallback(
+    (idx: number) => {
+      // Slide nodes: remove the dropped one and generate a new one
+      handlePanelNodeDragged(idx);
+    },
+    [handlePanelNodeDragged],
+  );
+
   // Animation callbacks
   const animationCallbacks: AnimationCallbacks = useMemo(
     () => ({
@@ -688,7 +697,7 @@ function Data_tree({
 
   // Drag & Drop
   const createAddNewNode = useCallback(
-    (sampleValue: number): OnDropAction => {
+    (sampleValue: number, panelIndex?: number): OnDropAction => {
       return ({ position }: { position: XYPosition }) => {
         // Block drag-drop during animation
         if (isAnimating) return;
@@ -735,7 +744,12 @@ function Data_tree({
             return result.root;
           });
 
-        if (tutorialMode && tutorialStep === 0) onTutorialDropSuccess?.();
+        if (tutorialMode && tutorialStep === 0) {
+          onTutorialDropSuccess?.();
+        } else if (typeof panelIndex === "number") {
+          // Slide panel nodes after successful drop (non-tutorial)
+          handleSuccessfulDrop(panelIndex);
+        }
       };
     },
     [
@@ -744,7 +758,6 @@ function Data_tree({
       tutorialStep,
       onTutorialDropSuccess,
       isAnimating,
-      isLimitReached,
       isBST,
       isBT,
       isAVL,
@@ -752,6 +765,7 @@ function Data_tree({
       isMinHeap,
       setAVLRoot,
       setHeapRoot,
+      handleSuccessfulDrop,
     ],
   );
 
@@ -1188,13 +1202,17 @@ function Data_tree({
             <input
               type="number"
               placeholder="N"
+              max={100}
               className="w-11 h-full bg-transparent text-center text-[#222121] font-semibold text-xl focus:outline-none placeholder:text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-100 disabled:bg-transparent transition-colors"
               value={nodeInput}
-              onChange={(e) =>
-                setNodeInput(
-                  e.target.value === "" ? "" : String(Number(e.target.value)),
-                )
-              }
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "") {
+                  setNodeInput("");
+                } else if (Number(val) <= 100) {
+                  setNodeInput(String(Number(val)));
+                }
+              }}
               onPointerDown={(e) => e.stopPropagation()}
               disabled={tutorialMode || isAnimating}
               readOnly={tutorialMode || isAnimating}
@@ -1210,9 +1228,7 @@ function Data_tree({
                 onPointerDown={(event) => {
                   setType("custom");
                   setDraggedValue(val);
-                  onDragStart(event, createAddNewNode(val));
-                  // Slide nodes after successful pointer-down (node will shift immediately)
-                  setTimeout(() => handlePanelNodeDragged(idx), 0);
+                  onDragStart(event, createAddNewNode(val, idx));
                 }}
               >
                 {val}

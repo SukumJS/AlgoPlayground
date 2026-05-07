@@ -156,6 +156,7 @@ export default function PlaygroundLinearDS({
     });
   }, [algorithm]);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [explanation, setExplanation] = useState<string>(
     "This section will explain the data structure operations.",
   );
@@ -486,7 +487,10 @@ export default function PlaygroundLinearDS({
 
   const sideTabMemo = useMemo(
     () => (
-      <SideTab title={prettyName}>
+      <SideTab
+        title={prettyName}
+        onToggle={(isOpen) => setIsSidebarOpen(isOpen)}
+      >
         <div>
           <CodeAlgo
             algoType={algorithm}
@@ -545,41 +549,48 @@ export default function PlaygroundLinearDS({
 
   return (
     <div className="w-screen h-screen">
-      <ReactFlow
-        className={isAnimating ? "sorting" : ""}
-        nodes={displayNodes}
-        edges={edges}
-        onMoveStart={(event) => {
-          if (event) isUserPanning.current = true;
-        }}
-        onMoveEnd={(event) => {
-          if (event) setTimeout(() => (isUserPanning.current = false), 1500);
-        }}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        nodeTypes={nodeTypes}
-        onDragOver={onDragOver}
-        onNodeDragStart={handleNodeDragStart}
-        onNodeDrag={handleNodeDrag}
-        onNodeDragStop={handleNodeDragStop}
-        panOnDrag={!tutorial.showTutorial}
-        zoomOnScroll={!tutorial.showTutorial}
-        zoomOnPinch={!tutorial.showTutorial}
-        zoomOnDoubleClick={!tutorial.showTutorial}
-        fitView
-        fitViewOptions={fitViewOptions}
-        defaultEdgeOptions={defaultEdgeOptions}
+      <div
+        className={`absolute top-0 left-0 h-full z-0 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? "w-full lg:w-[calc(100vw-360px)]" : "w-full"
+        }`}
       >
-        <Background />
-        {!tutorial.showTutorial && <Controls />}
-      </ReactFlow>
+        <ReactFlow
+          className={isAnimating ? "sorting" : ""}
+          nodes={displayNodes}
+          edges={edges}
+          onMoveStart={(event) => {
+            if (event) isUserPanning.current = true;
+          }}
+          onMoveEnd={(event) => {
+            if (event) setTimeout(() => (isUserPanning.current = false), 1500);
+          }}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          onDragOver={onDragOver}
+          onNodeDragStart={handleNodeDragStart}
+          onNodeDrag={handleNodeDrag}
+          onNodeDragStop={handleNodeDragStop}
+          panOnDrag={!tutorial.showTutorial}
+          zoomOnScroll={!tutorial.showTutorial}
+          zoomOnPinch={!tutorial.showTutorial}
+          zoomOnDoubleClick={!tutorial.showTutorial}
+          fitView
+          fitViewOptions={fitViewOptions}
+          defaultEdgeOptions={defaultEdgeOptions}
+        >
+          <Background />
+          {!tutorial.showTutorial && <Controls />}
+        </ReactFlow>
+      </div>
 
       {sideTabMemo}
 
       <div className="absolute top-4 left-8 z-10 flex gap-2">
         <GoToHome_Portal algorithm={algorithm} algoType="linear-ds" />
         <button
+          id="tutorial-info-button"
           onClick={(e) => {
             e.stopPropagation();
             setShowInfo(true);
@@ -589,8 +600,10 @@ export default function PlaygroundLinearDS({
           <Info color="#000000" />
         </button>
         <button
+          id="tutorial-reset-button"
           onClick={(e) => {
             e.stopPropagation();
+            window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
             // Reset playground to initial state based on algorithm
             const isLL =
               algorithm === "singly-linked-list" ||
@@ -611,7 +624,7 @@ export default function PlaygroundLinearDS({
               getDefaultLinearDSExplanation(prettyName, algorithm),
             );
             // Reset viewport to initial position
-            fitView({ padding: 0.2, duration: 300 });
+            fitView({ ...fitViewOptions, duration: 300 });
             // Reset tutorial state
             tutorial.setTutorialStep(0);
             tutorial.setShowTutorial(true);

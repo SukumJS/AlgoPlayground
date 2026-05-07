@@ -278,6 +278,40 @@ export function useNodeInteraction({
         const selectedNode = nodes.find((n) => n.id === selectedNodeId);
         if (!selectedNode) return;
 
+        // Prevent duplicate edges between any two nodes (either direction)
+        const duplicateEdge = edges.find(
+          (e) =>
+            (e.source === node.id && e.target === selectedNode.id) ||
+            (e.source === selectedNode.id && e.target === node.id),
+        );
+        if (duplicateEdge) {
+          console.warn("Edge already exists between these nodes.");
+          setSelectedNodeId(null);
+          setNodes((nds) =>
+            nds.map((n) => ({
+              ...n,
+              data: { ...n.data, isHighlighted: false, isGlowing: false },
+            })),
+          );
+          return;
+        }
+
+        // Prevent child node from having more than one parent
+        const childAlreadyHasParent = edges.some(
+          (e) => e.target === selectedNode.id,
+        );
+        if (childAlreadyHasParent) {
+          console.warn("Selected node already has a parent.");
+          setSelectedNodeId(null);
+          setNodes((nds) =>
+            nds.map((n) => ({
+              ...n,
+              data: { ...n.data, isHighlighted: false, isGlowing: false },
+            })),
+          );
+          return;
+        }
+
         const validation = validateBSTLink(node, selectedNode, edges);
         if (validation.valid) {
           const newEdge: Edge = {
@@ -426,6 +460,8 @@ export function useNodeInteraction({
   const handleEdgeClick = useCallback(
     (event: React.MouseEvent, edgeId: string) => {
       if (isTutorialActive) return;
+
+      // Graph mode: edit weight (only for weighted graphs)
       if (!isGraph) return;
       if (!weighted) return; // No weight editing for unweighted graphs
 

@@ -96,6 +96,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const [targetValue, setTargetValue] = useState<number | string>("");
   const [showTargetError, setShowTargetError] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [explanation, setExplanation] = useState<string>(
     "This section will explain the algorithm's steps. Click 'Run' to start.",
   );
@@ -343,7 +344,10 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
 
   const sideTabMemo = useMemo(
     () => (
-      <SideTab title={prettyName}>
+      <SideTab
+        title={prettyName}
+        onToggle={(isOpen) => setIsSidebarOpen(isOpen)}
+      >
         <div>
           <CodeAlgo
             algoType={algorithm}
@@ -392,42 +396,48 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
 
   return (
     <div className="w-screen h-screen">
-      <ReactFlow
-        className={controller.isRunning ? "sorting" : ""}
-        nodes={displayNodes}
-        edges={edges}
-        onMoveStart={(event) => {
-          if (event) {
-            isUserPanning.current = true;
-          }
-        }}
-        onMoveEnd={(event) => {
-          if (event) {
-            // เมื่อคนเล่นปล่อยเมาส์ ให้หน่วงเวลา 1.5 วินาที กล้องถึงจะกลับมาทำงาน
-            setTimeout(() => {
-              isUserPanning.current = false;
-            }, 1500);
-          }
-        }}
-        onNodesChange={showTutorial ? undefined : onNodesChange}
-        onEdgesChange={showTutorial ? undefined : onEdgesChange}
-        onConnect={onConnect}
-        nodeTypes={nodeTypes}
-        onDragOver={onDragOver}
-        onNodeDragStart={handleNodeDragStart}
-        onNodeDrag={handleNodeDrag}
-        onNodeDragStop={handleNodeDragStop}
-        panOnDrag={!showTutorial}
-        zoomOnScroll={!showTutorial}
-        zoomOnPinch={!showTutorial}
-        zoomOnDoubleClick={!showTutorial}
-        fitView
-        fitViewOptions={fitViewOptions}
-        defaultEdgeOptions={defaultEdgeOptions}
+      <div
+        className={`absolute top-0 left-0 h-full z-0 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? "w-full lg:w-[calc(100vw-360px)]" : "w-full"
+        }`}
       >
-        <Background />
-        {!showTutorial && <Controls />}
-      </ReactFlow>
+        <ReactFlow
+          className={controller.isRunning ? "sorting" : ""}
+          nodes={displayNodes}
+          edges={edges}
+          onMoveStart={(event) => {
+            if (event) {
+              isUserPanning.current = true;
+            }
+          }}
+          onMoveEnd={(event) => {
+            if (event) {
+              // เมื่อคนเล่นปล่อยเมาส์ ให้หน่วงเวลา 1.5 วินาที กล้องถึงจะกลับมาทำงาน
+              setTimeout(() => {
+                isUserPanning.current = false;
+              }, 1500);
+            }
+          }}
+          onNodesChange={showTutorial ? undefined : onNodesChange}
+          onEdgesChange={showTutorial ? undefined : onEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          onDragOver={onDragOver}
+          onNodeDragStart={handleNodeDragStart}
+          onNodeDrag={handleNodeDrag}
+          onNodeDragStop={handleNodeDragStop}
+          panOnDrag={!showTutorial}
+          zoomOnScroll={!showTutorial}
+          zoomOnPinch={!showTutorial}
+          zoomOnDoubleClick={!showTutorial}
+          fitView
+          fitViewOptions={fitViewOptions}
+          defaultEdgeOptions={defaultEdgeOptions}
+        >
+          <Background />
+          {!showTutorial && <Controls />}
+        </ReactFlow>
+      </div>
 
       <div className="absolute bottom-4 w-full z-10">
         <ControlPanel controller={controller} />
@@ -438,6 +448,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
       <div className="absolute top-4 left-8 z-10 flex gap-2">
         <GoToHome_Portal algorithm={algorithm} algoType="searching" />
         <button
+          id="tutorial-info-button"
           onClick={(e) => {
             e.stopPropagation();
             setShowInfo(true);
@@ -447,8 +458,10 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
           <Info color="#000000" />
         </button>
         <button
+          id="tutorial-reset-button"
           onClick={(e) => {
             e.stopPropagation();
+            window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
             // Reset playground to initial state
             setNodes(initialNodes);
             setEdges(initialEdges);
@@ -456,7 +469,7 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
               `This section will explain ${prettyName}. Click 'Run' to start.`,
             );
             // Reset viewport to initial position
-            fitView({ padding: 0.2, duration: 300 });
+            fitView({ ...fitViewOptions, duration: 300 });
             // Reset tutorial state
             tutorial.setTutorialStep(0);
             tutorial.setShowTutorial(true);
@@ -547,7 +560,9 @@ export default function PlaygroundSearch({ algorithm }: { algorithm: string }) {
       {tutorial.showCompletionModal && (
         <Tutorial_modal
           showModal={tutorial.showCompletionModal}
-          onClose={() => tutorial.setShowCompletionModal(false)}
+          onClose={() => {
+            tutorial.setShowCompletionModal(false);
+          }}
           tutorialContent={[
             {
               title: "Tutorial Complete!",

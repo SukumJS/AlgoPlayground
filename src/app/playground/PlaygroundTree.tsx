@@ -528,6 +528,29 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
 
   const onConnect: OnConnect = useCallback(
     (connection) => {
+      // Prevent duplicate edges between any two nodes (either direction)
+      if (connection.source && connection.target) {
+        const duplicateEdge = edges.find(
+          (e) =>
+            (e.source === connection.source &&
+              e.target === connection.target) ||
+            (e.source === connection.target && e.target === connection.source),
+        );
+        if (duplicateEdge) {
+          console.warn("Edge already exists between these nodes.");
+          return;
+        }
+
+        // Prevent a child node from having more than one parent
+        const childAlreadyHasParent = edges.some(
+          (e) => e.target === connection.target,
+        );
+        if (childAlreadyHasParent) {
+          console.warn("Target node already has a parent.");
+          return;
+        }
+      }
+
       // Intercept connections for algorithms to validate
       const isGenericBT = [
         "binary-tree-inorder",
@@ -577,9 +600,10 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
   // Edge click handler
   const handleEdgeClick = useCallback(
     (event: React.MouseEvent, edge: Edge) => {
+      if (tutorial.showTutorial) return;
       nodeInteraction.handleEdgeClick(event, edge.id);
     },
-    [nodeInteraction],
+    [nodeInteraction, tutorial.showTutorial],
   );
 
   // Combined node click handler
@@ -808,6 +832,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
       <div className="absolute top-4 left-8 z-10 flex gap-2">
         <GoToHome_Portal algorithm={algorithm} algoType="tree" />
         <button
+          id="tutorial-info-button"
           onClick={(e) => {
             e.stopPropagation();
             setShowInfo(true);
@@ -817,8 +842,10 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
           <Info color="#000000" />
         </button>
         <button
+          id="tutorial-reset-button"
           onClick={(e) => {
             e.stopPropagation();
+            window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
             // Save current playground state before tutorial
             setSavedNodes(nodes);
             setSavedEdges(edges);
@@ -838,7 +865,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
               }
             });
             // Reset viewport to initial position
-            fitView({ padding: 0.2, duration: 300 });
+            fitView({ ...fitViewOptions, duration: 300 });
             // Reset tutorial state and start tutorial
             tutorial.setTutorialStep(0);
             tutorial.setShowTutorial(true);

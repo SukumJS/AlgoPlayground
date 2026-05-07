@@ -104,6 +104,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
   const [nodes, setNodes] = useState<Node<SortNodeData>[]>(initialNodes);
   const [nodeInput, setNodeInput] = useState<number | string>("");
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [explanation, setExplanation] = useState<string>(
     "This section will explain the algorithm's steps. Click 'Run' to start.",
   );
@@ -308,7 +309,10 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
 
   const sideTabMemo = useMemo(
     () => (
-      <SideTab title={prettyName}>
+      <SideTab
+        title={prettyName}
+        onToggle={(isOpen) => setIsSidebarOpen(isOpen)}
+      >
         <div>
           <CodeAlgo
             algoType={algorithm}
@@ -342,47 +346,55 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
       controller.isRunning,
       controller.currentStep,
       controller.stepToCodeLine,
+      setIsSidebarOpen,
     ],
   );
 
   return (
     <div className="w-screen h-screen">
-      <ReactFlow
-        className={controller.isRunning ? "sorting" : ""}
-        nodes={displayNodes}
-        edges={edges}
-        onMoveStart={(event) => {
-          if (event) {
-            isUserPanning.current = true;
-          }
-        }}
-        onMoveEnd={(event) => {
-          if (event) {
-            // เมื่อคนเล่นปล่อยเมาส์ ให้หน่วงเวลา 1.5 วินาที กล้องถึงจะกลับมาทำงาน
-            setTimeout(() => {
-              isUserPanning.current = false;
-            }, 1500);
-          }
-        }}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        nodeTypes={nodeTypes}
-        onDragOver={onDragOver}
-        onNodeDragStart={handleNodeDragStart}
-        onNodeDrag={handleNodeDrag}
-        onNodeDragStop={handleNodeDragStop}
-        panOnDrag={!tutorial.showTutorial}
-        zoomOnScroll={!tutorial.showTutorial}
-        zoomOnPinch={!tutorial.showTutorial}
-        zoomOnDoubleClick={!tutorial.showTutorial}
-        fitView
-        fitViewOptions={fitViewOptions}
-        defaultEdgeOptions={defaultEdgeOptions}
+      <div
+        className={`absolute top-0 left-0 h-full z-0 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? "w-full lg:w-[calc(100vw-360px)]" : "w-full"
+        }`}
       >
-        <Background />
-        {!tutorial.showTutorial && <Controls />}
-      </ReactFlow>
+        <ReactFlow
+          className={controller.isRunning ? "sorting" : ""}
+          nodes={displayNodes}
+          edges={edges}
+          onMoveStart={(event) => {
+            if (event) {
+              isUserPanning.current = true;
+            }
+          }}
+          onMoveEnd={(event) => {
+            if (event) {
+              // เมื่อคนเล่นปล่อยเมาส์ ให้หน่วงเวลา 1.5 วินาที กล้องถึงจะกลับมาทำงาน
+              setTimeout(() => {
+                isUserPanning.current = false;
+              }, 1500);
+            }
+          }}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          onDragOver={onDragOver}
+          onNodeDragStart={handleNodeDragStart}
+          onNodeDrag={handleNodeDrag}
+          onNodeDragStop={handleNodeDragStop}
+          panOnDrag={!tutorial.showTutorial}
+          zoomOnScroll={!tutorial.showTutorial}
+          zoomOnPinch={!tutorial.showTutorial}
+          zoomOnDoubleClick={!tutorial.showTutorial}
+          fitView
+          fitViewOptions={fitViewOptions}
+          defaultEdgeOptions={defaultEdgeOptions}
+        >
+          <Background />
+          {!tutorial.showTutorial && <Controls />}
+          {/* ซ่อน Controls และ MiniMap ตอนอยู่ใน Tutorial */}
+        </ReactFlow>
+      </div>
 
       <div className="absolute bottom-4 w-full z-10">
         <ControlPanel controller={controller} />
@@ -393,6 +405,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
       <div className="absolute top-4 left-8 z-10 flex gap-2">
         <GoToHome_Portal algorithm={algorithm} algoType="sorting" />
         <button
+          id="tutorial-info-button"
           onClick={(e) => {
             e.stopPropagation();
             setShowInfo(true);
@@ -402,8 +415,10 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
           <Info color="#000000" />
         </button>
         <button
+          id="tutorial-reset-button"
           onClick={(e) => {
             e.stopPropagation();
+            window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
             // Reset playground to initial state
             setNodes(initialNodes);
             setEdges(initialEdges);
@@ -411,7 +426,7 @@ export default function PlaygroundSort({ algorithm }: { algorithm: string }) {
               `This section will explain ${prettyName}. Click 'Run' to start.`,
             );
             // Reset viewport to initial position
-            fitView({ padding: 0.2, duration: 300 });
+            fitView({ ...fitViewOptions, duration: 300 });
             // Reset tutorial state
             tutorial.setTutorialStep(0);
             tutorial.setShowTutorial(true);

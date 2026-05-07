@@ -939,6 +939,7 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
       <div className="absolute top-4 left-8 z-10 flex gap-2">
         <GoToHome_Portal algorithm={algorithm} algoType="graph" />
         <button
+          id="tutorial-info-button"
           onClick={(e) => {
             e.stopPropagation();
             setShowInfo(true);
@@ -948,14 +949,16 @@ export default function PlaygroundGraph({ algorithm }: { algorithm: string }) {
           <Info color="#000000" />
         </button>
         <button
+          id="tutorial-reset-button"
           onClick={(e) => {
             e.stopPropagation();
+            window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
             // Reset playground to initial state
             setNodes(graphInitialNodes);
             setEdges(initialEdges);
             setExplanation(getDefaultGraphExplanation(prettyName));
             // Reset viewport to initial position
-            fitView({ padding: 0.2, duration: 300 });
+            fitView({ ...fitViewOptions, duration: 300 });
             // Reset tutorial state
             graphTutorial.setTutorialStep(0);
             graphTutorial.setShowTutorial(true);

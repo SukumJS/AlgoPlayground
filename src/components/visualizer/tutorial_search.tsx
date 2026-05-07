@@ -57,6 +57,16 @@ const DashedArrow = ({
   </svg>
 );
 
+// สร้างคอมโพเนนต์ปุ่ม Skip สำหรับเรียกใช้ซ้ำ
+const SkipButton = ({ onClick }: { onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className="fixed top-6 right-[480px] z-[100] px-4 py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+  >
+    Skip Tutorial <span className="text-lg leading-none"></span>
+  </button>
+);
+
 export default function TutorialSearch({
   currentStep,
   node2ScreenPos,
@@ -66,72 +76,100 @@ export default function TutorialSearch({
   dropZoneScreenPos,
   isTrashActive,
   trashBinPos,
-  onComplete, // อย่าลืมใส่เข้ามาใน props destruction
+  onComplete,
   nodeMaskSize,
 }: TutorialProps) {
   const { width: vw, height: vh } = useWindowSize();
-  // สร้าง State ท้องถิ่นเพื่อตัดขาดจากระบบ Auto-Advance ของ Hook นอก
+
+  // 0=ยังไม่จบ, 1=Legend, 2=Info, 3=Reset/Replay, 4=PostTest
   const [localEndStep, setLocalEndStep] = useState(0);
 
-  // ติดตามตำแหน่งปุ่ม Post Test แบบ dynamic
+  // ติดตามตำแหน่งปุ่มต่างๆ แบบ dynamic
   const [postTestRect, setPostTestRect] = useState<{
     x: number;
     y: number;
     w: number;
     h: number;
   } | null>(null);
-
-  useEffect(() => {
-    if (localEndStep !== 2) return;
-    // Force open the sidebar so the post test button becomes visible
-    window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
-    let frameId: number;
-    const track = () => {
-      const el = document.getElementById("post-test-button");
-      if (el) {
-        const r = el.getBoundingClientRect();
-        setPostTestRect({ x: r.left, y: r.top, w: r.width, h: r.height });
-      }
-      frameId = requestAnimationFrame(track);
-    };
-    track();
-    return () => cancelAnimationFrame(frameId);
-  }, [localEndStep]);
+  const [infoBtnRect, setInfoBtnRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+  const [resetBtnRect, setResetBtnRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
 
   // กันข้ามอัตโนมัติ
   if (localEndStep === 0) {
     if (currentStep >= 5) {
-      setLocalEndStep(1);
+      setLocalEndStep(1); // เริ่มสเต็ปจบอันแรก
     }
   }
 
   useEffect(() => {
+    // บังคับเปิด Sidebar เพื่อโชว์ปุ่ม Post test ตอนถึง Step 4
+    if (localEndStep === 4) {
+      window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
+    }
+
     if (localEndStep < 1) return;
+
     let frameId: number;
     const trackPosition = () => {
-      const el = document.querySelector(
-        "[data-tutorial-posttest]",
-      ) as HTMLElement | null;
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        setPostTestRect({
-          x: rect.left,
-          y: rect.top,
-          w: rect.width,
-          h: rect.height,
+      // 1. ดึงตำแหน่งปุ่ม Info (i)
+      const infoEl = document.getElementById("tutorial-info-button");
+      if (infoEl) {
+        const iRect = infoEl.getBoundingClientRect();
+        setInfoBtnRect({
+          x: iRect.left,
+          y: iRect.top,
+          w: iRect.width,
+          h: iRect.height,
         });
       }
+
+      // 2. ดึงตำแหน่งปุ่ม Reset (?)
+      const resetEl = document.getElementById("tutorial-reset-button");
+      if (resetEl) {
+        const rRect = resetEl.getBoundingClientRect();
+        setResetBtnRect({
+          x: rRect.left,
+          y: rRect.top,
+          w: rRect.width,
+          h: rRect.height,
+        });
+      }
+
+      // 3. ดึงตำแหน่งปุ่ม Post Test
+      const ptEl =
+        (document.querySelector(
+          "[data-tutorial-posttest]",
+        ) as HTMLElement | null) || document.getElementById("post-test-button");
+      if (ptEl) {
+        const ptRect = ptEl.getBoundingClientRect();
+        setPostTestRect({
+          x: ptRect.left,
+          y: ptRect.top,
+          w: ptRect.width,
+          h: ptRect.height,
+        });
+      }
+
       frameId = requestAnimationFrame(trackPosition);
     };
     trackPosition();
     return () => cancelAnimationFrame(frameId);
   }, [localEndStep]);
 
-  // หากอยู่ในช่วง 2 สเต็ปสุดท้าย ให้รันหน้าตานี้
+  // หากอยู่ในช่วงสเต็ปสุดท้าย (แนะนำ UI) ให้รันหน้าตานี้
   if (localEndStep > 0) {
     return (
       <div className="fixed inset-0 z-[80] pointer-events-auto transition-opacity duration-300">
-        {/* --- MASK SPOTLIGHT สำหรับ Legend และ Post Test --- */}
         <svg
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
           style={{ position: "fixed" }}
@@ -144,14 +182,34 @@ export default function TutorialSearch({
               {localEndStep === 1 && (
                 <rect
                   x="180"
-                  y="12"
-                  width="330"
-                  height="45"
-                  rx="22"
+                  y="10"
+                  width="335"
+                  height="50"
+                  rx="28"
                   fill="black"
                 />
               )}
-              {localEndStep === 2 && postTestRect && (
+              {localEndStep === 2 && infoBtnRect && (
+                <rect
+                  x={infoBtnRect.x - 4}
+                  y={infoBtnRect.y - 4}
+                  width={infoBtnRect.w + 8}
+                  height={infoBtnRect.h + 8}
+                  rx="100"
+                  fill="black"
+                />
+              )}
+              {localEndStep === 3 && resetBtnRect && (
+                <rect
+                  x={resetBtnRect.x - 4}
+                  y={resetBtnRect.y - 4}
+                  width={resetBtnRect.w + 8}
+                  height={resetBtnRect.h + 8}
+                  rx="100"
+                  fill="black"
+                />
+              )}
+              {localEndStep === 4 && postTestRect && (
                 <rect
                   x={postTestRect.x - 4}
                   y={postTestRect.y - 4}
@@ -171,18 +229,18 @@ export default function TutorialSearch({
           />
         </svg>
 
-        {/* กล่องชี้สถานะสี (ซ้ายบน) */}
         {localEndStep === 1 && (
-          <div className="absolute top-[120px] left-[200px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
+          <div className="absolute top-[120px] left-[250px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
             <DashedArrow
               width={50}
-              className="absolute -top-[45px] left-[130px] transform rotate-90"
+              className="absolute -top-[45px] left-[50px] transform rotate-90"
             />
             <h3 className="font-bold text-gray-800 text-lg mb-2">
               Color Legend
             </h3>
             <p className="text-sm text-gray-600 mb-5 leading-relaxed">
-              Look here to understand what different node colors mean
+              Look here to understand what different node colors mean during the
+              execution.
             </p>
             <button
               onClick={() => setLocalEndStep(2)}
@@ -193,8 +251,63 @@ export default function TutorialSearch({
           </div>
         )}
 
-        {/* กล่องชี้ Post Test (ชี้ไปที่ปุ่ม Post Test จริง) */}
-        {localEndStep === 2 && postTestRect && (
+        {localEndStep === 2 && infoBtnRect && (
+          <div
+            className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
+            style={{
+              top: `${infoBtnRect.y + infoBtnRect.h + 55}px`,
+              left: `${infoBtnRect.x + infoBtnRect.w / 4 - 50}px`,
+            }}
+          >
+            <DashedArrow
+              width={50}
+              className="absolute -top-[45px] left-[35px] transform rotate-90"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">
+              Algorithm Theory
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Click this <strong>( i ) Information</strong> icon anytime to read
+              the theory and understand how this algorithm works!
+            </p>
+            <button
+              onClick={() => setLocalEndStep(3)}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {localEndStep === 3 && resetBtnRect && (
+          <div
+            className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
+            style={{
+              top: `${resetBtnRect.y + resetBtnRect.h + 55}px`,
+              left: `${resetBtnRect.x + resetBtnRect.w / 4 - 50}px`,
+            }}
+          >
+            <DashedArrow
+              width={50}
+              className="absolute -top-[45px] left-[35px] transform rotate-90"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">
+              Replay Tutorial
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Click this <strong>( ? ) Help</strong> icon if you ever want to
+              replay this tutorial from the beginning!
+            </p>
+            <button
+              onClick={() => setLocalEndStep(4)}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {localEndStep === 4 && postTestRect && (
           <div
             className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
             style={{
@@ -215,20 +328,24 @@ export default function TutorialSearch({
               onClick={onComplete}
               className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
             >
-              Next
+              Finish
             </button>
           </div>
         )}
+
+        {/* ปุ่ม Skip */}
+        <SkipButton onClick={onComplete} />
       </div>
     );
   }
 
   if (currentStep >= 5) return null;
 
-  const nodeBoxSize = 105;
+  const screenScale = vw ? Math.max(0.6, Math.min(vw / 1536, 1)) : 1;
+  const nodeBoxSize = 105 * screenScale;
   const nodeHalfBox = nodeBoxSize / 2;
   const nodeRadius = "12";
-  const sidebarBoxSize = 54;
+  const sidebarBoxSize = 54 * screenScale;
   const sidebarHalfBox = sidebarBoxSize / 2;
 
   return (
@@ -242,8 +359,6 @@ export default function TutorialSearch({
         <defs>
           <mask id="spotlight-mask">
             <rect width="100%" height="100%" fill="white" />
-
-            {/* Step 0 */}
             {currentStep === 0 && sidebarNodePos && (
               <rect
                 x={sidebarNodePos.x - sidebarHalfBox}
@@ -264,8 +379,6 @@ export default function TutorialSearch({
                 fill="black"
               />
             )}
-
-            {/* Step 1 & 2 */}
             {(currentStep === 1 || currentStep === 2) && node2ScreenPos && (
               <rect
                 x={node2ScreenPos.x - nodeHalfBox}
@@ -286,8 +399,6 @@ export default function TutorialSearch({
                 fill="black"
               />
             )}
-
-            {/* Step 3 & 4 */}
             {(currentStep === 3 || currentStep === 4) && node1ScreenPos && (
               <rect
                 x={node1ScreenPos.x - nodeHalfBox}
@@ -484,6 +595,9 @@ export default function TutorialSearch({
           </div>
         </>
       )}
+
+      {/*  ใส่ปุ่ม Skip สำหรับช่วงลากกล่อง */}
+      <SkipButton onClick={onComplete} />
     </>
   );
 }
