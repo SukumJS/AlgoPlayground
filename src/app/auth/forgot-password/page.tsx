@@ -1,7 +1,10 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { sendPasswordResetEmail } from "firebase/auth";
+import {
+  sendPasswordResetEmail,
+  fetchSignInMethodsForEmail,
+} from "firebase/auth";
 import { auth } from "@/src/config/firebase";
 
 export default function ForgotPasswordPage() {
@@ -22,7 +25,26 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      // สั่ง Firebase ส่งอีเมลรีเซ็ตรหัสผ่าน
+      // เช็คก่อนว่าอีเมลนี้ใช้วิธีไหนในการล็อกอิน
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+
+      // ถ้า Array ว่างเปล่า แปลว่า "ไม่มีอีเมลนี้ในระบบ"
+      if (signInMethods.length === 0) {
+        setError("No account found with this email.");
+        setLoading(false);
+        return;
+      }
+
+      // ถ้าใน Array มีคำว่า "google.com" แปลว่าใช้ Google ล็อกอิน
+      if (signInMethods.includes("google.com")) {
+        setError(
+          "This account is registered with Google. You cannot reset the password here.",
+        );
+        setLoading(false);
+        return;
+      }
+
+      // ถ้าผ่านเงื่อนไขด้านบนมาได้ (เป็น Email/Password แน่ๆ) ค่อยสั่งส่งอีเมล
       await sendPasswordResetEmail(auth, email);
 
       setMessage("Password reset email sent! Please check your inbox.");
@@ -30,9 +52,7 @@ export default function ForgotPasswordPage() {
       setEmail("");
     } catch (err) {
       const firebaseError = err as { code?: string };
-      if (firebaseError.code === "auth/user-not-found") {
-        setError("No account found with this email.");
-      } else if (firebaseError.code === "auth/invalid-email") {
+      if (firebaseError.code === "auth/invalid-email") {
         setError("Invalid email format.");
       } else {
         setError("Failed to send reset email. Please try again.");
