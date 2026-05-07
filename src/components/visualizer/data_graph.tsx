@@ -2,7 +2,7 @@
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import React, { useState, useCallback } from "react";
-import { useReactFlow, XYPosition } from "@xyflow/react";
+import { useReactFlow, useNodes, XYPosition } from "@xyflow/react";
 import { OnDropAction, useDnD, useDnDPosition } from "./useDnD";
 import RandomSize from "../shared/randomSize";
 
@@ -34,6 +34,7 @@ interface DataGraphProps {
 function Data_graph({
   onSearch,
   algorithm = "",
+  setExplanation,
   isAnimating = false,
   onRandomGenerate,
   onResetGraph,
@@ -42,12 +43,17 @@ function Data_graph({
   const { onDragStart, isDragging } = useDnD();
   // The type of the node that is being dragged.
   const [type, setType] = useState<string | null>(null);
-  const { setNodes } = useReactFlow();
+  const { setNodes, getNodes } = useReactFlow();
+  const currentNodes = useNodes();
+  const isFull = currentNodes.length >= 50;
   const [inputValue, setInputValue] = useState<string>("");
   const [searchValue, setSearchValue] = useState<string>("");
   const [removeValue, setRemoveValue] = useState<string>("");
   const [nodeInput, setNodeInput] = useState<string>("");
   const [draggedValue, setDraggedValue] = useState<number | null>(null); // Added draggedValue state
+  const [startError, setStartError] = useState<string | null>(null);
+  const [endError, setEndError] = useState<string | null>(null);
+  const [warningText, setWarningText] = useState<string | null>(null);
 
   const needsEndVertex =
     !START_ONLY_ALGORITHMS.includes(algorithm) &&
@@ -57,34 +63,87 @@ function Data_graph({
     START_ONLY_ALGORITHMS.includes(algorithm) ||
     AUTO_ALGORITHMS.includes(algorithm);
 
-  const Sample = [
-    { number: "1" },
-    { number: "2" },
-    { number: "3" },
-    { number: "4" },
-    { number: "5" },
-  ];
+  const generateSingleSampleNumber = useCallback(
+    (currentSamples: { number: string }[]) => {
+      const usedLabels = new Set(getNodes().map((n) => String(n.data?.label)));
+      // Also avoid other sample numbers
+      for (const s of currentSamples) usedLabels.add(s.number);
+      let candidate: number;
+      let tries = 0;
+      do {
+        candidate = Math.floor(Math.random() * 99) + 1;
+        tries++;
+      } while (usedLabels.has(String(candidate)) && tries < 500);
+      return String(candidate);
+    },
+    [getNodes],
+  );
+
+  const [sampleNumbers, setSampleNumbers] = useState(() => {
+    const nums = new Set<number>();
+    while (nums.size < 5) {
+      nums.add(Math.floor(Math.random() * 99) + 1);
+    }
+    return Array.from(nums).map((n) => ({ number: String(n) }));
+  });
 
   const createAddNewNode = useCallback(
-    (Sample: number): OnDropAction => {
+    (value: number, sampleIndex?: number): OnDropAction => {
       return ({ position }: { position: XYPosition }) => {
         // Block drag-drop during animation
         if (isAnimating) return;
 
-        // Here, we create a new node and add it to the flow.
-        // You can customize the behavior of what happens when a node is dropped on the flow here.
+        // Prevent duplicate labels
+        const existingLabels = new Set(
+          getNodes().map((n) => String(n.data?.label)),
+        );
+        if (existingLabels.has(value.toString())) return;
+
         const newNode = {
           id: getId(),
-          type: "custom", // Changed node type to "custom"
+          type: "custom",
           position,
-          data: { label: Sample.toString(), variant: "circle" },
+          data: { label: value.toString(), variant: "circle" },
         };
 
         setNodes((nds) => nds.concat(newNode));
         setType(null);
+
+        // Regenerate only the dragged sample number
+        if (sampleIndex !== undefined) {
+          setSampleNumbers((prev) =>
+            prev.map((item, i) =>
+              i === sampleIndex
+                ? { number: generateSingleSampleNumber(prev) }
+                : item,
+            ),
+          );
+        }
       };
     },
-    [setNodes, setType, isAnimating],
+    [setNodes, setType, isAnimating, getNodes, generateSingleSampleNumber],
+  );
+
+  const handleRandomGenerate = useCallback(
+    (count: number) => {
+      const nodeCount = getNodes().length;
+      const available = 50 - nodeCount;
+      if (available <= 0) {
+        setWarningText("Maximum limit of 50 nodes reached. Cannot add more.");
+        setTimeout(() => setWarningText(null), 5000);
+        return;
+      }
+      if (count > available) {
+        setWarningText(
+          `Only space for ${available} more nodes. Added ${available} nodes.`,
+        );
+        setTimeout(() => setWarningText(null), 5000);
+      } else {
+        setWarningText(null);
+      }
+      onRandomGenerate?.(Math.min(count, available));
+    },
+    [getNodes, onRandomGenerate],
   );
 
   //reset all of value in input data
@@ -92,6 +151,9 @@ function Data_graph({
     setInputValue("");
     setSearchValue("");
     setRemoveValue("");
+    setStartError(null);
+    setEndError(null);
+    setWarningText(null);
     onResetGraph?.();
   };
 
@@ -99,6 +161,53 @@ function Data_graph({
     if (isAnimating) return;
     // Kruskal's doesn't need any vertex input; Prim's only needs start
     if (needsStartVertex && !inputValue) return;
+
+    // Verify the entered vertex labels actually exist on the canvas before
+    // running the algorithm — otherwise the explanation would play against
+    // a non-existent node.
+    const nodes = getNodes();
+    const existingLabels = new Set(nodes.map((n) => String(n.data?.label)));
+
+    // Empty graph — block the algorithm and surface the cause in the
+    // explanation panel instead of running an animation against nothing.
+    if (nodes.length === 0) {
+      if (needsStartVertex) setStartError("No nodes in the playground yet.");
+      if (needsEndVertex) setEndError("No nodes in the playground yet.");
+      setExplanation?.(
+        "Graph is empty. Add at least one node to the playground before running the algorithm.",
+      );
+      return;
+    }
+
+    let hasError = false;
+    const missing: string[] = [];
+    if (needsStartVertex && !existingLabels.has(inputValue)) {
+      setStartError(
+        `Start vertex "${inputValue}" has not been added to the playground`,
+      );
+      missing.push(`start vertex "${inputValue}"`);
+      hasError = true;
+    } else {
+      setStartError(null);
+    }
+
+    if (needsEndVertex && !existingLabels.has(searchValue)) {
+      setEndError(
+        `End vertex "${searchValue}" has not been added to the playground`,
+      );
+      missing.push(`end vertex "${searchValue}"`);
+      hasError = true;
+    } else {
+      setEndError(null);
+    }
+
+    if (hasError) {
+      setExplanation?.(
+        `Cannot start algorithm: ${missing.join(" and ")} not found in the playground. Add the node(s) or enter values that already exist.`,
+      );
+      return;
+    }
+
     onSearch?.(inputValue, searchValue);
   };
 
@@ -145,25 +254,43 @@ function Data_graph({
               placeholder="N"
               className="w-10 h-full rounded-lg bg-transparent text-center text-[#222121] font-semibold text-2xl focus:outline-none placeholder:text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               value={nodeInput}
-              onChange={(e) => setNodeInput(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "" || val === "-") {
+                  setNodeInput(val);
+                  return;
+                }
+                const num = parseInt(val, 10);
+                if (!isNaN(num) && num >= -99 && num <= 99) {
+                  setNodeInput(val);
+                }
+              }}
               onPointerDown={(e) => e.stopPropagation()}
             />
           </div>
-          {Sample.map((item, index) => (
+          {sampleNumbers.map((item, index) => (
             <div
               key={index}
               className="shrink-0 w-16 h-16 rounded-full flex justify-center items-center text-center text-[#222121] font-semibold text-2xl border-2 border-[#5D5D5D] bg-[#D9E363]"
               onPointerDown={(event) => {
                 setType("custom"); // Changed drag ghost type to "custom"
                 setDraggedValue(parseInt(item.number)); // Set dragged value
-                onDragStart(event, createAddNewNode(parseInt(item.number)));
+                onDragStart(
+                  event,
+                  createAddNewNode(parseInt(item.number), index),
+                );
               }}
             >
               {item.number}
             </div>
           ))}
         </div>
-        <RandomSize onReset={handleReset} onAdd={onRandomGenerate} />
+        <RandomSize
+          onReset={handleReset}
+          onAdd={handleRandomGenerate}
+          isDisabled={isFull}
+          warningText={warningText}
+        />
         <hr className="border-t border-[#5D5D5D]/20 my-6 mx-2" />
         <div className="flex flex-col gap-2 px-2">
           {needsStartVertex && (
@@ -173,10 +300,16 @@ function Data_graph({
                 type="number"
                 className="border border-gray-200 p-2 rounded-lg w-full placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  if (startError) setStartError(null);
+                }}
                 disabled={isAnimating}
                 placeholder="e.g. 1"
               />
+              {startError && (
+                <p className="text-red-500 text-sm">{startError}</p>
+              )}
             </div>
           )}
           {needsEndVertex && (
@@ -186,10 +319,14 @@ function Data_graph({
                 type="number"
                 className="border border-gray-200 p-2 rounded-lg w-full placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
+                onChange={(e) => {
+                  setSearchValue(e.target.value);
+                  if (endError) setEndError(null);
+                }}
                 disabled={isAnimating}
                 placeholder="e.g. 5"
               />
+              {endError && <p className="text-red-500 text-sm">{endError}</p>}
             </div>
           )}
           <button

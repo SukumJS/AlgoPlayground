@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   DndContext,
   closestCenter,
@@ -15,6 +15,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy,
+  verticalListSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -80,10 +81,12 @@ function SortableNode({ item, variant, disabled }: SortableNodeProps) {
       {...attributes}
       {...listeners}
       className={`
-        shrink-0 flex items-center justify-center
-        px-5 py-3 min-w-[140px] min-h-[56px]
+        w-full max-w-[640px] h-[72px]
+        flex items-center justify-center text-center
+        px-5 py-3
         border-2 border-[#5D5D5D] bg-[#D9E363]
         rounded-lg text-sm font-semibold text-[#222121]
+        overflow-hidden line-clamp-2
         select-none transition-shadow duration-200
         ${disabled ? "cursor-default" : "cursor-grab active:cursor-grabbing"}
         ${isDragging ? "shadow-lg" : "shadow-md"}
@@ -126,10 +129,12 @@ function StaticNode({ item, variant, isWrong = false }: StaticNodeProps) {
   return (
     <div
       className={`
-        shrink-0 flex items-center justify-center
-        px-5 py-3 min-w-[140px] min-h-[56px]
+        w-full max-w-[640px] h-[72px]
+        flex items-center justify-center text-center
+        px-5 py-3
         border-2 ${borderColor} ${bgColor}
         rounded-lg text-sm font-semibold ${textColor}
+        overflow-hidden line-clamp-2
       `}
     >
       {item.label}
@@ -155,6 +160,7 @@ function OrderingQuestion({
   disabled = false,
   className = "",
 }: OrderingQuestionProps) {
+  const useCompactLayout = items.every((item) => item.label.length <= 4);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
@@ -182,6 +188,11 @@ function OrderingQuestion({
 
   return (
     <div className={`${className}`}>
+      {!disabled && (
+        <p className="text-sm text-gray-400 mb-3 text-center select-none">
+          Drag to reorder
+        </p>
+      )}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -189,9 +200,19 @@ function OrderingQuestion({
       >
         <SortableContext
           items={currentOrder}
-          strategy={horizontalListSortingStrategy}
+          strategy={
+            useCompactLayout
+              ? horizontalListSortingStrategy
+              : verticalListSortingStrategy
+          }
         >
-          <div className="flex flex-wrap gap-3 items-center justify-center">
+          <div
+            className={
+              useCompactLayout
+                ? "flex flex-wrap gap-3 items-center justify-center"
+                : "flex flex-col gap-3 items-center"
+            }
+          >
             {orderedItems.map((item) => (
               <SortableNode
                 key={item.id}
@@ -223,13 +244,18 @@ export function OrderingResultDisplay({
   variant = "square",
   className = "",
 }: OrderingResultDisplayProps) {
+  const useCompactLayout = items.every((item) => item.label.length <= 4);
   const orderedItems = orderedIds
     .map((id) => items.find((item) => item.id === id))
     .filter(Boolean) as OrderItem[];
 
   return (
     <div
-      className={`flex flex-wrap gap-3 items-center justify-center ${className}`}
+      className={
+        useCompactLayout
+          ? `flex flex-wrap gap-3 items-center justify-center ${className}`
+          : `flex flex-col gap-3 items-center ${className}`
+      }
     >
       {orderedItems.map((item, index) => {
         const isWrong = correctOrder

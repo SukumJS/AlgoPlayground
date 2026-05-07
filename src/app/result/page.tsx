@@ -59,11 +59,12 @@ function ResultPage({
           className="mb-10"
         />
 
-        {/* Score summary */}
-        <div className="flex items-center justify-center mb-10">
-          <div className="px-8 py-4 bg-[#f0f7ff] rounded-2xl border border-[#0066cc]/20">
-            <p className="text-2xl font-bold text-[#0066cc] text-center">
-              Score: {gradingResult.score} / {gradingResult.totalQuestions}
+        {/* Score display */}
+        <div className="flex justify-center mb-10">
+          <div className="bg-white border-2 border-gray-200 rounded-2xl shadow-md px-6 py-4 text-center">
+            <p className="text-sm text-gray-500 font-medium mb-1">Your Score</p>
+            <p className="text-3xl font-bold text-[#222121]">
+              {gradingResult.score}/{gradingResult.totalQuestions}
             </p>
           </div>
         </div>
@@ -84,13 +85,13 @@ function ResultPage({
                     <span>{questionIndex + 1}.</span> {question.question}
                   </p>
                   <div
-                    className={`shrink-0 px-3 py-1 rounded-lg text-sm font-medium ${
+                    className={`shrink-0 px-3 py-1 border rounded-lg text-sm font-medium ${
                       isCorrect
-                        ? "bg-green-50 text-green-700 border border-green-200"
-                        : "bg-red-50 text-red-700 border border-red-200"
+                        ? "border-green-300 text-green-600 bg-green-50"
+                        : "border-red-300 text-red-600 bg-red-50"
                     }`}
                   >
-                    {isCorrect ? "✅ Correct" : "❌ Incorrect"}
+                    {isCorrect ? "1/1" : "0/1"}
                   </div>
                 </div>
 

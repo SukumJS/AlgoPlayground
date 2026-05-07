@@ -20,7 +20,7 @@ function Reading_modal({ isOpen, onClose }: Props) {
   if (!data) {
     return (
       <ModalOverlay isOpen={isOpen} onClose={onClose}>
-        <div className="w-172 h-40 bg-white border border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center relative">
+        <div className="w-172 max-w-[95vw] h-40 bg-white border border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center relative">
           <div className="absolute top-4 right-4">
             <X
               className="cursor-pointer text-gray-500 hover:text-black"
@@ -35,7 +35,7 @@ function Reading_modal({ isOpen, onClose }: Props) {
 
   return (
     <ModalOverlay isOpen={isOpen} onClose={onClose}>
-      <div className="w-172 h-156 bg-white border border-gray-300 rounded-lg p-6 flex flex-col">
+      <div className="w-172 max-w-[95vw] h-156 max-h-[90vh] bg-white border border-gray-300 rounded-lg p-6 flex flex-col">
         <div className="flex justify-end mb-2">
           <X
             className="cursor-pointer text-gray-500 hover:text-black"

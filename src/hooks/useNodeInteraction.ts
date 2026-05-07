@@ -65,6 +65,9 @@ export function useNodeInteraction({
   // Drag-to-delete state
   const [showTrashBin, setShowTrashBin] = useState(false);
   const [isTrashActive, setIsTrashActive] = useState(false);
+  // Mirror of isTrashActive that updates synchronously, so handleNodeDragStop
+  // can read the latest value without racing the React render cycle.
+  const isTrashActiveRef = useRef(false);
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const draggingNodeIdRef = useRef<string | null>(null);
 
@@ -175,28 +178,41 @@ export function useNodeInteraction({
             })),
           );
         } else {
-          // Link: behavior depends on directed/weighted mode
-          if (directed) {
-            // Directed mode: show weight modal before creating edge
-            setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
-            setWeightInputValue("");
-            setShowWeightModal(true);
-          } else if (weighted) {
-            // Undirected + weighted: show weight modal before creating edge (no arrow)
-            setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
-            setWeightInputValue("");
-            setShowWeightModal(true);
-          } else {
-            // Undirected mode: create edge immediately (no weight)
-            const newEdge: Edge = {
-              id: `eg-${selectedNodeId}-${node.id}-${Date.now()}`,
-              source: selectedNodeId,
-              target: node.id,
-              type: "floatingEdge",
-              data: { directed: false },
-              style: { stroke: "#222121", strokeWidth: 1 },
-            };
-            setEdges((eds) => [...eds, newEdge]);
+          // Check for existing edge before creating a new one
+          const edgeAlreadyExists = directed
+            ? edges.some(
+                (e) => e.source === selectedNodeId && e.target === node.id,
+              )
+            : edges.some(
+                (e) =>
+                  (e.source === selectedNodeId && e.target === node.id) ||
+                  (e.source === node.id && e.target === selectedNodeId),
+              );
+
+          if (!edgeAlreadyExists) {
+            // Link: behavior depends on directed/weighted mode
+            if (directed) {
+              // Directed mode: show weight modal before creating edge
+              setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
+              setWeightInputValue("");
+              setShowWeightModal(true);
+            } else if (weighted) {
+              // Undirected + weighted: show weight modal before creating edge (no arrow)
+              setPendingEdge({ sourceId: selectedNodeId, targetId: node.id });
+              setWeightInputValue("");
+              setShowWeightModal(true);
+            } else {
+              // Undirected mode: create edge immediately (no weight)
+              const newEdge: Edge = {
+                id: `eg-${selectedNodeId}-${node.id}-${Date.now()}`,
+                source: selectedNodeId,
+                target: node.id,
+                type: "floatingEdge",
+                data: { directed: false },
+                style: { stroke: "#9CA3AF", strokeWidth: 2 },
+              };
+              setEdges((eds) => [...eds, newEdge]);
+            }
           }
           // Clear selection visual
           setNodes((nds) =>
@@ -345,6 +361,7 @@ export function useNodeInteraction({
 
       const isNearTrash =
         dist < dropTargetRadius || event.clientY > window.innerHeight - 200;
+      isTrashActiveRef.current = isNearTrash;
       setIsTrashActive(isNearTrash);
 
       // Update node color when near trash
@@ -375,8 +392,9 @@ export function useNodeInteraction({
       if (isTutorialActive) return;
 
       if (showTrashBin) {
-        // Delete if node is in danger zone (red) — no need for cursor to be on trash icon
-        if (isTrashActive) {
+        // Read from ref — state may not have flushed yet if user released
+        // immediately after the node turned red.
+        if (isTrashActiveRef.current) {
           setNodes((nds) => nds.filter((n) => n.id !== node.id));
           setEdges((eds) =>
             eds.filter((e) => e.source !== node.id && e.target !== node.id),
@@ -396,9 +414,10 @@ export function useNodeInteraction({
       // Reset state
       setShowTrashBin(false);
       setIsTrashActive(false);
+      isTrashActiveRef.current = false;
       draggingNodeIdRef.current = null;
     },
-    [isTutorialActive, showTrashBin, isTrashActive, setNodes, setEdges],
+    [isTutorialActive, showTrashBin, setNodes, setEdges],
   );
 
   /**
@@ -409,6 +428,13 @@ export function useNodeInteraction({
       if (isTutorialActive) return;
       if (!isGraph) return;
       if (!weighted) return; // No weight editing for unweighted graphs
+
+      // Only open the weight modal when the user clicks the weight label
+      // itself. Clicking the edge body should let ReactFlow handle selection
+      // (so users can press Delete/Backspace to remove it).
+      const target = event.target as HTMLElement | null;
+      const onWeightLabel = target?.closest(".edge-weight-label");
+      if (!onWeightLabel) return;
 
       const edge = edges.find((e) => e.id === edgeId);
       if (!edge) return;
@@ -432,7 +458,14 @@ export function useNodeInteraction({
    * Weight modal handlers
    */
   const handleWeightInputChange = useCallback((value: string) => {
-    setWeightInputValue(value);
+    if (value === "" || value === "-") {
+      setWeightInputValue(value);
+      return;
+    }
+    const num = parseInt(value, 10);
+    if (!isNaN(num) && num >= -99 && num <= 99) {
+      setWeightInputValue(value);
+    }
   }, []);
 
   const handleWeightConfirm = useCallback(() => {
@@ -462,7 +495,7 @@ export function useNodeInteraction({
           type: "floatingEdge",
           label: String(weight),
           data: { weight },
-          style: { stroke: "#222121", strokeWidth: 1 },
+          style: { stroke: "#9CA3AF", strokeWidth: 2 },
           markerEnd: {
             type: "arrowclosed" as const,
             width: 25,
@@ -480,7 +513,7 @@ export function useNodeInteraction({
           type: "floatingEdge",
           label: String(weight),
           data: { directed: false, weight },
-          style: { stroke: "#222121", strokeWidth: 1 },
+          style: { stroke: "#9CA3AF", strokeWidth: 2 },
         };
         setEdges((eds) => [...eds, newEdge]);
       }

@@ -1,6 +1,6 @@
 "use client";
 import React, { Suspense, useEffect, useState } from "react";
-import { useSearchParams, notFound } from "next/navigation";
+import { useSearchParams, useRouter, notFound } from "next/navigation";
 import { DnDProvider } from "@/src/components/visualizer/useDnD";
 import { ReactFlowProvider } from "@xyflow/react";
 import PlaygroundTree from "./PlaygroundTree";
@@ -9,6 +9,7 @@ import PlaygroundSort from "./PlaygroundSort";
 import PlaygroundSearch from "./PlaygroundSearch";
 import PlaygroundLinearDS from "./PlaygroundLinearDS";
 import { algorithmCatalog } from "@/src/data/algorithmCatalog";
+import { pretestService } from "@/src/services/pretest.service";
 import Post_Test_modal from "@/src/components/shared/post_Test_modal";
 import {
   hasCompletedPosttest,
@@ -115,10 +116,10 @@ function BrowserBackPosttestGuard({
 
 function PlaygroundRouter() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const algoType = searchParams.get("type");
   const algorithm = searchParams.get("algorithm");
-
-  const typeToCatalogId: Record<string, string> = {
+  const TYPE_TO_CATALOG_ID: Record<string, string> = {
     tree: "tree",
     graph: "graph",
     sorting: "sorting",
@@ -126,15 +127,63 @@ function PlaygroundRouter() {
     "linear-ds": "linear-ds",
   };
 
-  if (!algoType || !algorithm || !typeToCatalogId[algoType]) {
+  if (!algoType || !algorithm || !TYPE_TO_CATALOG_ID[algoType]) {
     notFound();
   }
 
-  const catalogId = typeToCatalogId[algoType];
-  const section = algorithmCatalog.find((sec) => sec.id === catalogId);
+  const [pretestChecked, setPretestChecked] = useState(false);
 
-  if (!section || !section.items.some((item) => item.slug === algorithm)) {
+  // Validate URL params; valid means catalog has this slug under this type.
+  const catalogId = algoType ? TYPE_TO_CATALOG_ID[algoType] : undefined;
+  const section = catalogId
+    ? algorithmCatalog.find((sec) => sec.id === catalogId)
+    : undefined;
+  const isValid = Boolean(
+    algoType &&
+    algorithm &&
+    catalogId &&
+    section &&
+    section.items.some((item) => item.slug === algorithm),
+  );
+
+  // Gate: require completed pretest before allowing playground access.
+  useEffect(() => {
+    if (!isValid || !algorithm || !algoType) return;
+
+    let cancelled = false;
+    const checkStatus = async () => {
+      try {
+        const res = await pretestService.checkPretestStatus(algorithm);
+        if (cancelled) return;
+        if (!res.data.data.completed) {
+          router.replace(`/pretest?type=${algoType}&algorithm=${algorithm}`);
+          return;
+        }
+        setPretestChecked(true);
+      } catch {
+        // On error, send user to pretest to be safe
+        if (!cancelled) {
+          router.replace(`/pretest?type=${algoType}&algorithm=${algorithm}`);
+        }
+      }
+    };
+
+    checkStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [isValid, algorithm, algoType, router]);
+
+  if (!isValid) {
     notFound();
+  }
+
+  if (!pretestChecked) {
+    return (
+      <div className="flex items-center justify-center w-screen h-screen bg-white">
+        <p className="text-lg text-gray-500">Loading...</p>
+      </div>
+    );
   }
 
   let content: React.ReactNode = null;

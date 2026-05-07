@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
+import { useWindowSize } from "@/src/hooks/useWindowSize";
 
 interface TutorialProps {
   algorithm: string;
@@ -70,6 +71,7 @@ export default function TutorialLinearDS({
   trashBinPos,
   onComplete,
 }: TutorialProps) {
+  const { width: vw, height: vh } = useWindowSize();
   // สร้าง State ท้องถิ่นเพื่อตัดขาดจากระบบ Auto-Advance ของ Hook นอก
   const [localEndStep, setLocalEndStep] = useState(0);
 
@@ -104,6 +106,7 @@ export default function TutorialLinearDS({
     w: number;
     h: number;
   } | null>(null);
+
   const nodeBoxSize = 105;
   const nodeHalfBox = nodeBoxSize / 2;
   const nodeRadius = "12";
@@ -146,6 +149,28 @@ export default function TutorialLinearDS({
     }
   }
 
+  useEffect(() => {
+    if (localEndStep < 1) return;
+    let frameId: number;
+    const trackPosition = () => {
+      const el = document.querySelector(
+        "[data-tutorial-posttest]",
+      ) as HTMLElement | null;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        setPostTestRect({
+          x: rect.left,
+          y: rect.top,
+          w: rect.width,
+          h: rect.height,
+        });
+      }
+      frameId = requestAnimationFrame(trackPosition);
+    };
+    trackPosition();
+    return () => cancelAnimationFrame(frameId);
+  }, [localEndStep]);
+
   // หากอยู่ในช่วง 2 สเต็ปสุดท้าย ให้รันหน้าตานี้ และไม่ต้องสนใจ currentStep อีกต่อไป
   if (localEndStep > 0) {
     return (
@@ -154,6 +179,8 @@ export default function TutorialLinearDS({
         <svg
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
           style={{ position: "fixed" }}
+          viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+          preserveAspectRatio="none"
         >
           <defs>
             <mask id="endstep-spotlight-mask">
@@ -377,6 +404,8 @@ export default function TutorialLinearDS({
       <svg
         className="absolute top-0 left-0 w-full h-full pointer-events-none z-[60]"
         style={{ position: "fixed" }}
+        viewBox={`0 0 ${vw || 1} ${vh || 1}`}
+        preserveAspectRatio="none"
       >
         <defs>
           <mask id="spotlight-mask-linear">

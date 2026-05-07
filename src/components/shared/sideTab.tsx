@@ -21,7 +21,7 @@ export default function Sidebar({ children, title }: RightSidebarProps) {
   return (
     <aside
       className={`fixed right-0 top-0 h-full bg-white transition-all duration-300 ease-in-out z-50 border-l shadow-xl flex flex-col ${
-        isOpen ? "w-96 lg:w-108" : "w-16 overflow-hidden"
+        isOpen ? "w-72 md:w-80 lg:w-108" : "w-16 overflow-hidden"
       }`}
     >
       {/* Header */}
