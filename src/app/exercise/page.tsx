@@ -37,10 +37,10 @@ export default function ExercisesPage() {
       : exercises.filter((exercise) => exercise.difficulty === filter);
 
   return (
-    <main className="mx-auto max-w-12xl px-16 py-6">
+    <main className="py-6">
       <Navbar onSelectCategory={() => {}} />
-      <div className="mx-4">
-        <div className="mb-4 mt-15 flex items-center gap-2 text-base">
+      <div className="mx-auto mt-10 w-full max-w-[1380px] px-2 md:px-0">
+        <div className="mb-4 flex items-center gap-2 text-base md:px-8">
           <span className="flex items-center gap-1">
             <Filter className="h-4 w-4" />
             Filter by difficulty:
@@ -64,7 +64,7 @@ export default function ExercisesPage() {
           ))}
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 md:px-8">
           {isLoading ? (
             <p className="text-base text-gray-500">Loading exercises...</p>
           ) : filteredExercises.length > 0 ? (
