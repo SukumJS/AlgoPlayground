@@ -100,6 +100,18 @@ function Reading_modal({ isOpen, onClose }: Props) {
               )}
             </div>
           ))}
+
+          <div className="pt-4 text-center text-xs text-gray-400">
+            Reading content and images referenced from{" "}
+            <a
+              href="https://www.geeksforgeeks.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-gray-600"
+            >
+              GeeksforGeeks
+            </a>
+          </div>
         </div>
       </div>
     </ModalOverlay>
