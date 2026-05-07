@@ -216,9 +216,6 @@ export function useGraphTutorial({
   // Wait for ReactFlow's fitView to settle before marking positions as ready.
   useEffect(() => {
     if (showTutorial) {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
-      }
       const timer = setTimeout(() => {
         updateTutorialPositions();
         setPositionsReady(true);

@@ -154,9 +154,6 @@ export function useTreeTutorial({
   // Larger delay to ensure sidebar DOM elements are rendered
   useEffect(() => {
     if (showTutorial) {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
-      }
       const timer = setTimeout(() => {
         updateTutorialPositions();
       }, 500);

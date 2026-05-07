@@ -134,9 +134,6 @@ export function useLinearDSTutorial({
       frameId = requestAnimationFrame(loop);
     };
     if (showTutorial) {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
-      }
       frameId = requestAnimationFrame(loop);
     }
     window.addEventListener("resize", updateTutorialPositions);
