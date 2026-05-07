@@ -845,6 +845,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
           id="tutorial-reset-button"
           onClick={(e) => {
             e.stopPropagation();
+            window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
             // Save current playground state before tutorial
             setSavedNodes(nodes);
             setSavedEdges(edges);
@@ -864,7 +865,7 @@ export default function PlaygroundTree({ algorithm }: { algorithm: string }) {
               }
             });
             // Reset viewport to initial position
-            fitView({ padding: 0.2, duration: 300 });
+            fitView({ ...fitViewOptions, duration: 300 });
             // Reset tutorial state and start tutorial
             tutorial.setTutorialStep(0);
             tutorial.setShowTutorial(true);
