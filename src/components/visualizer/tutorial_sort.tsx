@@ -56,6 +56,14 @@ const DashedArrow = ({
     />
   </svg>
 );
+const SkipButton = ({ onClick }: { onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className="fixed top-6 right-[480px] z-[100] px-4 py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+  >
+    Skip Tutorial <span className="text-lg leading-none"></span>
+  </button>
+);
 
 export default function TutorialSort({
   currentStep,
@@ -66,71 +74,100 @@ export default function TutorialSort({
   dropZoneScreenPos,
   isTrashActive,
   trashBinPos,
-  onComplete, // อย่าลืมใส่เข้ามาใน props destruction
+  onComplete,
   nodeMaskSize,
 }: TutorialProps) {
   const { width: vw, height: vh } = useWindowSize();
-  // สร้าง State ท้องถิ่น
+
   const [localEndStep, setLocalEndStep] = useState(0);
 
-  // ติดตามตำแหน่งปุ่ม Post Test แบบ dynamic
+  // ติดตามตำแหน่งปุ่มต่างๆ แบบ dynamic
   const [postTestRect, setPostTestRect] = useState<{
     x: number;
     y: number;
     w: number;
     h: number;
   } | null>(null);
+  const [infoBtnRect, setInfoBtnRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+  const [resetBtnRect, setResetBtnRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
 
-  useEffect(() => {
-    if (localEndStep !== 2) return;
-    window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
-    let frameId: number;
-    const track = () => {
-      const el = document.getElementById("post-test-button");
-      if (el) {
-        const r = el.getBoundingClientRect();
-        setPostTestRect({ x: r.left, y: r.top, w: r.width, h: r.height });
-      }
-      frameId = requestAnimationFrame(track);
-    };
-    track();
-    return () => cancelAnimationFrame(frameId);
-  }, [localEndStep]);
-
-  // กันข้ามอัตโนมัติ (Anti Auto-Skip System) สำหรับ Array Flow (จบที่ Step 4 แล้วไป 5)
+  // กันข้ามอัตโนมัติ สำหรับ Array Flow
   if (localEndStep === 0) {
     if (currentStep >= 5) {
-      setLocalEndStep(1);
+      setLocalEndStep(1); // เริ่มสเต็ปจบอันแรก
     }
   }
 
   useEffect(() => {
+    // บังคับเปิด Sidebar เพื่อโชว์ปุ่ม Post test ตอนถึง Step 4
+    if (localEndStep === 4) {
+      window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
+    }
+
     if (localEndStep < 1) return;
+
     let frameId: number;
     const trackPosition = () => {
-      const el = document.querySelector(
-        "[data-tutorial-posttest]",
-      ) as HTMLElement | null;
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        setPostTestRect({
-          x: rect.left,
-          y: rect.top,
-          w: rect.width,
-          h: rect.height,
+      // 1. ดึงตำแหน่งปุ่ม Info (i)
+      const infoEl = document.getElementById("tutorial-info-button");
+      if (infoEl) {
+        const iRect = infoEl.getBoundingClientRect();
+        setInfoBtnRect({
+          x: iRect.left,
+          y: iRect.top,
+          w: iRect.width,
+          h: iRect.height,
         });
       }
+
+      // 2. ดึงตำแหน่งปุ่ม Reset (?)
+      const resetEl = document.getElementById("tutorial-reset-button");
+      if (resetEl) {
+        const rRect = resetEl.getBoundingClientRect();
+        setResetBtnRect({
+          x: rRect.left,
+          y: rRect.top,
+          w: rRect.width,
+          h: rRect.height,
+        });
+      }
+
+      // 3. ดึงตำแหน่งปุ่ม Post Test
+      const ptEl =
+        (document.querySelector(
+          "[data-tutorial-posttest]",
+        ) as HTMLElement | null) || document.getElementById("post-test-button");
+      if (ptEl) {
+        const ptRect = ptEl.getBoundingClientRect();
+        setPostTestRect({
+          x: ptRect.left,
+          y: ptRect.top,
+          w: ptRect.width,
+          h: ptRect.height,
+        });
+      }
+
       frameId = requestAnimationFrame(trackPosition);
     };
     trackPosition();
     return () => cancelAnimationFrame(frameId);
   }, [localEndStep]);
 
-  // หากอยู่ในช่วง 2 สเต็ปสุดท้าย ให้รันหน้าตานี้
+  // หากอยู่ในช่วงสเต็ปสุดท้าย (แนะนำ UI) ให้รันหน้าตานี้
   if (localEndStep > 0) {
     return (
       <div className="fixed inset-0 z-[80] pointer-events-auto transition-opacity duration-300">
-        {/* --- MASK SPOTLIGHT สำหรับ Legend และ Post Test --- */}
+        {/* --- MASK SPOTLIGHT --- */}
         <svg
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
           style={{ position: "fixed" }}
@@ -140,17 +177,45 @@ export default function TutorialSort({
           <defs>
             <mask id="endstep-spotlight-mask-sort">
               <rect width="100%" height="100%" fill="white" />
+
+              {/* ไฮไลท์ Step 1: แถบสถานะ (Legend) */}
               {localEndStep === 1 && (
                 <rect
                   x="180"
-                  y="12"
-                  width="250"
-                  height="45"
-                  rx="22"
+                  y="10"
+                  width="255"
+                  height="50"
+                  rx="28"
                   fill="black"
                 />
               )}
-              {localEndStep === 2 && postTestRect && (
+
+              {/* ไฮไลท์ Step 2: ปุ่มอ่านเนื้อหา Info (i) */}
+              {localEndStep === 2 && infoBtnRect && (
+                <rect
+                  x={infoBtnRect.x - 4}
+                  y={infoBtnRect.y - 4}
+                  width={infoBtnRect.w + 8}
+                  height={infoBtnRect.h + 8}
+                  rx="100" // เป็นวงกลม
+                  fill="black"
+                />
+              )}
+
+              {/* ไฮไลท์ Step 3: ปุ่ม Reset/Replay (?) */}
+              {localEndStep === 3 && resetBtnRect && (
+                <rect
+                  x={resetBtnRect.x - 4}
+                  y={resetBtnRect.y - 4}
+                  width={resetBtnRect.w + 8}
+                  height={resetBtnRect.h + 8}
+                  rx="100" // เป็นวงกลม
+                  fill="black"
+                />
+              )}
+
+              {/* ไฮไลท์ Step 4: ปุ่ม Post Test */}
+              {localEndStep === 4 && postTestRect && (
                 <rect
                   x={postTestRect.x - 4}
                   y={postTestRect.y - 4}
@@ -170,18 +235,19 @@ export default function TutorialSort({
           />
         </svg>
 
-        {/* กล่องชี้สถานะสี (ซ้ายบน) */}
+        {/* ================= กล่องข้อความ Step 1: สถานะสี ================= */}
         {localEndStep === 1 && (
-          <div className="absolute top-[120px] left-[200px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
+          <div className="absolute top-[120px] left-[250px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
             <DashedArrow
               width={50}
-              className="absolute -top-[45px] left-[110px] transform rotate-90"
+              className="absolute -top-[45px] left-[50px] transform rotate-90"
             />
             <h3 className="font-bold text-gray-800 text-lg mb-2">
               Color Legend
             </h3>
             <p className="text-sm text-gray-600 mb-5 leading-relaxed">
-              Look here to understand what different node colors mean
+              Look here to understand what different node colors mean during the
+              execution.
             </p>
             <button
               onClick={() => setLocalEndStep(2)}
@@ -192,8 +258,66 @@ export default function TutorialSort({
           </div>
         )}
 
-        {/* กล่องชี้ Post Test (ชี้ไปที่ปุ่ม Post Test จริง) */}
-        {localEndStep === 2 && postTestRect && (
+        {/* ================= กล่องข้อความ Step 2: ปุ่ม Info (i) ================= */}
+        {localEndStep === 2 && infoBtnRect && (
+          <div
+            className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
+            style={{
+              top: `${infoBtnRect.y + infoBtnRect.h + 55}px`,
+              left: `${infoBtnRect.x + infoBtnRect.w / 3 - 50}px`,
+            }}
+          >
+            <DashedArrow
+              width={50}
+              className="absolute -top-[45px] left-[35px] transform rotate-90"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">
+              Algorithm Theory
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Click this <strong>( i ) Information</strong> icon anytime to read
+              the theory and understand how this algorithm works!
+            </p>
+            <button
+              onClick={() => setLocalEndStep(3)} //
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/*  กล่องข้อความ Step 3: ปุ่ม Replay (?)  */}
+        {localEndStep === 3 && resetBtnRect && (
+          <div
+            className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
+            style={{
+              top: `${resetBtnRect.y + resetBtnRect.h + 55}px`,
+              left: `${resetBtnRect.x + resetBtnRect.w / 3 - 50}px`,
+            }}
+          >
+            <DashedArrow
+              width={50}
+              className="absolute -top-[45px] left-[35px] transform rotate-90"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">
+              Replay Tutorial
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Click this <strong>( ? ) Help</strong> icon if you ever want to
+              replay this tutorial from the beginning!
+            </p>
+            <button
+              onClick={() => setLocalEndStep(4)}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/* กล่องข้อความ Step 4: ปุ่ม Post Test */}
+        {localEndStep === 4 && postTestRect && (
           <div
             className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
             style={{
@@ -214,21 +338,22 @@ export default function TutorialSort({
               onClick={onComplete}
               className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
             >
-              Next
+              Finish
             </button>
           </div>
         )}
+        <SkipButton onClick={onComplete} />
       </div>
     );
   }
 
   if (currentStep >= 5) return null;
 
-  const nodeBoxSize = 105;
+  const screenScale = vw ? Math.max(0.6, Math.min(vw / 1536, 1)) : 1;
+  const nodeBoxSize = 105 * screenScale;
   const nodeHalfBox = nodeBoxSize / 2;
   const nodeRadius = "12";
-
-  const sidebarBoxSize = 54;
+  const sidebarBoxSize = 54 * screenScale;
   const sidebarHalfBox = sidebarBoxSize / 2;
 
   return (
@@ -308,7 +433,6 @@ export default function TutorialSort({
           mask="url(#spotlight-mask)"
         />
       </svg>
-
       {/* Step 0: Tooltip Sidebar */}
       {currentStep === 0 && (
         <div
@@ -492,6 +616,7 @@ export default function TutorialSort({
           </div>
         </>
       )}
+      <SkipButton onClick={onComplete} />
     </>
   );
 }

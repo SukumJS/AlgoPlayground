@@ -5,7 +5,6 @@ import { Trash2 } from "lucide-react";
 import { TutorialStep } from "@/src/app/types/tutorial";
 import { useWindowSize } from "@/src/hooks/useWindowSize";
 
-// Tutorial steps for Tree (BST)
 const TREE_TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 1,
@@ -33,7 +32,7 @@ const TREE_TUTORIAL_STEPS: TutorialStep[] = [
     id: 4,
     instruction: "Link Created!",
     action: "click",
-    targetSelector: "body", // Click anywhere
+    targetSelector: "body",
     completed: false,
   },
   {
@@ -52,12 +51,7 @@ const TREE_TUTORIAL_STEPS: TutorialStep[] = [
   },
 ];
 
-// Glow zone canvas position
-export const GLOW_ZONE = {
-  x: 5,
-  y: 285,
-  radius: 60,
-};
+export const GLOW_ZONE = { x: 5, y: 285, radius: 60 };
 
 interface TutorialProps {
   algorithm: string;
@@ -65,7 +59,6 @@ interface TutorialProps {
   currentStep: number;
   setCurrentStep: (step: number) => void;
   onNodeDropped?: () => void;
-  // Dynamic screen positions for spotlight
   droppedNodeScreenPos?: { x: number; y: number } | null;
   node30ScreenPos?: { x: number; y: number } | null;
   node90ScreenPos?: { x: number; y: number } | null;
@@ -75,13 +68,12 @@ interface TutorialProps {
   trashBinPos?: { x: number; y: number } | null;
 }
 
-// Custom Dashed Arrow Component (อัปเดตให้เหมือน Graph)
 const DashedArrow = ({
   className,
   style,
   width = 50,
   color = "#333",
-  direction = "left", // "left" | "right" | "up" | "down"
+  direction = "left",
 }: {
   className?: string;
   style?: React.CSSProperties;
@@ -89,13 +81,7 @@ const DashedArrow = ({
   color?: string;
   direction?: "left" | "right" | "up" | "down";
 }) => {
-  const rotate = {
-    left: 0,
-    right: 180,
-    up: 90,
-    down: -90,
-  }[direction];
-
+  const rotate = { left: 0, right: 180, up: 90, down: -90 }[direction];
   return (
     <svg
       width={width}
@@ -125,6 +111,15 @@ const DashedArrow = ({
   );
 };
 
+const SkipButton = ({ onClick }: { onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className="fixed top-6 right-[480px] z-[100] px-4 py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+  >
+    Skip Tutorial <span className="text-lg leading-none"></span>
+  </button>
+);
+
 export default function TutorialTree({
   algorithm,
   onComplete,
@@ -142,11 +137,21 @@ export default function TutorialTree({
   const [steps, setSteps] = useState<TutorialStep[]>(TREE_TUTORIAL_STEPS);
   const { width: vw, height: vh } = useWindowSize();
 
-  // สร้าง State ท้องถิ่นเพื่อแยก 2 สเต็ปสุดท้ายออกมา
   const [localEndStep, setLocalEndStep] = useState(0);
 
-  // ติดตามตำแหน่งปุ่ม Post Test แบบ dynamic
   const [postTestRect, setPostTestRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+  const [infoBtnRect, setInfoBtnRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+  const [resetBtnRect, setResetBtnRect] = useState<{
     x: number;
     y: number;
     w: number;
@@ -154,22 +159,54 @@ export default function TutorialTree({
   } | null>(null);
 
   useEffect(() => {
-    if (localEndStep !== 2) return;
-    window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
+    if (localEndStep === 4) {
+      window.dispatchEvent(new CustomEvent("forceOpenSidebar"));
+    }
+    if (localEndStep < 1) return;
+
     let frameId: number;
-    const track = () => {
-      const el = document.getElementById("post-test-button");
-      if (el) {
-        const r = el.getBoundingClientRect();
-        setPostTestRect({ x: r.left, y: r.top, w: r.width, h: r.height });
+    const trackPosition = () => {
+      const infoEl = document.getElementById("tutorial-info-button");
+      if (infoEl) {
+        const iRect = infoEl.getBoundingClientRect();
+        setInfoBtnRect({
+          x: iRect.left,
+          y: iRect.top,
+          w: iRect.width,
+          h: iRect.height,
+        });
       }
-      frameId = requestAnimationFrame(track);
+
+      const resetEl = document.getElementById("tutorial-reset-button");
+      if (resetEl) {
+        const rRect = resetEl.getBoundingClientRect();
+        setResetBtnRect({
+          x: rRect.left,
+          y: rRect.top,
+          w: rRect.width,
+          h: rRect.height,
+        });
+      }
+
+      const ptEl =
+        (document.querySelector(
+          "[data-tutorial-posttest]",
+        ) as HTMLElement | null) || document.getElementById("post-test-button");
+      if (ptEl) {
+        const ptRect = ptEl.getBoundingClientRect();
+        setPostTestRect({
+          x: ptRect.left,
+          y: ptRect.top,
+          w: ptRect.width,
+          h: ptRect.height,
+        });
+      }
+      frameId = requestAnimationFrame(trackPosition);
     };
-    track();
+    trackPosition();
     return () => cancelAnimationFrame(frameId);
   }, [localEndStep]);
 
-  // 🎯 แก้ไข: ให้ดัน currentStep ไปเรื่อยๆ แทนการเรียก onComplete() ทันที
   const handleStepComplete = useCallback(() => {
     if (currentStep < steps.length) {
       setSteps((prev) =>
@@ -197,35 +234,12 @@ export default function TutorialTree({
     e.dataTransfer.dropEffect = "move";
   }, []);
 
-  // กันข้ามอัตโนมัติ (Anti Auto-Skip System)
   if (localEndStep === 0) {
     if (currentStep >= steps.length) {
       setLocalEndStep(1);
     }
   }
 
-  useEffect(() => {
-    if (localEndStep < 1) return;
-    let frameId: number;
-    const trackPosition = () => {
-      const el = document.querySelector(
-        "[data-tutorial-posttest]",
-      ) as HTMLElement | null;
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        setPostTestRect({
-          x: rect.left,
-          y: rect.top,
-          w: rect.width,
-          h: rect.height,
-        });
-      }
-      frameId = requestAnimationFrame(trackPosition);
-    };
-    trackPosition();
-    return () => cancelAnimationFrame(frameId);
-  }, [localEndStep]);
-  // ส่วนของชี้สถานะสีและ Post Test
   if (localEndStep > 0) {
     return (
       <div className="fixed inset-0 z-[80] pointer-events-auto transition-opacity duration-300">
@@ -248,7 +262,27 @@ export default function TutorialTree({
                   fill="black"
                 />
               )}
-              {localEndStep === 2 && postTestRect && (
+              {localEndStep === 2 && infoBtnRect && (
+                <rect
+                  x={infoBtnRect.x - 4}
+                  y={infoBtnRect.y - 4}
+                  width={infoBtnRect.w + 8}
+                  height={infoBtnRect.h + 8}
+                  rx="100"
+                  fill="black"
+                />
+              )}
+              {localEndStep === 3 && resetBtnRect && (
+                <rect
+                  x={resetBtnRect.x - 4}
+                  y={resetBtnRect.y - 4}
+                  width={resetBtnRect.w + 8}
+                  height={resetBtnRect.h + 8}
+                  rx="100"
+                  fill="black"
+                />
+              )}
+              {localEndStep === 4 && postTestRect && (
                 <rect
                   x={postTestRect.x - 4}
                   y={postTestRect.y - 4}
@@ -268,7 +302,6 @@ export default function TutorialTree({
           />
         </svg>
 
-        {/* กล่องชี้สถานะสี (ซ้ายบน) */}
         {localEndStep === 1 && (
           <div className="absolute top-[120px] left-[200px] bg-white p-6 rounded-xl shadow-2xl w-[280px] transition-all duration-500 ease-in-out">
             <DashedArrow
@@ -293,8 +326,65 @@ export default function TutorialTree({
           </div>
         )}
 
-        {/* กล่องชี้ Post Test (ชี้ไปที่ปุ่ม Post Test จริง) */}
-        {localEndStep === 2 && postTestRect && (
+        {localEndStep === 2 && infoBtnRect && (
+          <div
+            className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
+            style={{
+              top: `${infoBtnRect.y + infoBtnRect.h + 55}px`,
+              left: `${infoBtnRect.x + infoBtnRect.w / 4 - 50}px`,
+            }}
+          >
+            <DashedArrow
+              width={50}
+              className="absolute -top-[45px] left-[35px]"
+              direction="up"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">
+              Algorithm Theory
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Click this <strong>( i ) Information</strong> icon anytime to read
+              the theory!
+            </p>
+            <button
+              onClick={() => setLocalEndStep(3)}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {localEndStep === 3 && resetBtnRect && (
+          <div
+            className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
+            style={{
+              top: `${resetBtnRect.y + resetBtnRect.h + 55}px`,
+              left: `${resetBtnRect.x + resetBtnRect.w / 4 - 50}px`,
+            }}
+          >
+            <DashedArrow
+              width={50}
+              className="absolute -top-[45px] left-[35px]"
+              direction="up"
+            />
+            <h3 className="font-bold text-gray-800 text-lg mb-2">
+              Replay Tutorial
+            </h3>
+            <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+              Click this <strong>( ? ) Help</strong> icon if you ever want to
+              replay this tutorial!
+            </p>
+            <button
+              onClick={() => setLocalEndStep(4)}
+              className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {localEndStep === 4 && postTestRect && (
           <div
             className="fixed bg-white p-6 rounded-xl shadow-2xl w-[300px] transition-all duration-500 ease-in-out"
             style={{
@@ -313,26 +403,24 @@ export default function TutorialTree({
               test your knowledge!
             </p>
             <button
-              onClick={onComplete} // จบ Tutorial
+              onClick={onComplete}
               className="w-full py-2 bg-[#0066CC] hover:bg-[#0052a3] transition text-white rounded-lg font-bold"
             >
-              Next
+              Finish
             </button>
           </div>
         )}
+
+        <SkipButton onClick={onComplete} />
       </div>
     );
   }
 
   const currentStepData = steps[currentStep];
-
-  if (!currentStepData) {
-    return null;
-  }
+  if (!currentStepData) return null;
 
   return (
     <>
-      {/* SVG Overlay for Spotlight Effect */}
       <svg
         className="absolute top-0 left-0 w-full h-full pointer-events-none z-50"
         style={{ position: "fixed" }}
@@ -341,11 +429,7 @@ export default function TutorialTree({
       >
         <defs>
           <mask id="spotlight-mask">
-            {/* Whole screen white (visible) */}
             <rect width="100%" height="100%" fill="white" />
-
-            {/* Spotlight holes (black = transparent/cutout) */}
-            {/* Step 1: Spotlight on Sidebar Node 3 */}
             {currentStep === 0 && sidebarNode3Pos && (
               <circle
                 cx={sidebarNode3Pos.x}
@@ -354,8 +438,6 @@ export default function TutorialTree({
                 fill="black"
               />
             )}
-
-            {/* Step 2: Spotlight on dropped node 3 */}
             {currentStep === 1 && droppedNodeScreenPos && (
               <circle
                 cx={droppedNodeScreenPos.x}
@@ -364,8 +446,6 @@ export default function TutorialTree({
                 fill="black"
               />
             )}
-
-            {/* Step 3: Dual spotlight - both node 3 AND node 30 */}
             {currentStep === 2 && droppedNodeScreenPos && (
               <circle
                 cx={droppedNodeScreenPos.x}
@@ -382,8 +462,6 @@ export default function TutorialTree({
                 fill="black"
               />
             )}
-
-            {/* Step 5 & 6: Spotlight on node 90 (Press & Drag steps) */}
             {(currentStep === 4 || currentStep === 5) && node90ScreenPos && (
               <circle
                 cx={node90ScreenPos.x}
@@ -392,18 +470,14 @@ export default function TutorialTree({
                 fill="black"
               />
             )}
-            {/* Fallback for Step 5/6 if node90 position not ready */}
             {(currentStep === 4 || currentStep === 5) && !node90ScreenPos && (
               <circle cx={1086} cy={630} r="57" fill="black" />
             )}
           </mask>
         </defs>
-
-        {/* Step 0: Full dark overlay (no spotlight) */}
         {currentStep === 0 && !sidebarNode3Pos && (
           <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.5)" />
         )}
-        {/* Step 0: Dark overlay with spotlight mask applied if sidebar pos found */}
         {currentStep === 0 && sidebarNode3Pos && (
           <rect
             width="100%"
@@ -412,8 +486,6 @@ export default function TutorialTree({
             mask="url(#spotlight-mask)"
           />
         )}
-
-        {/* Steps 1, 2, 5 & 6: Dark overlay with spotlight mask applied */}
         {(currentStep === 1 ||
           currentStep === 2 ||
           currentStep === 4 ||
@@ -425,14 +497,11 @@ export default function TutorialTree({
             mask="url(#spotlight-mask)"
           />
         )}
-
-        {/* Step 4 (Link Created): Full dark overlay */}
         {currentStep === 3 && (
           <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.5)" />
         )}
       </svg>
 
-      {/* Step 1: Tooltip with exact Figma size 326x88px */}
       {currentStep === 0 && (
         <div
           className="fixed z-50 bg-white rounded-xl shadow-xl px-5 py-4 border border-gray-200 flex items-center"
@@ -463,7 +532,6 @@ export default function TutorialTree({
         </div>
       )}
 
-      {/* Glow drop zone (Step 1) */}
       {currentStep === 0 && (
         <div
           className="fixed z-50 pointer-events-none"
@@ -482,7 +550,6 @@ export default function TutorialTree({
         />
       )}
 
-      {/* Trash bin icon (Step 6 Only) */}
       {currentStep === 5 && (
         <>
           <div
@@ -530,7 +597,6 @@ export default function TutorialTree({
         </>
       )}
 
-      {/* Step 2: Tooltip pointing to node 3 */}
       {currentStep === 1 && droppedNodeScreenPos && (
         <div
           className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 max-w-xs border border-gray-200"
@@ -557,7 +623,6 @@ export default function TutorialTree({
         </div>
       )}
 
-      {/* Step 3: Tooltip pointing to node 30 */}
       {currentStep === 2 && node30ScreenPos && (
         <div
           className="fixed z-50 bg-white rounded-xl shadow-xl px-4 py-3 max-w-xs border border-gray-200"
@@ -584,7 +649,6 @@ export default function TutorialTree({
         </div>
       )}
 
-      {/* Step 4: Link Created! */}
       {currentStep === 3 && droppedNodeScreenPos && node30ScreenPos && (
         <>
           <div
@@ -617,7 +681,6 @@ export default function TutorialTree({
         </>
       )}
 
-      {/* Step 5: Press Node 90 */}
       {currentStep === 4 && (
         <div
           className="fixed z-50 bg-white rounded-lg shadow-xl px-4 py-2 border border-gray-200"
@@ -643,6 +706,8 @@ export default function TutorialTree({
           />
         </div>
       )}
+
+      <SkipButton onClick={onComplete} />
 
       <style jsx>{`
         @keyframes glow-ring {
